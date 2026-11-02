@@ -1,4 +1,4 @@
-/* abfragen.js – SQL-Abfragen üben: Entwurf wie in Access (Stufe 1–2), SQL-Editor (Stufe 3–5)
+/* abfragen.js – SQL-Abfragen üben: Entwurf, Blöcke, Access-Entwurfsansicht, SQL-Editor
  *
  * Läuft komplett im Browser (SQLite über sql.js), auch per file://. Nutzt Kopfzeile, Stufen,
  * Modi und Dock aus ../excel/basis.js. Einbinden am Ende von <body>, in dieser Reihenfolge:
@@ -10,10 +10,18 @@
  * SQLKURS = {
  *   id:      'sql'                 Tool-id aus katalog.js (Speicherstand: id + '-…')
  *   tabelle: DB_FILME              {name, felder:[{n, typ, art, d}], zeilen:[[…]]}
- *   stufen:  [null, {name, ui}]    ui: 'block' Felder anklicken, Bedingung als Baustein
- *                                      'text'  Felder anklicken, Bedingung eintippen
- *                                      'sql'   SQL-Editor; vorlage: 'erklaert' | 'geruest' | 'leer'
- *   aufgaben:[{frage, felder:['titel', …] oder ['*'], where?:"jahr < 1970", sort?:'jahr DESC', tipp?}]
+ *   stufen:  [null, {name, ui}]    ui: 'block'  Felder anklicken, eine Bedingung als Baustein
+ *                                      'baum'   Felder anklicken, Bedingung aus Blöcken (AND/OR verschachtelt)
+ *                                      'text'   Felder anklicken, Bedingung eintippen
+ *                                      'sql'    SQL-Editor; vorlage: 'erklaert' | 'geruest' | 'leer'
+ *                                      'access' Access-Entwurf (Feld, Sortierung, Anzeigen, Kriterien/oder);
+ *                                               krit: 'bloecke' nur die nötigen Kriterien (mit Feldname),
+ *                                               'falsch' dazu falsche, 'text' selbst eintippen (Access-Schreibweise)
+ *   ansichten: {access:{name, stufen}, sql:{name, stufen}}   statt stufen: Umschalter in der Kopfzeile
+ *            (Knöpfe mit data-ansicht="…"); Stufe, Fortschritt und Modus je Ansicht getrennt (id-ansicht-…)
+ *   kalender:{tage:['Montag', …]}  Aufgabenwahl als Kalender (Wochen × Tage) statt Nummern
+ *   aufgaben:[{frage, felder:['titel', …] oder ['*'], where?:"jahr < 1970", sort?:'jahr DESC', tipp?,
+ *             auch?:["…"] gleichwertige Bedingungen, die ebenfalls als richtig zählen}]
  *   endlos:  [(r, Z) => Aufgabe]   r = Zufall, Z = {pick1, ri, liste(sql) → erste Spalte aller Zeilen}
  *            Ergebnis mit 1 bis 80 Zeilen wird genommen, sonst neu gewürfelt.
  *   intro:   HTML über der Abfrage, nur ohne aufgaben
@@ -36,16 +44,31 @@ const FELD = {}; T.felder.forEach(f => FELD[f.n.toLowerCase()] = f);
 const SPALTEN = T.felder.map(f => f.n);
 const KW = ['SELECT', 'FROM', 'WHERE', 'ORDER', 'BY', 'ASC', 'DESC', 'LIKE', 'IS', 'NOT', 'NULL', 'AND', 'OR', 'AS', 'DISTINCT', 'LIMIT', 'OFFSET', 'IN', 'BETWEEN', 'GROUP', 'HAVING'];
 const KWS = new Set(KW);
-const OPS = ['=', '<>', '<', '<=', '>', '>=', 'LIKE', 'IS NULL', 'IS NOT NULL'];
+const OPS = ['=', '<>', '<', '<=', '>', '>=', 'LIKE', 'NOT LIKE', 'IS NULL', 'IS NOT NULL'];
 const istText = n => { const f = FELD[n]; return f && f.art !== 'Zahl' && f.art !== 'Kommazahl'; };
 
 /* ---------- Zustand ---------- */
 let db = null, CUR = null, S = null, ed = null, endScen = -1, endSeed = 0;
-mode = load('mode') === 'endlos' ? 'endlos' : 'pfad';
-level = Math.min(LEVELS.length - 1, Math.max(1, parseInt(load('level')) || 1));
-pfadIdx = Math.min(STD.length - 1, Math.max(0, parseInt(load('idx')) || 0));
-try { solved = JSON.parse(load('solved') || '{}') || {}; } catch (e) { solved = {}; }
-best = parseInt(load('best')) || 0;
+const ANS = K.ansichten ? Object.keys(K.ansichten) : null;
+let ansicht = null;
+if (ANS){ try { ansicht = localStorage.getItem(K.id + '-ansicht'); } catch (e) {} if (!ANS.includes(ansicht)) ansicht = ANS[0]; }
+function ladeStand(){
+  if (ANS){ KEY = K.id + '-' + ansicht + '-'; LEVELS = K.ansichten[ansicht].stufen; }
+  mode = load('mode') === 'endlos' ? 'endlos' : 'pfad';
+  level = Math.min(LEVELS.length - 1, Math.max(1, parseInt(load('level')) || 1));
+  pfadIdx = Math.min(Math.max(0, STD.length - 1), Math.max(0, parseInt(load('idx')) || 0));
+  try { solved = JSON.parse(load('solved') || '{}') || {}; } catch (e) { solved = {}; }
+  best = parseInt(load('best')) || 0; streak = 0; endCounted = false; pickerOpen = false;
+}
+ladeStand();
+function setAnsicht(a){
+  if (!ANS || a === ansicht) return;
+  ansicht = a; try { localStorage.setItem(K.id + '-ansicht', a); } catch (e) {}
+  if (window.TrainerSync) TrainerSync.changed();
+  ladeStand();
+  if (mode === 'endlos') newEndless(); else CUR = STD[pfadIdx];
+  setup();
+}
 
 /* ---------- Datenbank ---------- */
 function baueDB(SQL){
@@ -352,7 +375,8 @@ function aufgabeText(a){
 }
 function loadTask(){ if (mode === 'pfad') CUR = STD[pfadIdx]; setup(); }
 function setup(start){
-  S = {sel:[], wf:'', wop:'=', wv:'', where:'', sf:'', sdir:'ASC', fb:null, success:false, erg:null, ergInfo:'', start};
+  S = {sel:[], wf:'', wop:'=', wv:'', where:'', sf:'', sdir:'ASC', fb:null, success:false, erg:null, ergInfo:'', start, kn:{}, wurzel:null};
+  if (LEVELS[level].ui === 'access') S.acc = neuAccess(LEVELS[level]);
   render();
 }
 // freie Abfragen: bisherige Abfrage in den SQL-Editor mitnehmen (nur das Gerüst zählt nicht)
@@ -400,15 +424,305 @@ function entwurfSQL(){
       s += '\nWHERE ' + S.wf + ' ' + S.wop + ' ' + wertSQL(S.wf, S.wv);
     }
   }
+  if (L.ui === 'baum' && S.wurzel){ try { s += '\nWHERE ' + baumSQL(S.wurzel); } catch (e){ if (e.fehlt) return e; throw e; } }
   if (L.ui === 'text' && S.where.trim()){ s += '\nWHERE '; off = s.length; s += S.where.trim(); }
   if (S.sf) s += '\nORDER BY ' + S.sf + ' ' + S.sdir;
   return {sql:s, off};
 }
 function aktSQL(){
+  if (LEVELS[level].ui === 'access') return accessSQL();
   if (LEVELS[level].ui !== 'sql') return entwurfSQL();
   let sql = ed.getValue();
   if (FREI) sql = sql.replace(/^[ \t]*(WHERE|ORDER BY)[ \t]*$/gim, '');
   return {sql, off:0};
+}
+
+/* ---------- Bedingung einer Aufgabe zerlegen (für Access-Bausteine) ---------- */
+// WHERE-Text der Musterlösung → Baum {t:'und'|'oder', a, b} bzw. {t:'cmp', f, op, v:{num}|{str}}
+function parseWhere(src){
+  const t = lex(src); let i = 0;
+  const kw = u => t[i] && t[i].t === 'kw' && t[i].u === u;
+  const wert = () => { const x = t[i++]; return x.t === 'num' ? {num:+x.v} : {str:x.v}; };
+  function oder(){ let a = und(); while (kw('OR')){ i++; a = {t:'oder', a, b:und()}; } return a; }
+  function und(){ let a = prim(); while (kw('AND')){ i++; a = {t:'und', a, b:prim()}; } return a; }
+  function prim(){
+    if (t[i].t === 'lpar'){ i++; const e = oder(); i++; return e; }
+    const f = t[i++].v.toLowerCase();
+    if (kw('IS')){ i++; const neg = kw('NOT'); if (neg) i++; i++; return {t:'cmp', f, op:neg ? 'IS NOT NULL' : 'IS NULL'}; }
+    if (kw('NOT')){ i += 2; return {t:'cmp', f, op:'NOT LIKE', v:wert()}; }
+    if (kw('LIKE')){ i++; return {t:'cmp', f, op:'LIKE', v:wert()}; }
+    const op = t[i++].v; return {t:'cmp', f, op:op === '!=' ? '<>' : op, v:wert()};
+  }
+  return oder();
+}
+// Baum → Zeilen (ODER) aus Vergleichen (UND), so wie im Access-Entwurf
+function zeilenVon(n){
+  if (n.t === 'cmp') return [[n]];
+  if (n.t === 'oder') return zeilenVon(n.a).concat(zeilenVon(n.b));
+  const A = zeilenVon(n.a), B = zeilenVon(n.b), r = [];
+  A.forEach(x => B.forEach(y => r.push(x.concat(y)))); return r;
+}
+const accZahl = n => String(n).replace('.', ',');
+const accWert = v => v.num !== undefined ? accZahl(v.num) : '"' + v.str + '"';
+function accText(n){
+  if (n.op === 'IS NULL') return 'Ist Null';
+  if (n.op === 'IS NOT NULL') return 'Ist Nicht Null';
+  if (/LIKE/.test(n.op)) return (n.op === 'NOT LIKE' ? 'Nicht ' : '') + 'Wie "' + n.v.str.replace(/%/g, '*').replace(/_/g, '?') + '"';
+  return (n.op === '=' ? '' : n.op) + accWert(n.v);
+}
+// Kriterien der Musterlösung als Zellen: [{f, text}] je Zeile, gleiche Felder einer Zeile mit „Und“ verbunden
+function accZellen(where){
+  return zeilenVon(parseWhere(where)).map(z => {
+    const m = new Map(); z.forEach(n => { if (!m.has(n.f)) m.set(n.f, []); m.get(n.f).push(accText(n)); });
+    return [...m].map(([f, l]) => ({f, text:l.join(' Und ')}));
+  });
+}
+function accFalsch(text){
+  const tausch = {'>=':'>', '>':'>=', '<=':'<', '<':'<='};
+  let m;
+  if ((m = text.match(/^(>=|<=|>|<)(.*)$/))) return tausch[m[1]] + m[2];
+  if ((m = text.match(/^(Nicht )?Wie "\*?(.*?)\*?"$/))) return (m[1] || '') + 'Wie "' + m[2] + '"';
+  if (text === 'Ist Null') return 'Ist Nicht Null';
+  if (text === 'Ist Nicht Null') return 'Ist Null';
+  if ((m = text.match(/^(\d+)$/))) return '<' + m[1];
+  if ((m = text.match(/^"(.*)"$/))) return '<>"' + m[1] + '"';
+  if ((m = text.match(/^(.*) Und (.*)$/))) return accFalsch(m[1]) + ' Und ' + m[2];
+  return null;
+}
+
+/* ---------- Access-Kriterien lesen (deutsch und englisch) → SQL ---------- */
+const ACCKW = {UND:'AND', AND:'AND', ODER:'OR', OR:'OR', NICHT:'NOT', NOT:'NOT', WIE:'LIKE', LIKE:'LIKE', ZWISCHEN:'BETWEEN', BETWEEN:'BETWEEN', IST:'IS', IS:'IS', NULL:'NULL', LEER:'NULL'};
+function accLex(s){
+  const out = []; let i = 0, m;
+  while (i < s.length){
+    const r = s.slice(i);
+    if ((m = r.match(/^\s+/))){ i += m[0].length; continue; }
+    if ((m = r.match(/^["„“”]([^"„“”]*)["„“”]?/))){ out.push({t:'str', v:m[1], offen:!/["“”]$/.test(m[0]) || m[0].length < 2}); i += m[0].length; continue; }
+    if ((m = r.match(/^'([^']*)'?/))){ out.push({t:'str', v:m[1], offen:!m[0].endsWith("'") || m[0].length < 2}); i += m[0].length; continue; }
+    if ((m = r.match(/^#([^#]*)#?/))){ out.push({t:'datum', v:m[1]}); i += m[0].length; continue; }
+    if ((m = r.match(/^(<=|>=|<>|=>|=<|!=|[=<>])/))){ out.push({t:'op', v:m[1]}); i += m[0].length; continue; }
+    if (r[0] === '(' || r[0] === ')'){ out.push({t:r[0]}); i++; continue; }
+    if ((m = r.match(/^-?\d+([.,]\d+)?(?![^\s()<>="'])/))){ out.push({t:'num', v:m[0].replace(',', '.')}); i += m[0].length; continue; }
+    m = r.match(/^[^\s()<>="'„“”#]+/);
+    out.push({t:'wort', v:m[0], u:ACCKW[m[0].toUpperCase()]}); i += m[0].length;
+  }
+  return out;
+}
+function accParse(text, f){
+  const t = accLex(text); let i = 0;
+  const err = msg => { throw {acc:msg}; };
+  const kw = u => t[i] && t[i].t === 'wort' && t[i].u === u;
+  const q = s => "'" + s.replace(/'/g, "''") + "'";
+  const datum = s => { const m = s.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/); return m ? `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}` : s; };
+  function wert(wie){
+    const x = t[i];
+    if (!x || (x.t === 'wort' && x.u) || x.t === 'op' || x.t === ')') err(`Hier fehlt ein Wert${x ? ` vor ${c(x.v || x.t)}` : ' am Ende'}.`);
+    i++;
+    if (x.t === 'str'){ if (x.offen) err(`Hinter ${c('"' + x.v)} fehlt das schließende Anführungszeichen ${c('"')}.`); return q(wie ? x.v.replace(/\*/g, '%').replace(/\?/g, '_') : x.v); }
+    if (x.t === 'num') return istText(f) ? q(x.v) : x.v;
+    if (x.t === 'datum') return q(datum(x.v));
+    let w = x.v; while (t[i] && (t[i].t === 'wort' && !t[i].u || t[i].t === 'num')){ w += ' ' + t[i].v; i++; }
+    if (!istText(f) && !wie) err(`${c(w)} ist keine Zahl – das Feld ${c(f)} enthält Zahlen.`);
+    return q(wie ? w.replace(/\*/g, '%').replace(/\?/g, '_') : w);
+  }
+  function oder(){ const l = [und()]; while (kw('OR')){ i++; l.push(und()); } return l.length > 1 ? '(' + l.join(' OR ') + ')' : l[0]; }
+  function und(){ const l = [nicht()]; while (kw('AND')){ i++; l.push(nicht()); } return l.join(' AND '); }
+  function nicht(){ if (kw('NOT')){ i++; return 'NOT (' + nicht() + ')'; } return prim(); }
+  function prim(){
+    const x = t[i];
+    if (!x) err('Hier fehlt noch etwas.');
+    if (x.t === '('){ i++; const e = oder(); if (!t[i] || t[i].t !== ')') err(`Es fehlt die schließende Klammer ${c(')')}.`); i++; return '(' + e + ')'; }
+    if (kw('LIKE')){ i++; return `${f} LIKE ${wert(true)}`; }
+    if (kw('BETWEEN')){ i++; const a = wert(); if (!kw('AND')) err(`Bei ${c('Zwischen')} gehören zwei Werte dazu: ${c('Zwischen 1960 Und 1969')}.`); i++; return `${f} BETWEEN ${a} AND ${wert()}`; }
+    if (kw('IS')){ i++; const neg = kw('NOT'); if (neg) i++; if (!kw('NULL')) err(`Nach ${c('Ist')} kommt ${c('Null')} (leer), z. B. ${c('Ist Null')}.`); i++; return `${f} IS ${neg ? 'NOT ' : ''}NULL`; }
+    if (kw('NULL')){ i++; return `${f} IS NULL`; }
+    if (x.t === 'op'){
+      if (x.v === '=>' || x.v === '=<') err(`Schreibe ${c(x.v[1] + '=')} statt ${c(x.v)}.`);
+      i++; return `${f} ${x.v === '!=' ? '<>' : x.v} ${wert()}`;
+    }
+    if (x.t === 'wort' && x.u) err(`${c(x.v)} steht hier an der falschen Stelle.`);
+    return `${f} = ${wert()}`;
+  }
+  const e = oder();
+  if (i < t.length){ const x = t[i]; err(x.t === 'wort' && /^%/.test(x.v) ? `Der Platzhalter in Access ist ${c('*')}: ${c('Wie "*Text*"')}.` : `${c(x.v || x.t)} verstehe ich hier nicht. Verbinde mehrere Kriterien mit ${c('Und')} bzw. ${c('Oder')}.`); }
+  return e;
+}
+const ZEILEN = ['Kriterien:', 'oder:', '', ''];
+function neuAccess(L){
+  const noetig = CUR ? new Set([...CUR.felder, ...(CUR.where ? lex(CUR.where).filter(x => x.t === 'word' && FELD[x.v.toLowerCase()]).map(x => x.v) : [])]).size : 0;
+  const A = {cols:Array.from({length:Math.max(6, noetig)}, () => ({f:'', sort:'', show:true})), zellen:{}, bl:{}, pool:[]};
+  if (L.krit !== 'text' && CUR && CUR.where){
+    let n = 0; const mk = (text, f) => { const id = 'a' + (++n); A.bl[id] = {text, f}; A.pool.push(id); };
+    const echt = accZellen(CUR.where).flat();
+    echt.forEach(z => mk(z.text, z.f));
+    if (L.krit === 'falsch'){
+      const r = rng(endSeed + pfadIdx * 31 + 7), schon = new Set(echt.map(z => z.text));
+      shuffle(echt, r).forEach(z => { const v = accFalsch(z.text); if (v && !schon.has(v) && A.pool.length < echt.length + 4){ schon.add(v); mk(v, z.f); } });
+    }
+    A.pool = shuffle(A.pool, rng(rand()));
+  }
+  return A;
+}
+function zellText(key){ const z = S.acc.zellen[key]; return LEVELS[level].krit === 'text' ? (z || '').trim() : z ? S.acc.bl[z].text : ''; }
+function accessSQL(){
+  const A = S.acc, cols = A.cols.map((col, i) => Object.assign({i}, col));
+  for (const key of Object.keys(A.zellen)){ const ci = +key.split('_')[1]; if (zellText(key) && !cols[ci].f) return {fehlt:`In Spalte ${ci + 1} steht ein Kriterium, aber oben bei „Feld:“ ist noch kein Feld gewählt.`}; }
+  const gezeigt = cols.filter(col => col.f && col.show).map(col => col.f);
+  if (!gezeigt.length) return {fehlt:'Wähle oben bei „Feld:“ die Felder aus und setze bei „Anzeigen:“ den Haken.'};
+  const zeilen = [];
+  for (let r = 0; r < ZEILEN.length; r++){
+    const teile = [];
+    for (const col of cols){
+      const txt = col.f && zellText(r + '_' + col.i);
+      if (!txt) continue;
+      if (col.f === '*') return {fehlt:`Bei ${c(TAB + '.*')} kann kein Kriterium stehen. Wähle für Kriterien ein einzelnes Feld.`};
+      try { teile.push(accParse(txt, col.f)); }
+      catch (e){ if (!e.acc) throw e; return {fehlt:`Feld ${c(col.f)}, Zeile „${ZEILEN[r] || 'oder:'}“: ${e.acc}`}; }
+    }
+    if (teile.length) zeilen.push(teile);
+  }
+  let s = 'SELECT ' + gezeigt.join(', ') + '\nFROM ' + TAB;
+  if (zeilen.length) s += '\nWHERE ' + zeilen.map(z => zeilen.length > 1 && z.length > 1 ? '(' + z.join(' AND ') + ')' : z.join(' AND ')).join('\n   OR ');
+  const sort = cols.filter(col => col.f && col.sort && col.f !== '*');
+  if (sort.length) s += '\nORDER BY ' + sort.map(col => col.f + ' ' + col.sort).join(', ');
+  return {sql:s, off:null};
+}
+function accBlock(id){
+  const b = S.acc.bl[id];
+  return `<div class="block val acc" data-drag="1" data-acc="${id}">${esc(b.text)}${LEVELS[level].krit === 'bloecke' ? `<span class="bfeld">${esc(b.f)}</span>` : ''}</div>`;
+}
+function accessHTML(){
+  const A = S.acc, L = LEVELS[level], frei = new Set(Object.values(A.zellen));
+  const sortOpt = v => [['', ''], ['ASC', 'Aufsteigend'], ['DESC', 'Absteigend']].map(([k, t]) => `<option value="${k}"${v === k ? ' selected' : ''}>${t}</option>`).join('');
+  let h = `<div class="accwrap"><div class="tabfenster klein"><div class="tabkopf">${esc(TAB)}</div><button class="afeld" data-feld="*">*</button>` +
+    T.felder.map(f => `<button class="afeld" data-feld="${esc(f.n)}" title="${esc(f.d)}">${/PRIMARY/.test(f.typ) ? '<span class="key">🔑</span>' : ''}${esc(f.n)}</button>`).join('') + '</div>' +
+    '<div class="agridw"><table class="agrid"><tr><th>Feld:</th>' +
+    A.cols.map((col, i) => `<td><select class="af" data-c="${i}" aria-label="Feld in Spalte ${i + 1}"><option value=""></option><option value="*"${col.f === '*' ? ' selected' : ''}>${esc(TAB)}.*</option>${T.felder.map(f => `<option${col.f === f.n ? ' selected' : ''}>${esc(f.n)}</option>`).join('')}</select></td>`).join('') +
+    '</tr><tr><th>Tabelle:</th>' + A.cols.map(col => `<td class="atab">${col.f ? esc(TAB) : ''}</td>`).join('') +
+    '</tr><tr><th>Sortierung:</th>' + A.cols.map((col, i) => `<td><select class="as" data-c="${i}" aria-label="Sortierung Spalte ${i + 1}"${col.f ? '' : ' disabled'}>${sortOpt(col.sort)}</select></td>`).join('') +
+    '</tr><tr><th>Anzeigen:</th>' + A.cols.map((col, i) => `<td class="ashow"><input type="checkbox" class="ash" data-c="${i}" aria-label="Anzeigen Spalte ${i + 1}"${col.show ? ' checked' : ''}${col.f ? '' : ' disabled'}></td>`).join('') + '</tr>';
+  ZEILEN.forEach((lbl, r) => {
+    h += `<tr class="krit"><th>${lbl}</th>` + A.cols.map((col, i) => {
+      const k = r + '_' + i;
+      if (L.krit === 'text') return `<td><input class="ain" data-k="${k}" type="text" autocomplete="off" spellcheck="false" value="${esc(A.zellen[k] || '')}" aria-label="Kriterium Spalte ${i + 1}, Zeile ${r + 1}"></td>`;
+      return `<td><div class="acell" data-drop="acell" data-k="${k}">${A.zellen[k] ? accBlock(A.zellen[k]) : ''}</div></td>`;
+    }).join('') + '</tr>';
+  });
+  h += `</table></div><button class="btn klein" id="addCol" title="weitere Spalte">+ Spalte</button></div>`;
+  if (L.krit !== 'text') h += `<div class="pool" data-drop="apool"><div class="pool-title">Kriterien – in die richtige Zelle ziehen${L.krit === 'falsch' ? ' (nicht alle werden gebraucht)' : ''}</div><div class="pool-items">${A.pool.filter(id => !frei.has(id)).map(accBlock).join('') || '<span class="ph">alle eingesetzt</span>'}</div></div>`;
+  else h += `<div class="edhint">Beispiele: ${['"Film"', '>=9', 'Wie "*Mystery*"', 'Zwischen 1960 Und 1969', 'Ist Null', '<=4 Oder >=9'].map(c).join(' · ')}</div>`;
+  return h;
+}
+
+/* ---------- Bedingung aus Blöcken (UND/ODER verschachteln wie in Scratch) ---------- */
+let kid = 0;
+function neuKnoten(t){ const id = 'k' + (++kid); S.kn[id] = {id, t, a:null, b:null, f:'', op:'=', v:''}; return id; }
+function slotGet(p, k){ return p === 'root' ? S.wurzel : S.kn[p][k]; }
+function slotSet(p, k, id){ if (p === 'root') S.wurzel = id; else S.kn[p][k] = id; }
+function elternVon(id){
+  if (S.wurzel === id) return {p:'root', k:'root'};
+  for (const n of Object.values(S.kn)) for (const k of ['a', 'b']) if (n[k] === id) return {p:n.id, k};
+  return null;
+}
+function enthaelt(id, ziel){ if (!id) return false; if (id === ziel) return true; const n = S.kn[id]; return n.t !== 'cmp' && (enthaelt(n.a, ziel) || enthaelt(n.b, ziel)); }
+function loesche(id){ const n = S.kn[id]; if (!n) return; if (n.t !== 'cmp'){ loesche(n.a); loesche(n.b); } delete S.kn[id]; }
+function baumAblegen(d, p, k){
+  const ziel = slotGet(p, k);
+  let id = d.id, alt = null;
+  if (id){ if (id === ziel || (p !== 'root' && enthaelt(id, p))) return; alt = elternVon(id); slotSet(alt.p, alt.k, null); }
+  else id = neuKnoten(d.neu);
+  const n = S.kn[id];
+  if (ziel){
+    if (n.t !== 'cmp' && !n.a) n.a = ziel;          // UND/ODER auf einen Block: umschließt ihn
+    else if (n.t !== 'cmp' && !n.b) n.b = ziel;
+    else if (alt) slotSet(alt.p, alt.k, ziel);       // sonst tauschen
+    else { loesche(id); return; }
+  }
+  slotSet(p, k, id);
+}
+function erstesFreies(id){
+  if (!id) return null; const n = S.kn[id]; if (n.t === 'cmp') return null;
+  if (!n.a) return {p:id, k:'a'}; const x = erstesFreies(n.a); if (x) return x;
+  if (!n.b) return {p:id, k:'b'}; return erstesFreies(n.b);
+}
+function baumTipp(t){
+  if (!S.wurzel){ S.wurzel = neuKnoten(t); return; }
+  const frei = erstesFreies(S.wurzel);
+  if (frei){ slotSet(frei.p, frei.k, neuKnoten(t)); return; }
+  if (t !== 'cmp'){ const id = neuKnoten(t); S.kn[id].a = S.wurzel; S.wurzel = id; }
+}
+function baumSQL(id, eltern){
+  const n = S.kn[id];
+  if (n.t === 'cmp'){
+    if (!n.f) throw {fehlt:'In einem Vergleich ist noch kein Feld gewählt.'};
+    if (/NULL/.test(n.op)) return n.f + ' ' + n.op;
+    if (!n.v.trim()) throw {fehlt:`Im Vergleich mit ${c(n.f)} fehlt noch der Wert.`};
+    if (!istText(n.f) && !/LIKE/.test(n.op) && !/^-?\d+([.,]\d+)?$/.test(n.v.trim())) throw {fehlt:`${c(n.f)} enthält Zahlen. Trage als Vergleichswert eine Zahl ein.`};
+    return n.f + ' ' + n.op + ' ' + wertSQL(n.f, n.v);
+  }
+  const W = n.t === 'und' ? 'AND' : 'OR';
+  if (!n.a || !n.b) throw {fehlt:`Im ${W}-Block ist noch eine Lücke frei.`};
+  const s = baumSQL(n.a, n.t) + ' ' + W + ' ' + baumSQL(n.b, n.t);
+  return eltern && eltern !== n.t ? '(' + s + ')' : s;
+}
+function slotHTML(p, k){
+  const id = slotGet(p, k);
+  return `<div class="slot hex bslot" data-drop="bslot" data-p="${p}" data-k="${k}">${id ? knotenHTML(id) : `<span class="ph">${p === 'root' ? 'Bedingung hierher ziehen – oder leer lassen' : 'Bedingung'}</span>`}</div>`;
+}
+function knotenHTML(id){
+  const n = S.kn[id];
+  if (n.t === 'cmp'){
+    const ops = OPS.map(o => `<option${n.op === o ? ' selected' : ''}>${o}</option>`).join('');
+    return `<div class="block hex builder bcmp" data-drag="1" data-id="${id}"><span class="grip" aria-hidden="true" title="hier anfassen und ziehen">⠿</span><select class="opsel bf" data-n="${id}" aria-label="Feld">${feldOptionen(n.f, 'Feld')}</select><select class="opsel bop" data-n="${id}" aria-label="Vergleich">${ops}</select>` +
+      (/NULL/.test(n.op) ? '' : `<input class="cvin bv" data-n="${id}" type="text" autocomplete="off" spellcheck="false" placeholder="Wert" value="${esc(n.v)}" size="${Math.max(5, n.v.length + 1)}" aria-label="Wert">`) + '</div>';
+  }
+  return `<div class="block hex logik ${n.t}" data-drag="1" data-id="${id}">${slotHTML(id, 'a')}<span class="lw">${n.t === 'und' ? 'AND' : 'OR'}</span>${slotHTML(id, 'b')}</div>`;
+}
+function baumPool(){
+  return `<div class="pool" data-drop="bpool"><div class="pool-title">Bausteine – ziehen oder anklicken · zum Löschen hierher zurückziehen</div><div class="pool-items">` +
+    `<div class="block hex builder" data-drag="1" data-neu="cmp" title="Vergleich, z. B. jahr &gt;= 1960">Feld <b>=</b> Wert</div>` +
+    `<div class="block hex logik und" data-drag="1" data-neu="und" title="beide Bedingungen müssen gelten"><span class="mini"></span><span class="lw">AND</span><span class="mini"></span></div>` +
+    `<div class="block hex logik oder" data-drag="1" data-neu="oder" title="mindestens eine Bedingung muss gelten"><span class="mini"></span><span class="lw">OR</span><span class="mini"></span></div></div></div>`;
+}
+
+/* ---------- Ziehen (basis.js): Access-Kriterien und Blöcke ---------- */
+window.dragData = (b, e) => {
+  if (e.target.closest('select,input,option,button')) return null;
+  if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+  return {id:b.dataset.id, neu:b.dataset.neu, acc:b.dataset.acc, src:!!(b.dataset.id || b.dataset.acc)};
+};
+window.dropOk = t => { const k = t.dataset.drop; return D.acc ? k === 'acell' || k === 'apool' : k === 'bslot' || k === 'bpool'; };
+window.applyDrop = (d, type, idx, t) => {
+  if (d.acc){
+    const Z = S.acc.zellen, von = Object.keys(Z).find(k => Z[k] === d.acc);
+    if (type === 'apool'){ if (von) delete Z[von]; }
+    else { const k = t.dataset.k, alt = Z[k]; if (von) delete Z[von]; if (alt && von) Z[von] = alt; Z[k] = d.acc; }
+  } else if (type === 'bpool'){ if (d.id){ const e = elternVon(d.id); slotSet(e.p, e.k, null); loesche(d.id); } }
+  else baumAblegen(d, t.dataset.p, t.dataset.k);
+  neuZeichnen();
+};
+window.dragTap = d => { if (d.neu){ baumTipp(d.neu); neuZeichnen(); } };
+function neuZeichnen(){
+  if (S.fb || S.success){ S.fb = null; S.success = false; renderFeedback(); }
+  if (LEVELS[level].ui === 'access') $('#accbox').innerHTML = accessHTML();
+  else { $('#whereinh').innerHTML = slotHTML('root', 'root'); }
+  vorschau();
+}
+
+/* ---------- Kalender statt Aufgabenliste ---------- */
+function tagName(i){ const n = K.kalender.tage.length; return `Woche ${Math.floor(i / n) + 1} · ${K.kalender.tage[i % n]}`; }
+function kalenderHTML(){
+  const tage = K.kalender.tage, n = (solved[level] || []).length;
+  let h = `<button class="dockbtn" id="dockBtn" aria-expanded="${pickerOpen}">📅 ${esc(tagName(pfadIdx))} <span class="sub">· ${n} von ${STD.length} gelöst</span></button>`;
+  if (!pickerOpen) return h;
+  h += `<div class="picker kal"><div class="ptitle">Zu einem Tag springen – grün = auf Stufe ${level} gelöst</div><table><tr><th></th>${tage.map(t => `<th>${esc(t.slice(0, 2))}</th>`).join('')}</tr>`;
+  for (let w = 0; w * tage.length < STD.length; w++){
+    h += `<tr><th>W${w + 1}</th>`;
+    tage.forEach((t, d) => { const i = w * tage.length + d;
+      h += i < STD.length ? `<td><button data-goto="${i}" class="${isSolved(i) ? 'solved' : ''}${i === pfadIdx ? ' cur' : ''}" title="${esc(tagName(i))}">${i + 1}</button></td>` : '<td></td>'; });
+    h += '</tr>';
+  }
+  return h + '</table></div>';
 }
 
 /* ---------- Ausführen und Prüfen ---------- */
@@ -428,6 +742,7 @@ function ausfuehren(){
   return {q, res:r.res};
 }
 function vergleiche(q, ist, soll, a){
+  const ACC = LEVELS[level].ui === 'access';
   const iCols = ist.columns.map(x => x.toLowerCase()), sCols = soll.columns.map(x => x.toLowerCase());
   const fehlt = sCols.filter(x => !iCols.includes(x)), zuviel = iCols.filter((x, i) => !sCols.includes(x) || iCols.indexOf(x) !== i);
   if (fehlt.length || zuviel.length){
@@ -435,6 +750,7 @@ function vergleiche(q, ist, soll, a){
     if (fehlt.length) h += `<br>Es fehlt: ${fehlt.map(c).join(', ')}.`;
     if (zuviel.length) h += `<br>Nicht gefragt ist: ${[...new Set(zuviel)].map(c).join(', ')}.`;
     if (iCols.length === T.felder.length && a.felder[0] !== '*') h += `<br>Mit ${c('*')} werden alle Spalten angezeigt – hier sind nur bestimmte gefragt.`;
+    else if (ACC && zuviel.length) h += '<br>Felder, die du nur für Kriterien brauchst, bekommen bei „Anzeigen:“ keinen Haken.';
     return h;
   }
   const idx = sCols.map(x => iCols.indexOf(x));
@@ -451,10 +767,14 @@ function vergleiche(q, ist, soll, a){
     if (extra.length && !miss.length) h += `<br>Es sind zu viele dabei, z. B. ${name(extra[0])}. Die Bedingung ist zu weit gefasst.`;
     else if (miss.length && !extra.length) h += `<br>Es fehlen Datensätze, z. B. ${name(miss[0])}. Die Bedingung ist zu eng gefasst.`;
     else if (extra.length) h += `<br>Zum Beispiel gehört ${name(extra[0])} nicht dazu, dafür fehlt ${name(miss[0])}.`;
-    if (!where.trim() && a.where) h += `<br>Es fehlt noch die Bedingung mit ${c('WHERE')}.`;
+    const und = /\bAND\b/i.test(where), oder = /\bOR\b/i.test(where);
+    if (!where.trim() && a.where) h += ACC ? '<br>Es fehlen noch die Kriterien.' : `<br>Es fehlt noch die Bedingung mit ${c('WHERE')}.`;
     else if (/\*/.test(where) && /LIKE/i.test(where)) h += `<br>Der Platzhalter in SQL ist ${c('%')}, nicht ${c('*')} wie in Access.`;
     else if (/LIKE/i.test(where) && !/%/.test(where)){ const m = where.match(/LIKE\s*'([^']*)'/i), w = m ? m[1] : 'Horror';
-      h += `<br>${c('LIKE')} ohne ${c('%')} vergleicht den ganzen Text. Mit ${c("'%" + w + "%'")} findest du ${esc(w)} an jeder Stelle.`; }
+      h += ACC ? `<br>${c('Wie')} ohne ${c('*')} vergleicht den ganzen Text. Mit ${c('Wie "*' + w + '*"')} findest du ${esc(w)} an jeder Stelle.`
+        : `<br>${c('LIKE')} ohne ${c('%')} vergleicht den ganzen Text. Mit ${c("'%" + w + "%'")} findest du ${esc(w)} an jeder Stelle.`; }
+    else if (ACC && (/\bOR\b/i.test(a.where || '') || oder)) h += '<br>Denk daran: Kriterien in <b>derselben Zeile</b> müssen alle gleichzeitig gelten (UND). Kriterien in <b>verschiedenen Zeilen</b> sind Alternativen (ODER) – was in jeder Zeile gelten soll, muss auch in jeder Zeile stehen.';
+    else if (!ACC && und && oder && !/\(/.test(where)) h += `<br>Achtung: ${c('AND')} bindet stärker als ${c('OR')}, so wie Punkt vor Strich. Setze Klammern, damit klar ist, was zusammengehört: ${c('(… OR …) AND …')}.`;
     else if (!iK.length && /=\s*'/.test(where)) h += `<br>Bei ${c('=')} muss der Text genau so in der Tabelle stehen. Schau in der Tabelle nach, wie er geschrieben ist.`;
     else if (/[<>]/.test(where) && Math.abs(iK.length - sK.length) <= 5 && (!extra.length || !miss.length)) h += `<br>Prüfe, ob der Grenzwert selbst dazugehören soll: ${c('>')} oder ${c('>=')}, ${c('<')} oder ${c('<=')}.`;
     return h;
@@ -464,6 +784,7 @@ function vergleiche(q, ist, soll, a){
     const folge = (vals, i) => JSON.stringify(vals.map(z => z[i]));
     if (si >= 0 && folge(ist.values, idx[si]) !== folge(soll.values, si)){
       const umgekehrt = folge(ist.values.slice().reverse(), idx[si]) === folge(soll.values, si);
+      if (ACC) return `Die richtigen Datensätze – aber die Reihenfolge stimmt nicht. Stelle beim Feld ${c(sf)} die Sortierung auf ${/DESC/i.test(sd || '') ? '„Absteigend“' : '„Aufsteigend“'}.`;
       return `Die richtigen Datensätze – aber die Reihenfolge stimmt nicht. Sortiere mit ${c('ORDER BY ' + sf)} ${umgekehrt ? `und achte auf die Richtung: ${c(/DESC/i.test(sd || '') ? 'DESC' : 'ASC')}` : ''}.`.replace(' .', '.');
     }
   }
@@ -473,7 +794,8 @@ function check(){
   if (FREI){ ausfuehren(); return; }
   const r = ausfuehren(); if (!r) return;
   const soll = abfrage(sqlVon(CUR));
-  const fehler = vergleiche(r.q, r.res, soll, CUR);
+  let fehler = vergleiche(r.q, r.res, soll, CUR);
+  for (const w of CUR.auch || []) if (fehler && !vergleiche(r.q, r.res, abfrage(sqlVon(Object.assign({}, CUR, {where:w}))), CUR)) fehler = null;
   if (fehler){ S.success = false; S.fb = {type:'err', html:fehler}; renderFeedback(); return; }
   S.success = true;
   const erstmals = countSolved();
@@ -493,7 +815,7 @@ function renderFeedback(){
   $('#fb').innerHTML = S.fb ? `<div class="fb ${S.fb.type}">${S.fb.html}</div>` : '';
 }
 function renderNav(){ if (!FREI){ navPfad(); renderDock(); } }
-function renderDock(){ $('#dock').innerHTML = dockHTML(); }
+function renderDock(){ $('#dock').innerHTML = K.kalender && mode === 'pfad' ? kalenderHTML() : dockHTML(); }
 const fmt = v => v === null ? '<span class="leer">leer</span>' : esc(v);
 function tabelleHTML(r, max){
   const n = r.values.length, zeig = r.values.slice(0, max || 500);
@@ -534,21 +856,26 @@ function whereBlock(){
     (S.wf && istText(S.wf) && !/NULL/.test(S.wop) ? '<span class="wthint">Anführungszeichen setzt der Entwurf selbst.</span>' : '');
 }
 function vorschau(){
-  const q = entwurfSQL();
+  const q = aktSQL();
   $('#sqlv').innerHTML = q.sql ? farbe(q.sql) : `<span class="ph">${q.fehlt.replace(/<[^>]+>/g, '')}</span>`;
 }
 function render(){
   const L = LEVELS[level], a = CUR;
   renderHeader();
+  document.querySelectorAll('[data-ansicht]').forEach(b => b.classList.toggle('on', b.dataset.ansicht === ansicht));
   $('#lvlname').textContent = `Stufe ${level}: ${L.name}`;
   if (FREI){ $('#taskmeta').textContent = ''; $('#tasktext').innerHTML = (K.intro || '') + felderHTML(); }
   else {
-    $('#taskmeta').textContent = mode === 'pfad' ? `Übungen · Aufgabe ${pfadIdx + 1} von ${STD.length}` : 'Endlos';
+    $('#taskmeta').textContent = mode !== 'pfad' ? 'Endlos' : K.kalender ? tagName(pfadIdx) : `Übungen · Aufgabe ${pfadIdx + 1} von ${STD.length}`;
     $('#tasktext').innerHTML = aufgabeText(a) + (a.tipp && level <= 3 ? `<div class="tipp">💡 ${a.tipp}</div>` : '');
   }
   const W = $('#work');
   ed = null;
-  if (L.ui === 'sql'){
+  if (L.ui === 'access'){
+    $('#worktitle').textContent = 'Entwurfsansicht';
+    W.innerHTML = `<div id="accbox">${accessHTML()}</div><div class="sqlvbox"><span class="sqlvl">SQL</span><pre class="sqlv cm-s-default" id="sqlv"></pre></div>`;
+    vorschau();
+  } else if (L.ui === 'sql'){
     $('#worktitle').textContent = 'SQL-Ansicht';
     W.innerHTML = '<div class="edwrap" id="edwrap"></div><div class="edhint">Strg + Enter führt aus · Vorschläge erscheinen beim Tippen (Enter oder Tab übernimmt)</div>';
     let start = '';
@@ -563,10 +890,10 @@ function render(){
     W.innerHTML = `<div class="entwurf">${feldListe()}<div class="klauseln">
       <div class="kl"><span class="kw cm-keyword">SELECT</span><div class="kinh" id="selchips">${selChips()}</div></div>
       <div class="kl"><span class="kw cm-keyword">FROM</span><div class="kinh"><span class="cm-builtin tabn">${esc(TAB)}</span></div></div>
-      <div class="kl"><span class="kw cm-keyword">WHERE</span><div class="kinh" id="whereinh">${L.ui === 'block' ? whereBlock() : '<div class="edwrap eins" id="wherewrap"></div>'}</div></div>
+      <div class="kl"><span class="kw cm-keyword">WHERE</span><div class="kinh" id="whereinh">${L.ui === 'block' ? whereBlock() : L.ui === 'baum' ? slotHTML('root', 'root') : '<div class="edwrap eins" id="wherewrap"></div>'}</div></div>
       <div class="kl"><span class="kw cm-keyword">ORDER BY</span><div class="kinh"><select class="sortsel" id="sf" aria-label="Sortieren nach">${feldOptionen(S.sf, '— nicht sortieren —')}</select>
         <select class="sortsel" id="sdir" aria-label="Richtung"${S.sf ? '' : ' hidden'}><option value="ASC"${S.sdir === 'ASC' ? ' selected' : ''}>ASC – aufsteigend</option><option value="DESC"${S.sdir === 'DESC' ? ' selected' : ''}>DESC – absteigend</option></select></div></div>
-    </div></div>
+    </div></div>${L.ui === 'baum' ? baumPool() : ''}
     <div class="sqlvbox"><span class="sqlvl">SQL</span><pre class="sqlv cm-s-default" id="sqlv"></pre></div>`;
     if (L.ui === 'text'){
       ed = editor($('#wherewrap'), {value:S.where, extraKeys:{'Enter':() => ausfuehren(), 'Ctrl-Enter':() => ausfuehren(), 'Shift-Ctrl-Enter':() => check(), 'Ctrl-Space':cm => cm.showHint({hint:hinweisListe, completeSingle:false})}});
@@ -589,6 +916,11 @@ function entwurfGeaendert(){
 
 /* ---------- Ereignisse ---------- */
 document.addEventListener('click', e => {
+  const an = e.target.closest('[data-ansicht]');
+  if (an){ setAnsicht(an.dataset.ansicht); return; }
+  const af = e.target.closest('.afeld');
+  if (af){ const col = S.acc.cols.find(x => !x.f); if (col){ col.f = af.dataset.feld; col.show = true; } else S.acc.cols.push({f:af.dataset.feld, sort:'', show:true}); neuZeichnen(); return; }
+  if (e.target.closest('#addCol')){ S.acc.cols.push({f:'', sort:'', show:true}); neuZeichnen(); return; }
   const f = e.target.closest('.feld');
   if (f){
     const n = f.dataset.feld;
@@ -607,17 +939,25 @@ document.addEventListener('click', e => {
   navClick(e);
 });
 document.addEventListener('change', e => {
-  const id = e.target.id;
+  const id = e.target.id, cl = e.target.classList, ci = +e.target.dataset.c, kn = S && S.kn[e.target.dataset.n];
+  if (cl.contains('af')){ const col = S.acc.cols[ci]; col.f = e.target.value; col.show = true; if (!col.f) col.sort = ''; neuZeichnen(); return; }
+  if (cl.contains('as')){ S.acc.cols[ci].sort = e.target.value; neuZeichnen(); return; }
+  if (cl.contains('ash')){ S.acc.cols[ci].show = e.target.checked; neuZeichnen(); return; }
+  if (kn && cl.contains('bf')){ kn.f = e.target.value; if (kn.f && !istText(kn.f) && /LIKE/.test(kn.op)) kn.op = '='; neuZeichnen(); return; }
+  if (kn && cl.contains('bop')){ kn.op = e.target.value; neuZeichnen(); const v = document.querySelector(`.bv[data-n="${kn.id}"]`); if (v) v.focus(); return; }
   if (id === 'wf'){ S.wf = e.target.value; if (S.wf && !istText(S.wf) && S.wop === 'LIKE') S.wop = '='; $('#whereinh').innerHTML = whereBlock(); entwurfGeaendert(); const v = $('#wv'); if (v) v.focus(); }
   else if (id === 'wop'){ S.wop = e.target.value; $('#whereinh').innerHTML = whereBlock(); entwurfGeaendert(); const v = $('#wv'); if (v) v.focus(); }
   else if (id === 'sf'){ S.sf = e.target.value; $('#sdir').hidden = !S.sf; entwurfGeaendert(); }
   else if (id === 'sdir'){ S.sdir = e.target.value; entwurfGeaendert(); }
 });
 document.addEventListener('input', e => {
+  const kn = S && S.kn[e.target.dataset.n];
+  if (kn && e.target.classList.contains('bv')){ kn.v = e.target.value; e.target.size = Math.max(5, kn.v.length + 1); if (S.fb){ S.fb = null; renderFeedback(); } vorschau(); return; }
+  if (e.target.classList.contains('ain')){ S.acc.zellen[e.target.dataset.k] = e.target.value; if (S.fb){ S.fb = null; S.success = false; renderFeedback(); } vorschau(); return; }
   if (e.target.id === 'wv'){ S.wv = e.target.value; e.target.size = Math.max(5, S.wv.length + 1); entwurfGeaendert(); }
 });
 document.addEventListener('keydown', e => {
-  if (e.target.id === 'wv' && e.key === 'Enter'){ e.preventDefault(); ausfuehren(); }
+  if ((e.target.id === 'wv' || e.target.matches('.bv,.ain')) && e.key === 'Enter'){ e.preventDefault(); ausfuehren(); }
   else if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && !e.target.closest('.CodeMirror')){ e.preventDefault(); e.shiftKey ? check() : ausfuehren(); }
 });
 $('#runBtn').addEventListener('click', () => ausfuehren());
@@ -626,6 +966,7 @@ $('#prevBtn').addEventListener('click', () => gotoTask(pfadIdx - 1));
 $('#tabBtn').textContent = `Tabelle ${TAB} ansehen`;
 
 /* ---------- Start ---------- */
+K._test = {accZellen, parseWhere};   // nur für automatische Tests
 $('#tasktext').textContent = 'Datenbank wird geladen …';
 initSqlJs().then(SQL => {
   baueDB(SQL);

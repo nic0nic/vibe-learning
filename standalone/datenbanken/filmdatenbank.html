@@ -47,7 +47,8 @@ window.KATALOG = {
     {id: 'datenbanken', titel: 'Datenbanken', farbe: '#bf616a', farbeHell: '#a3434c', farbeSchrift: '#e0959b', text: 'Tabellen, Beziehungen und SQL-Abfragen.',
       tools: [
         {id: 'sqlfrei', datei: 'filmdatenbank.html', titel: 'Film-Datenbank', text: 'Eigene Abfragen an die Filmdatenbank stellen, ohne Aufgaben – mit Entwurfsansicht oder in SQL.'},
-        {id: 'sql', datei: 'abfragen.html', titel: 'SQL-Abfragen', text: 'SELECT, FROM, WHERE und ORDER BY an einer Filmdatenbank – vom Entwurf wie in Access bis zur eigenen SQL-Abfrage.'}
+        {id: 'sql', datei: 'abfragen.html', titel: 'SQL-Abfragen', text: 'SELECT, FROM, WHERE und ORDER BY an einer Filmdatenbank – vom Entwurf wie in Access bis zur eigenen SQL-Abfrage.'},
+        {id: 'sqluo', datei: 'datenight.html', titel: 'Datenight: UND / ODER', text: 'Drei Wochen Dates mit immer verrückteren Filmwünschen: Kriterien mit UND und ODER – im Access-Entwurf oder mit Blöcken und SQL.'}
       ]
     },
     {id: 'schaltungen', titel: 'Logische Schaltungen', text: 'Gatter, Wahrheitstabellen und Schaltnetze.',  tools: []}
@@ -1131,11 +1132,13 @@ body.dragging,body.dragging *{cursor:grabbing!important}
 <style>/* abfragen.css */
 /* abfragen.css – Aussehen der SQL-Übungen (zu abfragen.js, nach ../excel/basis.css laden) */
 :root{
+  --und:#5e81ac;--oder:#b0663f;
   --ed-bg:#ffffff;--gutter:#eceff4;--gutter-text:#7b88a1;--sel:#d8dee9;
   --kw:#8a5f84;--str:#5e8a45;--num:#b0631f;--com:#7b88a1;--col:#4f73a3;--tab:#3b7f8c;--op:#4c566a;
   --tabkopf:#a3434c;--erkl:#8c96a8
 }
 [data-theme=dark]{
+  --und:#81a1c1;--oder:#d08770;
   --ed-bg:#2e3440;--gutter:#2a2f3a;--gutter-text:#616e88;--sel:#434c5e;
   --kw:#b48ead;--str:#a3be8c;--num:#d08770;--com:#7b88a1;--col:#88c0d0;--tab:#8fbcbb;--op:#81a1c1;
   --tabkopf:#bf616a;--erkl:#7b88a1
@@ -1143,6 +1146,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
 main{max-width:1080px;margin:0 auto;padding:18px 16px}
 .tasktext{margin:0;font-size:17px}
 .tasktext .zeige{display:inline-block;margin-top:4px}
+.tasktext ul.bed{margin:6px 0 2px;padding-left:24px}
 .tipp{margin-top:8px;font-size:15px;color:var(--muted)}
 details.felder{margin-top:10px;font-size:15px}
 details.felder summary{cursor:pointer;color:var(--muted)}
@@ -1222,6 +1226,56 @@ li.CodeMirror-hint-active{background:var(--accent);color:var(--on-color)}
 .pg{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
 @media (max-width:640px){ .kl{flex-direction:column;align-items:flex-start} .tabfenster{width:100%} .picker{bottom:auto;top:auto;position:relative;margin-bottom:8px} }
 
+/* Blöcke: UND/ODER spitz wie in Scratch, beliebig verschachtelt */
+.bslot{min-width:150px;min-height:48px;padding:3px 12px}
+.bslot .bslot{min-width:110px;min-height:44px}
+.block.logik{display:inline-flex;align-items:center;gap:6px;padding:5px 18px;color:var(--on-color);font:800 15px var(--mono)}
+.block.logik.und{background:var(--und)} .block.logik.oder{background:var(--oder)}
+.block.logik .lw{padding:0 2px;letter-spacing:.04em}
+.block.logik .mini{display:inline-block;width:34px;height:22px;clip-path:var(--hex);background:rgba(255,255,255,.35)}
+.block.logik > .bslot::after{background:color-mix(in srgb,var(--slot) 88%,transparent)}
+.block.bcmp,.pool .block.builder{display:inline-flex;align-items:center;gap:5px;color:var(--on-color);font:700 15px var(--mono)}
+.bcmp .opsel,.bcmp .cvin{font-size:14px}
+.klauseln,.kl,.kinh{min-width:0}
+.bslot{flex-shrink:0}
+#whereinh{overflow-x:auto;padding:2px 0}
+.bslot .block.logik{flex-direction:column;align-items:flex-start;padding:8px 20px;row-gap:2px}
+.bslot .block.logik > .lw{align-self:center}
+.block.bcmp{flex-wrap:nowrap;white-space:nowrap}
+.bslot{justify-content:flex-start}
+
+/* Access: Entwurfsraster mit Feld, Tabelle, Sortierung, Anzeigen, Kriterien, oder */
+.accwrap{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}
+.tabfenster.klein{min-width:170px}
+.afeld{display:flex;gap:6px;align-items:center;text-align:left;font:14px var(--mono);color:var(--text);background:none;border:0;border-bottom:1px solid var(--panel2);padding:3px 10px;cursor:pointer}
+.afeld:hover{background:var(--panel2)}
+.agridw{flex:1 1 520px;overflow-x:auto;border:1px solid var(--border);border-radius:8px;background:var(--ed-bg)}
+.agrid{border-collapse:collapse;font:14px var(--mono)}
+.agrid th{background:var(--panel2);text-align:right;font:600 13px system-ui,sans-serif;color:var(--muted);padding:4px 8px;white-space:nowrap;border-bottom:1px solid var(--border)}
+.agrid td{border-left:1px solid var(--border);border-bottom:1px solid var(--panel2);padding:3px 4px;min-width:150px;height:36px;vertical-align:middle}
+.agrid tr.krit td{height:46px}
+.agrid select{width:100%;font:14px var(--mono);background:var(--ed-bg);color:var(--text);border:1px solid var(--border);border-radius:5px;padding:2px}
+.agrid .atab{color:var(--muted);padding-left:8px}
+.agrid .ashow{text-align:center} .agrid .ashow input{width:18px;height:18px}
+.ain{width:100%;font:14px var(--mono);background:var(--ed-bg);color:var(--text);border:1px solid var(--border);border-radius:5px;padding:4px 6px}
+.ain:focus{outline:2px solid var(--accent);outline-offset:-1px}
+.acell{min-height:38px;border:2px dashed transparent;border-radius:8px;display:flex;align-items:center;padding:1px}
+body.dragging .acell{border-color:var(--slot-border);background:var(--slot)}
+.acell.drop-hover{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,var(--slot))}
+.block.acc{display:inline-flex;flex-direction:column;align-items:flex-start;padding:4px 12px;font:700 14px var(--mono);line-height:1.2}
+.block.acc .bfeld{font:500 11px system-ui,sans-serif;opacity:.7}
+.btn.klein{padding:6px 12px;font-size:14px}
+#accbox .pool{margin-top:12px}
+
+/* Kalender als Aufgabenwahl */
+.picker.kal{width:auto}
+.kal table{border-collapse:separate;border-spacing:5px}
+.kal th{font:600 12px system-ui,sans-serif;color:var(--muted)}
+.kal td button{width:40px;height:36px;border-radius:8px;border:1px solid var(--border);background:var(--panel2);color:var(--text);font:600 14px system-ui,sans-serif;cursor:pointer}
+.kal td button.solved{background:var(--then);color:var(--on-color);border-color:transparent}
+.kal td button.cur{outline:3px solid var(--accent);outline-offset:1px}
+.modes + .modes{margin-left:8px}
+
 </style>
 </head>
 <body>
@@ -1268,7 +1322,7 @@ li.CodeMirror-hint-active{background:var(--accent);color:var(--on-color)}
 <div class="dock" id="dock"></div>
 
 <script>/* filme.js */
-/* filme.js – Tabelle „filme“: 484 Filme und Serien, die Herr Maier auf IMDb bewertet hat
+/* filme.js – Tabelle „filme“: 888 Filme und Serien von Herrn Maier (484 bewertet, 404 auf der Merkliste)
  *
  * Daten für Datenbank-Übungen. abfragen.js baut daraus die SQLite-Tabelle im Browser.
  *   DB_FILME = {name, felder:[{n, typ, art, d}], zeilen:[[…], …]}
@@ -1287,8 +1341,8 @@ window.DB_FILME = {
     {"n": "genres", "typ": "TEXT", "art": "Text", "d": "ein oder mehrere Genres, mit Komma getrennt"},
     {"n": "regie", "typ": "TEXT", "art": "Text", "d": "Regisseur bzw. Regisseure (bei Serien meist leer)"},
     {"n": "imdb_bewertung", "typ": "REAL", "art": "Kommazahl", "d": "Durchschnitt der Bewertungen auf IMDb (1 bis 10)"},
-    {"n": "eigene_bewertung", "typ": "INTEGER", "art": "Zahl", "d": "Bewertung von Herrn Maier (1 bis 10)"},
-    {"n": "gesehen_am", "typ": "DATE", "art": "Datum", "d": "Tag, an dem Herr Maier den Eintrag bewertet hat (JJJJ-MM-TT)"}
+    {"n": "eigene_bewertung", "typ": "INTEGER", "art": "Zahl", "d": "Bewertung von Herrn Maier (1 bis 10), leer = noch nicht gesehen"},
+    {"n": "gesehen_am", "typ": "DATE", "art": "Datum", "d": "Tag, an dem Herr Maier den Eintrag bewertet hat (JJJJ-MM-TT), leer = noch nicht gesehen"}
   ],
   zeilen: [
     [1, "Das Schweigen der Lämmer", "The Silence of the Lambs", "Film", 1991, 118, "Krimi, Drama, Horror, Thriller", "Jonathan Demme", 8.6, 9, "2015-09-09"],
@@ -1774,7 +1828,411 @@ window.DB_FILME = {
     [481, "Paterson", "Paterson", "Film", 2016, 118, "Drama, Komödie, Liebesfilm", "Jim Jarmusch", 7.3, 7, "2025-11-23"],
     [482, "Akte X: Die unheimlichen Fälle des FBI", "The X Files", "Fernsehserie", 1993, 45, "Drama, Krimi, Abenteuer, Science-Fiction, Mystery, Thriller", null, 8.6, 9, "2025-11-26"],
     [483, "Drei Farben - Blau", "Trois couleurs: Bleu", "Film", 1993, 98, "Musikfilm, Mystery, Liebesfilm, Drama", "Krzysztof Kieslowski", 7.8, 8, "2025-11-26"],
-    [484, "One Battle After Another", "One Battle After Another", "Film", 2025, 161, "Krimi, Drama, Thriller, Action", "Paul Thomas Anderson", 8.0, 7, "2025-11-26"]
+    [484, "One Battle After Another", "One Battle After Another", "Film", 2025, 161, "Krimi, Drama, Thriller, Action", "Paul Thomas Anderson", 8.0, 7, "2025-11-26"],
+    [485, "Die durch die Hölle gehen", "The Deer Hunter", "Film", 1978, 183, "Drama, Kriegsfilm", "Michael Cimino", 8.1, null, null],
+    [486, "Million Dollar Baby", "Million Dollar Baby", "Film", 2004, 132, "Drama, Sportfilm", "Clint Eastwood", 8.1, null, null],
+    [487, "Braveheart", "Braveheart", "Film", 1995, 178, "Biografie, Drama, Kriegsfilm", "Mel Gibson", 8.3, null, null],
+    [488, "Sin City 2: A Dame to Kill For", "Sin City: A Dame to Kill For", "Film", 2014, 102, "Action, Krimi, Thriller", "Frank Miller, Robert Rodriguez", 6.5, null, null],
+    [489, "Moderne Zeiten", "Modern Times", "Film", 1936, 87, "Komödie, Drama, Liebesfilm", "Charles Chaplin", 8.5, null, null],
+    [490, "X-Men 2", "X2", "Film", 2003, 134, "Action, Science-Fiction, Thriller", "Bryan Singer", 7.4, null, null],
+    [491, "Waterboy - Der Typ mit dem Wasserschaden", "The Waterboy", "Film", 1998, 90, "Komödie, Sportfilm", "Frank Coraci", 6.2, null, null],
+    [492, "Big Daddy", "Big Daddy", "Film", 1999, 93, "Komödie, Drama", "Dennis Dugan", 6.4, null, null],
+    [493, "Mr. Deeds", "Mr. Deeds", "Film", 2002, 96, "Komödie, Liebesfilm", "Steven Brill", 5.8, null, null],
+    [494, "X-Men: Erste Entscheidung", "X: First Class", "Film", 2011, 131, "Action, Science-Fiction", "Matthew Vaughn", 7.7, null, null],
+    [495, "Goldrausch", "The Gold Rush", "Film", 1925, 95, "Abenteuer, Komödie, Drama, Liebesfilm, Western", "Charles Chaplin", 8.1, null, null],
+    [496, "X-Men: Zukunft ist Vergangenheit", "X-Men: Days of Future Past", "Film", 2014, 132, "Action, Abenteuer, Science-Fiction, Thriller", "Bryan Singer", 7.9, null, null],
+    [497, "Wolverine: Weg des Kriegers", "The Wolverine", "Film", 2013, 126, "Action, Science-Fiction", "James Mangold", 6.7, null, null],
+    [498, "The Wire", "The Wire", "Fernsehserie", 2002, 60, "Krimi, Drama, Thriller", null, 9.3, null, null],
+    [499, "12 Monkeys", "Twelve Monkeys", "Film", 1995, 129, "Mystery, Science-Fiction, Thriller", "Terry Gilliam", 8.0, null, null],
+    [500, "Rain Man", "Rain Man", "Film", 1988, 133, "Drama", "Barry Levinson", 8.0, null, null],
+    [501, "Black Swan", "Black Swan", "Film", 2010, 108, "Drama, Thriller", "Darren Aronofsky", 8.0, null, null],
+    [502, "Die fabelhafte Welt der Amelie", "Le fabuleux destin d'Amélie Poulain", "Film", 2001, 122, "Komödie, Liebesfilm", "Jean-Pierre Jeunet", 8.3, null, null],
+    [503, "Natural Born Killers", "Natural Born Killers", "Film", 1994, 119, "Krimi, Liebesfilm", "Oliver Stone", 7.2, null, null],
+    [504, "Gravity", "Gravity", "Film", 2013, 91, "Drama, Science-Fiction, Thriller", "Alfonso Cuarón", 7.7, null, null],
+    [505, "Kevin - Allein zu Haus", "Home Alone", "Film", 1990, 103, "Komödie, Familienfilm", "Chris Columbus", 7.7, null, null],
+    [506, "Heat", "Heat", "Film", 1995, 170, "Action, Krimi, Drama", "Michael Mann", 8.3, null, null],
+    [507, "El Mariachi", "El mariachi", "Film", 1992, 81, "Action, Krimi, Thriller", "Robert Rodriguez", 6.8, null, null],
+    [508, "Six Feet Under - Gestorben wird immer", "Six Feet Under", "Fernsehserie", 2001, 60, "Komödie, Drama", null, 8.7, null, null],
+    [509, "Band of Brothers: Wir waren wie Brüder", "Band of Brothers", "Miniserie", 2001, 60, "Action, Drama, Geschichte, Kriegsfilm", null, 9.4, null, null],
+    [510, "Donnie Brasco", "Donnie Brasco", "Film", 1997, 127, "Biografie, Krimi, Drama", "Mike Newell", 7.7, null, null],
+    [511, "Wallace & Gromit - Auf der Jagd nach dem Riesenkaninchen", "The Curse of the Were-Rabbit", "Film", 2005, 85, "Animation, Abenteuer, Komödie, Familienfilm, Fantasy, Mystery, Science-Fiction", "Steve Box, Nick Park", 7.5, null, null],
+    [512, "Creed: Rocky's Legacy", "Creed", "Film", 2015, 133, "Action, Drama, Sportfilm", "Ryan Coogler", 7.6, null, null],
+    [513, "Mut zur Wahrheit", "Courage Under Fire", "Film", 1996, 116, "Action, Drama, Mystery, Thriller, Kriegsfilm", "Edward Zwick", 6.6, null, null],
+    [514, "Hail, Caesar!", "Hail, Caesar!", "Film", 2016, 106, "Komödie, Drama, Mystery", "Ethan Coen, Joel Coen", 6.3, null, null],
+    [515, "Blood Diamond", "Blood Diamond", "Film", 2006, 143, "Abenteuer, Drama, Thriller", "Edward Zwick", 8.0, null, null],
+    [516, "Das Beste kommt zum Schluss", "The Bucket List", "Film", 2007, 97, "Abenteuer, Komödie, Drama", "Rob Reiner", 7.3, null, null],
+    [517, "Der Pianist", "The Pianist", "Film", 2002, 150, "Biografie, Drama, Musikfilm, Kriegsfilm", "Roman Polanski", 8.5, null, null],
+    [518, "Das Boot", "Das Boot", "Film", 1981, 149, "Drama, Kriegsfilm", "Wolfgang Petersen", 8.4, null, null],
+    [519, "Der unsichtbare Dritte", "North by Northwest", "Film", 1959, 136, "Abenteuer, Drama, Mystery, Thriller", "Alfred Hitchcock", 8.3, null, null],
+    [520, "Erbarmungslos", "Unforgiven", "Film", 1992, 130, "Drama, Western", "Clint Eastwood", 8.2, null, null],
+    [521, "Die Brücke am Kwai", "The Bridge on the River Kwai", "Film", 1957, 161, "Abenteuer, Drama, Kriegsfilm", "David Lean", 8.1, null, null],
+    [522, "In ihren Augen", "El secreto de sus ojos", "Film", 2009, 129, "Drama, Mystery, Liebesfilm, Thriller", "Juan José Campanella", 8.2, null, null],
+    [523, "The Newsroom", "The Newsroom", "Fernsehserie", 2012, 60, "Drama", null, 8.6, null, null],
+    [524, "True Detective", "True Detective", "Fernsehserie", 2014, 60, "Krimi, Drama, Mystery, Thriller", null, 8.9, null, null],
+    [525, "Rom", "Rome", "Fernsehserie", 2005, 60, "Action, Drama, Liebesfilm, Kriegsfilm", null, 8.7, null, null],
+    [526, "Kick-Ass 2", "Kick-Ass 2", "Film", 2013, 103, "Action, Komödie, Krimi, Drama, Thriller", "Jeff Wadlow", 6.5, null, null],
+    [527, "300: Rise of an Empire", "300: Rise of an Empire", "Film", 2014, 102, "Action, Drama", "Noam Murro", 6.2, null, null],
+    [528, "Angst und Schrecken in Las Vegas", "Fear and Loathing in Las Vegas", "Film", 1998, 118, "Abenteuer, Komödie, Drama", "Terry Gilliam", 7.5, null, null],
+    [529, "Warrior", "Warrior", "Film", 2011, 140, "Action, Drama, Sportfilm", "Gavin O'Connor", 8.1, null, null],
+    [530, "The Untouchables: Die Unbestechlichen", "The Untouchables", "Film", 1987, 119, "Krimi, Drama, Thriller", "Brian De Palma", 7.8, null, null],
+    [531, "Die Kinder von Paris", "La rafle", "Film", 2010, 115, "Drama, Geschichte, Kriegsfilm", "Rose Bosch", 7.1, null, null],
+    [532, "Der Pate", "The Godfather", "Film", 1972, 175, "Krimi, Drama", "Francis Ford Coppola", 9.2, null, null],
+    [533, "Der Pate 2", "The Godfather Part II", "Film", 1974, 202, "Krimi, Drama", "Francis Ford Coppola", 9.0, null, null],
+    [534, "Angriffsziel Moskau", "Fail Safe", "Film", 1964, 112, "Drama, Thriller", "Sidney Lumet", 8.1, null, null],
+    [535, "Alien: Das unheimliche Wesen aus einer fremden Welt", "Alien", "Film", 1979, 117, "Horror, Science-Fiction", "Ridley Scott", 8.5, null, null],
+    [536, "Der Clou", "The Sting", "Film", 1973, 129, "Komödie, Krimi, Drama", "George Roy Hill", 8.2, null, null],
+    [537, "Der Untergang", "Der Untergang", "Film", 2004, 156, "Biografie, Drama, Geschichte, Kriegsfilm", "Oliver Hirschbiegel", 8.2, null, null],
+    [538, "Happiness", "Happiness", "Film", 1998, 134, "Komödie, Drama", "Todd Solondz", 7.7, null, null],
+    [539, "The Road", "The Road", "Film", 2009, 111, "Drama, Thriller", "John Hillcoat", 7.2, null, null],
+    [540, "Formicula", "Them!", "Film", 1954, 94, "Horror, Science-Fiction", "Gordon Douglas", 7.2, null, null],
+    [541, "Die Frau die singt - Incendies", "Incendies", "Film", 2010, 131, "Drama, Mystery, Kriegsfilm", "Denis Villeneuve", 8.3, null, null],
+    [542, "Die sieben Samurai", "Shichinin no samurai", "Film", 1954, 207, "Action, Drama", "Akira Kurosawa", 8.6, null, null],
+    [543, "Seinfeld", "Seinfeld", "Fernsehserie", 1989, 22, "Komödie", null, 8.9, null, null],
+    [544, "Doctor Who", "Doctor Who", "Fernsehserie", 2005, 45, "Abenteuer, Drama, Science-Fiction", null, 8.5, null, null],
+    [545, "Family Guy", "Family Guy", "Fernsehserie", 1999, 22, "Animation, Komödie", null, 8.1, null, null],
+    [546, "From Dusk Till Dawn", "From Dusk Till Dawn", "Film", 1996, 108, "Action, Krimi, Horror", "Robert Rodriguez", 7.2, null, null],
+    [547, "Her", "Her", "Film", 2013, 126, "Drama, Liebesfilm, Science-Fiction", "Spike Jonze", 8.0, null, null],
+    [548, "Blues Brothers", "The Blues Brothers", "Film", 1980, 133, "Abenteuer, Komödie, Krimi, Musikfilm, Musical", "John Landis", 7.9, null, null],
+    [549, "Bronson", "Bronson", "Film", 2008, 92, "Action, Krimi, Drama", "Nicolas Winding Refn", 7.0, null, null],
+    [550, "Ein Fisch namens Wanda", "A Fish Called Wanda", "Film", 1988, 108, "Komödie, Krimi", "Charles Crichton, John Cleese", 7.5, null, null],
+    [551, "Into the Wild", "Into the Wild", "Film", 2007, 148, "Abenteuer, Biografie, Drama", "Sean Penn", 8.0, null, null],
+    [552, "Entourage", "Entourage", "Film", 2015, 104, "Komödie, Drama", "Doug Ellin", 6.5, null, null],
+    [553, "Hacksaw Ridge - Die Entscheidung", "Hacksaw Ridge", "Film", 2016, 139, "Biografie, Drama, Geschichte, Kriegsfilm", "Mel Gibson", 8.1, null, null],
+    [554, "Fences", "Fences", "Film", 2016, 139, "Drama", "Denzel Washington", 7.2, null, null],
+    [555, "Hell or High Water", "Hell or High Water", "Film", 2016, 102, "Krimi, Drama, Thriller, Western", "David Mackenzie", 7.6, null, null],
+    [556, "Lion: Der lange Weg nach Hause", "Lion", "Film", 2016, 118, "Biografie, Drama", "Garth Davis", 8.0, null, null],
+    [557, "Hidden Figuren: Unerkannte Heldinnen", "Hidden Figures", "Film", 2016, 127, "Biografie, Drama, Geschichte", "Theodore Melfi", 7.8, null, null],
+    [558, "Manchester by the Sea", "Manchester by the Sea", "Film", 2016, 137, "Drama", "Kenneth Lonergan", 7.8, null, null],
+    [559, "Spartacus", "Spartacus", "Film", 1960, 197, "Abenteuer, Biografie, Drama, Geschichte, Kriegsfilm", "Stanley Kubrick, Anthony Mann", 7.9, null, null],
+    [560, "Halloween - Die Nacht des Grauens", "Halloween", "Film", 1978, 91, "Horror, Thriller", "John Carpenter", 7.7, null, null],
+    [561, "Wayne's World 2", "Wayne's World 2", "Film", 1993, 95, "Komödie, Musikfilm", "Stephen Surjik", 6.2, null, null],
+    [562, "Stranger Things", "Stranger Things", "Fernsehserie", 2016, 60, "Drama, Fantasy, Horror, Mystery, Science-Fiction, Thriller", null, 8.6, null, null],
+    [563, "Die letzte Versuchung Christi", "The Last Temptation of Christ", "Film", 1988, 164, "Drama", "Martin Scorsese", 7.5, null, null],
+    [564, "O.J. Simpson - Eine amerikanische Saga", "O.J.: Made in America", "Film", 2016, 467, "Dokumentarfilm, Biografie, Krimi, Geschichte, Sportfilm", "Ezra Edelman", 8.9, null, null],
+    [565, "Mystic River", "Mystic River", "Film", 2003, 138, "Krimi, Drama, Mystery, Thriller", "Clint Eastwood", 7.9, null, null],
+    [566, "The Tree of Life", "The Tree of Life", "Film", 2011, 139, "Drama, Fantasy", "Terrence Malick", 6.8, null, null],
+    [567, "Westworld", "Westworld", "Fernsehserie", 2016, 60, "Drama, Mystery, Science-Fiction", null, 8.4, null, null],
+    [568, "Fitzcarraldo", "Fitzcarraldo", "Film", 1982, 158, "Abenteuer, Drama, Musikfilm", "Werner Herzog", 7.9, null, null],
+    [569, "Grenzpunkt Null", "Vanishing Point", "Film", 1971, 99, "Action, Krimi, Thriller", "Richard C. Sarafian", 7.2, null, null],
+    [570, "The Help", "The Help", "Film", 2011, 146, "Drama", "Tate Taylor", 8.1, null, null],
+    [571, "Little Nicky - Satan Junior", "Little Nicky", "Film", 2000, 90, "Komödie, Fantasy", "Steven Brill", 5.3, null, null],
+    [572, "M: Eine Stadt sucht einen Mörder", "M - Eine Stadt sucht einen Mörder", "Film", 1931, 117, "Krimi, Mystery, Thriller", "Fritz Lang", 8.3, null, null],
+    [573, "Die Wonder Boys", "Wonder Boys", "Film", 2000, 107, "Komödie, Drama", "Curtis Hanson", 7.2, null, null],
+    [574, "Napoleon Dynamite", "Napoleon Dynamite", "Film", 2004, 96, "Komödie", "Jared Hess", 7.0, null, null],
+    [575, "Verdammt in alle Ewigkeit", "From Here to Eternity", "Film", 1953, 118, "Drama, Liebesfilm, Kriegsfilm", "Fred Zinnemann", 7.6, null, null],
+    [576, "The Artist", "The Artist", "Film", 2011, 100, "Komödie, Drama, Liebesfilm", "Michel Hazanavicius", 7.8, null, null],
+    [577, "Tödliches Kommando - The Hurt Locker", "The Hurt Locker", "Film", 2008, 131, "Drama, Thriller, Kriegsfilm", "Kathryn Bigelow", 7.5, null, null],
+    [578, "Der mit dem Wolf tanzt", "Dances with Wolves", "Film", 1990, 223, "Abenteuer, Drama, Western", "Kevin Costner", 8.0, null, null],
+    [579, "Der fremde Sohn", "Changeling", "Film", 2008, 141, "Biografie, Krimi, Drama, Geschichte, Mystery, Thriller", "Clint Eastwood", 7.7, null, null],
+    [580, "Nightcrawler - Jede Nacht hat ihren Preis", "Nightcrawler", "Film", 2014, 117, "Krimi, Drama, Thriller", "Dan Gilroy", 7.8, null, null],
+    [581, "Die Geschichte einer Jugend", "This Boy's Life", "Film", 1993, 115, "Biografie, Drama", "Michael Caton-Jones", 7.3, null, null],
+    [582, "Taboo", "Taboo", "Fernsehserie", 2017, 60, "Drama, Mystery, Thriller", null, 8.3, null, null],
+    [583, "True Grit - Vergeltung", "True Grit", "Film", 2010, 110, "Drama, Western", "Ethan Coen, Joel Coen", 7.6, null, null],
+    [584, "Vergiss mein nicht", "Eternal Sunshine of the Spotless Mind", "Film", 2004, 108, "Drama, Liebesfilm, Science-Fiction", "Michel Gondry", 8.3, null, null],
+    [585, "The Descendants - Familie und andere Angelegenheiten", "The Descendants", "Film", 2011, 115, "Komödie, Drama", "Alexander Payne", 7.3, null, null],
+    [586, "Captain Phillips", "Captain Phillips", "Film", 2013, 134, "Action, Biografie, Krimi, Drama, Thriller", "Paul Greengrass", 7.8, null, null],
+    [587, "Boyhood", "Boyhood", "Film", 2014, 165, "Drama", "Richard Linklater", 7.9, null, null],
+    [588, "Foxcatcher", "Foxcatcher", "Film", 2014, 134, "Biografie, Drama, Geschichte, Sportfilm", "Bennett Miller", 7.0, null, null],
+    [589, "Trumbo", "Trumbo", "Film", 2015, 124, "Biografie, Drama", "Jay Roach", 7.4, null, null],
+    [590, "Cinema Paradiso", "Nuovo Cinema Paradiso", "Film", 1988, 174, "Drama, Liebesfilm", "Giuseppe Tornatore", 8.5, null, null],
+    [591, "WarGames: Kriegsspiele", "WarGames", "Film", 1983, 114, "Action, Drama, Science-Fiction, Thriller", "John Badham", 7.1, null, null],
+    [592, "Spione wie wir", "Spies Like Us", "Film", 1985, 102, "Abenteuer, Komödie", "John Landis", 6.4, null, null],
+    [593, "Thirteen Days", "Thirteen Days", "Film", 2000, 145, "Drama, Geschichte, Thriller", "Roger Donaldson", 7.3, null, null],
+    [594, "Red Heat", "Red Heat", "Film", 1988, 104, "Action, Komödie, Krimi, Thriller", "Walter Hill", 6.1, null, null],
+    [595, "Mississippi Burning - Die Wurzel des Hasses", "Mississippi Burning", "Film", 1988, 128, "Krimi, Drama, Mystery, Thriller", "Alan Parker", 7.8, null, null],
+    [596, "Get Out", "Get Out", "Film", 2017, 104, "Horror, Mystery, Thriller", "Jordan Peele", 7.8, null, null],
+    [597, "Mulholland Drive", "Mulholland Dr.", "Film", 2001, 147, "Drama, Mystery, Thriller", "David Lynch", 7.9, null, null],
+    [598, "Tell", "Tell", "Kurzfilm", 2012, 33, "Kurzfilm, Horror, Thriller", "Ryan Connolly", 6.9, null, null],
+    [599, "Blade Runner 2049", "Blade Runner 2049", "Film", 2017, 164, "Action, Drama, Mystery, Science-Fiction, Thriller", "Denis Villeneuve", 8.0, null, null],
+    [600, "Persona", "Persona", "Film", 1966, 84, "Drama, Thriller", "Ingmar Bergman", 8.0, null, null],
+    [601, "The Brink: Die Welt am Abgrund", "The Brink", "Fernsehserie", 2015, 30, "Komödie", null, 7.7, null, null],
+    [602, "Die dunkelste Stunde", "Darkest Hour", "Film", 2017, 125, "Biografie, Drama, Geschichte, Kriegsfilm", "Joe Wright", 7.4, null, null],
+    [603, "The Wild Bunch - Sie kannten kein Gesetz", "The Wild Bunch", "Film", 1969, 145, "Action, Abenteuer, Drama, Western", "Sam Peckinpah", 7.9, null, null],
+    [604, "Gattaca", "Gattaca", "Film", 1997, 106, "Drama, Science-Fiction, Thriller", "Andrew Niccol", 7.7, null, null],
+    [605, "American Crime Story", "American Crime Story", "Fernsehserie", 2016, 42, "Biografie, Krimi, Drama, Geschichte", null, 8.4, null, null],
+    [606, "Strange Days", "Strange Days", "Film", 1995, 145, "Krimi, Drama, Science-Fiction, Thriller", "Kathryn Bigelow", 7.2, null, null],
+    [607, "Caché", "Caché", "Film", 2005, 117, "Drama, Mystery, Thriller", "Michael Haneke", 7.3, null, null],
+    [608, "Das weiße Band - Eine deutsche Kindergeschichte", "Das weiße Band - Eine deutsche Kindergeschichte", "Film", 2009, 144, "Drama, Mystery, Thriller", "Michael Haneke", 7.8, null, null],
+    [609, "Begabt - Die Gleichung eines Lebens", "Gifted", "Film", 2017, 101, "Drama", "Marc Webb", 7.6, null, null],
+    [610, "Letters from Iwo Jima", "Letters from Iwo Jima", "Film", 2006, 141, "Action, Abenteuer, Drama, Geschichte, Kriegsfilm", "Clint Eastwood", 7.8, null, null],
+    [611, "Antichrist", "Antichrist", "Film", 2009, 108, "Drama, Horror, Thriller", "Lars von Trier", 6.5, null, null],
+    [612, "Gilbert Grape - Irgendwo in Iowa", "What's Eating Gilbert Grape", "Film", 1993, 118, "Drama", "Lasse Hallström", 7.7, null, null],
+    [613, "Christopher Robin", "Christopher Robin", "Film", 2018, 104, "Abenteuer, Komödie, Drama, Familienfilm, Fantasy, Musical", "Marc Forster", 7.2, null, null],
+    [614, "Braindead", "Braindead", "Film", 1992, 94, "Komödie, Fantasy, Horror, Thriller", "Peter Jackson", 7.5, null, null],
+    [615, "Be Cool - Jeder ist auf der Suche nach dem nächsten großen Hit", "Be Cool", "Film", 2005, 119, "Komödie, Krimi, Musikfilm", "F. Gary Gray", 5.6, null, null],
+    [616, "Montana Sacra - Der heilige Berg", "La montaña sagrada", "Film", 1973, 114, "Abenteuer, Drama, Fantasy", "Alejandro Jodorowsky", 7.7, null, null],
+    [617, "El Topo", "El Topo", "Film", 1970, 125, "Drama, Western", "Alejandro Jodorowsky", 7.2, null, null],
+    [618, "The Dance of Reality", "La danza de la realidad", "Film", 2013, 133, "Biografie, Drama, Fantasy", "Alejandro Jodorowsky", 7.4, null, null],
+    [619, "Santa Sangre", "Santa Sangre", "Film", 1989, 123, "Drama, Horror, Thriller", "Alejandro Jodorowsky", 7.5, null, null],
+    [620, "Ritual - Gefährliche Obsession", "Ritual - Una storia psicomagica", "Film", 2013, 90, "Thriller", "Giulia Brazzale, Luca Immesi", 4.9, null, null],
+    [621, "Bad Taste", "Bad Taste", "Film", 1987, 91, "Komödie, Horror, Science-Fiction", "Peter Jackson", 6.5, null, null],
+    [622, "Die Farbe des Horizonts", "Adrift", "Film", 2018, 96, "Action, Abenteuer, Biografie, Drama, Liebesfilm, Thriller", "Baltasar Kormákur", 6.6, null, null],
+    [623, "Die Unfassbaren - Now You See Me", "Now You See Me", "Film", 2013, 115, "Krimi, Mystery, Thriller", "Louis Leterrier", 7.2, null, null],
+    [624, "Buried - Lebend begraben", "Buried", "Film", 2010, 95, "Drama, Mystery, Thriller", "Rodrigo Cortés", 7.0, null, null],
+    [625, "Dark Star - Finsterer Stern", "Dark Star", "Film", 1974, 83, "Komödie, Science-Fiction", "John Carpenter", 6.1, null, null],
+    [626, "The Mule", "The Mule", "Film", 2018, 116, "Krimi, Drama, Thriller", "Clint Eastwood", 7.0, null, null],
+    [627, "Jimi Hendrix Electric Church", "Jimi Hendrix Electric Church", "Fernsehfilm", 2015, 89, "Dokumentarfilm, Musikfilm", "John McDermott", 7.5, null, null],
+    [628, "Sicario", "Sicario", "Film", 2015, 121, "Action, Krimi, Drama, Mystery, Thriller", "Denis Villeneuve", 7.7, null, null],
+    [629, "A.I.: Künstliche Intelligenz", "A.I. Artificial Intelligence", "Film", 2001, 146, "Abenteuer, Drama, Science-Fiction", "Steven Spielberg", 7.2, null, null],
+    [630, "Das Ende ist erst der Anfang", "Les premiers les derniers", "Film", 2016, 98, "Komödie, Krimi, Liebesfilm", "Bouli Lanners", 6.3, null, null],
+    [631, "Falsches Spiel mit Roger Rabbit", "Who Framed Roger Rabbit", "Film", 1988, 104, "Animation, Abenteuer, Komödie, Krimi, Familienfilm, Fantasy, Mystery", "Robert Zemeckis", 7.7, null, null],
+    [632, "Vikings", "Vikings", "Fernsehserie", 2013, 45, "Action, Abenteuer, Drama, Geschichte, Liebesfilm, Kriegsfilm", null, 8.5, null, null],
+    [633, "Babel", "Babel", "Film", 2006, 143, "Drama", "Alejandro G. Iñárritu", 7.5, null, null],
+    [634, "Beasts of No Nation", "Beasts of No Nation", "Film", 2015, 137, "Drama, Kriegsfilm", "Cary Joji Fukunaga", 7.7, null, null],
+    [635, "American Gangster", "American Gangster", "Film", 2007, 157, "Biografie, Krimi, Drama", "Ridley Scott", 7.8, null, null],
+    [636, "Der Ghostwriter", "The Ghost Writer", "Film", 2010, 128, "Krimi, Drama, Mystery, Thriller", "Roman Polanski", 7.2, null, null],
+    [637, "The Raid 2", "Serbuan maut 2: Berandal", "Film", 2014, 150, "Action, Krimi, Thriller", "Gareth Evans", 7.9, null, null],
+    [638, "Ninja - Revenge Will Rise", "Ninja", "Film", 2009, 86, "Action, Thriller", "Isaac Florentine", 5.5, null, null],
+    [639, "Undisputed II: Last Man Standing", "Undisputed II: Last Man Standing", "Video", 2006, 98, "Action, Krimi, Drama, Sportfilm", "Isaac Florentine", 7.0, null, null],
+    [640, "Thirteen Conversations About One Thing", "Thirteen Conversations About One Thing", "Film", 2001, 104, "Drama", "Jill Sprecher", 7.0, null, null],
+    [641, "Das Messer am Ufer", "River's Edge", "Film", 1986, 99, "Krimi, Drama", "Tim Hunter", 6.8, null, null],
+    [642, "Keanu", "Keanu", "Film", 2016, 100, "Action, Komödie, Krimi", "Peter Atencio", 6.2, null, null],
+    [643, "Drive", "Drive", "Film", 2011, 100, "Action, Drama", "Nicolas Winding Refn", 7.8, null, null],
+    [644, "Eine Wahnsinnsfamilie", "Parenthood", "Film", 1989, 124, "Komödie, Drama", "Ron Howard", 7.1, null, null],
+    [645, "Bram Stokers Dracula", "Bram Stoker's Dracula", "Film", 1992, 128, "Fantasy, Horror, Liebesfilm", "Francis Ford Coppola", 7.4, null, null],
+    [646, "Street Kings", "Street Kings", "Film", 2008, 109, "Action, Krimi, Thriller", "David Ayer", 6.8, null, null],
+    [647, "Furcht und Begierde", "Fear and Desire", "Film", 1952, 62, "Drama, Thriller, Kriegsfilm", "Stanley Kubrick", 5.3, null, null],
+    [648, "Der Tiger von New York", "Killer's Kiss", "Film", 1955, 67, "Krimi, Drama, Film Noir, Thriller", "Stanley Kubrick", 6.5, null, null],
+    [649, "Wege zum Ruhm", "Paths of Glory", "Film", 1957, 88, "Drama, Kriegsfilm", "Stanley Kubrick", 8.4, null, null],
+    [650, "Der letzte König von Schottland - In den Fängen der Macht", "The Last King of Scotland", "Film", 2006, 123, "Biografie, Drama, Geschichte, Thriller", "Kevin Macdonald", 7.6, null, null],
+    [651, "Die Insel", "The Island", "Film", 2005, 136, "Action, Science-Fiction, Thriller", "Michael Bay", 6.8, null, null],
+    [652, "Alles eine Frage der Zeit", "About Time", "Film", 2013, 123, "Komödie, Drama, Fantasy, Liebesfilm, Science-Fiction", "Richard Curtis", 7.8, null, null],
+    [653, "Watchmen", "Watchmen", "Miniserie", 2019, 60, "Krimi, Drama, Mystery, Science-Fiction", null, 8.2, null, null],
+    [654, "Pokémon: Meisterdetektiv Pikachu", "Pokémon: Detective Pikachu", "Film", 2019, 104, "Abenteuer, Komödie, Familienfilm, Mystery, Science-Fiction", "Rob Letterman", 6.5, null, null],
+    [655, "Faustrecht der Freiheit", "Faustrecht der Freiheit", "Film", 1975, 124, "Krimi, Drama, Liebesfilm", "Rainer Werner Fassbinder", 7.6, null, null],
+    [656, "Einer mit Herz", "One from the Heart", "Film", 1981, 107, "Drama, Musical, Liebesfilm", "Francis Ford Coppola", 6.5, null, null],
+    [657, "Ed Wood", "Ed Wood", "Film", 1994, 127, "Biografie, Komödie, Drama", "Tim Burton", 7.8, null, null],
+    [658, "King George - Ein Königreich für mehr Verstand", "The Madness of King George", "Film", 1994, 110, "Biografie, Komödie, Drama, Geschichte", "Nicholas Hytner", 7.2, null, null],
+    [659, "Bullets Over Broadway", "Bullets Over Broadway", "Film", 1994, 98, "Komödie, Krimi", "Woody Allen", 7.4, null, null],
+    [660, "Interview mit einem Vampir", "Interview with the Vampire: The Vampire Chronicles", "Film", 1994, 123, "Drama, Fantasy, Horror", "Neil Jordan", 7.5, null, null],
+    [661, "Drei Farben - Rot", "Trois couleurs: Rouge", "Film", 1994, 99, "Drama, Mystery, Liebesfilm", "Krzysztof Kieslowski", 8.1, null, null],
+    [662, "Hass", "La haine", "Film", 1995, 98, "Krimi, Drama", "Mathieu Kassovitz", 8.1, null, null],
+    [663, "Zodiac - Die Spur des Killers", "Zodiac", "Film", 2007, 157, "Krimi, Drama, Mystery, Thriller", "David Fincher", 7.7, null, null],
+    [664, "Chinatown", "Chinatown", "Film", 1974, 130, "Drama, Mystery, Thriller", "Roman Polanski", 8.1, null, null],
+    [665, "Following", "Following", "Film", 1998, 69, "Krimi, Mystery, Thriller", "Christopher Nolan", 7.4, null, null],
+    [666, "My Fair Lady", "My Fair Lady", "Film", 1964, 170, "Drama, Familienfilm, Musical, Liebesfilm", "George Cukor", 7.7, null, null],
+    [667, "Mann beißt Hund", "C'est arrivé près de chez vous", "Film", 1992, 95, "Komödie, Krimi, Drama", "Rémy Belvaux, André Bonzel, Benoît Poelvoorde", 7.4, null, null],
+    [668, "Sein oder Nichtsein", "To Be or Not to Be", "Film", 1942, 99, "Komödie, Liebesfilm, Kriegsfilm", "Ernst Lubitsch", 8.1, null, null],
+    [669, "Kontroll - Jeder muss bezahlen", "Kontroll", "Film", 2003, 111, "Komödie, Krimi, Drama, Liebesfilm, Thriller", "Nimród Antal", 7.6, null, null],
+    [670, "Magnolia", "Magnolia", "Film", 1999, 188, "Drama", "Paul Thomas Anderson", 8.0, null, null],
+    [671, "Is' was, Doc?", "What's Up, Doc?", "Film", 1972, 94, "Komödie, Liebesfilm", "Peter Bogdanovich", 7.7, null, null],
+    [672, "Steel Dawn - Die Fährte des Siegers", "Steel Dawn", "Film", 1987, 101, "Action, Abenteuer, Science-Fiction", "Lance Hool", 5.1, null, null],
+    [673, "Das Geheimnis des Marcellino", "Marcelino pan y vino", "Film", 1955, 85, "Drama", "Ladislao Vajda", 7.1, null, null],
+    [674, "Das Urteil von Nürnberg", "Judgment at Nuremberg", "Film", 1961, 179, "Drama, Geschichte, Kriegsfilm", "Stanley Kramer", 8.3, null, null],
+    [675, "Die Jagd", "Jagten", "Film", 2012, 115, "Drama", "Thomas Vinterberg", 8.3, null, null],
+    [676, "Höllenfahrt nach Santa Fé", "Stagecoach", "Film", 1939, 96, "Abenteuer, Drama, Western", "John Ford", 7.8, null, null],
+    [677, "No Turning Back", "Locke", "Film", 2013, 85, "Drama", "Steven Knight", 7.1, null, null],
+    [678, "Ichi the Killer", "Koroshiya 1", "Film", 2001, 129, "Action, Krimi, Drama", "Takashi Miike", 6.9, null, null],
+    [679, "Audition", "Ôdishon", "Film", 1999, 115, "Drama, Horror, Mystery", "Takashi Miike", 7.1, null, null],
+    [680, "13 Assassins", "Jûsannin no shikaku", "Film", 2010, 141, "Action, Abenteuer, Drama", "Takashi Miike", 7.5, null, null],
+    [681, "Woodstock", "Woodstock", "Film", 1970, 169, "Dokumentarfilm, Geschichte, Musikfilm", "Michael Wadleigh", 8.1, null, null],
+    [682, "Holiday - Sonne, Schmerz und Sinnlichkeit", "Holiday", "Film", 2018, 93, "Krimi, Drama", "Isabella Eklöf", 5.7, null, null],
+    [683, "Und dann gab es keines mehr", "And Then There Were None", "Miniserie", 2015, 57, "Krimi, Drama, Mystery, Thriller", null, 7.8, null, null],
+    [684, "Leviathan", "Leviathan", "Film", 2014, 140, "Krimi, Drama", "Andrey Zvyagintsev", 7.6, null, null],
+    [685, "Dancer in the Dark", "Dancer in the Dark", "Film", 2000, 135, "Krimi, Drama, Musical", "Lars von Trier", 7.9, null, null],
+    [686, "Jojo Rabbit", "Jojo Rabbit", "Film", 2019, 108, "Komödie, Drama, Kriegsfilm", "Taika Waititi", 7.9, null, null],
+    [687, "Die Blechtrommel", "Die Blechtrommel", "Film", 1979, 142, "Drama, Kriegsfilm", "Volker Schlöndorff", 7.4, null, null],
+    [688, "Nosferatu: Phantom der Nacht", "Nosferatu: Phantom der Nacht", "Film", 1979, 107, "Drama, Horror", "Werner Herzog", 7.4, null, null],
+    [689, "Die Feuerzangenbowle", "Die Feuerzangenbowle", "Film", 1944, 97, "Komödie, Familienfilm", "Helmut Weiss", 7.7, null, null],
+    [690, "Metropolis", "Metropolis", "Film", 1927, 153, "Drama, Science-Fiction", "Fritz Lang", 8.3, null, null],
+    [691, "Nachtblende", "L'important c'est d'aimer", "Film", 1975, 109, "Drama, Liebesfilm", "Andrzej Zulawski", 7.0, null, null],
+    [692, "Supermarkt", "Supermarkt", "Film", 1974, 84, "Action, Krimi, Drama", "Roland Klick", 6.8, null, null],
+    [693, "Angst essen Seele auf", "Angst essen Seele auf", "Film", 1974, 93, "Drama, Liebesfilm", "Rainer Werner Fassbinder", 8.0, null, null],
+    [694, "Rote Sonne", "Rote Sonne", "Film", 1970, 89, "Krimi", "Rudolf Thome", 5.9, null, null],
+    [695, "Adams Äpfel", "Adams æbler", "Film", 2005, 94, "Komödie, Krimi, Drama", "Anders Thomas Jensen", 7.7, null, null],
+    [696, "Serpico", "Serpico", "Film", 1973, 130, "Biografie, Krimi, Drama, Thriller", "Sidney Lumet", 7.7, null, null],
+    [697, "Der Einsatz", "The Recruit", "Film", 2003, 115, "Action, Thriller", "Roger Donaldson", 6.6, null, null],
+    [698, "Fleabag", "Fleabag", "Fernsehserie", 2016, 30, "Komödie, Drama", null, 8.7, null, null],
+    [699, "Juliet, Naked", "Juliet, Naked", "Film", 2018, 97, "Komödie, Drama, Musikfilm, Liebesfilm", "Jesse Peretz", 6.6, null, null],
+    [700, "Butterfly Effect", "The Butterfly Effect", "Film", 2004, 113, "Drama, Science-Fiction, Thriller", "Eric Bress, J. Mackye Gruber", 7.6, null, null],
+    [701, "Good Boys - Nix für kleine Jungs", "Good Boys", "Film", 2019, 90, "Abenteuer, Komödie", "Gene Stupnitsky", 6.7, null, null],
+    [702, "Skyfall", "Skyfall", "Film", 2012, 143, "Action, Abenteuer, Thriller", "Sam Mendes", 7.8, null, null],
+    [703, "Tomorrow - Die Welt ist voller Lösungen", "Demain", "Film", 2015, 118, "Dokumentarfilm", "Cyril Dion, Mélanie Laurent", 7.9, null, null],
+    [704, "Geh und sieh", "Idi i smotri", "Film", 1985, 142, "Drama, Thriller, Kriegsfilm", "Elem Klimov", 8.3, null, null],
+    [705, "O Brother, Where Art Thou? - Eine Mississippi-Odyssee", "O Brother, Where Art Thou?", "Film", 2000, 107, "Abenteuer, Komödie, Krimi, Drama, Musikfilm", "Joel Coen, Ethan Coen", 7.7, null, null],
+    [706, "Gefährten", "War Horse", "Film", 2011, 146, "Abenteuer, Drama, Kriegsfilm", "Steven Spielberg", 7.2, null, null],
+    [707, "La Flor", "La flor", "Film", 2018, 808, "Drama, Fantasy, Musical, Mystery, Liebesfilm, Thriller", "Mariano Llinás", 7.3, null, null],
+    [708, "Burning", "Beoning", "Film", 2018, 148, "Drama, Mystery, Thriller", "Lee Chang-dong", 7.4, null, null],
+    [709, "A Beautiful Day", "You Were Never Really Here", "Film", 2017, 89, "Krimi, Drama, Thriller", "Lynne Ramsay", 6.7, null, null],
+    [710, "Dangerous Moonlight", "Dangerous Moonlight", "Film", 1941, 94, "Drama, Liebesfilm, Kriegsfilm", "Brian Desmond Hurst", 6.2, null, null],
+    [711, "Historias extraordinarias", "Historias extraordinarias", "Film", 2008, 245, "Drama, Mystery", "Mariano Llinás", 7.8, null, null],
+    [712, "Little Women", "Little Women", "Film", 2019, 135, "Drama, Liebesfilm", "Greta Gerwig", 7.8, null, null],
+    [713, "Memories of Murder", "Salinui chueok", "Film", 2003, 131, "Krimi, Drama, Mystery, Thriller", "Bong Joon Ho", 8.1, null, null],
+    [714, "Irreversibel", "Irréversible", "Film", 2002, 97, "Krimi, Drama, Mystery, Thriller", "Gaspar Noé", 7.3, null, null],
+    [715, "Das große Fressen", "La grande bouffe", "Film", 1973, 130, "Komödie, Drama", "Marco Ferreri", 7.1, null, null],
+    [716, "Last Days", "Last Days", "Film", 2005, 97, "Drama, Musikfilm", "Gus Van Sant", 5.7, null, null],
+    [717, "Gewalt und Leidenschaft", "Gruppo di famiglia in un interno", "Film", 1974, 121, "Drama, Liebesfilm", "Luchino Visconti", 7.4, null, null],
+    [718, "Das Fenster zum Hof", "Rear Window", "Film", 1954, 112, "Drama, Mystery, Thriller", "Alfred Hitchcock", 8.5, null, null],
+    [719, "Self Made - Das Leben von Madam C.J. Walker", "Self Made: Inspired by the Life of Madam C.J. Walker", "Miniserie", 2020, 48, "Biografie, Drama, Geschichte", null, 7.3, null, null],
+    [720, "Zelig", "Zelig", "Film", 1983, 79, "Komödie", "Woody Allen", 7.6, null, null],
+    [721, "Der große Gatsby", "The Great Gatsby", "Film", 2013, 143, "Drama, Liebesfilm", "Baz Luhrmann", 7.2, null, null],
+    [722, "Blue Velvet", "Blue Velvet", "Film", 1986, 120, "Krimi, Drama, Mystery, Thriller", "David Lynch", 7.7, null, null],
+    [723, "Only Lovers Left Alive", "Only Lovers Left Alive", "Film", 2013, 123, "Komödie, Drama, Fantasy, Horror, Liebesfilm", "Jim Jarmusch", 7.2, null, null],
+    [724, "Broken Flowers", "Broken Flowers", "Film", 2005, 106, "Komödie, Drama, Mystery, Liebesfilm", "Jim Jarmusch", 7.1, null, null],
+    [725, "Stranger than Paradise", "Stranger Than Paradise", "Film", 1984, 89, "Komödie, Drama", "Jim Jarmusch", 7.4, null, null],
+    [726, "Gefährliche Brandung", "Point Break", "Film", 1991, 122, "Action, Krimi, Thriller", "Kathryn Bigelow", 7.3, null, null],
+    [727, "Mindhunter", "Mindhunter", "Fernsehserie", 2017, 60, "Krimi, Drama, Mystery, Thriller", null, 8.6, null, null],
+    [728, "Network", "Network", "Film", 1976, 121, "Drama", "Sidney Lumet", 8.1, null, null],
+    [729, "Twister", "Twister", "Film", 1996, 113, "Action, Abenteuer, Thriller", "Jan de Bont", 6.6, null, null],
+    [730, "Rockfish", "Rockfish", "Kurzfilm", 2003, 9, "Animation, Science-Fiction, Kurzfilm", "Tim Miller", 6.7, null, null],
+    [731, "Die glorreichen Sieben", "The Magnificent Seven", "Film", 1960, 128, "Action, Abenteuer, Drama, Western", "John Sturges", 7.7, null, null],
+    [732, "In the Line of Fire: Die zweite Chance", "In the Line of Fire", "Film", 1993, 128, "Action, Krimi, Drama, Thriller", "Wolfgang Petersen", 7.2, null, null],
+    [733, "Hardcore - Ein Vater Sieht Rot", "Hardcore", "Film", 1979, 108, "Krimi, Drama", "Paul Schrader", 7.1, null, null],
+    [734, "Jacob's Ladder - In der Gewalt des Jenseits", "Jacob's Ladder", "Film", 1990, 113, "Drama, Horror, Mystery", "Adrian Lyne", 7.4, null, null],
+    [735, "The Normal Heart", "The Normal Heart", "Fernsehfilm", 2014, 132, "Biografie, Drama, Geschichte, Liebesfilm", "Ryan Murphy", 7.9, null, null],
+    [736, "Pink Floyd - Die Mauer", "Pink Floyd: The Wall", "Film", 1982, 95, "Drama, Fantasy, Musikfilm", "Alan Parker", 8.0, null, null],
+    [737, "Von Mäusen und Menschen", "Of Mice and Men", "Film", 1992, 115, "Drama, Western", "Gary Sinise", 7.4, null, null],
+    [738, "Willkommen in Gravity Falls", "Gravity Falls", "Fernsehserie", 2012, 23, "Animation, Abenteuer, Komödie, Familienfilm, Fantasy", null, 8.9, null, null],
+    [739, "Der Navigator - Eine bizarre Reise durch Zeit und Raum", "The Navigator: A Medieval Odyssey", "Film", 1988, 92, "Action, Abenteuer, Drama, Fantasy, Mystery, Science-Fiction, Thriller", "Vincent Ward", 6.6, null, null],
+    [740, "Alien 3", "Alien³", "Film", 1992, 114, "Action, Horror, Science-Fiction", "David Fincher", 6.4, null, null],
+    [741, "Harold & Kumar", "Harold & Kumar Go to White Castle", "Film", 2004, 88, "Abenteuer, Komödie", "Danny Leiner", 7.0, null, null],
+    [742, "Liebe", "Amour", "Film", 2012, 127, "Drama", "Michael Haneke", 7.9, null, null],
+    [743, "Das Experiment", "Das Experiment", "Film", 2001, 120, "Drama, Thriller", "Oliver Hirschbiegel", 7.7, null, null],
+    [744, "Space Cowboys", "Space Cowboys", "Film", 2000, 130, "Action, Abenteuer, Thriller", "Clint Eastwood", 6.5, null, null],
+    [745, "Isle of Dogs - Ataris Reise", "Isle of Dogs", "Film", 2018, 101, "Animation, Abenteuer, Komödie, Drama, Fantasy, Science-Fiction", "Wes Anderson", 7.8, null, null],
+    [746, "Todesmelodie", "Giù la testa", "Film", 1971, 157, "Drama, Kriegsfilm, Western", "Sergio Leone", 7.5, null, null],
+    [747, "Gesprengte Ketten", "The Great Escape", "Film", 1963, 172, "Abenteuer, Drama, Thriller, Kriegsfilm", "John Sturges", 8.2, null, null],
+    [748, "Der wunderbare Mr. Rogers", "A Beautiful Day in the Neighborhood", "Film", 2019, 109, "Biografie, Drama, Familienfilm", "Marielle Heller", 7.2, null, null],
+    [749, "Dolemite Is My Name", "Dolemite Is My Name", "Film", 2019, 118, "Biografie, Komödie, Drama", "Craig Brewer", 7.2, null, null],
+    [750, "The Farewell", "The Farewell", "Film", 2019, 100, "Komödie, Drama", "Lulu Wang", 7.5, null, null],
+    [751, "The Master", "The Master", "Film", 2012, 138, "Drama", "Paul Thomas Anderson", 7.1, null, null],
+    [752, "Gangs of London", "Gangs of London", "Fernsehserie", 2020, 60, "Action, Krimi, Drama", null, 8.0, null, null],
+    [753, "Bilder in Bewegung - Das Jahrhundert des Kinos: A Personal Journey with Martin Scorsese Through American Movies", "Century of Cinema: A Personal Journey with Martin Scorsese Through American Movies", "Fernsehepisode", 1995, 225, "Dokumentarfilm, Biografie, Geschichte", "Martin Scorsese, Michael Henry Wilson", 8.5, null, null],
+    [754, "Do the Right Thing", "Do the Right Thing", "Film", 1989, 120, "Komödie, Drama", "Spike Lee", 8.0, null, null],
+    [755, "Malcolm X", "Malcolm X", "Film", 1992, 202, "Biografie, Drama, Geschichte", "Spike Lee", 7.7, null, null],
+    [756, "Die Tiefseetaucher", "The Life Aquatic with Steve Zissou", "Film", 2004, 119, "Action, Abenteuer, Komödie, Drama, Liebesfilm", "Wes Anderson", 7.2, null, null],
+    [757, "Der Sturm", "The Perfect Storm", "Film", 2000, 130, "Action, Abenteuer, Drama, Thriller", "Wolfgang Petersen", 6.5, null, null],
+    [758, "Das Geheimnis von Twin Peaks", "Twin Peaks", "Fernsehserie", 1990, 50, "Krimi, Drama, Mystery, Thriller", null, 8.7, null, null],
+    [759, "Die Silicon Valley Story", "Pirates of Silicon Valley", "Fernsehfilm", 1999, 95, "Biografie, Drama, Geschichte", "Martyn Burke", 7.2, null, null],
+    [760, "Lady Snowblood", "Shurayuki-hime", "Film", 1973, 97, "Action, Krimi, Drama, Thriller", "Toshiya Fujita", 7.6, null, null],
+    [761, "Futur Drei", "Wir", "Film", 2020, 92, "Drama, Liebesfilm", "Faraz Shariat", 6.7, null, null],
+    [762, "Traffic - Macht des Kartells", "Traffic", "Film", 2000, 147, "Krimi, Drama, Thriller", "Steven Soderbergh", 7.5, null, null],
+    [763, "Die Geburt einer Nation", "The Birth of a Nation", "Film", 1915, 195, "Drama, Kriegsfilm", "D.W. Griffith", 6.1, null, null],
+    [764, "Mother", "Madeo", "Film", 2009, 129, "Krimi, Drama, Mystery, Thriller", "Bong Joon Ho", 7.7, null, null],
+    [765, "Tokio!", "Tokyo!", "Film", 2008, 112, "Komödie, Drama, Fantasy", "Leos Carax, Michel Gondry, Bong Joon Ho", 7.0, null, null],
+    [766, "The Host", "Goemool", "Film", 2006, 120, "Drama, Horror, Science-Fiction", "Bong Joon Ho", 7.1, null, null],
+    [767, "Hunde, die bellen, beißen nicht", "Flandersui gae", "Film", 2000, 110, "Komödie, Drama", "Bong Joon Ho", 6.9, null, null],
+    [768, "The Ritual", "The Ritual", "Film", 2017, 94, "Horror, Mystery, Thriller", "David Bruckner", 6.4, null, null],
+    [769, "Roma", "Roma", "Film", 2018, 135, "Drama", "Alfonso Cuarón", 7.6, null, null],
+    [770, "Pans Labyrinth", "El laberinto del fauno", "Film", 2006, 118, "Drama, Fantasy, Kriegsfilm", "Guillermo del Toro", 8.2, null, null],
+    [771, "The Trial of the Chicago 7", "The Trial of the Chicago 7", "Film", 2020, 129, "Drama, Geschichte, Thriller", "Aaron Sorkin", 7.7, null, null],
+    [772, "Big Trouble in Little China", "Big Trouble in Little China", "Film", 1986, 99, "Action, Abenteuer, Komödie, Fantasy", "John Carpenter", 7.2, null, null],
+    [773, "Willkommen, Mr. Chance", "Being There", "Film", 1979, 130, "Komödie, Drama", "Hal Ashby", 7.9, null, null],
+    [774, "Tombstone", "Tombstone", "Film", 1993, 130, "Biografie, Drama, Geschichte, Western", "George P. Cosmatos", 7.8, null, null],
+    [775, "Die Braut des Prinzen", "The Princess Bride", "Film", 1987, 98, "Abenteuer, Komödie, Familienfilm, Fantasy, Liebesfilm", "Rob Reiner", 8.0, null, null],
+    [776, "Jeeves and Wooster - Herr und Meister", "Jeeves & Wooster", "Fernsehserie", 1990, 55, "Komödie", null, 8.4, null, null],
+    [777, "The Drop - Bargeld", "The Drop", "Film", 2014, 106, "Krimi, Drama, Mystery, Thriller", "Michaël R. Roskam", 7.0, null, null],
+    [778, "Im Zeichen des Bösen", "Touch of Evil", "Film", 1958, 95, "Krimi, Drama, Film Noir, Thriller", "Orson Welles", 7.9, null, null],
+    [779, "Nymphomaniac: Teil 1", "Nymphomaniac: Vol. I", "Film", 2013, 117, "Drama", "Lars von Trier", 6.9, null, null],
+    [780, "Der Mann mit der Kamera", "Chelovek s kino-apparatom", "Film", 1929, 68, "Dokumentarfilm", "Dziga Vertov", 8.3, null, null],
+    [781, "Tote schlafen fest", "The Big Sleep", "Film", 1946, 114, "Krimi, Drama, Film Noir, Mystery, Thriller", "Howard Hawks", 7.9, null, null],
+    [782, "Die Katze", "Die Katze", "Film", 1988, 118, "Krimi, Thriller", "Dominik Graf", 7.1, null, null],
+    [783, "A Single Man", "A Single Man", "Film", 2009, 99, "Drama, Liebesfilm, Thriller", "Tom Ford", 7.5, null, null],
+    [784, "Stroszek", "Stroszek", "Film", 1977, 115, "Komödie, Drama", "Werner Herzog", 7.7, null, null],
+    [785, "Johnny Guitar - Gejagt, gehaßt, gefürchtet", "Johnny Guitar", "Film", 1954, 110, "Drama, Western", "Nicholas Ray", 7.6, null, null],
+    [786, "Die Dinge des Lebens", "Les choses de la vie", "Film", 1970, 89, "Drama, Liebesfilm", "Claude Sautet", 7.4, null, null],
+    [787, "Brief einer Unbekannten", "Letter from an Unknown Woman", "Film", 1948, 87, "Drama, Liebesfilm", "Max Ophüls", 7.8, null, null],
+    [788, "Alles in Butter", "Tout va bien", "Film", 1972, 95, "Drama", "Jean-Luc Godard, Jean-Pierre Gorin", 6.5, null, null],
+    [789, "Der rosarote Panther", "The Pink Panther", "Film", 1963, 115, "Komödie, Krimi, Liebesfilm", "Blake Edwards", 7.0, null, null],
+    [790, "Inspektor Clouseau - Der beste Mann bei Interpol", "The Pink Panther Strikes Again", "Film", 1976, 103, "Komödie, Krimi", "Blake Edwards", 7.1, null, null],
+    [791, "Der Mieter", "Le locataire", "Film", 1976, 126, "Drama, Thriller", "Roman Polanski", 7.5, null, null],
+    [792, "Aviator", "The Aviator", "Film", 2004, 170, "Biografie, Drama", "Martin Scorsese", 7.5, null, null],
+    [793, "Y tu mamá también - Lust for Life", "Y tu mamá también", "Film", 2001, 106, "Drama", "Alfonso Cuarón", 7.7, null, null],
+    [794, "Colour Me Kubrick: A True...ish Story", "Colour Me Kubrick: A True...ish Story", "Film", 2005, 86, "Komödie, Drama", "Brian W. Cook", 6.1, null, null],
+    [795, "Niemals selten manchmal immer", "Never Rarely Sometimes Always", "Film", 2020, 101, "Drama", "Eliza Hittman", 7.4, null, null],
+    [796, "Shadow", "Ying", "Film", 2018, 116, "Action, Abenteuer, Fantasy, Geschichte, Kriegsfilm", "Yimou Zhang", 7.0, null, null],
+    [797, "Vergiftete Wahrheit", "Dark Waters", "Film", 2019, 126, "Biografie, Drama, Geschichte, Thriller", "Todd Haynes", 7.6, null, null],
+    [798, "La Gomera", "La gomera", "Film", 2019, 97, "Komödie, Krimi, Drama, Thriller", "Corneliu Porumboiu", 6.3, null, null],
+    [799, "Bad Lieutenant", "Bad Lieutenant", "Film", 1992, 96, "Krimi, Drama, Thriller", "Abel Ferrara", 7.0, null, null],
+    [800, "Gomorrha - Die Serie", "Gomorrah", "Fernsehserie", 2014, 45, "Krimi, Drama, Thriller", null, 8.6, null, null],
+    [801, "Down by Law", "Down by Law", "Film", 1986, 107, "Komödie, Krimi, Drama", "Jim Jarmusch", 7.6, null, null],
+    [802, "Paris, Texas", "Paris, Texas", "Film", 1984, 145, "Drama", "Wim Wenders", 8.1, null, null],
+    [803, "Tron", "Tron", "Film", 1982, 96, "Action, Abenteuer, Science-Fiction", "Steven Lisberger", 6.7, null, null],
+    [804, "Whale Rider", "Whale Rider", "Film", 2002, 101, "Drama, Familienfilm", "Niki Caro", 7.5, null, null],
+    [805, "Martin Eden", "Martin Eden", "Film", 2019, 129, "Drama, Liebesfilm", "Pietro Marcello", 7.0, null, null],
+    [806, "American Utopia", "American Utopia", "Film", 2020, 105, "Dokumentarfilm, Musikfilm, Musical", "Spike Lee", 8.2, null, null],
+    [807, "Enemy", "Enemy", "Film", 2013, 91, "Drama, Mystery, Thriller", "Denis Villeneuve", 6.9, null, null],
+    [808, "Why Don't You Just Die!", "Papa, sdokhni", "Film", 2018, 99, "Komödie, Drama, Thriller", "Kirill Sokolov", 6.8, null, null],
+    [809, "The Fall", "The Fall", "Film", 2006, 117, "Abenteuer, Drama, Fantasy", "Tarsem Singh", 7.8, null, null],
+    [810, "The Cell", "The Cell", "Film", 2000, 107, "Krimi, Horror, Science-Fiction, Thriller", "Tarsem Singh", 6.4, null, null],
+    [811, "Neues aus der Welt", "News of the World", "Film", 2020, 118, "Action, Abenteuer, Drama, Western", "Paul Greengrass", 6.8, null, null],
+    [812, "Sorry to Bother You", "Sorry to Bother You", "Film", 2018, 112, "Komödie, Drama, Fantasy, Science-Fiction", "Boots Riley", 6.9, null, null],
+    [813, "Greener Grass", "Greener Grass", "Film", 2019, 95, "Komödie", "Jocelyn DeBoer, Dawn Luebbe", 6.4, null, null],
+    [814, "Der Klang der Liebe", "Fa yeung nin wah", "Film", 2000, 98, "Drama, Liebesfilm", "Wong Kar-Wai", 8.0, null, null],
+    [815, "Better Luck Tomorrow", "Better Luck Tomorrow", "Film", 2002, 101, "Krimi, Drama, Liebesfilm", "Justin Lin", 7.0, null, null],
+    [816, "The Pacific", "The Pacific", "Miniserie", 2010, 60, "Action, Abenteuer, Drama, Geschichte, Kriegsfilm", null, 8.3, null, null],
+    [817, "Kung Pow: Enter the Fist", "Kung Pow: Enter the Fist", "Film", 2002, 81, "Action, Komödie", "Steve Oedekerk", 6.2, null, null],
+    [818, "Der Fremdenlegionär", "Beau travail", "Film", 1999, 92, "Drama, Kriegsfilm", "Claire Denis", 7.3, null, null],
+    [819, "Jack", "Jack", "Film", 1996, 113, "Komödie, Drama, Fantasy", "Francis Ford Coppola", 5.8, null, null],
+    [820, "Rounders", "Rounders", "Film", 1998, 121, "Krimi, Drama", "John Dahl", 7.3, null, null],
+    [821, "Invasion vom Mars", "Invaders from Mars", "Film", 1953, 78, "Horror, Science-Fiction", "William Cameron Menzies", 6.3, null, null],
+    [822, "Ghettogangz - Die Hölle vor Paris", "Banlieue 13", "Film", 2004, 84, "Action, Krimi, Science-Fiction, Thriller", "Pierre Morel", 7.1, null, null],
+    [823, "Wie ein wilder Stier", "Raging Bull", "Film", 1980, 129, "Biografie, Drama, Sportfilm", "Martin Scorsese", 8.1, null, null],
+    [824, "Sausage Party - Es geht um die Wurst", "Sausage Party", "Film", 2016, 89, "Animation, Abenteuer, Komödie, Fantasy", "Greg Tiernan, Conrad Vernon", 6.1, null, null],
+    [825, "The Guest", "The Guest", "Film", 2014, 100, "Action, Mystery, Thriller", "Adam Wingard", 6.7, null, null],
+    [826, "Life During Wartime", "Life During Wartime", "Film", 2009, 98, "Komödie, Drama", "Todd Solondz", 6.4, null, null],
+    [827, "72 Stunden - The Next Three Days", "The Next Three Days", "Film", 2010, 133, "Action, Krimi, Drama, Liebesfilm, Thriller", "Paul Haggis", 7.3, null, null],
+    [828, "Das Boot", "Das Boot", "Miniserie", 1985, 98, "Drama, Kriegsfilm", null, 8.8, null, null],
+    [829, "Verbrechen und andere Kleinigkeiten", "Crimes and Misdemeanors", "Film", 1989, 104, "Komödie, Drama", "Woody Allen", 7.8, null, null],
+    [830, "The Purple Rose of Cairo", "The Purple Rose of Cairo", "Film", 1985, 82, "Komödie, Fantasy, Liebesfilm", "Woody Allen", 7.6, null, null],
+    [831, "Dotterbart", "Yellowbeard", "Film", 1983, 96, "Action, Abenteuer, Komödie", "Mel Damski", 5.9, null, null],
+    [832, "Parks and Recreation", "Parks and Recreation", "Fernsehserie", 2009, 22, "Komödie", null, 8.6, null, null],
+    [833, "Acasa, My Home", "Acasa, My Home", "Film", 2020, 86, "Dokumentarfilm", "Radu Ciorniciuc", 7.6, null, null],
+    [834, "The Power of the Dog", "The Power of the Dog", "Film", 2021, 126, "Drama, Western", "Jane Campion", 6.8, null, null],
+    [835, "Der Leuchtturm", "The Lighthouse", "Film", 2019, 109, "Drama, Fantasy, Horror, Mystery, Thriller", "Robert Eggers", 7.4, null, null],
+    [836, "Singles - Gemeinsam einsam", "Singles", "Film", 1992, 99, "Komödie, Drama, Musikfilm, Liebesfilm", "Cameron Crowe", 6.8, null, null],
+    [837, "The Virgin Suicides - Verlorene Jugend", "The Virgin Suicides", "Film", 1999, 97, "Drama, Liebesfilm", "Sofia Coppola", 7.2, null, null],
+    [838, "Melancholia", "Melancholia", "Film", 2011, 135, "Drama, Science-Fiction", "Lars von Trier", 7.1, null, null],
+    [839, "Picknick am Valentinstag", "Picnic at Hanging Rock", "Film", 1975, 115, "Drama, Mystery", "Peter Weir", 7.4, null, null],
+    [840, "Insel der verlorenen Seelen", "Island of Lost Souls", "Film", 1932, 70, "Film Noir, Horror, Science-Fiction", "Erle C. Kenton", 7.3, null, null],
+    [841, "Die grünen Teufel", "The Green Berets", "Film", 1968, 142, "Drama, Kriegsfilm", "Ray Kellogg, John Wayne, Mervyn LeRoy", 5.6, null, null],
+    [842, "Lemony Snicket - Rätselhafte Ereignisse", "A Series of Unfortunate Events", "Film", 2004, 108, "Abenteuer, Komödie, Familienfilm, Fantasy", "Brad Silberling", 6.8, null, null],
+    [843, "Roar - Ein wüstes Abenteuer", "Roar", "Film", 1981, 95, "Abenteuer, Komödie, Thriller", "Noel Marshall", 6.1, null, null],
+    [844, "Der Laden auf dem Korso", "Obchod na korze", "Film", 1965, 128, "Drama, Kriegsfilm", "Ján Kadár, Elmar Klos", 8.2, null, null],
+    [845, "Die Zeitritter", "Les couloirs du temps: Les visiteurs II", "Film", 1998, 118, "Komödie, Fantasy", "Jean-Marie Poiré", 6.1, null, null],
+    [846, "Im Westen nichts Neues", "All Quiet on the Western Front", "Film", 1930, 136, "Drama, Kriegsfilm", "Lewis Milestone", 8.1, null, null],
+    [847, "New Yorker Geschichten", "New York Stories", "Film", 1989, 124, "Komödie, Drama, Liebesfilm", "Woody Allen, Francis Ford Coppola, Martin Scorsese", 6.4, null, null],
+    [848, "Triangle of Sadness", "Triangle of Sadness", "Film", 2022, 147, "Komödie, Drama", "Ruben Östlund", 7.2, null, null],
+    [849, "Matilda: Das Musical", "Matilda: The Musical", "Film", 2022, 117, "Komödie, Drama, Familienfilm, Fantasy, Musikfilm, Musical", "Matthew Warchus", 7.0, null, null],
+    [850, "Der Rausch", "Druk", "Film", 2020, 117, "Komödie, Drama", "Thomas Vinterberg", 7.7, null, null],
+    [851, "Solino", "Solino", "Film", 2002, 124, "Drama, Komödie", "Fatih Akin", 7.3, null, null],
+    [852, "Withnail & I", "Withnail & I", "Film", 1987, 107, "Komödie, Drama", "Bruce Robinson", 7.5, null, null],
+    [853, "The Menu", "The Menu", "Film", 2022, 107, "Komödie, Horror, Thriller", "Mark Mylod", 7.2, null, null],
+    [854, "The Creator", "The Creator", "Film", 2023, 133, "Action, Abenteuer, Drama, Science-Fiction, Thriller", "Gareth Edwards", 6.7, null, null],
+    [855, "Licorice Pizza", "Licorice Pizza", "Film", 2021, 133, "Komödie, Drama, Liebesfilm", "Paul Thomas Anderson", 7.1, null, null],
+    [856, "Boogie Nights", "Boogie Nights", "Film", 1997, 155, "Drama", "Paul Thomas Anderson", 7.9, null, null],
+    [857, "Norsemen", "Norsemen", "Fernsehserie", 2016, 30, "Komödie, Geschichte", null, 7.7, null, null],
+    [858, "The Hills Have Eyes - Hügel der blutigen Augen", "The Hills Have Eyes", "Film", 2006, 107, "Horror, Thriller", "Alexandre Aja", 6.4, null, null],
+    [859, "The House", "The House", "Film", 2022, 97, "Animation, Komödie, Drama, Fantasy, Horror, Mystery, Thriller", "Paloma Baeza, Emma De Swaef, Niki Lindroth von Bahr, Marc James Roels", 6.8, null, null],
+    [860, "Erin Brockovich", "Erin Brockovich", "Film", 2000, 131, "Biografie, Drama", "Steven Soderbergh", 7.5, null, null],
+    [861, "The Last Duel", "The Last Duel", "Film", 2021, 152, "Drama, Geschichte, Thriller", "Ridley Scott", 7.3, null, null],
+    [862, "BlacKkKlansman", "BlacKkKlansman", "Film", 2018, 135, "Biografie, Komödie, Krimi, Drama", "Spike Lee", 7.5, null, null],
+    [863, "Lady Bird", "Lady Bird", "Film", 2017, 94, "Komödie, Drama", "Greta Gerwig", 7.4, null, null],
+    [864, "Barbie", "Barbie", "Film", 2023, 114, "Abenteuer, Komödie, Fantasy", "Greta Gerwig", 6.8, null, null],
+    [865, "No Hard Feelings", "No Hard Feelings", "Film", 2023, 103, "Komödie, Liebesfilm", "Gene Stupnitsky", 6.3, null, null],
+    [866, "Killers of the Flower Moon", "Killers of the Flower Moon", "Film", 2023, 206, "Krimi, Drama, Geschichte, Western", "Martin Scorsese", 7.5, null, null],
+    [867, "Bloodsport - Eine wahre Geschichte", "Bloodsport", "Film", 1988, 92, "Action, Biografie, Drama, Sportfilm", "Newt Arnold", 6.8, null, null],
+    [868, "Die 12 Geschworenen", "12 Angry Men", "Fernsehfilm", 1997, 117, "Krimi, Drama", "William Friedkin", 7.8, null, null],
+    [869, "Das Ding aus einer anderen Welt", "The Thing", "Film", 1982, 109, "Horror, Mystery, Science-Fiction", "John Carpenter", 8.2, null, null],
+    [870, "Godless", "Godless", "Miniserie", 2017, 65, "Action, Drama, Western", null, 8.2, null, null],
+    [871, "Wilde Erdbeeren", "Smultronstället", "Film", 1957, 92, "Drama, Liebesfilm", "Ingmar Bergman", 8.1, null, null],
+    [872, "Fanny und Alexander", "Fanny och Alexander", "Film", 1982, 188, "Drama", "Ingmar Bergman", 8.1, null, null],
+    [873, "Das siebente Siegel", "Det sjunde inseglet", "Film", 1957, 96, "Drama, Fantasy", "Ingmar Bergman", 8.1, null, null],
+    [874, "The Many Saints of Newark", "The Many Saints of Newark", "Film", 2021, 120, "Krimi, Drama", "Alan Taylor", 6.3, null, null],
+    [875, "The Lobster: Eine unkonventionelle Liebesgeschichte", "The Lobster", "Film", 2015, 119, "Drama, Liebesfilm, Science-Fiction, Thriller", "Yorgos Lanthimos", 7.1, null, null],
+    [876, "Challengers - Rivalen", "Challengers", "Film", 2024, 131, "Komödie, Drama, Liebesfilm, Sportfilm", "Luca Guadagnino", 7.0, null, null],
+    [877, "Die Frau im Nebel", "Heojil kyolshim", "Film", 2022, 139, "Krimi, Drama, Mystery, Liebesfilm, Thriller", "Park Chan-wook", 7.3, null, null],
+    [878, "Hackers - Im Netz des FBI", "Hackers", "Film", 1995, 105, "Krimi, Drama, Liebesfilm, Thriller", "Iain Softley", 6.2, null, null],
+    [879, "A Bit of Fry and Laurie", "A Bit of Fry & Laurie", "Fernsehserie", 1987, 30, "Komödie", null, 8.3, null, null],
+    [880, "Stuart Little", "Stuart Little", "Film", 1999, 84, "Abenteuer, Komödie, Familienfilm, Fantasy", "Rob Minkoff", 6.0, null, null],
+    [881, "Vice - Der zweite Mann", "Vice", "Film", 2018, 132, "Biografie, Komödie, Drama, Geschichte", "Adam McKay", 7.2, null, null],
+    [882, "Chasing Chasing Amy", "Chasing Chasing Amy", "Film", 2023, 95, "Dokumentarfilm", "Sav Rodgers", 7.3, null, null],
+    [883, "The Danish Girl", "The Danish Girl", "Film", 2015, 119, "Biografie, Drama", "Tom Hooper", 7.1, null, null],
+    [884, "Maid", "Maid", "Miniserie", 2021, 60, "Drama", null, 8.3, null, null],
+    [885, "Starman", "Starman", "Film", 1984, 115, "Liebesfilm, Science-Fiction", "John Carpenter", 7.0, null, null],
+    [886, "Toni Erdmann", "Toni Erdmann", "Film", 2016, 162, "Komödie, Drama", "Maren Ade", 7.3, null, null],
+    [887, "Succession", "Succession", "Fernsehserie", 2018, 60, "Komödie, Drama", null, 8.8, null, null],
+    [888, "Euphoria", "Euphoria", "Fernsehserie", 2019, 60, "Drama", null, 8.2, null, null]
   ]
 };
 
@@ -2344,7 +2802,7 @@ window.addEventListener('resize', () => acUpdate());
 window.SQLKURS = {
   id: 'sqlfrei',
   tabelle: DB_FILME,
-  intro: 'Die Tabelle <code>filme</code> enthält 484 Filme und Serien, die Herr Maier bewertet hat. Stelle eigene Abfragen – das Ergebnis erscheint unten als Tabelle.',
+  intro: 'Die Tabelle <code>filme</code> enthält die Sammlung von Herrn Maier: 888 Filme und Serien. 484 davon hat er bewertet, die übrigen stehen noch auf seiner Merkliste (<code>eigene_bewertung</code> ist dort leer). Stelle eigene Abfragen – das Ergebnis erscheint unten als Tabelle.',
   stufen: [null,
     {name:'Felder anklicken, Bedingung als Baustein', ui:'block'},
     {name:'Felder anklicken, Bedingung eintippen',    ui:'text'},
@@ -2355,7 +2813,7 @@ window.SQLKURS = {
 };
 </script>
 <script>/* abfragen.js */
-/* abfragen.js – SQL-Abfragen üben: Entwurf wie in Access (Stufe 1–2), SQL-Editor (Stufe 3–5)
+/* abfragen.js – SQL-Abfragen üben: Entwurf, Blöcke, Access-Entwurfsansicht, SQL-Editor
  *
  * Läuft komplett im Browser (SQLite über sql.js), auch per file://. Nutzt Kopfzeile, Stufen,
  * Modi und Dock aus ../excel/basis.js. Einbinden am Ende von <body>, in dieser Reihenfolge:
@@ -2367,10 +2825,18 @@ window.SQLKURS = {
  * SQLKURS = {
  *   id:      'sql'                 Tool-id aus katalog.js (Speicherstand: id + '-…')
  *   tabelle: DB_FILME              {name, felder:[{n, typ, art, d}], zeilen:[[…]]}
- *   stufen:  [null, {name, ui}]    ui: 'block' Felder anklicken, Bedingung als Baustein
- *                                      'text'  Felder anklicken, Bedingung eintippen
- *                                      'sql'   SQL-Editor; vorlage: 'erklaert' | 'geruest' | 'leer'
- *   aufgaben:[{frage, felder:['titel', …] oder ['*'], where?:"jahr < 1970", sort?:'jahr DESC', tipp?}]
+ *   stufen:  [null, {name, ui}]    ui: 'block'  Felder anklicken, eine Bedingung als Baustein
+ *                                      'baum'   Felder anklicken, Bedingung aus Blöcken (AND/OR verschachtelt)
+ *                                      'text'   Felder anklicken, Bedingung eintippen
+ *                                      'sql'    SQL-Editor; vorlage: 'erklaert' | 'geruest' | 'leer'
+ *                                      'access' Access-Entwurf (Feld, Sortierung, Anzeigen, Kriterien/oder);
+ *                                               krit: 'bloecke' nur die nötigen Kriterien (mit Feldname),
+ *                                               'falsch' dazu falsche, 'text' selbst eintippen (Access-Schreibweise)
+ *   ansichten: {access:{name, stufen}, sql:{name, stufen}}   statt stufen: Umschalter in der Kopfzeile
+ *            (Knöpfe mit data-ansicht="…"); Stufe, Fortschritt und Modus je Ansicht getrennt (id-ansicht-…)
+ *   kalender:{tage:['Montag', …]}  Aufgabenwahl als Kalender (Wochen × Tage) statt Nummern
+ *   aufgaben:[{frage, felder:['titel', …] oder ['*'], where?:"jahr < 1970", sort?:'jahr DESC', tipp?,
+ *             auch?:["…"] gleichwertige Bedingungen, die ebenfalls als richtig zählen}]
  *   endlos:  [(r, Z) => Aufgabe]   r = Zufall, Z = {pick1, ri, liste(sql) → erste Spalte aller Zeilen}
  *            Ergebnis mit 1 bis 80 Zeilen wird genommen, sonst neu gewürfelt.
  *   intro:   HTML über der Abfrage, nur ohne aufgaben
@@ -2393,16 +2859,31 @@ const FELD = {}; T.felder.forEach(f => FELD[f.n.toLowerCase()] = f);
 const SPALTEN = T.felder.map(f => f.n);
 const KW = ['SELECT', 'FROM', 'WHERE', 'ORDER', 'BY', 'ASC', 'DESC', 'LIKE', 'IS', 'NOT', 'NULL', 'AND', 'OR', 'AS', 'DISTINCT', 'LIMIT', 'OFFSET', 'IN', 'BETWEEN', 'GROUP', 'HAVING'];
 const KWS = new Set(KW);
-const OPS = ['=', '<>', '<', '<=', '>', '>=', 'LIKE', 'IS NULL', 'IS NOT NULL'];
+const OPS = ['=', '<>', '<', '<=', '>', '>=', 'LIKE', 'NOT LIKE', 'IS NULL', 'IS NOT NULL'];
 const istText = n => { const f = FELD[n]; return f && f.art !== 'Zahl' && f.art !== 'Kommazahl'; };
 
 /* ---------- Zustand ---------- */
 let db = null, CUR = null, S = null, ed = null, endScen = -1, endSeed = 0;
-mode = load('mode') === 'endlos' ? 'endlos' : 'pfad';
-level = Math.min(LEVELS.length - 1, Math.max(1, parseInt(load('level')) || 1));
-pfadIdx = Math.min(STD.length - 1, Math.max(0, parseInt(load('idx')) || 0));
-try { solved = JSON.parse(load('solved') || '{}') || {}; } catch (e) { solved = {}; }
-best = parseInt(load('best')) || 0;
+const ANS = K.ansichten ? Object.keys(K.ansichten) : null;
+let ansicht = null;
+if (ANS){ try { ansicht = localStorage.getItem(K.id + '-ansicht'); } catch (e) {} if (!ANS.includes(ansicht)) ansicht = ANS[0]; }
+function ladeStand(){
+  if (ANS){ KEY = K.id + '-' + ansicht + '-'; LEVELS = K.ansichten[ansicht].stufen; }
+  mode = load('mode') === 'endlos' ? 'endlos' : 'pfad';
+  level = Math.min(LEVELS.length - 1, Math.max(1, parseInt(load('level')) || 1));
+  pfadIdx = Math.min(Math.max(0, STD.length - 1), Math.max(0, parseInt(load('idx')) || 0));
+  try { solved = JSON.parse(load('solved') || '{}') || {}; } catch (e) { solved = {}; }
+  best = parseInt(load('best')) || 0; streak = 0; endCounted = false; pickerOpen = false;
+}
+ladeStand();
+function setAnsicht(a){
+  if (!ANS || a === ansicht) return;
+  ansicht = a; try { localStorage.setItem(K.id + '-ansicht', a); } catch (e) {}
+  if (window.TrainerSync) TrainerSync.changed();
+  ladeStand();
+  if (mode === 'endlos') newEndless(); else CUR = STD[pfadIdx];
+  setup();
+}
 
 /* ---------- Datenbank ---------- */
 function baueDB(SQL){
@@ -2709,7 +3190,8 @@ function aufgabeText(a){
 }
 function loadTask(){ if (mode === 'pfad') CUR = STD[pfadIdx]; setup(); }
 function setup(start){
-  S = {sel:[], wf:'', wop:'=', wv:'', where:'', sf:'', sdir:'ASC', fb:null, success:false, erg:null, ergInfo:'', start};
+  S = {sel:[], wf:'', wop:'=', wv:'', where:'', sf:'', sdir:'ASC', fb:null, success:false, erg:null, ergInfo:'', start, kn:{}, wurzel:null};
+  if (LEVELS[level].ui === 'access') S.acc = neuAccess(LEVELS[level]);
   render();
 }
 // freie Abfragen: bisherige Abfrage in den SQL-Editor mitnehmen (nur das Gerüst zählt nicht)
@@ -2757,15 +3239,305 @@ function entwurfSQL(){
       s += '\nWHERE ' + S.wf + ' ' + S.wop + ' ' + wertSQL(S.wf, S.wv);
     }
   }
+  if (L.ui === 'baum' && S.wurzel){ try { s += '\nWHERE ' + baumSQL(S.wurzel); } catch (e){ if (e.fehlt) return e; throw e; } }
   if (L.ui === 'text' && S.where.trim()){ s += '\nWHERE '; off = s.length; s += S.where.trim(); }
   if (S.sf) s += '\nORDER BY ' + S.sf + ' ' + S.sdir;
   return {sql:s, off};
 }
 function aktSQL(){
+  if (LEVELS[level].ui === 'access') return accessSQL();
   if (LEVELS[level].ui !== 'sql') return entwurfSQL();
   let sql = ed.getValue();
   if (FREI) sql = sql.replace(/^[ \t]*(WHERE|ORDER BY)[ \t]*$/gim, '');
   return {sql, off:0};
+}
+
+/* ---------- Bedingung einer Aufgabe zerlegen (für Access-Bausteine) ---------- */
+// WHERE-Text der Musterlösung → Baum {t:'und'|'oder', a, b} bzw. {t:'cmp', f, op, v:{num}|{str}}
+function parseWhere(src){
+  const t = lex(src); let i = 0;
+  const kw = u => t[i] && t[i].t === 'kw' && t[i].u === u;
+  const wert = () => { const x = t[i++]; return x.t === 'num' ? {num:+x.v} : {str:x.v}; };
+  function oder(){ let a = und(); while (kw('OR')){ i++; a = {t:'oder', a, b:und()}; } return a; }
+  function und(){ let a = prim(); while (kw('AND')){ i++; a = {t:'und', a, b:prim()}; } return a; }
+  function prim(){
+    if (t[i].t === 'lpar'){ i++; const e = oder(); i++; return e; }
+    const f = t[i++].v.toLowerCase();
+    if (kw('IS')){ i++; const neg = kw('NOT'); if (neg) i++; i++; return {t:'cmp', f, op:neg ? 'IS NOT NULL' : 'IS NULL'}; }
+    if (kw('NOT')){ i += 2; return {t:'cmp', f, op:'NOT LIKE', v:wert()}; }
+    if (kw('LIKE')){ i++; return {t:'cmp', f, op:'LIKE', v:wert()}; }
+    const op = t[i++].v; return {t:'cmp', f, op:op === '!=' ? '<>' : op, v:wert()};
+  }
+  return oder();
+}
+// Baum → Zeilen (ODER) aus Vergleichen (UND), so wie im Access-Entwurf
+function zeilenVon(n){
+  if (n.t === 'cmp') return [[n]];
+  if (n.t === 'oder') return zeilenVon(n.a).concat(zeilenVon(n.b));
+  const A = zeilenVon(n.a), B = zeilenVon(n.b), r = [];
+  A.forEach(x => B.forEach(y => r.push(x.concat(y)))); return r;
+}
+const accZahl = n => String(n).replace('.', ',');
+const accWert = v => v.num !== undefined ? accZahl(v.num) : '"' + v.str + '"';
+function accText(n){
+  if (n.op === 'IS NULL') return 'Ist Null';
+  if (n.op === 'IS NOT NULL') return 'Ist Nicht Null';
+  if (/LIKE/.test(n.op)) return (n.op === 'NOT LIKE' ? 'Nicht ' : '') + 'Wie "' + n.v.str.replace(/%/g, '*').replace(/_/g, '?') + '"';
+  return (n.op === '=' ? '' : n.op) + accWert(n.v);
+}
+// Kriterien der Musterlösung als Zellen: [{f, text}] je Zeile, gleiche Felder einer Zeile mit „Und“ verbunden
+function accZellen(where){
+  return zeilenVon(parseWhere(where)).map(z => {
+    const m = new Map(); z.forEach(n => { if (!m.has(n.f)) m.set(n.f, []); m.get(n.f).push(accText(n)); });
+    return [...m].map(([f, l]) => ({f, text:l.join(' Und ')}));
+  });
+}
+function accFalsch(text){
+  const tausch = {'>=':'>', '>':'>=', '<=':'<', '<':'<='};
+  let m;
+  if ((m = text.match(/^(>=|<=|>|<)(.*)$/))) return tausch[m[1]] + m[2];
+  if ((m = text.match(/^(Nicht )?Wie "\*?(.*?)\*?"$/))) return (m[1] || '') + 'Wie "' + m[2] + '"';
+  if (text === 'Ist Null') return 'Ist Nicht Null';
+  if (text === 'Ist Nicht Null') return 'Ist Null';
+  if ((m = text.match(/^(\d+)$/))) return '<' + m[1];
+  if ((m = text.match(/^"(.*)"$/))) return '<>"' + m[1] + '"';
+  if ((m = text.match(/^(.*) Und (.*)$/))) return accFalsch(m[1]) + ' Und ' + m[2];
+  return null;
+}
+
+/* ---------- Access-Kriterien lesen (deutsch und englisch) → SQL ---------- */
+const ACCKW = {UND:'AND', AND:'AND', ODER:'OR', OR:'OR', NICHT:'NOT', NOT:'NOT', WIE:'LIKE', LIKE:'LIKE', ZWISCHEN:'BETWEEN', BETWEEN:'BETWEEN', IST:'IS', IS:'IS', NULL:'NULL', LEER:'NULL'};
+function accLex(s){
+  const out = []; let i = 0, m;
+  while (i < s.length){
+    const r = s.slice(i);
+    if ((m = r.match(/^\s+/))){ i += m[0].length; continue; }
+    if ((m = r.match(/^["„“”]([^"„“”]*)["„“”]?/))){ out.push({t:'str', v:m[1], offen:!/["“”]$/.test(m[0]) || m[0].length < 2}); i += m[0].length; continue; }
+    if ((m = r.match(/^'([^']*)'?/))){ out.push({t:'str', v:m[1], offen:!m[0].endsWith("'") || m[0].length < 2}); i += m[0].length; continue; }
+    if ((m = r.match(/^#([^#]*)#?/))){ out.push({t:'datum', v:m[1]}); i += m[0].length; continue; }
+    if ((m = r.match(/^(<=|>=|<>|=>|=<|!=|[=<>])/))){ out.push({t:'op', v:m[1]}); i += m[0].length; continue; }
+    if (r[0] === '(' || r[0] === ')'){ out.push({t:r[0]}); i++; continue; }
+    if ((m = r.match(/^-?\d+([.,]\d+)?(?![^\s()<>="'])/))){ out.push({t:'num', v:m[0].replace(',', '.')}); i += m[0].length; continue; }
+    m = r.match(/^[^\s()<>="'„“”#]+/);
+    out.push({t:'wort', v:m[0], u:ACCKW[m[0].toUpperCase()]}); i += m[0].length;
+  }
+  return out;
+}
+function accParse(text, f){
+  const t = accLex(text); let i = 0;
+  const err = msg => { throw {acc:msg}; };
+  const kw = u => t[i] && t[i].t === 'wort' && t[i].u === u;
+  const q = s => "'" + s.replace(/'/g, "''") + "'";
+  const datum = s => { const m = s.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/); return m ? `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}` : s; };
+  function wert(wie){
+    const x = t[i];
+    if (!x || (x.t === 'wort' && x.u) || x.t === 'op' || x.t === ')') err(`Hier fehlt ein Wert${x ? ` vor ${c(x.v || x.t)}` : ' am Ende'}.`);
+    i++;
+    if (x.t === 'str'){ if (x.offen) err(`Hinter ${c('"' + x.v)} fehlt das schließende Anführungszeichen ${c('"')}.`); return q(wie ? x.v.replace(/\*/g, '%').replace(/\?/g, '_') : x.v); }
+    if (x.t === 'num') return istText(f) ? q(x.v) : x.v;
+    if (x.t === 'datum') return q(datum(x.v));
+    let w = x.v; while (t[i] && (t[i].t === 'wort' && !t[i].u || t[i].t === 'num')){ w += ' ' + t[i].v; i++; }
+    if (!istText(f) && !wie) err(`${c(w)} ist keine Zahl – das Feld ${c(f)} enthält Zahlen.`);
+    return q(wie ? w.replace(/\*/g, '%').replace(/\?/g, '_') : w);
+  }
+  function oder(){ const l = [und()]; while (kw('OR')){ i++; l.push(und()); } return l.length > 1 ? '(' + l.join(' OR ') + ')' : l[0]; }
+  function und(){ const l = [nicht()]; while (kw('AND')){ i++; l.push(nicht()); } return l.join(' AND '); }
+  function nicht(){ if (kw('NOT')){ i++; return 'NOT (' + nicht() + ')'; } return prim(); }
+  function prim(){
+    const x = t[i];
+    if (!x) err('Hier fehlt noch etwas.');
+    if (x.t === '('){ i++; const e = oder(); if (!t[i] || t[i].t !== ')') err(`Es fehlt die schließende Klammer ${c(')')}.`); i++; return '(' + e + ')'; }
+    if (kw('LIKE')){ i++; return `${f} LIKE ${wert(true)}`; }
+    if (kw('BETWEEN')){ i++; const a = wert(); if (!kw('AND')) err(`Bei ${c('Zwischen')} gehören zwei Werte dazu: ${c('Zwischen 1960 Und 1969')}.`); i++; return `${f} BETWEEN ${a} AND ${wert()}`; }
+    if (kw('IS')){ i++; const neg = kw('NOT'); if (neg) i++; if (!kw('NULL')) err(`Nach ${c('Ist')} kommt ${c('Null')} (leer), z. B. ${c('Ist Null')}.`); i++; return `${f} IS ${neg ? 'NOT ' : ''}NULL`; }
+    if (kw('NULL')){ i++; return `${f} IS NULL`; }
+    if (x.t === 'op'){
+      if (x.v === '=>' || x.v === '=<') err(`Schreibe ${c(x.v[1] + '=')} statt ${c(x.v)}.`);
+      i++; return `${f} ${x.v === '!=' ? '<>' : x.v} ${wert()}`;
+    }
+    if (x.t === 'wort' && x.u) err(`${c(x.v)} steht hier an der falschen Stelle.`);
+    return `${f} = ${wert()}`;
+  }
+  const e = oder();
+  if (i < t.length){ const x = t[i]; err(x.t === 'wort' && /^%/.test(x.v) ? `Der Platzhalter in Access ist ${c('*')}: ${c('Wie "*Text*"')}.` : `${c(x.v || x.t)} verstehe ich hier nicht. Verbinde mehrere Kriterien mit ${c('Und')} bzw. ${c('Oder')}.`); }
+  return e;
+}
+const ZEILEN = ['Kriterien:', 'oder:', '', ''];
+function neuAccess(L){
+  const noetig = CUR ? new Set([...CUR.felder, ...(CUR.where ? lex(CUR.where).filter(x => x.t === 'word' && FELD[x.v.toLowerCase()]).map(x => x.v) : [])]).size : 0;
+  const A = {cols:Array.from({length:Math.max(6, noetig)}, () => ({f:'', sort:'', show:true})), zellen:{}, bl:{}, pool:[]};
+  if (L.krit !== 'text' && CUR && CUR.where){
+    let n = 0; const mk = (text, f) => { const id = 'a' + (++n); A.bl[id] = {text, f}; A.pool.push(id); };
+    const echt = accZellen(CUR.where).flat();
+    echt.forEach(z => mk(z.text, z.f));
+    if (L.krit === 'falsch'){
+      const r = rng(endSeed + pfadIdx * 31 + 7), schon = new Set(echt.map(z => z.text));
+      shuffle(echt, r).forEach(z => { const v = accFalsch(z.text); if (v && !schon.has(v) && A.pool.length < echt.length + 4){ schon.add(v); mk(v, z.f); } });
+    }
+    A.pool = shuffle(A.pool, rng(rand()));
+  }
+  return A;
+}
+function zellText(key){ const z = S.acc.zellen[key]; return LEVELS[level].krit === 'text' ? (z || '').trim() : z ? S.acc.bl[z].text : ''; }
+function accessSQL(){
+  const A = S.acc, cols = A.cols.map((col, i) => Object.assign({i}, col));
+  for (const key of Object.keys(A.zellen)){ const ci = +key.split('_')[1]; if (zellText(key) && !cols[ci].f) return {fehlt:`In Spalte ${ci + 1} steht ein Kriterium, aber oben bei „Feld:“ ist noch kein Feld gewählt.`}; }
+  const gezeigt = cols.filter(col => col.f && col.show).map(col => col.f);
+  if (!gezeigt.length) return {fehlt:'Wähle oben bei „Feld:“ die Felder aus und setze bei „Anzeigen:“ den Haken.'};
+  const zeilen = [];
+  for (let r = 0; r < ZEILEN.length; r++){
+    const teile = [];
+    for (const col of cols){
+      const txt = col.f && zellText(r + '_' + col.i);
+      if (!txt) continue;
+      if (col.f === '*') return {fehlt:`Bei ${c(TAB + '.*')} kann kein Kriterium stehen. Wähle für Kriterien ein einzelnes Feld.`};
+      try { teile.push(accParse(txt, col.f)); }
+      catch (e){ if (!e.acc) throw e; return {fehlt:`Feld ${c(col.f)}, Zeile „${ZEILEN[r] || 'oder:'}“: ${e.acc}`}; }
+    }
+    if (teile.length) zeilen.push(teile);
+  }
+  let s = 'SELECT ' + gezeigt.join(', ') + '\nFROM ' + TAB;
+  if (zeilen.length) s += '\nWHERE ' + zeilen.map(z => zeilen.length > 1 && z.length > 1 ? '(' + z.join(' AND ') + ')' : z.join(' AND ')).join('\n   OR ');
+  const sort = cols.filter(col => col.f && col.sort && col.f !== '*');
+  if (sort.length) s += '\nORDER BY ' + sort.map(col => col.f + ' ' + col.sort).join(', ');
+  return {sql:s, off:null};
+}
+function accBlock(id){
+  const b = S.acc.bl[id];
+  return `<div class="block val acc" data-drag="1" data-acc="${id}">${esc(b.text)}${LEVELS[level].krit === 'bloecke' ? `<span class="bfeld">${esc(b.f)}</span>` : ''}</div>`;
+}
+function accessHTML(){
+  const A = S.acc, L = LEVELS[level], frei = new Set(Object.values(A.zellen));
+  const sortOpt = v => [['', ''], ['ASC', 'Aufsteigend'], ['DESC', 'Absteigend']].map(([k, t]) => `<option value="${k}"${v === k ? ' selected' : ''}>${t}</option>`).join('');
+  let h = `<div class="accwrap"><div class="tabfenster klein"><div class="tabkopf">${esc(TAB)}</div><button class="afeld" data-feld="*">*</button>` +
+    T.felder.map(f => `<button class="afeld" data-feld="${esc(f.n)}" title="${esc(f.d)}">${/PRIMARY/.test(f.typ) ? '<span class="key">🔑</span>' : ''}${esc(f.n)}</button>`).join('') + '</div>' +
+    '<div class="agridw"><table class="agrid"><tr><th>Feld:</th>' +
+    A.cols.map((col, i) => `<td><select class="af" data-c="${i}" aria-label="Feld in Spalte ${i + 1}"><option value=""></option><option value="*"${col.f === '*' ? ' selected' : ''}>${esc(TAB)}.*</option>${T.felder.map(f => `<option${col.f === f.n ? ' selected' : ''}>${esc(f.n)}</option>`).join('')}</select></td>`).join('') +
+    '</tr><tr><th>Tabelle:</th>' + A.cols.map(col => `<td class="atab">${col.f ? esc(TAB) : ''}</td>`).join('') +
+    '</tr><tr><th>Sortierung:</th>' + A.cols.map((col, i) => `<td><select class="as" data-c="${i}" aria-label="Sortierung Spalte ${i + 1}"${col.f ? '' : ' disabled'}>${sortOpt(col.sort)}</select></td>`).join('') +
+    '</tr><tr><th>Anzeigen:</th>' + A.cols.map((col, i) => `<td class="ashow"><input type="checkbox" class="ash" data-c="${i}" aria-label="Anzeigen Spalte ${i + 1}"${col.show ? ' checked' : ''}${col.f ? '' : ' disabled'}></td>`).join('') + '</tr>';
+  ZEILEN.forEach((lbl, r) => {
+    h += `<tr class="krit"><th>${lbl}</th>` + A.cols.map((col, i) => {
+      const k = r + '_' + i;
+      if (L.krit === 'text') return `<td><input class="ain" data-k="${k}" type="text" autocomplete="off" spellcheck="false" value="${esc(A.zellen[k] || '')}" aria-label="Kriterium Spalte ${i + 1}, Zeile ${r + 1}"></td>`;
+      return `<td><div class="acell" data-drop="acell" data-k="${k}">${A.zellen[k] ? accBlock(A.zellen[k]) : ''}</div></td>`;
+    }).join('') + '</tr>';
+  });
+  h += `</table></div><button class="btn klein" id="addCol" title="weitere Spalte">+ Spalte</button></div>`;
+  if (L.krit !== 'text') h += `<div class="pool" data-drop="apool"><div class="pool-title">Kriterien – in die richtige Zelle ziehen${L.krit === 'falsch' ? ' (nicht alle werden gebraucht)' : ''}</div><div class="pool-items">${A.pool.filter(id => !frei.has(id)).map(accBlock).join('') || '<span class="ph">alle eingesetzt</span>'}</div></div>`;
+  else h += `<div class="edhint">Beispiele: ${['"Film"', '>=9', 'Wie "*Mystery*"', 'Zwischen 1960 Und 1969', 'Ist Null', '<=4 Oder >=9'].map(c).join(' · ')}</div>`;
+  return h;
+}
+
+/* ---------- Bedingung aus Blöcken (UND/ODER verschachteln wie in Scratch) ---------- */
+let kid = 0;
+function neuKnoten(t){ const id = 'k' + (++kid); S.kn[id] = {id, t, a:null, b:null, f:'', op:'=', v:''}; return id; }
+function slotGet(p, k){ return p === 'root' ? S.wurzel : S.kn[p][k]; }
+function slotSet(p, k, id){ if (p === 'root') S.wurzel = id; else S.kn[p][k] = id; }
+function elternVon(id){
+  if (S.wurzel === id) return {p:'root', k:'root'};
+  for (const n of Object.values(S.kn)) for (const k of ['a', 'b']) if (n[k] === id) return {p:n.id, k};
+  return null;
+}
+function enthaelt(id, ziel){ if (!id) return false; if (id === ziel) return true; const n = S.kn[id]; return n.t !== 'cmp' && (enthaelt(n.a, ziel) || enthaelt(n.b, ziel)); }
+function loesche(id){ const n = S.kn[id]; if (!n) return; if (n.t !== 'cmp'){ loesche(n.a); loesche(n.b); } delete S.kn[id]; }
+function baumAblegen(d, p, k){
+  const ziel = slotGet(p, k);
+  let id = d.id, alt = null;
+  if (id){ if (id === ziel || (p !== 'root' && enthaelt(id, p))) return; alt = elternVon(id); slotSet(alt.p, alt.k, null); }
+  else id = neuKnoten(d.neu);
+  const n = S.kn[id];
+  if (ziel){
+    if (n.t !== 'cmp' && !n.a) n.a = ziel;          // UND/ODER auf einen Block: umschließt ihn
+    else if (n.t !== 'cmp' && !n.b) n.b = ziel;
+    else if (alt) slotSet(alt.p, alt.k, ziel);       // sonst tauschen
+    else { loesche(id); return; }
+  }
+  slotSet(p, k, id);
+}
+function erstesFreies(id){
+  if (!id) return null; const n = S.kn[id]; if (n.t === 'cmp') return null;
+  if (!n.a) return {p:id, k:'a'}; const x = erstesFreies(n.a); if (x) return x;
+  if (!n.b) return {p:id, k:'b'}; return erstesFreies(n.b);
+}
+function baumTipp(t){
+  if (!S.wurzel){ S.wurzel = neuKnoten(t); return; }
+  const frei = erstesFreies(S.wurzel);
+  if (frei){ slotSet(frei.p, frei.k, neuKnoten(t)); return; }
+  if (t !== 'cmp'){ const id = neuKnoten(t); S.kn[id].a = S.wurzel; S.wurzel = id; }
+}
+function baumSQL(id, eltern){
+  const n = S.kn[id];
+  if (n.t === 'cmp'){
+    if (!n.f) throw {fehlt:'In einem Vergleich ist noch kein Feld gewählt.'};
+    if (/NULL/.test(n.op)) return n.f + ' ' + n.op;
+    if (!n.v.trim()) throw {fehlt:`Im Vergleich mit ${c(n.f)} fehlt noch der Wert.`};
+    if (!istText(n.f) && !/LIKE/.test(n.op) && !/^-?\d+([.,]\d+)?$/.test(n.v.trim())) throw {fehlt:`${c(n.f)} enthält Zahlen. Trage als Vergleichswert eine Zahl ein.`};
+    return n.f + ' ' + n.op + ' ' + wertSQL(n.f, n.v);
+  }
+  const W = n.t === 'und' ? 'AND' : 'OR';
+  if (!n.a || !n.b) throw {fehlt:`Im ${W}-Block ist noch eine Lücke frei.`};
+  const s = baumSQL(n.a, n.t) + ' ' + W + ' ' + baumSQL(n.b, n.t);
+  return eltern && eltern !== n.t ? '(' + s + ')' : s;
+}
+function slotHTML(p, k){
+  const id = slotGet(p, k);
+  return `<div class="slot hex bslot" data-drop="bslot" data-p="${p}" data-k="${k}">${id ? knotenHTML(id) : `<span class="ph">${p === 'root' ? 'Bedingung hierher ziehen – oder leer lassen' : 'Bedingung'}</span>`}</div>`;
+}
+function knotenHTML(id){
+  const n = S.kn[id];
+  if (n.t === 'cmp'){
+    const ops = OPS.map(o => `<option${n.op === o ? ' selected' : ''}>${o}</option>`).join('');
+    return `<div class="block hex builder bcmp" data-drag="1" data-id="${id}"><span class="grip" aria-hidden="true" title="hier anfassen und ziehen">⠿</span><select class="opsel bf" data-n="${id}" aria-label="Feld">${feldOptionen(n.f, 'Feld')}</select><select class="opsel bop" data-n="${id}" aria-label="Vergleich">${ops}</select>` +
+      (/NULL/.test(n.op) ? '' : `<input class="cvin bv" data-n="${id}" type="text" autocomplete="off" spellcheck="false" placeholder="Wert" value="${esc(n.v)}" size="${Math.max(5, n.v.length + 1)}" aria-label="Wert">`) + '</div>';
+  }
+  return `<div class="block hex logik ${n.t}" data-drag="1" data-id="${id}">${slotHTML(id, 'a')}<span class="lw">${n.t === 'und' ? 'AND' : 'OR'}</span>${slotHTML(id, 'b')}</div>`;
+}
+function baumPool(){
+  return `<div class="pool" data-drop="bpool"><div class="pool-title">Bausteine – ziehen oder anklicken · zum Löschen hierher zurückziehen</div><div class="pool-items">` +
+    `<div class="block hex builder" data-drag="1" data-neu="cmp" title="Vergleich, z. B. jahr &gt;= 1960">Feld <b>=</b> Wert</div>` +
+    `<div class="block hex logik und" data-drag="1" data-neu="und" title="beide Bedingungen müssen gelten"><span class="mini"></span><span class="lw">AND</span><span class="mini"></span></div>` +
+    `<div class="block hex logik oder" data-drag="1" data-neu="oder" title="mindestens eine Bedingung muss gelten"><span class="mini"></span><span class="lw">OR</span><span class="mini"></span></div></div></div>`;
+}
+
+/* ---------- Ziehen (basis.js): Access-Kriterien und Blöcke ---------- */
+window.dragData = (b, e) => {
+  if (e.target.closest('select,input,option,button')) return null;
+  if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+  return {id:b.dataset.id, neu:b.dataset.neu, acc:b.dataset.acc, src:!!(b.dataset.id || b.dataset.acc)};
+};
+window.dropOk = t => { const k = t.dataset.drop; return D.acc ? k === 'acell' || k === 'apool' : k === 'bslot' || k === 'bpool'; };
+window.applyDrop = (d, type, idx, t) => {
+  if (d.acc){
+    const Z = S.acc.zellen, von = Object.keys(Z).find(k => Z[k] === d.acc);
+    if (type === 'apool'){ if (von) delete Z[von]; }
+    else { const k = t.dataset.k, alt = Z[k]; if (von) delete Z[von]; if (alt && von) Z[von] = alt; Z[k] = d.acc; }
+  } else if (type === 'bpool'){ if (d.id){ const e = elternVon(d.id); slotSet(e.p, e.k, null); loesche(d.id); } }
+  else baumAblegen(d, t.dataset.p, t.dataset.k);
+  neuZeichnen();
+};
+window.dragTap = d => { if (d.neu){ baumTipp(d.neu); neuZeichnen(); } };
+function neuZeichnen(){
+  if (S.fb || S.success){ S.fb = null; S.success = false; renderFeedback(); }
+  if (LEVELS[level].ui === 'access') $('#accbox').innerHTML = accessHTML();
+  else { $('#whereinh').innerHTML = slotHTML('root', 'root'); }
+  vorschau();
+}
+
+/* ---------- Kalender statt Aufgabenliste ---------- */
+function tagName(i){ const n = K.kalender.tage.length; return `Woche ${Math.floor(i / n) + 1} · ${K.kalender.tage[i % n]}`; }
+function kalenderHTML(){
+  const tage = K.kalender.tage, n = (solved[level] || []).length;
+  let h = `<button class="dockbtn" id="dockBtn" aria-expanded="${pickerOpen}">📅 ${esc(tagName(pfadIdx))} <span class="sub">· ${n} von ${STD.length} gelöst</span></button>`;
+  if (!pickerOpen) return h;
+  h += `<div class="picker kal"><div class="ptitle">Zu einem Tag springen – grün = auf Stufe ${level} gelöst</div><table><tr><th></th>${tage.map(t => `<th>${esc(t.slice(0, 2))}</th>`).join('')}</tr>`;
+  for (let w = 0; w * tage.length < STD.length; w++){
+    h += `<tr><th>W${w + 1}</th>`;
+    tage.forEach((t, d) => { const i = w * tage.length + d;
+      h += i < STD.length ? `<td><button data-goto="${i}" class="${isSolved(i) ? 'solved' : ''}${i === pfadIdx ? ' cur' : ''}" title="${esc(tagName(i))}">${i + 1}</button></td>` : '<td></td>'; });
+    h += '</tr>';
+  }
+  return h + '</table></div>';
 }
 
 /* ---------- Ausführen und Prüfen ---------- */
@@ -2785,6 +3557,7 @@ function ausfuehren(){
   return {q, res:r.res};
 }
 function vergleiche(q, ist, soll, a){
+  const ACC = LEVELS[level].ui === 'access';
   const iCols = ist.columns.map(x => x.toLowerCase()), sCols = soll.columns.map(x => x.toLowerCase());
   const fehlt = sCols.filter(x => !iCols.includes(x)), zuviel = iCols.filter((x, i) => !sCols.includes(x) || iCols.indexOf(x) !== i);
   if (fehlt.length || zuviel.length){
@@ -2792,6 +3565,7 @@ function vergleiche(q, ist, soll, a){
     if (fehlt.length) h += `<br>Es fehlt: ${fehlt.map(c).join(', ')}.`;
     if (zuviel.length) h += `<br>Nicht gefragt ist: ${[...new Set(zuviel)].map(c).join(', ')}.`;
     if (iCols.length === T.felder.length && a.felder[0] !== '*') h += `<br>Mit ${c('*')} werden alle Spalten angezeigt – hier sind nur bestimmte gefragt.`;
+    else if (ACC && zuviel.length) h += '<br>Felder, die du nur für Kriterien brauchst, bekommen bei „Anzeigen:“ keinen Haken.';
     return h;
   }
   const idx = sCols.map(x => iCols.indexOf(x));
@@ -2808,10 +3582,14 @@ function vergleiche(q, ist, soll, a){
     if (extra.length && !miss.length) h += `<br>Es sind zu viele dabei, z. B. ${name(extra[0])}. Die Bedingung ist zu weit gefasst.`;
     else if (miss.length && !extra.length) h += `<br>Es fehlen Datensätze, z. B. ${name(miss[0])}. Die Bedingung ist zu eng gefasst.`;
     else if (extra.length) h += `<br>Zum Beispiel gehört ${name(extra[0])} nicht dazu, dafür fehlt ${name(miss[0])}.`;
-    if (!where.trim() && a.where) h += `<br>Es fehlt noch die Bedingung mit ${c('WHERE')}.`;
+    const und = /\bAND\b/i.test(where), oder = /\bOR\b/i.test(where);
+    if (!where.trim() && a.where) h += ACC ? '<br>Es fehlen noch die Kriterien.' : `<br>Es fehlt noch die Bedingung mit ${c('WHERE')}.`;
     else if (/\*/.test(where) && /LIKE/i.test(where)) h += `<br>Der Platzhalter in SQL ist ${c('%')}, nicht ${c('*')} wie in Access.`;
     else if (/LIKE/i.test(where) && !/%/.test(where)){ const m = where.match(/LIKE\s*'([^']*)'/i), w = m ? m[1] : 'Horror';
-      h += `<br>${c('LIKE')} ohne ${c('%')} vergleicht den ganzen Text. Mit ${c("'%" + w + "%'")} findest du ${esc(w)} an jeder Stelle.`; }
+      h += ACC ? `<br>${c('Wie')} ohne ${c('*')} vergleicht den ganzen Text. Mit ${c('Wie "*' + w + '*"')} findest du ${esc(w)} an jeder Stelle.`
+        : `<br>${c('LIKE')} ohne ${c('%')} vergleicht den ganzen Text. Mit ${c("'%" + w + "%'")} findest du ${esc(w)} an jeder Stelle.`; }
+    else if (ACC && (/\bOR\b/i.test(a.where || '') || oder)) h += '<br>Denk daran: Kriterien in <b>derselben Zeile</b> müssen alle gleichzeitig gelten (UND). Kriterien in <b>verschiedenen Zeilen</b> sind Alternativen (ODER) – was in jeder Zeile gelten soll, muss auch in jeder Zeile stehen.';
+    else if (!ACC && und && oder && !/\(/.test(where)) h += `<br>Achtung: ${c('AND')} bindet stärker als ${c('OR')}, so wie Punkt vor Strich. Setze Klammern, damit klar ist, was zusammengehört: ${c('(… OR …) AND …')}.`;
     else if (!iK.length && /=\s*'/.test(where)) h += `<br>Bei ${c('=')} muss der Text genau so in der Tabelle stehen. Schau in der Tabelle nach, wie er geschrieben ist.`;
     else if (/[<>]/.test(where) && Math.abs(iK.length - sK.length) <= 5 && (!extra.length || !miss.length)) h += `<br>Prüfe, ob der Grenzwert selbst dazugehören soll: ${c('>')} oder ${c('>=')}, ${c('<')} oder ${c('<=')}.`;
     return h;
@@ -2821,6 +3599,7 @@ function vergleiche(q, ist, soll, a){
     const folge = (vals, i) => JSON.stringify(vals.map(z => z[i]));
     if (si >= 0 && folge(ist.values, idx[si]) !== folge(soll.values, si)){
       const umgekehrt = folge(ist.values.slice().reverse(), idx[si]) === folge(soll.values, si);
+      if (ACC) return `Die richtigen Datensätze – aber die Reihenfolge stimmt nicht. Stelle beim Feld ${c(sf)} die Sortierung auf ${/DESC/i.test(sd || '') ? '„Absteigend“' : '„Aufsteigend“'}.`;
       return `Die richtigen Datensätze – aber die Reihenfolge stimmt nicht. Sortiere mit ${c('ORDER BY ' + sf)} ${umgekehrt ? `und achte auf die Richtung: ${c(/DESC/i.test(sd || '') ? 'DESC' : 'ASC')}` : ''}.`.replace(' .', '.');
     }
   }
@@ -2830,7 +3609,8 @@ function check(){
   if (FREI){ ausfuehren(); return; }
   const r = ausfuehren(); if (!r) return;
   const soll = abfrage(sqlVon(CUR));
-  const fehler = vergleiche(r.q, r.res, soll, CUR);
+  let fehler = vergleiche(r.q, r.res, soll, CUR);
+  for (const w of CUR.auch || []) if (fehler && !vergleiche(r.q, r.res, abfrage(sqlVon(Object.assign({}, CUR, {where:w}))), CUR)) fehler = null;
   if (fehler){ S.success = false; S.fb = {type:'err', html:fehler}; renderFeedback(); return; }
   S.success = true;
   const erstmals = countSolved();
@@ -2850,7 +3630,7 @@ function renderFeedback(){
   $('#fb').innerHTML = S.fb ? `<div class="fb ${S.fb.type}">${S.fb.html}</div>` : '';
 }
 function renderNav(){ if (!FREI){ navPfad(); renderDock(); } }
-function renderDock(){ $('#dock').innerHTML = dockHTML(); }
+function renderDock(){ $('#dock').innerHTML = K.kalender && mode === 'pfad' ? kalenderHTML() : dockHTML(); }
 const fmt = v => v === null ? '<span class="leer">leer</span>' : esc(v);
 function tabelleHTML(r, max){
   const n = r.values.length, zeig = r.values.slice(0, max || 500);
@@ -2891,21 +3671,26 @@ function whereBlock(){
     (S.wf && istText(S.wf) && !/NULL/.test(S.wop) ? '<span class="wthint">Anführungszeichen setzt der Entwurf selbst.</span>' : '');
 }
 function vorschau(){
-  const q = entwurfSQL();
+  const q = aktSQL();
   $('#sqlv').innerHTML = q.sql ? farbe(q.sql) : `<span class="ph">${q.fehlt.replace(/<[^>]+>/g, '')}</span>`;
 }
 function render(){
   const L = LEVELS[level], a = CUR;
   renderHeader();
+  document.querySelectorAll('[data-ansicht]').forEach(b => b.classList.toggle('on', b.dataset.ansicht === ansicht));
   $('#lvlname').textContent = `Stufe ${level}: ${L.name}`;
   if (FREI){ $('#taskmeta').textContent = ''; $('#tasktext').innerHTML = (K.intro || '') + felderHTML(); }
   else {
-    $('#taskmeta').textContent = mode === 'pfad' ? `Übungen · Aufgabe ${pfadIdx + 1} von ${STD.length}` : 'Endlos';
+    $('#taskmeta').textContent = mode !== 'pfad' ? 'Endlos' : K.kalender ? tagName(pfadIdx) : `Übungen · Aufgabe ${pfadIdx + 1} von ${STD.length}`;
     $('#tasktext').innerHTML = aufgabeText(a) + (a.tipp && level <= 3 ? `<div class="tipp">💡 ${a.tipp}</div>` : '');
   }
   const W = $('#work');
   ed = null;
-  if (L.ui === 'sql'){
+  if (L.ui === 'access'){
+    $('#worktitle').textContent = 'Entwurfsansicht';
+    W.innerHTML = `<div id="accbox">${accessHTML()}</div><div class="sqlvbox"><span class="sqlvl">SQL</span><pre class="sqlv cm-s-default" id="sqlv"></pre></div>`;
+    vorschau();
+  } else if (L.ui === 'sql'){
     $('#worktitle').textContent = 'SQL-Ansicht';
     W.innerHTML = '<div class="edwrap" id="edwrap"></div><div class="edhint">Strg + Enter führt aus · Vorschläge erscheinen beim Tippen (Enter oder Tab übernimmt)</div>';
     let start = '';
@@ -2920,10 +3705,10 @@ function render(){
     W.innerHTML = `<div class="entwurf">${feldListe()}<div class="klauseln">
       <div class="kl"><span class="kw cm-keyword">SELECT</span><div class="kinh" id="selchips">${selChips()}</div></div>
       <div class="kl"><span class="kw cm-keyword">FROM</span><div class="kinh"><span class="cm-builtin tabn">${esc(TAB)}</span></div></div>
-      <div class="kl"><span class="kw cm-keyword">WHERE</span><div class="kinh" id="whereinh">${L.ui === 'block' ? whereBlock() : '<div class="edwrap eins" id="wherewrap"></div>'}</div></div>
+      <div class="kl"><span class="kw cm-keyword">WHERE</span><div class="kinh" id="whereinh">${L.ui === 'block' ? whereBlock() : L.ui === 'baum' ? slotHTML('root', 'root') : '<div class="edwrap eins" id="wherewrap"></div>'}</div></div>
       <div class="kl"><span class="kw cm-keyword">ORDER BY</span><div class="kinh"><select class="sortsel" id="sf" aria-label="Sortieren nach">${feldOptionen(S.sf, '— nicht sortieren —')}</select>
         <select class="sortsel" id="sdir" aria-label="Richtung"${S.sf ? '' : ' hidden'}><option value="ASC"${S.sdir === 'ASC' ? ' selected' : ''}>ASC – aufsteigend</option><option value="DESC"${S.sdir === 'DESC' ? ' selected' : ''}>DESC – absteigend</option></select></div></div>
-    </div></div>
+    </div></div>${L.ui === 'baum' ? baumPool() : ''}
     <div class="sqlvbox"><span class="sqlvl">SQL</span><pre class="sqlv cm-s-default" id="sqlv"></pre></div>`;
     if (L.ui === 'text'){
       ed = editor($('#wherewrap'), {value:S.where, extraKeys:{'Enter':() => ausfuehren(), 'Ctrl-Enter':() => ausfuehren(), 'Shift-Ctrl-Enter':() => check(), 'Ctrl-Space':cm => cm.showHint({hint:hinweisListe, completeSingle:false})}});
@@ -2946,6 +3731,11 @@ function entwurfGeaendert(){
 
 /* ---------- Ereignisse ---------- */
 document.addEventListener('click', e => {
+  const an = e.target.closest('[data-ansicht]');
+  if (an){ setAnsicht(an.dataset.ansicht); return; }
+  const af = e.target.closest('.afeld');
+  if (af){ const col = S.acc.cols.find(x => !x.f); if (col){ col.f = af.dataset.feld; col.show = true; } else S.acc.cols.push({f:af.dataset.feld, sort:'', show:true}); neuZeichnen(); return; }
+  if (e.target.closest('#addCol')){ S.acc.cols.push({f:'', sort:'', show:true}); neuZeichnen(); return; }
   const f = e.target.closest('.feld');
   if (f){
     const n = f.dataset.feld;
@@ -2964,17 +3754,25 @@ document.addEventListener('click', e => {
   navClick(e);
 });
 document.addEventListener('change', e => {
-  const id = e.target.id;
+  const id = e.target.id, cl = e.target.classList, ci = +e.target.dataset.c, kn = S && S.kn[e.target.dataset.n];
+  if (cl.contains('af')){ const col = S.acc.cols[ci]; col.f = e.target.value; col.show = true; if (!col.f) col.sort = ''; neuZeichnen(); return; }
+  if (cl.contains('as')){ S.acc.cols[ci].sort = e.target.value; neuZeichnen(); return; }
+  if (cl.contains('ash')){ S.acc.cols[ci].show = e.target.checked; neuZeichnen(); return; }
+  if (kn && cl.contains('bf')){ kn.f = e.target.value; if (kn.f && !istText(kn.f) && /LIKE/.test(kn.op)) kn.op = '='; neuZeichnen(); return; }
+  if (kn && cl.contains('bop')){ kn.op = e.target.value; neuZeichnen(); const v = document.querySelector(`.bv[data-n="${kn.id}"]`); if (v) v.focus(); return; }
   if (id === 'wf'){ S.wf = e.target.value; if (S.wf && !istText(S.wf) && S.wop === 'LIKE') S.wop = '='; $('#whereinh').innerHTML = whereBlock(); entwurfGeaendert(); const v = $('#wv'); if (v) v.focus(); }
   else if (id === 'wop'){ S.wop = e.target.value; $('#whereinh').innerHTML = whereBlock(); entwurfGeaendert(); const v = $('#wv'); if (v) v.focus(); }
   else if (id === 'sf'){ S.sf = e.target.value; $('#sdir').hidden = !S.sf; entwurfGeaendert(); }
   else if (id === 'sdir'){ S.sdir = e.target.value; entwurfGeaendert(); }
 });
 document.addEventListener('input', e => {
+  const kn = S && S.kn[e.target.dataset.n];
+  if (kn && e.target.classList.contains('bv')){ kn.v = e.target.value; e.target.size = Math.max(5, kn.v.length + 1); if (S.fb){ S.fb = null; renderFeedback(); } vorschau(); return; }
+  if (e.target.classList.contains('ain')){ S.acc.zellen[e.target.dataset.k] = e.target.value; if (S.fb){ S.fb = null; S.success = false; renderFeedback(); } vorschau(); return; }
   if (e.target.id === 'wv'){ S.wv = e.target.value; e.target.size = Math.max(5, S.wv.length + 1); entwurfGeaendert(); }
 });
 document.addEventListener('keydown', e => {
-  if (e.target.id === 'wv' && e.key === 'Enter'){ e.preventDefault(); ausfuehren(); }
+  if ((e.target.id === 'wv' || e.target.matches('.bv,.ain')) && e.key === 'Enter'){ e.preventDefault(); ausfuehren(); }
   else if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && !e.target.closest('.CodeMirror')){ e.preventDefault(); e.shiftKey ? check() : ausfuehren(); }
 });
 $('#runBtn').addEventListener('click', () => ausfuehren());
@@ -2983,6 +3781,7 @@ $('#prevBtn').addEventListener('click', () => gotoTask(pfadIdx - 1));
 $('#tabBtn').textContent = `Tabelle ${TAB} ansehen`;
 
 /* ---------- Start ---------- */
+K._test = {accZellen, parseWhere};   // nur für automatische Tests
 $('#tasktext').textContent = 'Datenbank wird geladen …';
 initSqlJs().then(SQL => {
   baueDB(SQL);

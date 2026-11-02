@@ -222,7 +222,7 @@ Verglichen wird ohne Groß-/Kleinschreibung, Satzzeichen und doppelte Leerzeiche
 ### datenbanken/abfragen.js – Datenbanken: SQL-Abfragen mit Entwurfsansicht und Editor (dazu abfragen.css)
 
 ```text
-abfragen.js – SQL-Abfragen üben: Entwurf wie in Access (Stufe 1–2), SQL-Editor (Stufe 3–5)
+abfragen.js – SQL-Abfragen üben: Entwurf, Blöcke, Access-Entwurfsansicht, SQL-Editor
 
 Läuft komplett im Browser (SQLite über sql.js), auch per file://. Nutzt Kopfzeile, Stufen,
 Modi und Dock aus ../excel/basis.js. Einbinden am Ende von <body>, in dieser Reihenfolge:
@@ -234,10 +234,18 @@ Markup der Seite: wie abfragen.html (Kopfzeile, #tasktext, #work, #fb, #ergebnis
 SQLKURS = {
   id:      'sql'                 Tool-id aus katalog.js (Speicherstand: id + '-…')
   tabelle: DB_FILME              {name, felder:[{n, typ, art, d}], zeilen:[[…]]}
-  stufen:  [null, {name, ui}]    ui: 'block' Felder anklicken, Bedingung als Baustein
-                                     'text'  Felder anklicken, Bedingung eintippen
-                                     'sql'   SQL-Editor; vorlage: 'erklaert' | 'geruest' | 'leer'
-  aufgaben:[{frage, felder:['titel', …] oder ['*'], where?:"jahr < 1970", sort?:'jahr DESC', tipp?}]
+  stufen:  [null, {name, ui}]    ui: 'block'  Felder anklicken, eine Bedingung als Baustein
+                                     'baum'   Felder anklicken, Bedingung aus Blöcken (AND/OR verschachtelt)
+                                     'text'   Felder anklicken, Bedingung eintippen
+                                     'sql'    SQL-Editor; vorlage: 'erklaert' | 'geruest' | 'leer'
+                                     'access' Access-Entwurf (Feld, Sortierung, Anzeigen, Kriterien/oder);
+                                              krit: 'bloecke' nur die nötigen Kriterien (mit Feldname),
+                                              'falsch' dazu falsche, 'text' selbst eintippen (Access-Schreibweise)
+  ansichten: {access:{name, stufen}, sql:{name, stufen}}   statt stufen: Umschalter in der Kopfzeile
+           (Knöpfe mit data-ansicht="…"); Stufe, Fortschritt und Modus je Ansicht getrennt (id-ansicht-…)
+  kalender:{tage:['Montag', …]}  Aufgabenwahl als Kalender (Wochen × Tage) statt Nummern
+  aufgaben:[{frage, felder:['titel', …] oder ['*'], where?:"jahr < 1970", sort?:'jahr DESC', tipp?,
+            auch?:["…"] gleichwertige Bedingungen, die ebenfalls als richtig zählen}]
   endlos:  [(r, Z) => Aufgabe]   r = Zufall, Z = {pick1, ri, liste(sql) → erste Spalte aller Zeilen}
            Ergebnis mit 1 bis 80 Zeilen wird genommen, sonst neu gewürfelt.
   intro:   HTML über der Abfrage, nur ohne aufgaben
@@ -255,7 +263,7 @@ Tasten: Strg+Enter führt aus, Strg+Shift+Enter prüft; Autovervollständigung b
 ### datenbanken/filme.js – Datenbanken: Tabelle filme als Daten
 
 ```text
-filme.js – Tabelle „filme“: 484 Filme und Serien, die Herr Maier auf IMDb bewertet hat
+filme.js – Tabelle „filme“: 888 Filme und Serien von Herrn Maier (484 bewertet, 404 auf der Merkliste)
 
 Daten für Datenbank-Übungen. abfragen.js baut daraus die SQLite-Tabelle im Browser.
   DB_FILME = {name, felder:[{n, typ, art, d}], zeilen:[[…], …]}

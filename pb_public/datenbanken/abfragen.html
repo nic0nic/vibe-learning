@@ -78,9 +78,9 @@ const AUFGABEN = [
    tipp:'Mit <code>*</code> werden alle Felder angezeigt.'},
   {frage:'Für eine Liste zum Ausdrucken braucht er nur Titel und Erscheinungsjahr.', felder:['titel', 'jahr']},
   {frage:'Wer hat bei welchem Eintrag Regie geführt und wie gut ist er auf IMDb bewertet?', felder:['titel', 'regie', 'imdb_bewertung']},
-  {frage:'Welche Filme von Stanley Kubrick hat Herr Maier bewertet?', felder:['titel', 'jahr'], where:"regie = 'Stanley Kubrick'",
-   tipp:"Texte stehen in SQL in einfachen Anführungszeichen: <code>'Stanley Kubrick'</code>. Das Zeichen <code>'</code> tippst du mit Shift + #."},
-  {frage:'Welche Fernsehserien hat er bewertet?', felder:['titel', 'jahr'], where:"art = 'Fernsehserie'"},
+  {frage:'Welche Filme von David Fincher stehen in der Sammlung?', felder:['titel', 'jahr'], where:"regie = 'David Fincher'",
+   tipp:"Texte stehen in SQL in einfachen Anführungszeichen: <code>'David Fincher'</code>. Das Zeichen <code>'</code> tippst du mit Shift + #."},
+  {frage:'Welche Fernsehserien stehen in der Sammlung?', felder:['titel', 'jahr'], where:"art = 'Fernsehserie'"},
   {frage:'Welche Einträge fand Herr Maier perfekt? Er hat ihnen eine 10 gegeben.', felder:['titel', 'regie', 'jahr'], where:'eigene_bewertung = 10',
    tipp:'Zahlen schreibt man ohne Anführungszeichen.'},
   {frage:'Welche Einträge sind vor 1970 erschienen?', felder:['titel', 'jahr'], where:'jahr < 1970',
@@ -91,7 +91,7 @@ const AUFGABEN = [
   {frage:'Was fand Herr Maier richtig schlecht? Gesucht sind alle Einträge mit einer eigenen Bewertung von höchstens 3.', felder:['titel', 'eigene_bewertung', 'imdb_bewertung'], where:'eigene_bewertung <= 3'},
   {frage:'Welche Einträge sind keine Filme?', felder:['titel', 'art'], where:"art <> 'Film'",
    tipp:'<code>&lt;&gt;</code> bedeutet „ungleich“.'},
-  {frage:'Welche Filme von Christopher Nolan hat Herr Maier gesehen? Die ältesten sollen oben stehen.', felder:['titel', 'jahr'], where:"regie = 'Christopher Nolan'", sort:'jahr ASC',
+  {frage:'Welche Filme von Christopher Nolan stehen in der Sammlung? Die ältesten sollen oben stehen.', felder:['titel', 'jahr'], where:"regie = 'Christopher Nolan'", sort:'jahr ASC',
    tipp:'<code>ORDER BY jahr ASC</code> sortiert aufsteigend (klein → groß), <code>DESC</code> absteigend (groß → klein).'},
   {frage:'Welche Einträge haben auf IMDb mehr als 8.7 Punkte? Die besten sollen oben stehen.', felder:['titel', 'imdb_bewertung'], where:'imdb_bewertung > 8.7', sort:'imdb_bewertung DESC'},
   {frage:'Welche Einträge sind 2019 erschienen? Sortiere die Titel von A bis Z.', felder:['titel', 'art', 'jahr'], where:'jahr = 2019', sort:'titel ASC'},
@@ -119,7 +119,7 @@ const ENDLOS = [
     return {frage:`Bei welchen Einträgen hat ${d} Regie geführt?`, felder:f, where:`regie = ${q(d)}`, sort:sortiere(r, f, 'jahr')}; },
   (r, Z) => { const a = Z.pick1(r, ['Fernsehserie', 'Miniserie', 'Kurzfilm', 'Video']);
     const f = extra(r, Z, ['titel', 'art'], ['jahr', 'imdb_bewertung', 'laufzeit'], 1);
-    return {frage:`Welche Einträge der Art „${a}“ hat Herr Maier bewertet?`, felder:f, where:`art = ${q(a)}`}; },
+    return {frage:`Welche Einträge der Art „${a}“ stehen in der Sammlung?`, felder:f, where:`art = ${q(a)}`}; },
   (r, Z) => { const y = Z.pick1(r, [1960, 1970, 1975, 1980, 1985, 1990]); const f = extra(r, Z, ['titel', 'jahr'], ['regie', 'eigene_bewertung'], Z.ri(r, 0, 1));
     return {frage:`Welche Einträge sind vor ${y} erschienen?`, felder:f, where:`jahr < ${y}`, sort:sortiere(r, f, 'jahr')}; },
   (r, Z) => { const y = Z.pick1(r, Z.liste('SELECT jahr FROM filme GROUP BY jahr HAVING COUNT(*) BETWEEN 4 AND 40'));

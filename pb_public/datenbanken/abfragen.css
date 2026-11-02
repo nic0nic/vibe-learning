@@ -1,10 +1,12 @@
 /* abfragen.css – Aussehen der SQL-Übungen (zu abfragen.js, nach ../excel/basis.css laden) */
 :root{
+  --und:#5e81ac;--oder:#b0663f;
   --ed-bg:#ffffff;--gutter:#eceff4;--gutter-text:#7b88a1;--sel:#d8dee9;
   --kw:#8a5f84;--str:#5e8a45;--num:#b0631f;--com:#7b88a1;--col:#4f73a3;--tab:#3b7f8c;--op:#4c566a;
   --tabkopf:#a3434c;--erkl:#8c96a8
 }
 [data-theme=dark]{
+  --und:#81a1c1;--oder:#d08770;
   --ed-bg:#2e3440;--gutter:#2a2f3a;--gutter-text:#616e88;--sel:#434c5e;
   --kw:#b48ead;--str:#a3be8c;--num:#d08770;--com:#7b88a1;--col:#88c0d0;--tab:#8fbcbb;--op:#81a1c1;
   --tabkopf:#bf616a;--erkl:#7b88a1
@@ -12,6 +14,7 @@
 main{max-width:1080px;margin:0 auto;padding:18px 16px}
 .tasktext{margin:0;font-size:17px}
 .tasktext .zeige{display:inline-block;margin-top:4px}
+.tasktext ul.bed{margin:6px 0 2px;padding-left:24px}
 .tipp{margin-top:8px;font-size:15px;color:var(--muted)}
 details.felder{margin-top:10px;font-size:15px}
 details.felder summary{cursor:pointer;color:var(--muted)}
@@ -90,3 +93,53 @@ li.CodeMirror-hint-active{background:var(--accent);color:var(--on-color)}
 .picker{position:absolute;bottom:62px;left:0;background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:14px;box-shadow:0 8px 28px rgba(0,0,0,.25);width:min(320px,calc(100vw - 44px))}
 .pg{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
 @media (max-width:640px){ .kl{flex-direction:column;align-items:flex-start} .tabfenster{width:100%} .picker{bottom:auto;top:auto;position:relative;margin-bottom:8px} }
+
+/* Blöcke: UND/ODER spitz wie in Scratch, beliebig verschachtelt */
+.bslot{min-width:150px;min-height:48px;padding:3px 12px}
+.bslot .bslot{min-width:110px;min-height:44px}
+.block.logik{display:inline-flex;align-items:center;gap:6px;padding:5px 18px;color:var(--on-color);font:800 15px var(--mono)}
+.block.logik.und{background:var(--und)} .block.logik.oder{background:var(--oder)}
+.block.logik .lw{padding:0 2px;letter-spacing:.04em}
+.block.logik .mini{display:inline-block;width:34px;height:22px;clip-path:var(--hex);background:rgba(255,255,255,.35)}
+.block.logik > .bslot::after{background:color-mix(in srgb,var(--slot) 88%,transparent)}
+.block.bcmp,.pool .block.builder{display:inline-flex;align-items:center;gap:5px;color:var(--on-color);font:700 15px var(--mono)}
+.bcmp .opsel,.bcmp .cvin{font-size:14px}
+.klauseln,.kl,.kinh{min-width:0}
+.bslot{flex-shrink:0}
+#whereinh{overflow-x:auto;padding:2px 0}
+.bslot .block.logik{flex-direction:column;align-items:flex-start;padding:8px 20px;row-gap:2px}
+.bslot .block.logik > .lw{align-self:center}
+.block.bcmp{flex-wrap:nowrap;white-space:nowrap}
+.bslot{justify-content:flex-start}
+
+/* Access: Entwurfsraster mit Feld, Tabelle, Sortierung, Anzeigen, Kriterien, oder */
+.accwrap{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}
+.tabfenster.klein{min-width:170px}
+.afeld{display:flex;gap:6px;align-items:center;text-align:left;font:14px var(--mono);color:var(--text);background:none;border:0;border-bottom:1px solid var(--panel2);padding:3px 10px;cursor:pointer}
+.afeld:hover{background:var(--panel2)}
+.agridw{flex:1 1 520px;overflow-x:auto;border:1px solid var(--border);border-radius:8px;background:var(--ed-bg)}
+.agrid{border-collapse:collapse;font:14px var(--mono)}
+.agrid th{background:var(--panel2);text-align:right;font:600 13px system-ui,sans-serif;color:var(--muted);padding:4px 8px;white-space:nowrap;border-bottom:1px solid var(--border)}
+.agrid td{border-left:1px solid var(--border);border-bottom:1px solid var(--panel2);padding:3px 4px;min-width:150px;height:36px;vertical-align:middle}
+.agrid tr.krit td{height:46px}
+.agrid select{width:100%;font:14px var(--mono);background:var(--ed-bg);color:var(--text);border:1px solid var(--border);border-radius:5px;padding:2px}
+.agrid .atab{color:var(--muted);padding-left:8px}
+.agrid .ashow{text-align:center} .agrid .ashow input{width:18px;height:18px}
+.ain{width:100%;font:14px var(--mono);background:var(--ed-bg);color:var(--text);border:1px solid var(--border);border-radius:5px;padding:4px 6px}
+.ain:focus{outline:2px solid var(--accent);outline-offset:-1px}
+.acell{min-height:38px;border:2px dashed transparent;border-radius:8px;display:flex;align-items:center;padding:1px}
+body.dragging .acell{border-color:var(--slot-border);background:var(--slot)}
+.acell.drop-hover{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,var(--slot))}
+.block.acc{display:inline-flex;flex-direction:column;align-items:flex-start;padding:4px 12px;font:700 14px var(--mono);line-height:1.2}
+.block.acc .bfeld{font:500 11px system-ui,sans-serif;opacity:.7}
+.btn.klein{padding:6px 12px;font-size:14px}
+#accbox .pool{margin-top:12px}
+
+/* Kalender als Aufgabenwahl */
+.picker.kal{width:auto}
+.kal table{border-collapse:separate;border-spacing:5px}
+.kal th{font:600 12px system-ui,sans-serif;color:var(--muted)}
+.kal td button{width:40px;height:36px;border-radius:8px;border:1px solid var(--border);background:var(--panel2);color:var(--text);font:600 14px system-ui,sans-serif;cursor:pointer}
+.kal td button.solved{background:var(--then);color:var(--on-color);border-color:transparent}
+.kal td button.cur{outline:3px solid var(--accent);outline-offset:1px}
+.modes + .modes{margin-left:8px}

@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="de" data-trainer="sqluo">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Datenight – vibe learning</title>
+<script src="../katalog.js"></script>
+<script src="../nav.js"></script>
+<script src="../sync.js"></script>
+<script>
+(function(){var t=null;try{t=localStorage.getItem('wenn-theme');}catch(e){}
+document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');})();
+</script>
+<link rel="stylesheet" href="../python/lib/codemirror.css">
+<link rel="stylesheet" href="lib/show-hint.min.css">
+<link rel="stylesheet" href="../excel/basis.css">
+<link rel="stylesheet" href="abfragen.css">
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <linearGradient id="fg" x1="0" y1="1" x2="0" y2="0">
+    <stop offset="0" stop-color="#d9230f"/><stop offset=".55" stop-color="#ff7a00"/><stop offset="1" stop-color="#ffd23f"/>
+  </linearGradient></defs></svg>
+
+<header>
+  <div class="hdr-left">
+    <div class="brand"><span>&gt;</span>Datenight<span>;</span></div>
+    <div class="modes" role="group" aria-label="Modus">
+      <button data-mode="pfad">Übungen</button><button data-mode="endlos">Endlos</button>
+    </div>
+    <div class="modes" role="group" aria-label="Ansicht">
+      <button data-ansicht="access">Access</button><button data-ansicht="sql">Blöcke / SQL</button>
+    </div>
+  </div>
+  <div class="hdr-right">
+    <button class="iconbtn" id="themeBtn" aria-label="Hell/Dunkel umschalten"></button>
+    <div class="flames" id="flames" aria-label="Stufe wählen"></div>
+  </div>
+</header>
+
+<main>
+  <section class="card">
+    <div class="meta">
+      <span class="lvlname" id="lvlname"></span>
+      <span id="taskmeta"></span>
+    </div>
+    <div class="tasktext" id="tasktext"></div>
+  </section>
+
+  <section class="card" id="workcard">
+    <div class="worktitle" id="worktitle"></div>
+    <div id="work"></div>
+  </section>
+
+  <div class="actions">
+    <button class="btn" id="runBtn" title="Abfrage ausführen (Strg + Enter)">▶ Ausführen</button>
+    <button class="btn primary" id="checkBtn" title="Prüfen (Strg + Shift + Enter)">Prüfen</button>
+    <button class="btn" id="resetBtn">Zurücksetzen</button>
+    <button class="btn" id="tabBtn"></button>
+    <span class="spacer"></span>
+    <button class="btn" id="skipBtn" title="Neue Aufgabe – die Serie beginnt wieder bei 0">Andere Aufgabe</button>
+    <button class="btn" id="prevBtn" aria-label="Vorherige Aufgabe">◀</button>
+    <button class="btn" id="nextBtn">Nächste Aufgabe ▶</button>
+  </div>
+  <div id="fb"></div>
+  <section class="card" id="ergebnis" style="display:none"></section>
+</main>
+
+<div class="dock" id="dock"></div>
+
+<script src="filme.js"></script>
+<script src="lib/sql-asm.js"></script>
+<script src="../python/lib/codemirror.min.js"></script>
+<script src="lib/show-hint.min.js"></script>
+<script src="../excel/basis.js"></script>
+<script>
+/* Datenight: Herr Maier datet drei Wochen lang jeden Tag dieselbe Person, die Wünsche werden immer verrückter.
+   Aufgaben wie in abfragen.html; auch = gleichwertige Bedingungen (z. B. Ko-Regie, Jahrtausend ab 2000). */
+const P = ['Frau Montag', 'Herr Dienstag', 'Frau Mittwoch', 'Frau Donnerstag', 'Die Person am Freitag', 'Herr Samstag', 'Frau Sonntag'];
+const sagt = (i, w, text) => `<b>${P[i]}</b>${w > 1 ? ` (${w}. Date)` : ''} sagt: „${text}“`;
+const NULLTIPP = 'Noch nicht gesehen heißt: keine eigene Bewertung – in SQL <code>eigene_bewertung IS NULL</code>, in Access <code>Ist Null</code>.';
+const KUBRICK = s => s.replace(/regie = 'Stanley Kubrick'/g, "regie LIKE '%Kubrick%'");
+const AUFGABEN = [
+  // Woche 1: die Wünsche aus datenight.md
+  {frage:sagt(0, 1, 'Ich will etwas ansehen, das du entweder sehr gut (9 oder besser) oder eher schlecht (4 oder schlechter) fandest.'),
+   felder:['titel', 'imdb_bewertung', 'jahr', 'eigene_bewertung'], where:'eigene_bewertung >= 9 OR eigene_bewertung <= 4',
+   tipp:'Zwei Bedingungen, von denen <b>eine</b> reichen soll: in SQL <code>OR</code>, in Access zwei verschiedene Zeilen.'},
+  {frage:sagt(1, 1, 'Ich will einen Film sehen, der dieses Jahrtausend erschienen ist. Außerdem soll er unter 2 Stunden dauern und du sollst ihn noch nicht gesehen haben.'),
+   felder:['titel', 'imdb_bewertung', 'jahr', 'eigene_bewertung'], where:"art = 'Film' AND jahr >= 2001 AND laufzeit < 120 AND eigene_bewertung IS NULL",
+   auch:["art = 'Film' AND jahr >= 2000 AND laufzeit < 120 AND eigene_bewertung IS NULL"],
+   tipp:'Alle Bedingungen müssen gleichzeitig gelten: in SQL <code>AND</code>, in Access alles in <b>dieselbe</b> Zeile. ' + NULLTIPP},
+  {frage:sagt(2, 1, 'Ich will, dass wir eine Fernsehserie anschauen, die als Genre Mystery gelistet hat.'),
+   felder:['titel', 'jahr', 'imdb_bewertung'], where:"art = 'Fernsehserie' AND genres LIKE '%Mystery%'", sort:'jahr ASC'},
+  {frage:sagt(3, 1, 'Ich will etwas schauen, was die Genres Liebesfilm und Horror bedient.'),
+   felder:['titel', 'jahr', 'imdb_bewertung', 'genres'], where:"genres LIKE '%Liebesfilm%' AND genres LIKE '%Horror%'",
+   tipp:'Zweimal dasselbe Feld: in Access entweder <code>Wie "*Liebesfilm*" Und Wie "*Horror*"</code> in eine Zelle oder das Feld zweimal in den Entwurf.'},
+  {frage:sagt(4, 1, 'Ich will eine Miniserie ganz durchschauen, die vor 2000 erschien.'),
+   felder:['titel', 'jahr', 'eigene_bewertung', 'art'], where:"art = 'Miniserie' AND jahr < 2000", sort:'jahr DESC'},
+  {frage:sagt(5, 1, 'Ich will einen Film schauen, der in den 1960er Jahren rausgekommen ist.'),
+   felder:['titel', 'jahr', 'eigene_bewertung', 'genres'], where:"art = 'Film' AND jahr >= 1960 AND jahr <= 1969", sort:'jahr DESC',
+   tipp:'Ein Bereich sind zwei Bedingungen für dasselbe Feld: <code>jahr &gt;= 1960 AND jahr &lt;= 1969</code>, in Access <code>&gt;=1960 Und &lt;=1969</code> oder <code>Zwischen 1960 Und 1969</code>.'},
+  {frage:sagt(6, 1, 'Ich will entweder einen Film schauen, der in den 1960er oder 1970er Jahren rausgekommen ist und bei dem Stanley Kubrick Regie führte. Alternativ einen Film von Ridley Scott, den du noch nicht gesehen hast.'),
+   felder:['titel', 'jahr', 'eigene_bewertung', 'regie'], sort:'jahr DESC',
+   where:"(art = 'Film' AND jahr >= 1960 AND jahr <= 1979 AND regie = 'Stanley Kubrick') OR (art = 'Film' AND regie = 'Ridley Scott' AND eigene_bewertung IS NULL)",
+   tipp:'Zwei Alternativen mit je mehreren Bedingungen: in SQL Klammern um jede Alternative, in Access zwei Zeilen – <code>"Film"</code> muss dann in beiden stehen.'},
+  // Woche 2: dieselben Personen, die Wünsche werden genauer
+  {frage:sagt(0, 2, 'Letztes Mal war mir das zu viel Auswahl. Diesmal will ich Extreme: Entweder du hast eine 10 gegeben oder höchstens eine 3. Aber auf IMDb muss es mindestens 8 Punkte haben – deinem Geschmack traue ich nicht.'),
+   felder:['titel', 'eigene_bewertung', 'imdb_bewertung'], where:'(eigene_bewertung = 10 OR eigene_bewertung <= 3) AND imdb_bewertung >= 8',
+   tipp:'Klammern entscheiden: <code>(A OR B) AND C</code>. In Access steht C in <b>jeder</b> Zeile.'},
+  {frage:sagt(1, 2, 'Wieder etwas, das du noch nicht kennst. Aber kürzer als 100 Minuten, ich muss früh raus. Und lustig soll es sein: eine Komödie oder ein Animationsfilm.'),
+   felder:['titel', 'laufzeit', 'genres'], where:"eigene_bewertung IS NULL AND laufzeit < 100 AND (genres LIKE '%Komödie%' OR genres LIKE '%Animation%')"},
+  {frage:sagt(2, 2, 'Serien sind super. Mystery oder Science-Fiction, Hauptsache auf IMDb mindestens 8 Punkte. Die besten zuerst!'),
+   felder:['titel', 'genres', 'imdb_bewertung'], where:"art = 'Fernsehserie' AND (genres LIKE '%Mystery%' OR genres LIKE '%Science-Fiction%') AND imdb_bewertung >= 8", sort:'imdb_bewertung DESC'},
+  {frage:sagt(3, 2, 'Liebe und Horror war schön. Heute darf es auch Liebe im Krieg sein: ein Liebesfilm, der außerdem Horror oder Kriegsfilm ist.'),
+   felder:['titel', 'jahr', 'genres'], where:"genres LIKE '%Liebesfilm%' AND (genres LIKE '%Horror%' OR genres LIKE '%Kriegsfilm%')"},
+  {frage:sagt(4, 2, 'Eine Serie zum Durchschauen – egal ob Mini- oder Fernsehserie. Aber jede Folge höchstens 30 Minuten, sonst schlafe ich ein.'),
+   felder:['titel', 'art', 'laufzeit'], where:"(art = 'Miniserie' OR art = 'Fernsehserie') AND laufzeit <= 30"},
+  {frage:sagt(5, 2, 'Die 60er waren toll. Jetzt die 70er! Ein Film, den du noch nicht gesehen hast – oder einer, den du mit mindestens 9 bewertet hast. Den würdest du ja gern nochmal sehen.'),
+   felder:['titel', 'jahr', 'eigene_bewertung'], where:"art = 'Film' AND jahr >= 1970 AND jahr <= 1979 AND (eigene_bewertung IS NULL OR eigene_bewertung >= 9)", sort:'jahr ASC'},
+  {frage:sagt(6, 2, 'Kubrick oder Ridley Scott, egal aus welchem Jahr. Aber ein Film soll es sein, höchstens zwei Stunden lang, die kürzesten zuerst.'),
+   felder:['titel', 'regie', 'laufzeit'], where:"art = 'Film' AND laufzeit <= 120 AND (regie = 'Stanley Kubrick' OR regie = 'Ridley Scott')", sort:'laufzeit ASC'},
+  // Woche 3: es wird absurd
+  {frage:sagt(0, 3, 'Ich will sehen, wie seltsam dein Geschmack ist: Einträge, bei denen du und IMDb euch völlig uneinig seid. Entweder du hast höchstens 4 gegeben und IMDb mindestens 7,5 – oder du mindestens 9 und IMDb höchstens 6,5.'),
+   felder:['titel', 'eigene_bewertung', 'imdb_bewertung'], where:'(eigene_bewertung <= 4 AND imdb_bewertung >= 7.5) OR (eigene_bewertung >= 9 AND imdb_bewertung <= 6.5)'},
+  {frage:sagt(1, 3, 'Etwas Ungesehenes, das dich herausfordert: entweder uralt (vor 1960) oder ein Brocken von über drei Stunden.'),
+   felder:['titel', 'jahr', 'laufzeit'], where:'eigene_bewertung IS NULL AND (jahr < 1960 OR laufzeit > 180)', sort:'jahr ASC'},
+  {frage:sagt(2, 3, 'Mystery-Serien, gerne – aber bitte keine Krimis! Da steckt doch immer ein Mord dahinter.'),
+   felder:['titel', 'genres'], where:"art = 'Fernsehserie' AND genres LIKE '%Mystery%' AND genres NOT LIKE '%Krimi%'",
+   tipp:'„Enthält nicht“: in SQL <code>NOT LIKE \'%Krimi%\'</code>, in Access <code>Nicht Wie "*Krimi*"</code>.'},
+  {frage:sagt(3, 3, 'Entweder Horror, aber nur, wenn du ihn mit mindestens 8 bewertet hast – oder einen Liebesfilm, den du noch nicht kennst. Alphabetisch bitte.'),
+   felder:['titel', 'genres', 'eigene_bewertung'], where:"(genres LIKE '%Horror%' AND eigene_bewertung >= 8) OR (genres LIKE '%Liebesfilm%' AND eigene_bewertung IS NULL)", sort:'titel ASC'},
+  {frage:sagt(4, 3, 'Ich mag nur Titel, die mit dem Wort „Der“ anfangen. Es soll eine Fernsehserie sein – oder ein Film, der vor 1980 erschien.'),
+   felder:['titel', 'art', 'jahr'], where:"titel LIKE 'Der %' AND (art = 'Fernsehserie' OR (art = 'Film' AND jahr < 1980))",
+   auch:["titel LIKE 'Der%' AND (art = 'Fernsehserie' OR (art = 'Film' AND jahr < 1980))"]},
+  {frage:sagt(5, 3, 'Ein Film aus den 60ern oder 70ern, den du noch nicht gesehen hast, und zwar ein Western oder ein Kriegsfilm. Die längsten zuerst, ich habe Zeit.'),
+   felder:['titel', 'jahr', 'laufzeit', 'genres'], where:"art = 'Film' AND jahr >= 1960 AND jahr <= 1979 AND eigene_bewertung IS NULL AND (genres LIKE '%Western%' OR genres LIKE '%Kriegsfilm%')", sort:'laufzeit DESC'},
+  {frage:sagt(6, 3, 'Zum Abschluss will ich alles: Entweder einen Film von Stanley Kubrick oder Ridley Scott, den du noch nicht gesehen hast und der vor 1980 erschien – oder einen Film, den du mit mindestens 9 bewertet hast, der auf IMDb mindestens 8,5 hat und kürzer als 100 Minuten ist.'),
+   felder:['titel', 'jahr', 'regie', 'eigene_bewertung'], sort:'jahr ASC',
+   where:"(art = 'Film' AND eigene_bewertung IS NULL AND jahr < 1980 AND (regie = 'Stanley Kubrick' OR regie = 'Ridley Scott')) OR (art = 'Film' AND eigene_bewertung >= 9 AND imdb_bewertung >= 8.5 AND laufzeit < 100)"}
+];
+// Ko-Regie (z. B. Spartacus: Stanley Kubrick, Anthony Mann) zählt auch
+AUFGABEN.forEach(a => { if (/Stanley Kubrick/.test(a.where)) a.auch = (a.auch || []).concat(KUBRICK(a.where)); });
+
+/* Endlos: zwei oder drei Bedingungen, verknüpft mit UND/ODER */
+const ATOME = [
+  (r, Z) => ({f:'art', sql:"art = 'Film'", t:'ist ein Film'}),
+  (r, Z) => ({f:'art', sql:"art = 'Fernsehserie'", t:'ist eine Fernsehserie'}),
+  (r, Z) => { const y = Z.pick1(r, [1960, 1970, 1980, 1990]); return {f:'jahr', sql:`jahr < ${y}`, t:`ist vor ${y} erschienen`}; },
+  (r, Z) => { const y = Z.pick1(r, [2000, 2010, 2015]); return {f:'jahr', sql:`jahr >= ${y}`, t:`ist ${y} oder später erschienen`}; },
+  (r, Z) => { const m = Z.pick1(r, [90, 100, 120]); return {f:'laufzeit', sql:`laufzeit <= ${m}`, t:`dauert höchstens ${m} Minuten`}; },
+  (r, Z) => { const m = Z.pick1(r, [150, 180]); return {f:'laufzeit', sql:`laufzeit > ${m}`, t:`dauert länger als ${m} Minuten`}; },
+  (r, Z) => { const x = Z.pick1(r, ['7.5', '8', '8.5']); return {f:'imdb_bewertung', sql:`imdb_bewertung >= ${x}`, t:`hat auf IMDb mindestens ${x.replace('.', ',')} Punkte`}; },
+  (r, Z) => { const n = Z.pick1(r, [8, 9]); return {f:'eigene_bewertung', sql:`eigene_bewertung >= ${n}`, t:`hat von Herrn Maier mindestens ${n} Punkte bekommen`}; },
+  (r, Z) => { const n = Z.pick1(r, [3, 4, 5]); return {f:'eigene_bewertung', sql:`eigene_bewertung <= ${n}`, t:`hat von Herrn Maier höchstens ${n} Punkte bekommen`}; },
+  (r, Z) => ({f:'eigene_bewertung', sql:'eigene_bewertung IS NULL', t:'ist noch nicht gesehen (keine eigene Bewertung)'}),
+  (r, Z) => { const g = Z.pick1(r, ['Horror', 'Komödie', 'Animation', 'Western', 'Kriegsfilm', 'Liebesfilm', 'Science-Fiction', 'Mystery', 'Krimi', 'Fantasy']); return {f:'genres', sql:`genres LIKE '%${g}%'`, t:`gehört zum Genre ${g}`}; }
+];
+function atome(r, Z, n){
+  const out = [];
+  for (const k of Z.shuffle(ATOME.map((_, i) => i), r)){ const a = ATOME[k](r, Z); if (!out.some(x => x.f === a.f)) out.push(a); if (out.length === n) break; }
+  return out;
+}
+function kombi(r, Z, sqlv, zeilen, at){
+  const felder = ['titel', ...new Set(at.map(a => a.f).filter(f => f !== 'art'))];
+  return {frage:`Herr Maier plant einen Filmabend. Gesucht sind alle Einträge, für die gilt:<ul class="bed">${zeilen.map(z => `<li>${z}</li>`).join('')}</ul>`, felder, where:sqlv};
+}
+const b = s => `<b>${s}</b>`;
+const ENDLOS = [
+  (r, Z) => { const [A, B] = atome(r, Z, 2); return kombi(r, Z, `${A.sql} AND ${B.sql}`, [A.t, b('und') + ' ' + B.t], [A, B]); },
+  (r, Z) => { const [A, B] = atome(r, Z, 2); return kombi(r, Z, `${A.sql} OR ${B.sql}`, [A.t, b('oder') + ' ' + B.t], [A, B]); },
+  (r, Z) => { const [A, B, C] = atome(r, Z, 3); return kombi(r, Z, `${A.sql} AND ${B.sql} AND ${C.sql}`, [A.t, b('und') + ' ' + B.t, b('und') + ' ' + C.t], [A, B, C]); },
+  (r, Z) => { const [A, B, C] = atome(r, Z, 3); return kombi(r, Z, `(${A.sql} OR ${B.sql}) AND ${C.sql}`, [`${A.t} ${b('oder')} ${B.t}`, b('und außerdem') + ' ' + C.t], [A, B, C]); },
+  (r, Z) => { const [A, B, C] = atome(r, Z, 3); return kombi(r, Z, `(${A.sql} AND ${B.sql}) OR ${C.sql}`, [`${A.t} ${b('und')} ${B.t}`, b('oder aber') + ' ' + C.t], [A, B, C]); }
+];
+
+window.SQLKURS = {
+  id: 'sqluo',
+  tabelle: DB_FILME,
+  kalender: {tage:['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag']},
+  ansichten: {
+    access: {name:'Access', stufen:[null,
+      {name:'Kriterien einsetzen',            ui:'access', krit:'bloecke'},
+      {name:'Die richtigen Kriterien finden', ui:'access', krit:'falsch'},
+      {name:'Kriterien selbst eintippen',     ui:'access', krit:'text'}]},
+    sql: {name:'Blöcke / SQL', stufen:[null,
+      {name:'Bedingung aus Blöcken bauen',            ui:'baum'},
+      {name:'Felder anklicken, Bedingung eintippen',  ui:'text'},
+      {name:'SQL mit Gerüst und Erklärung',           ui:'sql', vorlage:'erklaert'},
+      {name:'SQL mit Gerüst',                         ui:'sql', vorlage:'geruest'},
+      {name:'SQL ohne Hilfe',                         ui:'sql', vorlage:'leer'}]}
+  },
+  aufgaben: AUFGABEN,
+  endlos: ENDLOS
+};
+</script>
+<script src="abfragen.js"></script>
+</body>
+</html>

@@ -19,13 +19,19 @@ Gesammelt im Thread „Aufbau der Seite“. Umgesetzt wird erst, wenn die Lehrkr
     - Zellbezüge, späte Übung: dieselbe Abweichung, aber zum Übertragen, also Funktion mit festem Bereich in der Formel, z. B. =B5-MITTELWERT($B$5:$B$10). Bisher steht der Mittelwert dort immer schon in einer eigenen Zelle (=B5-$B$12).
     Betrifft excel/funktionen.html und excel/bezuege.html.
 
-17. **SQL mit UND/ODER: Übung „Datenight“** (gewünscht 02.11.)
-    Aufgaben aus `notizen/datenight.md` (Herr Maier sucht für jeden Wochentag einen Film fürs Date) als zweite SQL-Seite mit derselben Tabelle `filme` und `abfragen.js`. Dafür muss der Entwurf (Stufe 1–2) mehrere Bedingungen mit AND/OR erlauben. Achtung: Die Aufgaben „noch nicht gesehen“ (keine eigene Bewertung) gehen mit dem IMDb-Export nicht, dort hat jeder Eintrag eine Bewertung.
-
 18. **Vorschlag: gemeinsame Teile in einen Ordner für alle Bereiche** (vorgeschlagen 02.11.)
     datenbanken/abfragen.html bindet `../excel/basis.js`/`basis.css` (Stufen, Modi, Dock) und `../python/lib/codemirror.*` ein. Sauberer wäre z. B. `pb_public/lib/` für alles, was mehrere Bereiche nutzen. Betrifft alle Excel-, Python- und Datenbank-Seiten.
 
 ## Erledigt
+
+### Version vom 03.11.
+
+17. **Datenight: SQL mit UND/ODER** (gewünscht 02.11., erweitert 03.11.)
+    - Drei Wochen Dates: jeden Tag dieselbe Person wie in `notizen/datenight.md`, Woche 1 sind die Originalwünsche, Woche 2 und 3 werden schwieriger und absurder. Auswahl der Tage in einem Kalender. Dazu Endlos.
+    - Zwei Ansichten neben Übungen | Endlos: **Access** (Feld, Tabelle, Sortierung, Anzeigen, Kriterien/oder; gleiche Zeile = UND, verschiedene Zeilen = ODER; Stufe 1 nur nötige Kriterien als Bausteine mit Feldname, 2 mit falschen Bausteinen, 3 eintippen in deutscher Access-Schreibweise) und **Blöcke/SQL** (Stufe 1 UND/ODER-Blöcke spitz wie in Scratch verschachteln, 2–5 wie in der SQL-Übung). Stand je Ansicht getrennt.
+    - Tabelle `filme` um die IMDb-Merkliste ergänzt (888 Einträge, ungesehen = keine eigene Bewertung). Texte der SQL-Übung angepasst („in der Sammlung“), Aufgabe 4 jetzt David Fincher.
+    - Gleichwertige Lösungen zählen (`auch:`), z. B. Ko-Regie bei Kubrick (Spartacus) und „dieses Jahrtausend“ ab 2000 oder 2001.
+    Betrifft datenbanken/datenight.html, abfragen.js, abfragen.css, filme.js, abfragen.html, filmdatenbank.html, werkzeuge/filme-aus-csv.py, katalog.js.
 
 ### Version vom 02.11.
 
