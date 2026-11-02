@@ -1,0 +1,2344 @@
+<!doctype html>
+<html lang="de" data-trainer="bz">
+<head>
+<script>window.PF_EINZELDATEI = true;</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zellbezüge – vibe learning</title>
+<script>/* ../katalog.js */
+/* Inhaltsverzeichnis der Übungsplattform
+ *
+ * Das ist die einzige Stelle, an der ein neues Tool eingetragen werden muss.
+ * Menüleiste, Startseite, Bereichsseiten, Speichern und Lehrerbereich lesen von hier.
+ *
+ * Bereich:  id      = Name des Unterordners in pb_public (nur a–z, 0–9, -)
+ *           titel   = Text in der Menüleiste
+ *           farbe   = Akzentfarbe im dunklen Design (Nord-Farben, nordtheme.com),
+ *           farbeHell = dunklerer Ton derselben Farbe für das helle Design (sonst schlecht lesbar)
+ *           farbeSchrift = optional: hellerer Ton für Schrift im dunklen Design, wenn farbe dort zu wenig Kontrast hat
+ *           Ohne farbe bekommt der Bereich das neutrale Nord-Blau.
+ * Tool:     id      = Kürzel für Speicherstand und Auswertung (nie mehr ändern,
+ *                     sonst geht der gespeicherte Fortschritt verloren)
+ *           datei   = HTML-Datei im Ordner des Bereichs
+ *           titel, text = Anzeige im Menü und auf den Übersichtsseiten
+ *
+ * In der HTML-Datei eines Tools steht dieselbe id: <html lang="de" data-trainer="…">
+ */
+window.KATALOG = {
+  name: 'vibe learning',
+  untertitel: 'Übungen für den IT-Unterricht. Wähle oben einen Bereich aus.',
+  bereiche: [
+    {
+      id: 'excel', titel: 'Excel', farbe: '#a3be8c', farbeHell: '#5e8a45',
+      text: 'Tabellenkalkulation: Funktionen, Bedingungen und Verknüpfungen.',
+      tools: [
+        {id: 'fn',   datei: 'funktionen.html', titel: 'SUMME, MIN, MAX …', text: 'SUMME, MITTELWERT, MIN, MAX, ANZAHL und ANZAHL2 – mit Erklärung, Übungen und Endlos-Modus.'},
+        {id: 'wenn', datei: 'wenn.html',       titel: 'WENN-Funktion',     text: 'Die WENN-Funktion üben – von Bausteinen bis zur eigenen Formel.'},
+        {id: 'uo',   datei: 'und-oder.html',   titel: 'UND / ODER',        text: 'Bedingungen verknüpfen – mit Erarbeitung, Übungen und Endlos-Modus.'},
+        {id: 'bz',   datei: 'bezuege.html',    titel: 'Zellbezüge $',      text: 'Relative und absolute Bezüge: Formeln übertragen und $-Zeichen richtig setzen.'}
+      ]
+    },
+    {id: 'python',      titel: 'Python', farbe: '#b48ead', farbeHell: '#8a5f84', text: 'Programmieren mit Python.',
+      tools: [
+        {id: 'py', datei: 'editor.html', titel: 'Python-Editor', text: 'Python direkt im Browser schreiben und ausführen – mit Terminal für Ein- und Ausgabe.'},
+        {id: 'pyif', datei: 'bedingungen.html', titel: 'Bedingte Anweisung', text: 'if, elif und else: 10 Aufgaben mit Erklärung und automatischer Prüfung.'}
+      ]
+    },
+    {id: 'datenbanken', titel: 'Datenbanken', farbe: '#bf616a', farbeHell: '#a3434c', farbeSchrift: '#e0959b', text: 'Tabellen, Beziehungen und SQL-Abfragen.',       tools: []},
+    {id: 'schaltungen', titel: 'Logische Schaltungen', text: 'Gatter, Wahrheitstabellen und Schaltnetze.',  tools: []}
+  ]
+};
+
+</script>
+<script>/* ../nav.js */
+/* Menüleiste der Übungsplattform
+ *
+ * Baut oben auf jeder Seite die Leiste mit den Bereichen aus katalog.js.
+ * Fährt man mit der Maus über einen Bereich (am Handy: antippen), klappen
+ * dessen Übungen auf. Außerdem füllt das Skript die Startseite (#pf-start)
+ * und die Übersichtsseite eines Bereichs (#pf-bereich).
+ *
+ * Fehlt katalog.js oder nav.js, läuft das Tool trotzdem – nur ohne Menüleiste.
+ * In Einzeldateien (werkzeuge/einzeldateien.py, window.PF_EINZELDATEI) zeigt die
+ * Leiste nur Name und Hell/Dunkel-Knopf, weil es keine anderen Seiten gibt.
+ */
+(function () {
+  'use strict';
+  const K = window.KATALOG;
+  if (!K) return;
+
+  // Wurzel der Plattform = Ordner, in dem nav.js liegt (funktioniert auch per Doppelklick)
+  const me = document.currentScript && document.currentScript.src;
+  const BASE = me ? me.replace(/[^/]*$/, '') : '';
+  const root = document.documentElement;
+  const TOOL = root.dataset.trainer || '';
+  let BEREICH = root.dataset.bereich || '';
+  K.bereiche.forEach(b => { if (b.tools.some(t => t.id === TOOL)) BEREICH = b.id; });
+
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+  const bereichUrl = b => BASE + b.id + '/index.html';
+  const toolUrl = (b, t) => BASE + b.id + '/' + t.datei;
+
+  const CSS = `
+.pf-nav{background:var(--panel,#f6f8fb);color:var(--text,#2e3440);border-bottom:1px solid var(--border,#cdd3de);position:relative;z-index:60;font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.pf-in{max-width:1100px;margin:0 auto;display:flex;align-items:center;gap:6px;padding:0 16px;min-height:50px}
+.pf-brand{font:800 18px ui-monospace,Consolas,"Liberation Mono",monospace;color:inherit;text-decoration:none;margin-right:14px;white-space:nowrap}
+.pf-brand span{color:var(--accent-text,var(--accent,#5e81ac))}
+.pf-menu{display:flex;gap:2px;list-style:none;margin:0;padding:0}
+.pf-item{position:relative;--bc:#5e81ac}
+html[data-theme=dark] .pf-item{--bc:#88c0d0}
+.pf-item>a{display:flex;align-items:center;gap:5px;padding:14px 11px;color:inherit;text-decoration:none;font-weight:600;border-bottom:3px solid transparent;white-space:nowrap}
+.pf-item>a::after{content:"";width:6px;height:6px;border:solid currentColor;border-width:0 2px 2px 0;transform:rotate(45deg) translateY(-2px);opacity:.5}
+.pf-item:hover>a,.pf-item.open>a{color:var(--bc)}
+.pf-item>a[aria-current]{border-bottom-color:var(--bc)}
+.pf-drop{display:none;position:absolute;top:100%;left:0;min-width:280px;background:var(--panel,#f6f8fb);border:1px solid var(--border,#cdd3de);border-radius:0 0 12px 12px;box-shadow:0 14px 30px rgba(0,0,0,.18);padding:6px;list-style:none;margin:0}
+.pf-item:hover .pf-drop,.pf-item:focus-within .pf-drop,.pf-item.open .pf-drop{display:block}
+.pf-drop a{display:block;padding:8px 10px;border-radius:8px;color:inherit;text-decoration:none}
+.pf-drop a:hover,.pf-drop a:focus{background:var(--panel2,#eceff4);outline:none}
+.pf-drop a[aria-current]{color:var(--bc);font-weight:600}
+.pf-drop small{display:block;color:var(--muted,#5b6578);font-size:13px}
+.pf-drop .pf-all{font-size:13px;color:var(--muted,#5b6578);border-top:1px solid var(--border,#cdd3de);border-radius:0 0 8px 8px;margin-top:4px}
+.pf-drop .pf-leer{padding:8px 10px;color:var(--muted,#5b6578);font-style:italic}
+.pf-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.pf-btn{background:var(--panel2,#eceff4);border:1px solid var(--border,#cdd3de);color:inherit;border-radius:10px;width:38px;height:38px;display:grid;place-items:center;cursor:pointer;font-size:17px;padding:0}
+.pf-burger{display:none}
+.pf-einzeln .pf-menu{display:none!important}
+@media (max-width:760px){
+  .pf-burger{display:grid}
+  .pf-menu{display:none;position:absolute;top:100%;left:0;right:0;flex-direction:column;background:var(--panel,#f6f8fb);border-bottom:1px solid var(--border,#cdd3de);box-shadow:0 14px 30px rgba(0,0,0,.18);padding:6px 16px 12px;max-height:80vh;overflow:auto}
+  .pf-nav.open .pf-menu{display:flex}
+  .pf-item>a{padding:10px 0 4px;border:0}
+  .pf-item>a::after{display:none}
+  .pf-drop{display:block;position:static;min-width:0;border:0;box-shadow:none;padding:0 0 4px 10px}
+}
+.pf-fade,.pf-fade *{transition:background-color .35s,color .35s,border-color .35s,fill .35s!important}
+.pf-gesperrt{opacity:.5;cursor:default!important}
+@media print{.pf-nav{display:none}}`;
+
+  // Farben der Bereiche (katalog.js: farbe = dunkles Design, farbeHell = helles Design,
+  // farbeSchrift = optional hellerer Ton für Schrift im dunklen Design).
+  // --accent gilt für die ganze Seite des aktuellen Bereichs, --bc nur für den eigenen Menüpunkt.
+  function akzentCss(){
+    let css = '';
+    K.bereiche.forEach(b => {
+      if (!b.farbe) return;
+      const dunkel = b.farbeSchrift || b.farbe;
+      css += `\n.pf-item[data-b="${b.id}"]{--bc:${b.farbeHell || b.farbe}}\nhtml[data-theme=dark] .pf-item[data-b="${b.id}"]{--bc:${dunkel}}`;
+      if (b.id === BEREICH) css += `\nhtml[data-theme]{--accent:${b.farbeHell || b.farbe};--accent-text:${b.farbeHell || b.farbe}}\nhtml[data-theme=dark]{--accent:${b.farbe};--accent-text:${dunkel}}`;
+    });
+    return css;
+  }
+
+  const SONNE = '☀', MOND = '☾';
+  function theme(){ return root.dataset.theme === 'dark' ? 'dark' : 'light'; }
+
+  function buildNav(){
+    const s = document.createElement('style'); s.textContent = CSS + akzentCss(); document.head.appendChild(s);
+    const nav = document.createElement('nav');
+    nav.className = 'pf-nav' + (window.PF_EINZELDATEI ? ' pf-einzeln' : '');
+    nav.setAttribute('aria-label', 'Bereiche');
+    const name = esc(K.name).replace(/^(\S+)/, '<span>$1</span>');
+    const EINZELN = !!window.PF_EINZELDATEI;
+    nav.innerHTML = `<div class="pf-in">
+      ${EINZELN ? `<span class="pf-brand">${name}</span>` : `<a class="pf-brand" href="${BASE}index.html">${name}</a>`}
+      <ul class="pf-menu">${K.bereiche.map(b => `
+        <li class="pf-item" data-b="${esc(b.id)}">
+          <a href="${bereichUrl(b)}"${b.id === BEREICH ? ' aria-current="true"' : ''}>${esc(b.titel)}</a>
+          <ul class="pf-drop">${b.tools.length
+            ? b.tools.map(t => `<li><a href="${toolUrl(b, t)}"${t.id === TOOL ? ' aria-current="page"' : ''}>${esc(t.titel)}</a></li>`).join('')
+              + `<li><a class="pf-all" href="${bereichUrl(b)}">Alle Übungen zu ${esc(b.titel)}</a></li>`
+            : '<li class="pf-leer">Hier entstehen bald Übungen.</li>'}
+          </ul>
+        </li>`).join('')}
+      </ul>
+      <div class="pf-right">
+        ${document.getElementById('themeBtn') ? '' : `<button class="pf-btn" id="pfTheme" type="button" aria-label="Hell/Dunkel umschalten">${theme() === 'dark' ? SONNE : MOND}</button>`}
+        ${EINZELN ? '' : '<button class="pf-btn pf-burger" type="button" aria-label="Menü">☰</button>'}
+      </div>
+    </div>`;
+    document.body.insertBefore(nav, document.body.firstChild);
+
+    const burger = nav.querySelector('.pf-burger');
+    if (burger) burger.addEventListener('click', () => nav.classList.toggle('open'));
+    const tb = nav.querySelector('#pfTheme');
+    if (tb) tb.addEventListener('click', () => {
+      const t = theme() === 'dark' ? 'light' : 'dark';
+      root.dataset.theme = t; tb.textContent = t === 'dark' ? SONNE : MOND;
+      try { localStorage.setItem('wenn-theme', t); } catch (e) {}
+    });
+
+    // Geräte ohne Maus: erstes Antippen klappt auf, zweites öffnet die Bereichsseite
+    const items = [...nav.querySelectorAll('.pf-item')];
+    if (matchMedia('(hover: none)').matches) items.forEach(li => li.firstElementChild.addEventListener('click', e => {
+      if (matchMedia('(max-width:760px)').matches || li.classList.contains('open')) return;
+      e.preventDefault();
+      items.forEach(x => x.classList.toggle('open', x === li));
+    }));
+    document.addEventListener('click', e => { if (!nav.contains(e.target)){ items.forEach(x => x.classList.remove('open')); nav.classList.remove('open'); } });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape'){ items.forEach(x => x.classList.remove('open')); nav.classList.remove('open'); } });
+  }
+
+  /* ---------- Übersichtsseiten ---------- */
+  function kacheln(b){
+    if (!b.tools.length) return '<p class="pf-hinweis">Hier entstehen bald Übungen.</p>';
+    return `<div class="pf-grid">${b.tools.map(t => `<a class="pf-tile" href="${toolUrl(b, t)}"><b>${esc(t.titel)}</b><span>${esc(t.text)}</span></a>`).join('')}</div>`;
+  }
+  function buildPages(){
+    const start = document.getElementById('pf-start');
+    if (start){
+      start.innerHTML = `<h1>${esc(K.name)}</h1><p class="pf-lead">${esc(K.untertitel)}</p>`
+        + K.bereiche.map(b => `<section class="pf-sec"><h2><a href="${bereichUrl(b)}">${esc(b.titel)}</a></h2><p class="pf-text">${esc(b.text)}</p>${kacheln(b)}</section>`).join('');
+    }
+    const be = document.getElementById('pf-bereich');
+    const b = K.bereiche.find(x => x.id === BEREICH);
+    if (be && b){
+      document.title = b.titel + ' – ' + K.name;
+      be.innerHTML = `<h1>${esc(b.titel)}</h1><p class="pf-lead">${esc(b.text)}</p>${kacheln(b)}`;
+    }
+  }
+
+  // Hell/Dunkel höchstens einmal pro Sekunde umschalten und weich überblenden – kein Flackern beim schnellen Klicken
+  let themeSperre = 0;
+  document.addEventListener('click', e => {
+    const btn = e.target.closest('#themeBtn,#pfTheme');
+    if (!btn) return;
+    if (Date.now() < themeSperre){ e.stopImmediatePropagation(); e.preventDefault(); return; }
+    themeSperre = Date.now() + 1000;
+    root.classList.add('pf-fade'); btn.classList.add('pf-gesperrt');
+    setTimeout(() => root.classList.remove('pf-fade'), 400);
+    setTimeout(() => btn.classList.remove('pf-gesperrt'), 1000);
+  }, true);
+
+  function init(){ buildNav(); buildPages(); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();
+
+</script>
+<script>/* ../sync.js */
+/* vibe learning – Anmeldung und Anbindung an PocketBase
+ *
+ * Läuft die Seite über den PocketBase-Server, erscheint beim ersten Öffnen ein
+ * Anmeldefenster: ein Feld für Code oder Benutzername (bei Benutzernamen folgt das
+ * Passwort), alternativ „Seite ohne Anmeldung nutzen“. Oben rechts in der Leiste
+ * steht danach, wer angemeldet ist; dort meldet man sich auch an und ab.
+ *
+ * Schüler: Fortschritt wird auf dem Server gespeichert, jede gelöste Aufgabe protokolliert.
+ * Lehrkraft/Admin: Anmeldung gilt bis zum Schließen des Browsers, im Menü steht
+ * der Link zur Verwaltung (lehrer.html).
+ * Wird die HTML-Datei direkt geöffnet (oder läuft kein PocketBase dahinter),
+ * passiert nichts davon – die Seite speichert dann wie bisher nur im Browser.
+ *
+ * Die Seite ruft auf:
+ *   TrainerSync.changed()      nach jeder Änderung am gespeicherten Stand
+ *   TrainerSync.event({...})   wenn eine Aufgabe richtig gelöst wurde
+ */
+(function () {
+  'use strict';
+
+  const CONFIG = {
+    api: '/api/trainer',
+    verwaltung: 'lehrer.html'   // relativ zum Ordner von sync.js
+  };
+
+  const me = document.currentScript && document.currentScript.src;
+  const BASE = me ? me.replace(/[^/]*$/, '') : '';
+  const PAGE = document.documentElement.dataset.trainer || '';          // Tool-id aus katalog.js, leer auf Übersichtsseiten
+  const TOOL_IDS = window.KATALOG ? [].concat(...window.KATALOG.bereiche.map(b => b.tools.map(t => t.id))) : [];
+  const ALL_PREFIXES = [...new Set(['wenn', 'uo', 'fn', PAGE].concat(TOOL_IDS))].filter(Boolean).map(id => id + '-');
+  const OWN = PAGE + '-';
+  const SKIP = ['wenn-theme'];                                             // Hell/Dunkel bleibt pro Gerät
+  const K = {code: 'ts-code', anzeige: 'ts-anzeige', klasse: 'ts-klasse', queue: 'ts-queue', stand: 'ts-stand-' + PAGE};
+  const SS = {gast: 'ts-gast', lehrer: 'ts-lehrer'};                      // gilt nur bis zum Schließen des Browsers
+
+  const ls = {
+    get(k){ try { return localStorage.getItem(k); } catch (e) { return null; } },
+    set(k, v){ try { localStorage.setItem(k, v); } catch (e) {} },
+    del(k){ try { localStorage.removeItem(k); } catch (e) {} },
+    keys(){ try { return Object.keys(localStorage); } catch (e) { return []; } }
+  };
+  const ss = {
+    get(k){ try { return sessionStorage.getItem(k); } catch (e) { return null; } },
+    set(k, v){ try { sessionStorage.setItem(k, v); } catch (e) {} },
+    del(k){ try { sessionStorage.removeItem(k); } catch (e) {} }
+  };
+  function lehrerSitzung(){ try { return JSON.parse(ss.get(SS.lehrer) || 'null'); } catch (e) { return null; } }
+
+  const hosted = /^https?:$/.test(location.protocol);
+  let aktiv = false, pushTimer = null, pushPending = false, menuEl = null, lastSnap = '';
+
+  /* ---------- Hilfen ---------- */
+  function api(path, opt){
+    opt = opt || {};
+    return fetch(CONFIG.api + path, {
+      method: opt.method || 'GET',
+      keepalive: !!opt.keepalive,
+      headers: {'Content-Type': 'application/json', 'X-Trainer-Code': ls.get(K.code) || ''},
+      body: opt.body ? JSON.stringify(opt.body) : undefined
+    }).then(async r => {
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok){ const err = new Error(j.message || ('HTTP ' + r.status)); err.status = r.status; err.data = j; throw err; }
+      return j;
+    });
+  }
+  const trainerKeys = prefix => ls.keys().filter(k => k.startsWith(prefix) && !SKIP.includes(k));
+  function snapshot(prefix){ prefix = prefix || OWN; const d = {}; trainerKeys(prefix).sort().forEach(k => { d[k] = ls.get(k); }); return d; }
+  function applySnapshot(d, prefix){
+    prefix = prefix || OWN;
+    trainerKeys(prefix).forEach(k => ls.del(k));
+    Object.keys(d || {}).forEach(k => { if (k.startsWith(prefix) && !SKIP.includes(k) && typeof d[k] === 'string') ls.set(k, d[k]); });
+  }
+  function wipeLocal(){
+    ALL_PREFIXES.forEach(p => trainerKeys(p).forEach(k => ls.del(k)));
+    ls.keys().filter(k => k.startsWith('ts-stand-')).forEach(k => ls.del(k));
+    [K.queue, K.code, K.klasse, K.anzeige].forEach(k => ls.del(k));
+  }
+  function reloadOnce(){
+    let last = 0; try { last = +sessionStorage.getItem('ts-reload') || 0; } catch (e) {}
+    if (Date.now() - last < 8000) return;
+    try { sessionStorage.setItem('ts-reload', Date.now()); } catch (e) {}
+    location.reload();
+  }
+
+  /* ---------- Fortschritt abgleichen ---------- */
+  async function pull(){
+    if (!PAGE){ setStatus('ok'); return; }
+    const r = await api('/state?seite=' + PAGE);
+    const local = +ls.get(K.stand) || 0, server = +r.stand || 0;
+    if (r.daten && server > local){
+      const before = JSON.stringify(snapshot());
+      applySnapshot(r.daten);
+      ls.set(K.stand, server);
+      lastSnap = JSON.stringify(snapshot());
+      if (lastSnap !== before) reloadOnce();
+    } else if (local > server) await push();
+    setStatus('ok');
+  }
+
+  async function push(keepalive){
+    clearTimeout(pushTimer); pushPending = false;
+    if (!aktiv || !PAGE) return;
+    const stand = +ls.get(K.stand) || Date.now();
+    setStatus('saving');
+    try {
+      await api('/state', {method: 'POST', body: {seite: PAGE, daten: snapshot(), stand}, keepalive});
+      setStatus('ok');
+    } catch (err){
+      if (err.status === 409){ await pull().catch(() => setStatus('offline')); }
+      else if (err.status === 401) abgelaufen();
+      else { pushPending = true; setStatus('offline'); }
+    }
+  }
+
+  function changed(){
+    if (!PAGE) return;
+    // Seiten schreiben ihren Stand auch beim Öffnen neu – nur echte Änderungen zählen,
+    // sonst würde ein frisch geöffnetes Gerät einen neueren Stand vom Server überschreiben.
+    const snap = JSON.stringify(snapshot());
+    if (snap === lastSnap) return;
+    lastSnap = snap;
+    ls.set(K.stand, Date.now());
+    if (!aktiv) return;
+    pushPending = true;
+    clearTimeout(pushTimer);
+    pushTimer = setTimeout(push, 700);
+  }
+
+  /* ---------- Protokoll gelöster Aufgaben ---------- */
+  function queue(){ try { return JSON.parse(ls.get(K.queue) || '[]'); } catch (e) { return []; } }
+  function event(ev){
+    if (!aktiv || !PAGE) return;
+    const q = queue(); q.push(Object.assign({seite: PAGE}, ev)); ls.set(K.queue, JSON.stringify(q.slice(-500)));
+    flush();
+  }
+  let flushing = false;
+  async function flush(keepalive){
+    if (!aktiv || flushing) return;
+    const q = queue(); if (!q.length) return;
+    flushing = true;
+    try {
+      await api('/events', {method: 'POST', body: {events: q.slice(0, 200)}, keepalive});
+      ls.set(K.queue, JSON.stringify(queue().slice(Math.min(q.length, 200))));
+    } catch (err){
+      if (err.status === 401) abgelaufen(); else setStatus('offline');
+    } finally { flushing = false; }
+    if (queue().length && !keepalive) setTimeout(flush, 2000);
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden' && aktiv){ if (pushPending) push(true); flush(true); }
+  });
+  window.addEventListener('online', () => { if (aktiv){ flush(); if (pushPending) push(); else pull().catch(() => {}); } });
+
+
+  /* ---------- Gast-Fortschritt beim Anmelden übernehmen ---------- */
+  // Für jede Übung: Ist das Konto dort noch leer, wird der Stand dieses Geräts hochgeladen,
+  // sonst gilt der Stand vom Server.
+  async function uebernehmen(){
+    for (const p of ALL_PREFIXES){
+      const id = p.slice(0, -1), lokal = snapshot(p);
+      const st = await api('/state?seite=' + id);
+      const leer = !st.daten || !Object.keys(st.daten).length;
+      if (leer){
+        if (!Object.keys(lokal).length) continue;
+        const stand = Date.now();
+        await api('/state', {method: 'POST', body: {seite: id, daten: lokal, stand}});
+        ls.set('ts-stand-' + id, stand);
+      } else {
+        applySnapshot(st.daten, p);
+        ls.set('ts-stand-' + id, +st.stand || 0);
+      }
+    }
+  }
+
+  /* ---------- Oberfläche: Anmeldefenster + Menü oben rechts ---------- */
+  const CSS = `
+.ts-ov{position:fixed;inset:0;z-index:2000;background:rgba(20,24,32,.6);backdrop-filter:blur(3px);display:grid;place-items:center;padding:16px}
+.ts-box{position:relative;background:var(--panel,#f6f8fb);color:var(--text,#2e3440);border:1px solid var(--border,#cdd3de);border-radius:16px;padding:24px;width:min(420px,100%);box-shadow:0 20px 50px rgba(0,0,0,.3);font:16px/1.5 system-ui,sans-serif}
+.ts-box h2{margin:0 0 6px;font-size:21px}
+.ts-box p{margin:0 0 14px;color:var(--muted,#5b6578)}
+.ts-x{position:absolute;top:10px;right:10px;width:34px;height:34px;border-radius:9px;border:0;background:none;color:var(--muted,#5b6578);font-size:22px;line-height:1;cursor:pointer}
+.ts-x:hover{background:var(--panel2,#eceff4);color:var(--text,#2e3440)}
+.ts-in{width:100%;box-sizing:border-box;font:700 20px ui-monospace,Consolas,monospace;letter-spacing:.03em;padding:12px 14px;border-radius:10px;border:2px solid var(--slot-border,var(--border,#a7b1c2));background:var(--slot,var(--panel2,#eceff4));color:var(--text,#2e3440);outline:none}
+.ts-in:focus{border-color:var(--accent,#5e81ac)}
+.ts-btn{margin-top:12px;width:100%;font:600 17px system-ui,sans-serif;padding:12px;border-radius:10px;border:1px solid color-mix(in srgb,var(--accent,#5e81ac) 50%,var(--panel,#f6f8fb));background:color-mix(in srgb,var(--accent,#5e81ac) 22%,var(--panel,#f6f8fb));color:color-mix(in srgb,var(--accent,#5e81ac) 60%,var(--text,#2e3440));cursor:pointer}
+.ts-btn:disabled{opacity:.6;cursor:wait}
+.ts-err{color:var(--err,#a8434d);min-height:1.4em;margin-top:8px;font-size:14px}
+.ts-zurueck{background:none;border:0;padding:0;margin-top:10px;color:var(--muted,#5b6578);text-decoration:underline;cursor:pointer;font-size:14px}
+.ts-gast{display:block;width:100%;margin-top:18px;padding:12px;border-radius:10px;border:1px solid var(--border,#cdd3de);background:var(--panel2,#eceff4);color:var(--text,#2e3440);font:600 16px system-ui,sans-serif;cursor:pointer}
+.ts-gast small{display:block;font-weight:400;font-size:13px;color:var(--muted,#5b6578)}
+.ts-wrap{position:relative}
+.ts-badge{display:inline-flex;align-items:center;gap:6px;font:600 13px system-ui,sans-serif;padding:7px 11px;border-radius:999px;border:1px solid var(--border,#cdd3de);background:var(--panel2,#eceff4);color:var(--text,#2e3440);cursor:pointer;white-space:nowrap}
+.ts-badge .ts-dot{width:8px;height:8px;border-radius:50%;background:#8a95ab}
+.ts-badge.ok .ts-dot{background:var(--then,#a3be8c)}
+.ts-badge.saving .ts-dot{background:#ebcb8b}
+.ts-badge.offline .ts-dot{background:var(--else,#bf616a)}
+.ts-badge.gast{border-color:color-mix(in srgb,#d08770 60%,var(--border,#cdd3de));background:color-mix(in srgb,#d08770 16%,var(--panel,#f6f8fb))}
+.ts-badge.gast .ts-dot{background:#d08770}
+.ts-dd{display:none;position:absolute;right:0;top:calc(100% + 6px);min-width:240px;z-index:70;background:var(--panel,#f6f8fb);color:var(--text,#2e3440);border:1px solid var(--border,#cdd3de);border-radius:12px;box-shadow:0 14px 30px rgba(0,0,0,.18);padding:6px;font:14px/1.4 system-ui,sans-serif}
+.ts-wrap.open .ts-dd{display:block}
+.ts-dd .ts-info{padding:8px 10px;color:var(--muted,#5b6578);border-bottom:1px solid var(--border,#cdd3de);margin-bottom:4px}
+.ts-dd .ts-info b{color:var(--text,#2e3440)}
+.ts-dd a,.ts-dd button{display:block;width:100%;text-align:left;padding:8px 10px;border-radius:8px;border:0;background:none;color:inherit;font:inherit;text-decoration:none;cursor:pointer}
+.ts-dd a:hover,.ts-dd button:hover{background:var(--panel2,#eceff4)}
+@media (max-width:640px){.ts-badge .ts-lang{display:none}}`;
+
+  function injectCss(){ const s = document.createElement('style'); s.textContent = CSS; document.head.appendChild(s); }
+  const escH = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+
+  function setStatus(st){
+    const b = menuEl && menuEl.querySelector('.ts-badge');
+    if (!b || !aktiv) return;
+    b.className = 'ts-badge ' + st;
+    const t = {ok: 'Fortschritt gespeichert', saving: 'Wird gespeichert …', offline: 'Keine Verbindung – wird später gespeichert'}[st] || '';
+    b.title = t;
+    const i = menuEl.querySelector('.ts-status'); if (i) i.textContent = t;
+  }
+
+  // Menü oben rechts: angemeldet (Dropdown mit Abmelden) oder Gast (Klick öffnet die Anmeldung)
+  function showMenu(){
+    if (menuEl) menuEl.remove();
+    const host = document.querySelector('.pf-right') || document.querySelector('.hdr-right') || document.querySelector('header') || document.body;
+    const L = lehrerSitzung();
+    menuEl = document.createElement('div');
+    menuEl.className = 'ts-wrap';
+    if (aktiv){
+      const klasse = ls.get(K.klasse);
+      menuEl.innerHTML = `<button class="ts-badge saving" type="button"><span class="ts-dot"></span>👤 <span class="ts-lang">${escH(ls.get(K.anzeige) || ls.get(K.code))}</span></button>
+        <div class="ts-dd"><div class="ts-info">Angemeldet als <b>${escH(ls.get(K.anzeige) || ls.get(K.code))}</b>${klasse ? ' (Klasse ' + escH(klasse) + ')' : ''}<br><span class="ts-status"></span></div>
+        <button type="button" data-a="ab">Abmelden</button></div>`;
+    } else if (L){
+      menuEl.innerHTML = `<button class="ts-badge" type="button">👤 <span class="ts-lang">${escH(L.name)}</span></button>
+        <div class="ts-dd"><div class="ts-info">Angemeldet als <b>${escH(L.name)}</b> (${L.rolle === 'admin' ? 'Admin' : 'Lehrkraft'})</div>
+        <a href="${BASE + CONFIG.verwaltung}">Verwaltung: Klassen und Auswertung</a>
+        <button type="button" data-a="ab">Abmelden</button></div>`;
+    } else {
+      menuEl.innerHTML = `<button class="ts-badge gast" type="button" title="Fortschritt wird nicht gespeichert. Klicken zum Anmelden."><span class="ts-dot"></span>Nicht angemeldet<span class="ts-lang">&nbsp;– Fortschritt wird nicht gespeichert</span></button>`;
+    }
+    host.insertBefore(menuEl, host.firstChild);
+    menuEl.querySelector('.ts-badge').addEventListener('click', () => {
+      if (!aktiv && !L){ showLogin(); return; }
+      menuEl.classList.toggle('open');
+    });
+    const ab = menuEl.querySelector('[data-a="ab"]');
+    if (ab) ab.addEventListener('click', abmelden);
+    document.addEventListener('click', e => { if (menuEl && !menuEl.contains(e.target)) menuEl.classList.remove('open'); });
+  }
+
+  function showLogin(msg){
+    if (document.querySelector('.ts-ov')) return;
+    const ov = document.createElement('div');
+    ov.className = 'ts-ov';
+    ov.innerHTML = `<div class="ts-box" role="dialog" aria-modal="true" aria-label="Anmelden">
+      <button class="ts-x" type="button" aria-label="Schließen und ohne Anmeldung nutzen" title="Ohne Anmeldung nutzen">×</button>
+      <form class="ts-f1" autocomplete="off">
+        <h2>Anmelden</h2>
+        <p>Gib deinen Zugangscode oder deinen Benutzernamen ein.</p>
+        <input class="ts-in" name="kennung" placeholder="Code oder Benutzername" autocapitalize="none" spellcheck="false" aria-label="Code oder Benutzername">
+        <button class="ts-btn" type="submit">Weiter</button>
+      </form>
+      <form class="ts-f2" hidden>
+        <h2>Passwort</h2>
+        <p>für <b class="ts-wer"></b></p>
+        <input class="ts-in" name="passwort" type="password" autocomplete="current-password" aria-label="Passwort">
+        <button class="ts-btn" type="submit">Anmelden</button>
+        <button class="ts-zurueck" type="button">Anderen Namen eingeben</button>
+      </form>
+      <div class="ts-err">${msg || ''}</div>
+      <button class="ts-gast" type="button">Seite ohne Anmeldung nutzen<small>Dein Fortschritt wird dann nur in diesem Browser gespeichert.</small></button>
+    </div>`;
+    document.body.appendChild(ov);
+    const f1 = ov.querySelector('.ts-f1'), f2 = ov.querySelector('.ts-f2'), err = ov.querySelector('.ts-err');
+    const k = f1.kennung, pw = f2.passwort;
+    setTimeout(() => k.focus(), 50);
+
+    const gast = () => { ss.set(SS.gast, '1'); ov.remove(); document.removeEventListener('keydown', esc); };
+    const esc = e => { if (e.key === 'Escape') gast(); };
+    document.addEventListener('keydown', esc);
+    ov.querySelector('.ts-x').addEventListener('click', gast);
+    ov.querySelector('.ts-gast').addEventListener('click', gast);
+    ov.querySelector('.ts-zurueck').addEventListener('click', () => { f2.hidden = true; f1.hidden = false; err.textContent = ''; k.select(); });
+
+    async function senden(btn, body){
+      btn.disabled = true; err.textContent = '';
+      try {
+        const r = await fetch(CONFIG.api + '/login', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)})
+          .then(async x => { const j = await x.json().catch(() => ({})); if (!x.ok) throw new Error(x.status === 429 ? 'Zu viele Versuche – bitte kurz warten.' : (j.message || 'Anmeldung fehlgeschlagen.')); return j; });
+        if (r.passwort){ f1.hidden = true; f2.hidden = false; ov.querySelector('.ts-wer').textContent = body.kennung; pw.value = ''; pw.focus(); return; }
+        if (r.rolle === 'schueler'){
+          ls.set(K.code, r.cred); ls.set(K.anzeige, r.anzeige); ls.set(K.klasse, r.klasse || '');
+          ss.del(SS.lehrer); ss.del('ts-reload');
+          aktiv = true;
+          await uebernehmen().catch(() => {});
+        } else {
+          ss.set(SS.lehrer, JSON.stringify({rolle: r.rolle, token: r.token, name: r.name}));
+        }
+        location.reload();
+      } catch (x){
+        err.textContent = x.message || 'Anmeldung fehlgeschlagen.';
+        (f2.hidden ? k : pw).select();
+      } finally { btn.disabled = false; }
+    }
+    f1.addEventListener('submit', e => {
+      e.preventDefault();
+      const v = k.value.trim();
+      if (!v){ err.textContent = 'Bitte gib deinen Code oder Benutzernamen ein.'; return; }
+      senden(f1.querySelector('.ts-btn'), {kennung: v});
+    });
+    f2.addEventListener('submit', e => {
+      e.preventDefault();
+      if (!pw.value){ err.textContent = 'Bitte gib dein Passwort ein.'; return; }
+      senden(f2.querySelector('.ts-btn'), {kennung: k.value.trim(), passwort: pw.value});
+    });
+  }
+
+  async function abmelden(){
+    if (lehrerSitzung()){ ss.del(SS.lehrer); ss.del(SS.gast); location.reload(); return; }
+    if (!confirm(`Abmelden?\n\nAngemeldet als ${ls.get(K.anzeige) || ls.get(K.code)}. Dein Fortschritt bleibt auf dem Server gespeichert.`)) return;
+    if (pushPending) await push();
+    await flush();
+    if (queue().length && !confirm('Einige gelöste Aufgaben konnten noch nicht übertragen werden (keine Verbindung). Trotzdem abmelden?')) return;
+    wipeLocal(); ss.del(SS.gast);
+    location.reload();
+  }
+  function abgelaufen(){
+    aktiv = false;
+    wipeLocal();
+    showMenu();
+    showLogin('Deine Anmeldung ist nicht mehr gültig. Bitte melde dich neu an.');
+  }
+
+  /* ---------- Start ---------- */
+  async function start(){
+    if (!hosted || window.PF_EINZELDATEI) return;          // Einzeldatei: immer ohne Anmeldung, Fortschritt nur im Browser
+    try {
+      const h = await fetch('/api/health', {cache: 'no-store'});
+      if (!h.ok) return;                                    // kein PocketBase: Seite läuft nur lokal
+    } catch (e){ return; }
+    injectCss();
+    aktiv = !!ls.get(K.code);
+    showMenu();
+    if (!aktiv){
+      if (!lehrerSitzung() && !ss.get(SS.gast)) showLogin();
+      return;
+    }
+    try { await pull(); flush(); }
+    catch (err){ if (err.status === 401) abgelaufen(); else setStatus('offline'); }
+  }
+
+  lastSnap = JSON.stringify(snapshot());   // Stand beim Laden der Seite (vor deren Initialisierung)
+  window.TrainerSync = {changed, event, anmelden: () => showLogin(), get aktiv(){ return aktiv; }, get lehrer(){ return lehrerSitzung(); }, abmelden};
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
+})();
+
+</script>
+<script>
+(function(){var t=null;try{t=localStorage.getItem('wenn-theme');}catch(e){}
+document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');})();
+</script>
+<style>/* basis.css */
+/* basis.css – gemeinsame Gestaltung aller Excel-Trainer (Nord-Farben, hell/dunkel über [data-theme=dark]).
+ * Ergänzung je Seitenart danach laden: bausteine.css (wenn, und-oder) oder tabelle.css (funktionen, bezuege).
+ * Seitenspezifisches steht im <style> der Seite. */
+:root{
+  --bg:#e5e9f0; --panel:#f6f8fb; --panel2:#eceff4; --text:#2e3440; --muted:#5b6578; --border:#cdd3de;
+  --accent:#5e8a45; --cond:#5e81ac; --then:#5e8a45; --else:#a8434d; --blk-val:#ebcb8b; --blk-val-text:#2e3440;
+  --blk-cond:#8a5f84; --blk-sym:#4c566a; --slot:#e5e9f0; --slot-border:#a7b1c2; --ok-bg:#dfe9d6;
+  --err-bg:#f1d9db; --err:#a8434d; --solved-bg:#e3ebdc; --solved-border:#a3be8c; --solved-text:#4a7034;
+  --flame-off:#d8dee9; --flame-num-off:#6b7589;
+  --mono:ui-monospace,"Cascadia Mono","SF Mono",Consolas,"Liberation Mono",monospace;
+  --hex:polygon(16px 0,calc(100% - 16px) 0,100% 50%,calc(100% - 16px) 100%,16px 100%,0 50%); --on-color:#ffffff;
+  --blk-fn:#4c8a89; --cell:#ffffff; --cellhd:#eceff4; --grid:#cdd3de; --r0:#5e81ac; --r1:#a8434d; --r2:#8a5f84;
+  --r3:#5e8a45; --r4:#b0663f; --r5:#4c8a89;
+}
+[data-theme=dark]{
+  --bg:#2e3440; --panel:#3b4252; --panel2:#434c5e; --text:#eceff4; --muted:#a9b3c4; --border:#4c566a;
+  --cond:#81a1c1; --then:#a3be8c; --else:#bf616a; --slot:#434c5e; --slot-border:#616e88; --ok-bg:#3e4a45;
+  --err-bg:#4a3c45; --err:#d4848b; --solved-bg:#3e4a45; --solved-border:#6f8a5c; --solved-text:#a3be8c;
+  --flame-off:#4c566a; --flame-num-off:#9aa4b8; --blk-val:#ebcb8b; --blk-val-text:#2e3440; --blk-cond:#b48ead;
+  --blk-sym:#8a95ab; --on-color:#2e3440; --accent:#a3be8c; --blk-fn:#8fbcbb; --cell:#3b4252; --cellhd:#434c5e;
+  --grid:#4c566a; --r0:#81a1c1; --r1:#d4848b; --r2:#b48ead; --r3:#a3be8c; --r4:#d08770; --r5:#8fbcbb;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding-bottom:110px}
+header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:12px 20px;background:var(--panel);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:20}
+.brand{font-weight:800;font-size:20px;font-family:var(--mono);letter-spacing:-.5px}
+.brand span{color:var(--accent)}
+.hdr-right{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.flames{display:flex;gap:4px;align-items:flex-end}
+.flame{background:none;border:0;padding:2px;cursor:pointer;transform-origin:50% 90%;line-height:0}
+.flame svg{width:30px;height:38px;display:block}
+.flame path{fill:var(--flame-off);transition:fill .2s}
+.flame text{fill:var(--flame-num-off);font:800 13px system-ui,sans-serif}
+.flame:hover path{fill:#f0b27a}
+.flame.on path{fill:url(#fg)}
+.flame.on text{fill:#fff}
+.flame.on{filter:drop-shadow(0 0 5px rgba(255,150,0,.95)) drop-shadow(0 0 12px rgba(255,70,0,.6));animation:flick 1.4s ease-in-out infinite alternate}
+@keyframes flick{0%{transform:scale(1) rotate(-2deg)}50%{transform:scale(1.05,1.1) rotate(0)}100%{transform:scale(1.02) rotate(2deg)}}
+.iconbtn{background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:10px;width:40px;height:40px;display:grid;place-items:center;cursor:pointer}
+.iconbtn svg{width:20px;height:20px}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px 18px;margin-bottom:14px}
+.meta{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;font-size:14px;color:var(--muted);margin-bottom:6px}
+.lvlname{font-weight:700;color:var(--accent)}
+.taskrow{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start}
+code{font-family:var(--mono);background:var(--panel2);padding:1px 5px;border-radius:5px;font-size:.95em}
+.grid{border-collapse:collapse;font-size:14px;font-family:var(--mono)}
+.grid th,.grid td{border:1px solid var(--border);padding:4px 10px;min-width:44px;text-align:left;white-space:nowrap}
+.grid th{background:var(--panel2);color:var(--muted);font-weight:600;text-align:center}
+.grid td.fx{outline:2px solid var(--then);outline-offset:-2px;min-width:110px}
+.grid td.lbl{color:var(--muted);font-family:system-ui,sans-serif}
+.wthint{text-transform:none;letter-spacing:0;font-weight:500;opacity:.8;margin-left:6px}
+.ph{color:var(--muted);font-size:14px;font-weight:500;font-family:system-ui,sans-serif;opacity:.75;padding:0 8px;pointer-events:none}
+.block[data-drag]{cursor:grab}
+.block.val{background:var(--blk-val);color:var(--blk-val-text);border-radius:999px;box-shadow:inset 0 -3px 0 rgba(0,0,0,.15)}
+.block.hex{background:var(--blk-cond);clip-path:var(--hex);padding:7px 26px}
+.block.sym{background:var(--blk-sym);border-radius:7px;min-width:38px;justify-content:center;box-shadow:inset 0 -3px 0 rgba(0,0,0,.2)}
+.block.fn .gapin{background:var(--slot);border-style:solid}
+.block.ghost{opacity:.18;filter:grayscale(1);pointer-events:none}
+.block.drag-src{opacity:.3}
+.drag-ghost{position:fixed;z-index:1000;pointer-events:none;opacity:.95;transform:scale(1.06);filter:drop-shadow(0 6px 12px rgba(0,0,0,.35))}
+.block.r-cond{background:var(--cond);color:var(--on-color)}
+.block.r-then{background:var(--then);color:var(--on-color)}
+.block.r-else{background:var(--else);color:var(--on-color)}
+.builder .cellref{padding:0 2px}
+.builder .grip{font-size:20px;opacity:.75;margin-left:-8px;padding:0 2px}
+.opsel{font:700 17px var(--mono);background:rgba(255,255,255,.92);color:#1c2130;border:0;border-radius:7px;padding:4px 4px;cursor:pointer}
+.cvin{font:700 17px var(--mono);background:rgba(255,255,255,.92);color:#1c2130;border:0;border-radius:999px;padding:5px 10px;min-width:60px;outline:none}
+.cvin:focus{box-shadow:0 0 0 3px rgba(255,255,255,.6)}
+.slot{display:inline-flex;align-items:center;justify-content:center;position:relative}
+.slot.pill{min-width:130px;min-height:48px;border:2px dashed var(--slot-border);border-radius:999px;background:var(--slot);padding:2px}
+.slot.pill.small{min-width:70px;min-height:38px}
+.slot.hex{min-width:210px;min-height:54px;padding:4px 22px}
+.slot.hex::before,.slot.hex::after{content:"";position:absolute;clip-path:var(--hex)}
+.slot.hex::before{inset:0;background:var(--slot-border)}
+.slot.hex::after{inset:2px;background:var(--slot)}
+.slot.hex>*{position:relative;z-index:1}
+.slot.hex.drop-hover::before{background:var(--accent)}
+.slot.hex.drop-hover::after{background:color-mix(in srgb,var(--accent) 14%,var(--slot))}
+.slot-fixed{display:inline-flex}
+.iw{position:relative;display:inline-flex}
+.iw.ins::before,.iw.ins-after::after{content:"";position:absolute;top:2px;bottom:2px;width:4px;border-radius:2px;background:var(--accent)}
+.iw.ins::before{left:-6px}
+.iw.ins-after::after{right:-6px}
+.bx{position:absolute;top:-8px;right:-8px;width:20px;height:20px;border-radius:50%;border:none;background:var(--err);color:var(--on-color);font:700 13px/20px system-ui,sans-serif;padding:0;cursor:pointer}
+.mkrow{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.pool{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:12px 14px}
+.pool-items{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.pool.sympool{background:var(--panel2)}
+.actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:14px 0}
+.btn{font:600 16px system-ui,sans-serif;border-radius:10px;padding:10px 18px;border:1px solid var(--border);background:var(--panel);color:var(--text);cursor:pointer}
+.btn.primary{background:color-mix(in srgb,var(--accent) 22%,var(--panel));border-color:color-mix(in srgb,var(--accent) 50%,var(--panel));color:color-mix(in srgb,var(--accent) 60%,var(--text))}
+.btn:hover{filter:brightness(1.07)}
+.spacer{flex:1}
+.fb{border-radius:12px;padding:12px 16px;border-left:5px solid;margin-bottom:14px}
+.fb.err{background:var(--err-bg);border-color:var(--err)}
+.fb.ok{background:var(--ok-bg);border-color:var(--then);animation:pop .35s ease-out}
+@keyframes pop{0%{transform:scale(.97);opacity:.4}100%{transform:scale(1);opacity:1}}
+.fcol{font:700 18px var(--mono);display:inline-block;margin:6px 0;background:var(--panel);padding:4px 10px;border-radius:8px}
+.topics{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;margin-top:12px}
+.topic{display:flex;flex-direction:column;gap:4px;text-align:left;background:var(--panel2);border:2px solid var(--border);border-radius:14px;padding:14px 16px;cursor:pointer;color:var(--text);font:15px/1.4 system-ui,sans-serif}
+.topic:hover{border-color:var(--accent)}
+.topic b{font:800 19px var(--mono)}
+.topic .tdesc{color:var(--muted)}
+.topic .tprog{font-size:13px;color:var(--muted);margin-top:4px}
+.topic.done{border-color:var(--solved-border);background:var(--solved-bg)}
+.topic.done .tprog{color:var(--solved-text);font-weight:600}
+.c-cond{color:var(--cond)}
+.c-then{color:var(--then)}
+.c-else{color:var(--else)}
+.tt th,.tt td{border:1px solid var(--border);padding:3px 10px;text-align:left}
+.fbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.nbox{font:600 14px var(--mono);min-width:62px;text-align:center;padding:9px 8px;border:1px solid var(--border);border-radius:8px;background:var(--panel2)}
+.fxl{font:italic 700 15px Georgia,serif;color:var(--muted);padding:0 2px}
+.fin{flex:1 1 300px;display:flex;align-items:center;gap:4px;flex-wrap:wrap;min-height:48px;font:700 20px var(--mono)}
+.gapin{font:700 20px var(--mono);padding:7px 10px;border-radius:10px;border:2px dashed var(--slot-border);background:var(--slot);color:var(--text);outline:none;width:9em}
+.fnsel{font:700 18px var(--mono);padding:7px 8px;border-radius:10px;border:2px dashed var(--slot-border);background:var(--slot);color:var(--text);cursor:pointer}
+.fshow{flex:1;font:600 18px var(--mono);padding:9px 12px;border-radius:10px;border:1px solid var(--border);background:var(--panel2);min-height:46px;white-space:pre}
+.fshow.empty{color:var(--muted);font:italic 15px system-ui,sans-serif}
+.selhint{font-size:14px;color:var(--err);min-height:0;margin:-4px 0 8px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;font:600 13px var(--mono);min-height:4px}
+.chip{padding:2px 8px;border-radius:6px;border:2px solid;background:var(--panel)}
+.howto{font:13px system-ui,sans-serif;color:var(--muted);align-self:center}
+.xl{border-collapse:collapse;font:14px system-ui,sans-serif;user-select:none;-webkit-user-select:none}
+.xl th{background:var(--cellhd);color:var(--muted);font-weight:600;border:1px solid var(--grid);padding:3px 8px;min-width:30px;text-align:center}
+.xl td{background:var(--cell);border:1px solid var(--grid);padding:5px 9px;min-width:70px;height:32px;white-space:nowrap;cursor:cell;position:relative}
+.xl.pick td{touch-action:none}
+.xl td.hd{font-weight:700}
+.xl td.lbl{font-weight:500}
+.xl td.num{text-align:right;font-variant-numeric:tabular-nums}
+.xl td.calc{color:var(--muted)}
+.xl td.tgt{outline:3px solid var(--then);outline-offset:-3px;font:700 14px var(--mono)}
+.xl td.tgt.done{background:color-mix(in srgb,var(--then) 16%,var(--cell));color:var(--text);text-align:right}
+.xl td.ins{outline:3px solid var(--cond);outline-offset:-3px}
+.xl td.sel{outline:2px dashed var(--accent);outline-offset:-3px}
+.xl td.rc0{background:color-mix(in srgb,var(--r0) 16%,var(--cell));box-shadow:inset 0 0 0 1px var(--r0)}
+.xl td.rc1{background:color-mix(in srgb,var(--r1) 16%,var(--cell));box-shadow:inset 0 0 0 1px var(--r1)}
+.xl td.rc2{background:color-mix(in srgb,var(--r2) 16%,var(--cell));box-shadow:inset 0 0 0 1px var(--r2)}
+.xl td.rc3{background:color-mix(in srgb,var(--r3) 16%,var(--cell));box-shadow:inset 0 0 0 1px var(--r3)}
+.xl td.rc4{background:color-mix(in srgb,var(--r4) 16%,var(--cell));box-shadow:inset 0 0 0 1px var(--r4)}
+.xl td.rc5{background:color-mix(in srgb,var(--r5) 16%,var(--cell));box-shadow:inset 0 0 0 1px var(--r5)}
+.c0{color:var(--r0);border-color:var(--r0)}
+.c3{color:var(--r3);border-color:var(--r3)}
+.c4{color:var(--r4);border-color:var(--r4)}
+.c5{color:var(--r5);border-color:var(--r5)}
+.legend{font-size:13px;color:var(--muted)}
+body.dragging,body.dragging *{cursor:grabbing!important}
+.assign{margin-top:12px;padding:12px 14px;border-left:4px solid var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--panel));border-radius:8px}
+.intro{color:var(--muted);font-size:15px;margin-bottom:6px}
+.formula-ex{margin:8px 0}
+.formula-ex code{font-size:17px;padding:4px 10px}
+.opts.mono{flex-direction:column;align-items:stretch}
+.opt{font:600 16px system-ui,sans-serif;padding:10px 16px;border-radius:10px;border:2px solid var(--border);background:var(--panel2);color:var(--text);cursor:pointer;text-align:left}
+.opt.sel{border-color:var(--cond);background:color-mix(in srgb,var(--cond) 15%,var(--panel))}
+.opt.good{border-color:var(--then);background:color-mix(in srgb,var(--then) 18%,var(--panel))}
+.opt.bad{border-color:var(--else);background:color-mix(in srgb,var(--else) 15%,var(--panel))}
+.ohint{font-size:13px;color:var(--muted);margin-top:8px}
+.stepbtn{text-align:left;font:500 14px system-ui,sans-serif;padding:7px 10px;border-radius:8px;border:1px solid var(--border);background:var(--panel2);color:var(--text);cursor:pointer}
+.stepbtn.solved{border-color:var(--then);background:color-mix(in srgb,var(--then) 14%,var(--panel))}
+.stepbtn.cur{outline:2px solid var(--accent)}
+.stepbtn:disabled{opacity:.45;cursor:not-allowed}
+.stepreset{margin-top:6px;font:500 13px system-ui,sans-serif;background:none;border:0;color:var(--muted);text-decoration:underline;cursor:pointer;text-align:left}
+.acpop{position:fixed;z-index:60;display:none;background:var(--panel);border:1px solid var(--border);border-radius:6px;box-shadow:0 6px 20px rgba(0,0,0,.22);min-width:200px;max-width:min(420px,calc(100vw - 16px));font-size:14px;overflow:hidden}
+.acl{max-height:220px;overflow:auto;padding:3px 0}
+.aci{display:flex;align-items:center;gap:8px;padding:5px 10px;font:600 14px var(--mono);cursor:pointer;white-space:nowrap}
+.aci.sel{background:color-mix(in srgb,var(--cond) 20%,var(--panel))}
+.acfx{font:italic 700 11px Georgia,serif;color:var(--cond);border:1px solid color-mix(in srgb,var(--cond) 50%,transparent);border-radius:3px;padding:0 3px}
+.acdesc{border-top:1px solid var(--border);padding:7px 10px;color:var(--muted);font:13px/1.4 system-ui,sans-serif;white-space:normal}
+.ackey{padding:4px 10px 6px;color:var(--muted);font:11px system-ui,sans-serif;opacity:.8}
+.actip{position:fixed;z-index:59;display:none;background:var(--panel);border:1px solid var(--border);border-radius:4px;box-shadow:0 3px 10px rgba(0,0,0,.15);padding:3px 9px;font:13px system-ui,sans-serif;color:var(--muted);white-space:nowrap;max-width:calc(100vw - 16px);overflow:hidden;text-overflow:ellipsis}
+.actip b{color:var(--text)}
+.acfn{color:var(--cond);text-decoration:underline}
+.card.solved{background:var(--solved-bg);border-color:var(--solved-border);box-shadow:0 0 0 1px var(--solved-border) inset;transition:background .3s,border-color .3s}
+.card.solved .wthint{display:none}
+.hdr-left{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.modes{display:inline-flex;background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:3px}
+.modes button{border:0;background:none;color:var(--muted);font:600 14px system-ui,sans-serif;padding:7px 14px;border-radius:7px;cursor:pointer}
+.modes button.on{background:var(--panel);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.18)}
+.btn:disabled{opacity:.45;cursor:not-allowed;filter:none}
+.dock{position:fixed;left:22px;bottom:22px;z-index:30}
+.dockbtn{font:600 15px system-ui,sans-serif;background:var(--panel);color:var(--text);border:2px solid var(--border);border-radius:999px;padding:12px 18px;box-shadow:0 4px 14px rgba(0,0,0,.15);cursor:pointer;display:flex;gap:8px;align-items:center}
+.dockbtn.static{cursor:default}
+.dockbtn .sub{color:var(--muted);font-weight:500}
+.picker .ptitle{font-size:13px;color:var(--muted);margin-bottom:8px}
+.pg button{height:38px;border-radius:8px;border:1px solid var(--border);background:var(--panel2);color:var(--text);font:600 14px system-ui,sans-serif;cursor:pointer}
+.pg button.solved{background:var(--then);color:var(--on-color);border-color:transparent}
+.pg button.cur{outline:3px solid var(--accent);outline-offset:1px}
+.pgl{font-size:12px;color:var(--muted);margin:8px 0 4px}
+@media (max-width:640px){
+  header{padding:10px 12px}
+  .flame svg{width:26px;height:33px}
+  .slot.hex{min-width:170px}
+  body{padding-bottom:24px}
+  .picker{bottom:auto;top:auto;position:relative;margin-bottom:8px}
+}
+
+</style>
+<style>/* tabelle.css */
+/* tabelle.css – nach basis.css laden; Tabellenblatt-Trainer (funktionen, bezuege) */
+.tasktext{margin:0;font-size:17px}
+.tasktext p{margin:0 0 10px}
+.tasktext p:last-child{margin-bottom:0}
+.tasktext ul,.tasktext ol{margin:6px 0 10px;padding-left:22px}
+.block{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:17px;font-weight:700;padding:7px 15px;min-height:40px;user-select:none;-webkit-user-select:none;touch-action:none;white-space:pre;color:var(--on-color);transition:background .25s,opacity .2s;position:relative}
+.block.fn{background:var(--blk-fn);border-radius:12px;padding:6px 12px;box-shadow:inset 0 -3px 0 rgba(0,0,0,.2)}
+.block.fn .fname{font-size:19px}
+.slot.fnslot{min-width:220px;min-height:56px;border:2px dashed var(--slot-border);border-radius:16px;background:var(--slot);padding:3px}
+.slot.fnslot.drop-hover,.row.drop-hover{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,var(--slot))}
+.row{display:flex;flex-wrap:wrap;align-items:center;gap:6px;min-height:60px;flex:1;border:2px dashed var(--slot-border);background:var(--slot);border-radius:14px;padding:8px 10px}
+.btn.small{font-size:14px;padding:7px 12px}
+.pool-title{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700;margin-bottom:8px}
+.fb .note{display:block;margin-top:6px;font-size:15px;color:var(--muted)}
+.tt th{color:var(--muted)}
+.ftin{flex:1;width:100%;font:700 20px var(--mono);padding:9px 12px;border-radius:10px;border:2px solid var(--slot-border);background:var(--slot);color:var(--text);outline:none}
+.ftin:focus,.gapin:focus,.fnsel:focus{border-color:var(--accent)}
+.tscroll{overflow-x:auto;padding-bottom:2px}
+.c1{color:var(--r1);border-color:var(--r1)}
+.c2{color:var(--r2);border-color:var(--r2)}
+details.help{margin-top:10px;background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:8px 12px;font-size:15px}
+details.help summary{cursor:pointer;font-weight:600;color:var(--muted)}
+details.help p,details.help ul{margin:8px 0}
+.tt{border-collapse:collapse;font-size:14px;margin-top:6px}
+.opts{display:flex;flex-wrap:wrap;gap:10px}
+.opts.mono .opt{font:600 17px var(--mono)}
+.worktitle{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700;margin-bottom:8px}
+main{max-width:1020px;margin:0 auto;padding:18px 16px}
+.picker{position:absolute;bottom:62px;left:0;background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:14px;box-shadow:0 8px 28px rgba(0,0,0,.25);width:min(340px,calc(100vw - 44px))}
+.pg{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.picker.steps{max-height:70vh;overflow:auto;display:flex;flex-direction:column;gap:4px}
+@media (max-width:640px){
+  .fin,.ftin,.gapin{font-size:17px}
+  .dock{position:static;margin:0 16px 16px;display:flex;flex-direction:column-reverse;align-items:flex-start}
+}
+.pools{display:grid;gap:12px;margin:4px 0 10px}
+
+</style>
+<style>
+.xl td.fill{background:color-mix(in srgb,var(--then) 6%,var(--cell));outline:1px dashed color-mix(in srgb,var(--then) 70%,transparent);outline-offset:-4px}
+.xl td.good{background:color-mix(in srgb,var(--then) 22%,var(--cell));text-align:right;cursor:pointer}
+.xl td.bad{background:color-mix(in srgb,var(--else) 18%,var(--cell));outline:2px solid var(--else);outline-offset:-3px;text-align:right;cursor:pointer}
+.xl td.peekc{outline:3px solid var(--cond);outline-offset:-3px}
+.peek{font:15px system-ui,sans-serif;align-self:center}
+.peek code{font-size:15px}
+.dbtn{font-family:var(--mono);white-space:nowrap}
+.cg{width:5.6em;font-size:18px;padding:5px 8px}
+.block .cg{background:var(--slot);border-style:solid}
+.fixrow{display:flex;flex-wrap:wrap;align-items:center;gap:4px;font:700 20px var(--mono)}
+.dl{border-collapse:collapse;font-size:15px;margin:6px 0}
+.dl td,.dl th{border:1px solid var(--border);padding:3px 10px;text-align:left}
+.dl td:first-child{font:700 15px var(--mono)}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <linearGradient id="fg" x1="0" y1="1" x2="0" y2="0">
+    <stop offset="0" stop-color="#d9230f"/><stop offset=".55" stop-color="#ff7a00"/><stop offset="1" stop-color="#ffd23f"/>
+  </linearGradient></defs></svg>
+
+<header>
+  <div class="hdr-left">
+    <div class="brand"><span>=$</span>Zellbezüge<span>$</span></div>
+    <div class="modes" role="group" aria-label="Modus">
+      <button data-mode="lernen">Erklärung</button><button data-mode="pfad">Übungen</button><button data-mode="endlos">Endlos</button>
+    </div>
+  </div>
+  <div class="hdr-right">
+    <button class="iconbtn" id="themeBtn" aria-label="Hell/Dunkel umschalten"></button>
+    <div class="flames" id="flames" aria-label="Stufe wählen"></div>
+  </div>
+</header>
+
+<main>
+  <section class="card" id="taskcard">
+    <div class="meta">
+      <span class="lvlname" id="lvlname"></span>
+      <span id="taskmeta"></span>
+    </div>
+    <div class="tasktext" id="tasktext"></div>
+  </section>
+
+  <section class="card" id="sheetcard">
+    <div class="fbar" id="fbar"></div>
+    <div class="selhint" id="selhint"></div>
+    <div class="pools" id="pools"></div>
+    <div class="tscroll"><div id="grid"></div></div>
+    <div class="chips" id="chips"></div>
+  </section>
+
+  <section class="card" id="workcard">
+    <div class="worktitle">Deine Antwort</div>
+    <div id="work"></div>
+  </section>
+
+  <div class="actions" id="actions">
+    <button class="btn primary" id="checkBtn">Prüfen</button>
+    <button class="btn" id="resetBtn">Zurücksetzen</button>
+    <button class="btn" id="ovBtn">Übersicht</button>
+    <span class="spacer"></span>
+    <button class="btn" id="skipBtn" title="Neue Aufgabe – die Serie beginnt wieder bei 0">Andere Aufgabe</button>
+    <button class="btn" id="prevBtn" aria-label="Zurück">◀</button>
+    <button class="btn" id="nextBtn">Nächste Aufgabe ▶</button>
+  </div>
+  <div id="fb"></div>
+</main>
+
+<div class="dock" id="dock"></div>
+
+<script>/* basis.js */
+/* basis.js – gemeinsamer Kern aller Excel-Trainer (wenn, und-oder, funktionen, bezuege)
+ *
+ * Einbinden (nach dem Markup, vor den eigenen <script>s), dazu genau eine Ergänzung je Seitenart:
+ *   Formeln aus Bausteinen (wenn, und-oder):   basis.css + bausteine.css, basis.js + bausteine.js
+ *   Tabellenblatt (funktionen, bezuege):       basis.css + tabelle.css,   basis.js + tabelle.js
+ * Alles sind globale Namen, kein Build-Schritt, läuft auch per file://.
+ *
+ * API
+ *   $, esc, rand, clamp, rng, shuffle, pick1, ri, C, B, normQuotes, FErr   Helfer und Zufall
+ *   store(k, v), load(k)       localStorage unter KEY + k; store meldet TrainerSync.changed()
+ *   isSolved(i), markSolved()  gelöste Übung je Stufe (solved[level])
+ *   countSolved()              zählt eine gelöste Übung bzw. Endlos-Aufgabe (Serie, Rekord), → „erstmals“
+ *   skipTask()                 Endlos: andere Aufgabe, Serie auf 0
+ *   renderHeader()             Flammen (Stufen 1 … solange LEVELS[n] existiert), Modusknöpfe, Theme-Symbol
+ *   navPfad(), navLernen(idx, n, info)   Knöpfe Prüfen/Zurücksetzen/Zurück/Weiter je Modus
+ *   dockHTML(groups)           Dock für Übungen/Endlos; groups = Gruppennamen (Gruppe = letztes STD-Feld)
+ *   navClick(e)                Flammen, Modi, Aufgabenwahl, Dock – am Ende des Klick-Handlers aufrufen
+ *   Drag & Drop (Maus/Touch)   Ziehen, Ablageziel hervorheben, Einfügemarke in Zeilen (.iw)
+ *   AC                         Autovervollständigung wie in Excel für Eingaben mit Klasse .acin
+ *   Verdrahtet: #themeBtn, #checkBtn → check(), #nextBtn → nextTask(), #skipBtn → skipTask(),
+ *   Escape schließt die Aufgabenwahl.
+ *
+ * Die Seite (bzw. bausteine.js/tabelle.js) liefert
+ *   KEY, LEVELS, STD; let mode, level, pfadIdx, solved, streak, best, endCounted, pickerOpen
+ *   check, loadTask, setLevel, setMode, gotoTask, canNext, nextTask, newEndless, renderDock
+ *   Drag-Hooks: dragData(b, e) → Zusatzfelder für D (src:true = Quelle blass) oder null;
+ *     dropOk(t); applyDrop(d, type, idx, t); dragTap(d) bei Klick ohne Ziehen; optional dragGhost(g)
+ *   AC_FN = [{n, v | a, d}]; optional AC.word(before, inp) → getipptes Wort oder null
+ *
+ * Gerüst einer Seite
+ *   <link rel="stylesheet" href="basis.css"><link rel="stylesheet" href="tabelle.css"> … Markup
+ *   <script src="basis.js"><\/script><script src="tabelle.js"><\/script>
+ *   <script>
+ *     const KEY = 'xy-', LEVELS = [null, {name:'…'}], STD = [[…, 1]];
+ *     let mode = load('mode') || 'pfad', level = 1, pfadIdx = 0, solved = {}, streak = 0,
+ *         best = 0, endCounted = false, pickerOpen = false, …;
+ *     function check(){ … logSolved(countSolved()); … }   function loadTask(){ … }  …
+ *     if (mode === 'endlos') newEndless();
+ *     loadTask();
+ *   <\/script>
+ */
+
+/* ================= Teil A: alle Seiten ================= */
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const rand = () => (Math.random() * 1e9) | 0;
+const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+function rng(a){ return function(){ a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function shuffle(arr, r){ const a = arr.slice(); for (let i = a.length - 1; i > 0; i--){ const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+const pick1 = (r, a) => a[Math.floor(r() * a.length)];
+const ri = (r, a, b) => a + Math.floor(r() * (b - a + 1));
+const C = s => `<code>${s}</code>`, B = s => `<b>${s}</b>`;
+function normQuotes(s){ return s.replace(/[„“”″«»]/g, '"'); }
+class FErr extends Error { constructor(msg){ super(msg); this.name = 'FErr'; } }
+
+/* Speicher (Schlüssel KEY + k) und Fortschritt */
+function store(k, v){ try{ localStorage.setItem(KEY + k, v); }catch(e){} if (window.TrainerSync) TrainerSync.changed(); }
+function load(k){ try{ return localStorage.getItem(KEY + k); }catch(e){ return null; } }
+function isSolved(i){ return (solved[level] || []).includes(i); }
+function markSolved(){ const a = solved[level] || (solved[level] = []); if (!a.includes(pfadIdx)){ a.push(pfadIdx); store('solved', JSON.stringify(solved)); } }
+function countSolved(){
+  if (mode === 'pfad'){ const erstmals = !isSolved(pfadIdx); markSolved(); return erstmals; }
+  const erstmals = !endCounted;
+  if (!endCounted){ endCounted = true; streak++; if (streak > best){ best = streak; store('best', best); } }
+  return erstmals;
+}
+function skipTask(){ streak = 0; newEndless(); loadTask(); }
+
+/* Kopfzeile, Navigation, Dock */
+function renderHeader(){
+  let h = '';
+  for (let n = 1; LEVELS[n]; n++){
+    h += `<button class="flame${n === level ? ' on' : ''}" data-level="${n}" title="Stufe ${n}: ${esc(LEVELS[n].name)}" aria-label="Stufe ${n}" aria-pressed="${n === level}">
+      <svg viewBox="0 0 32 40"><path d="M16 2C18 9 27 14 27 26C27 33 22 38 16 38C10 38 5 33 5 26C5 20 9 16 11 11C12 15 13 17 15 18C16 13 17 8 16 2Z"/>
+      <text x="16" y="32" text-anchor="middle">${n}</text></svg></button>`;
+  }
+  $('#flames').innerHTML = h;
+  $('#flames').style.display = mode === 'lernen' ? 'none' : '';
+  document.querySelectorAll('.modes button').forEach(b => b.classList.toggle('on', b.dataset.mode === mode));
+  const dark = document.documentElement.dataset.theme === 'dark';
+  $('#themeBtn').innerHTML = dark
+    ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>'
+    : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>';
+}
+function navButtons(){ return {nb:$('#nextBtn'), pb:$('#prevBtn'), sb:$('#skipBtn'), cb:$('#checkBtn'), rb:$('#resetBtn'), ob:$('#ovBtn')}; }
+function navPfad(){
+  const {nb, pb, sb, cb, rb, ob} = navButtons();
+  cb.style.display = rb.style.display = nb.style.display = ''; if (ob) ob.style.display = 'none';
+  pb.style.display = mode === 'pfad' ? '' : 'none'; pb.disabled = pfadIdx === 0;
+  sb.style.display = mode === 'endlos' ? '' : 'none';
+  const ok = canNext(); nb.disabled = !ok;
+  if (mode === 'pfad' && pfadIdx === STD.length - 1 && isSolved(pfadIdx)) nb.textContent = 'Alle Übungen geschafft 🎉';
+  else nb.textContent = (ok ? '' : '🔒 ') + 'Nächste Aufgabe ▶';
+  nb.title = ok ? '' : 'Erst die aktuelle Aufgabe richtig lösen';
+}
+function navLernen(idx, n, info){
+  const {nb, pb, sb, cb, rb, ob} = navButtons();
+  pb.style.display = ''; pb.disabled = idx === 0; sb.style.display = 'none'; if (ob) ob.style.display = '';
+  cb.style.display = rb.style.display = info ? 'none' : '';
+  nb.style.display = idx === n - 1 ? 'none' : '';
+  const ok = canNext(); nb.disabled = !ok;
+  nb.textContent = (ok ? '' : '🔒 ') + 'Weiter ▶';
+  nb.title = ok ? '' : 'Erst die Aufgabe in diesem Schritt richtig lösen';
+}
+function dockHTML(groups){
+  if (mode === 'endlos') return `<div class="dockbtn static">🔥 Serie: ${streak} <span class="sub">· Rekord ${best}</span></div>`;
+  let h = `<button class="dockbtn" id="dockBtn" aria-expanded="${pickerOpen}">▦ Aufgabe ${pfadIdx + 1}/${STD.length} <span class="sub">· ${(solved[level] || []).length} gelöst</span></button>`;
+  if (!pickerOpen) return h;
+  const btn = i => `<button data-goto="${i}" class="${isSolved(i) ? 'solved' : ''}${i === pfadIdx ? ' cur' : ''}">${i + 1}</button>`;
+  h += `<div class="picker"><div class="ptitle">Zu Aufgabe springen – grün = auf Stufe ${level} gelöst</div>`;
+  if (!groups) h += '<div class="pg">' + STD.map((_, i) => btn(i)).join('') + '</div>';
+  else for (let g = 1; g < groups.length; g++)
+    h += `<div class="pgl">${esc(groups[g])}</div><div class="pg">` + STD.map((e, i) => e[e.length - 1] !== g ? '' : btn(i)).join('') + '</div>';
+  return h + '</div>';
+}
+function navClick(e){
+  const f = e.target.closest('.flame'); if (f){ setLevel(+f.dataset.level); return; }
+  const m = e.target.closest('.modes button'); if (m){ setMode(m.dataset.mode); return; }
+  const g = e.target.closest('[data-goto]'); if (g){ gotoTask(+g.dataset.goto); return; }
+  if (e.target.closest('#dockBtn')){ pickerOpen = !pickerOpen; renderDock(); return; }
+  if (pickerOpen && !e.target.closest('.picker')){ pickerOpen = false; renderDock(); }
+}
+$('#checkBtn').addEventListener('click', () => check());
+$('#nextBtn').addEventListener('click', () => nextTask());
+$('#skipBtn').addEventListener('click', () => skipTask());
+$('#themeBtn').addEventListener('click', () => {
+  const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+  document.documentElement.dataset.theme = t; try { localStorage.setItem('wenn-theme', t); } catch (e) {} renderHeader();
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && pickerOpen){ pickerOpen = false; renderDock(); } });
+
+/* Drag & Drop (Maus + Touch über Pointer Events) */
+let D = null, hoverEl = null, insEl = null, scrollRAF = null;
+function findTarget(x, y){
+  const el = document.elementFromPoint(x, y);
+  let t = el && el.closest && el.closest('[data-drop]');
+  // ein Baustein darf nicht in sich selbst abgelegt werden (z. B. Wert in den eigenen Baustein)
+  while (t && D.el.contains(t)) t = t.parentElement && t.parentElement.closest('[data-drop]');
+  return t && dropOk(t) ? t : null;
+}
+function rowIndex(row, x, y){
+  const kids = [...row.querySelectorAll(':scope > .iw')];
+  for (let i = 0; i < kids.length; i++){
+    const r = kids[i].getBoundingClientRect();
+    if (y < r.top) return i;
+    if (y <= r.bottom && x < r.left + r.width / 2) return i;
+  }
+  return kids.length;
+}
+function clearHover(){
+  if (hoverEl){ hoverEl.classList.remove('drop-hover'); hoverEl = null; }
+  if (insEl){ insEl.classList.remove('ins', 'ins-after'); insEl = null; }
+}
+function updateHover(x, y){
+  clearHover();
+  const t = findTarget(x, y); if (!t) return;
+  hoverEl = t; t.classList.add('drop-hover');
+  if (t.dataset.drop === 'row'){
+    const kids = [...t.querySelectorAll(':scope > .iw')], i = rowIndex(t, x, y);
+    if (kids.length){ insEl = i < kids.length ? kids[i] : kids[kids.length - 1]; insEl.classList.add(i < kids.length ? 'ins' : 'ins-after'); }
+  }
+}
+function autoScroll(){
+  if (!D || !D.started) return;
+  const topEdge = document.querySelector('header').getBoundingClientRect().bottom + 20;
+  if (D.y < topEdge) window.scrollBy(0, -8); else if (D.y > innerHeight - 30) window.scrollBy(0, 8);
+  updateHover(D.x, D.y);
+  scrollRAF = requestAnimationFrame(autoScroll);
+}
+function endDrag(cancel){
+  cancelAnimationFrame(scrollRAF);
+  const t = cancel ? null : findTarget(D.x, D.y);
+  const idx = t && t.dataset.drop === 'row' ? rowIndex(t, D.x, D.y) : 0;
+  clearHover(); D.ghost.remove(); D.el.classList.remove('drag-src'); document.body.classList.remove('dragging');
+  const d = D; D = null;
+  if (t) applyDrop(d, t.dataset.drop, idx, t);
+}
+document.addEventListener('pointerdown', e => {
+  const b = e.target.closest('.block[data-drag]');
+  if (!b || (e.pointerType === 'mouse' && e.button !== 0)) return;
+  const extra = dragData(b, e); if (!extra) return;
+  e.preventDefault();
+  D = Object.assign({el:b, x0:e.clientX, y0:e.clientY, x:e.clientX, y:e.clientY, started:false}, extra);
+});
+window.addEventListener('pointermove', e => {
+  if (!D) return;
+  D.x = e.clientX; D.y = e.clientY;
+  if (!D.started){
+    if (Math.hypot(e.clientX - D.x0, e.clientY - D.y0) < 5) return;
+    const r = D.el.getBoundingClientRect(), g = D.el.cloneNode(true);
+    ['select', 'input'].forEach(sel => { const gs = g.querySelectorAll(sel); D.el.querySelectorAll(sel).forEach((s, i) => { gs[i].value = s.value; }); });
+    if (window.dragGhost) dragGhost(g);
+    g.classList.add('drag-ghost'); g.classList.remove('drag-src');
+    g.style.width = r.width + 'px'; g.style.left = r.left + 'px'; g.style.top = r.top + 'px';
+    document.body.appendChild(g);
+    D.ghost = g; D.dx = D.x0 - r.left; D.dy = D.y0 - r.top; D.started = true;
+    if (D.src) D.el.classList.add('drag-src');
+    document.body.classList.add('dragging');
+    autoScroll();
+  }
+  D.ghost.style.left = (e.clientX - D.dx) + 'px'; D.ghost.style.top = (e.clientY - D.dy) + 'px';
+  updateHover(e.clientX, e.clientY);
+}, {passive:false});
+window.addEventListener('pointerup', () => {
+  if (!D) return;
+  if (D.started){ endDrag(false); return; }
+  const d = D; D = null;
+  dragTap(d);
+});
+window.addEventListener('pointercancel', () => { if (!D) return; if (D.started) endDrag(true); else D = null; });
+
+/* Autovervollständigung wie in Excel: Funktionsliste beim Tippen, Argument-Hinweis in Klammern */
+const acCanvas = document.createElement('canvas').getContext('2d');
+const AC = {list:[], sel:0, key:'', start:0, token:'', closed:'', input:null,
+  digits:false,           // Funktionsnamen dürfen Ziffern enthalten (ANZAHL2)
+  prev:/[=(;<>\s,]/,      // erlaubtes Zeichen vor dem getippten Wort
+  // getipptes Wort am Cursor (oder null); in #ft erst nach einem „=“
+  word:(before, inp) => { const m = before.match(/[A-Za-zÄÖÜäöüß]+$/); return m && (inp.id !== 'ft' || before.trimStart().startsWith('=')) ? m[0] : null; }};
+function acArgs(f, i){
+  if (f.a) return f.a;
+  const n = Math.max(2, i + 1), out = [];
+  for (let k = 1; k <= n; k++) out.push(k === 1 ? f.v + k : `[${f.v}${k}]`);
+  return [...out, '…'];
+}
+function acCaretX(inp, idx){
+  const cs = getComputedStyle(inp), r = inp.getBoundingClientRect();
+  acCanvas.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+  return r.left + parseFloat(cs.paddingLeft) + parseFloat(cs.borderLeftWidth) + acCanvas.measureText(inp.value.slice(0, idx)).width - inp.scrollLeft;
+}
+function acEls(){
+  let pop = document.getElementById('acpop'), tip = document.getElementById('actip');
+  if (!pop){
+    pop = document.createElement('div'); pop.id = 'acpop'; pop.className = 'acpop'; document.body.appendChild(pop);
+    tip = document.createElement('div'); tip.id = 'actip'; tip.className = 'actip'; document.body.appendChild(tip);
+    pop.addEventListener('pointerdown', e => { const it = e.target.closest('[data-aci]'); e.preventDefault(); if (it){ AC.sel = +it.dataset.aci; acInsert(); } });
+  }
+  return {pop, tip};
+}
+function acHide(){ const {pop, tip} = acEls(); pop.style.display = 'none'; tip.style.display = 'none'; AC.list = []; }
+function acPlace(el, x, inp){
+  const r = inp.getBoundingClientRect();
+  el.style.display = 'block';
+  el.style.left = Math.max(8, Math.min(x - 6, innerWidth - el.offsetWidth - 8)) + 'px';
+  el.style.top = (r.bottom + 4) + 'px';
+}
+function acUpdate(inp){
+  inp = inp || document.activeElement;
+  if (!inp || !inp.matches || !inp.matches('.acin') || document.activeElement !== inp){ acHide(); return; }
+  AC.input = inp;
+  const {pop, tip} = acEls();
+  const pos = inp.selectionStart ?? inp.value.length, before = normQuotes(inp.value.slice(0, pos));
+  // Zeichen für Zeichen lesen: Textbereiche überspringen, offene Funktionen merken
+  const stack = []; let inStr = false, word = '', wstart = 0;
+  for (let i = 0; i < before.length; i++){
+    const ch = before[i];
+    if (ch === '"'){ inStr = !inStr; word = ''; continue; }
+    if (inStr) continue;
+    if (/[A-Za-zÄÖÜäöüß]/.test(ch) || (AC.digits && word && /[0-9]/.test(ch))){ if (!word) wstart = i; word += ch; continue; }
+    if (ch === '(') stack.push({fn:word.toUpperCase(), i:0, at:wstart});
+    else if (ch === ';' && stack.length) stack[stack.length - 1].i++;
+    else if (ch === ')') stack.pop();
+    word = '';
+  }
+  // Funktionsliste: nur wenn gerade ein Funktionsname getippt wird (nicht in Text, nicht Teil einer Zelle)
+  let list = [], token = '', start = pos;
+  const w = !inStr && AC.word(before, inp);
+  if (w){
+    token = w; start = pos - token.length;
+    const prev = before[start - 1];
+    if (!prev || AC.prev.test(prev)) list = AC_FN.filter(f => f.n.startsWith(token.toUpperCase()));
+    if (list.length === 1 && list[0].n === token.toUpperCase() && inp.value[pos] === '(') list = [];
+  }
+  const key = start + ':' + token.toUpperCase();
+  if (AC.closed === key) list = [];
+  if (key !== AC.key) AC.sel = 0;
+  AC.key = key; AC.token = token; AC.start = start; AC.list = list;
+  if (AC.sel >= list.length) AC.sel = 0;
+  if (list.length){
+    const f = list[AC.sel];
+    pop.innerHTML = `<div class="acl">${list.map((x, i) => `<div class="aci${i === AC.sel ? ' sel' : ''}" data-aci="${i}"><span class="acfx">fx</span>${x.n}</div>`).join('')}</div><div class="acdesc">${esc(f.d)}</div><div class="ackey">Tab ↹ fügt ein · ↑ ↓ wählen</div>`;
+    acPlace(pop, acCaretX(inp, start), inp);
+    tip.style.display = 'none';
+    return;
+  }
+  pop.style.display = 'none';
+  const top = stack[stack.length - 1], f = top && AC_FN.find(x => x.n === top.fn);
+  if (f){
+    const args = acArgs(f, top.i);
+    const act = f.a ? Math.min(top.i, args.length - 1) : top.i;
+    tip.innerHTML = `<span class="acfn">${f.n}</span>(${args.map((a, i) => i === act ? `<b>${esc(a)}</b>` : esc(a)).join('; ')})`;
+    acPlace(tip, acCaretX(inp, top.at), inp);
+  } else tip.style.display = 'none';
+}
+function acInsert(){
+  const inp = AC.input, f = AC.list[AC.sel];
+  if (!inp || !f) return;
+  const pos = inp.selectionStart ?? inp.value.length;
+  const after = inp.value.slice(pos), add = after.startsWith('(') ? f.n : f.n + '(';
+  inp.value = inp.value.slice(0, AC.start) + add + after;
+  const c = AC.start + f.n.length + 1;
+  inp.focus(); inp.setSelectionRange(c, c);
+  inp.dispatchEvent(new Event('input', {bubbles:true}));
+  acUpdate(inp);
+}
+document.addEventListener('keydown', e => {
+  if (!e.target.matches || !e.target.matches('.acin') || !AC.list.length) return;
+  if (e.key === 'ArrowDown'){ e.preventDefault(); AC.sel = (AC.sel + 1) % AC.list.length; acUpdate(e.target); }
+  else if (e.key === 'ArrowUp'){ e.preventDefault(); AC.sel = (AC.sel - 1 + AC.list.length) % AC.list.length; acUpdate(e.target); }
+  else if (e.key === 'Tab'){ e.preventDefault(); acInsert(); }
+  else if (e.key === 'Escape'){ e.preventDefault(); AC.closed = AC.key; acUpdate(e.target); }
+  else if (e.key === 'Enter'){ acHide(); }
+}, true);
+document.addEventListener('keyup', e => { if (e.target.matches && e.target.matches('.acin') && !['ArrowDown', 'ArrowUp', 'Tab', 'Escape', 'Enter', 'F4'].includes(e.key)) acUpdate(e.target); });
+document.addEventListener('focusin', e => { if (e.target.matches && e.target.matches('.acin')) acUpdate(e.target); });
+document.addEventListener('focusout', () => setTimeout(() => acUpdate(), 0));
+window.addEventListener('scroll', () => { if (AC.input && document.activeElement === AC.input) acUpdate(AC.input); }, {passive:true});
+window.addEventListener('resize', () => acUpdate());
+
+</script>
+<script>/* tabelle.js */
+/* tabelle.js – Ergänzung zu basis.js für Trainer mit Tabellenblatt (funktionen, bezuege)
+ * Laden nach basis.js; dazu tabelle.css nach basis.css.
+ *
+ * API
+ *   Rechenwerk: FUNCS, FDESC, GOAL, ALIAS, ENGLISH, CELLRE, colN, colL, addr, ad, normRef, rangeCells,
+ *     normRange, tokenize, parseFormula, refsOf, cellsOfRefs, fnsOf, numsOf, topCall, refsInText,
+ *     E, toNum, evalAst, callFn, parseCached, Sheet(cells).val(a), same, fmtNum, fmtVal(v, 'eur'|'usd'|'pct')
+ *   Erklärung (learn = {topic, prog:{id:{idx, done}}}): topic, prog, saveLearn, stepDone, markStep,
+ *     firstOpen, stepUnlocked, curStep, gotoStep, openTopic, overview
+ *   setMode, gotoTask, canNext, nextTask, renderNav, renderDock, renderOverview(introHtml),
+ *   renderFeedback, renderChoice(st), checkChoice(), hint(msg)
+ *   topicClick(e)   Antworten, Themen, Schritte, Übersicht, dann navClick – am Ende des Klick-Handlers
+ *   caret, setCaret, focusInp, applyPT, cellAt, endPT, gridEl, trackCaret   Bezüge mit der Maus einfügen
+ *   Verdrahtet: #ovBtn, #prevBtn, #resetBtn, Eingabe in .pin → syncInput, Maus-Ende im #grid
+ *
+ * Die Seite liefert
+ *   TOPICS, GROUPS, AC_FN; let learn, endPick, CUR, S, LS, PT
+ *   render, resetS, loadStep, newEndless, setLevel, clearMarks, syncInput(inp, keepSel), logSolved
+ */
+
+
+const FUNCS = ['SUMME', 'MITTELWERT', 'MIN', 'MAX', 'ANZAHL', 'ANZAHL2'];
+const FDESC = {
+  SUMME:'addiert alle Zahlen',
+  MITTELWERT:'berechnet den Durchschnitt',
+  MIN:'liefert den kleinsten Wert',
+  MAX:'liefert den größten Wert',
+  ANZAHL:'zählt die Zellen, in denen eine Zahl steht',
+  ANZAHL2:'zählt alle Zellen, die nicht leer sind – auch Zellen mit Text'
+};
+const GOAL = {SUMME:'die Summe (alles zusammen)', MITTELWERT:'der Durchschnitt', MIN:'der kleinste Wert', MAX:'der größte Wert',
+  ANZAHL:'die Anzahl der Zellen mit einer Zahl', ANZAHL2:'die Anzahl aller Einträge'};
+// englische oder falsche Funktionsnamen -> Hinweis
+const ALIAS = {SUM:'SUMME', AVERAGE:'MITTELWERT', COUNT:'ANZAHL', COUNTA:'ANZAHL2', MINIMUM:'MIN', MAXIMUM:'MAX',
+  DURCHSCHNITT:'MITTELWERT', MITTEL:'MITTELWERT', MITTELWERTE:'MITTELWERT', SUMMEN:'SUMME', SUM2:'SUMME', SUMM:'SUMME', SUME:'SUMME',
+  ANZAL:'ANZAHL', ANZAHL1:'ANZAHL', ANZAL2:'ANZAHL2', ZÄHLEN:'ANZAHL', ANZAHLZWEI:'ANZAHL2'};
+const ENGLISH = ['SUM', 'AVERAGE', 'COUNT', 'COUNTA'];
+
+
+/* ---- Zellbezüge ---- */
+const CELLRE = /^\$?([A-Za-z]{1,3})\$?([0-9]{1,5})$/;
+const colN = L => L.toUpperCase().split('').reduce((a, ch) => a * 26 + ch.charCodeAt(0) - 64, 0) - 1;
+function colL(n){ let s = ''; n++; while (n > 0){ const m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = Math.floor((n - 1) / 26); } return s; }
+function addr(s){ const m = String(s).match(CELLRE); return m ? {c:colN(m[1]), r:+m[2]} : null; }
+const ad = (c, r) => colL(c) + r;
+const normRef = s => { const a = addr(s); return ad(a.c, a.r); };
+function rangeCells(a, b){
+  const x = addr(a), y = addr(b), out = [];
+  for (let r = Math.min(x.r, y.r); r <= Math.max(x.r, y.r); r++)
+    for (let c = Math.min(x.c, y.c); c <= Math.max(x.c, y.c); c++) out.push(ad(c, r));
+  return out;
+}
+function normRange(a, b){
+  const x = addr(a), y = addr(b);
+  return ad(Math.min(x.c, y.c), Math.min(x.r, y.r)) + ':' + ad(Math.max(x.c, y.c), Math.max(x.r, y.r));
+}
+
+/* ---- Zerlegen ---- */
+function tokenize(src){
+  const t = []; let i = 0; const n = src.length;
+  const isL = ch => /[A-Za-zÄÖÜäöüß$]/.test(ch);
+  while (i < n){
+    const c = src[i];
+    if (/\s/.test(c)){ i++; continue; }
+    if (c === '"'){
+      i++; let v = '', closed = false;
+      while (i < n){ if (src[i] === '"'){ if (src[i+1] === '"'){ v += '"'; i += 2; continue; } closed = true; i++; break; } v += src[i++]; }
+      if (!closed) throw new FErr('Ein Anführungszeichen wurde geöffnet, aber nicht wieder geschlossen.');
+      t.push({type:'str', v}); continue;
+    }
+    if (/[0-9]/.test(c)){
+      let j = i; while (j < n && /[0-9]/.test(src[j])) j++;
+      if (src[j] === ',' && /[0-9]/.test(src[j+1] || '')){ j++; while (j < n && /[0-9]/.test(src[j])) j++; }
+      if (src[j] === '.' && /[0-9]/.test(src[j+1] || '')) throw new FErr('Dezimalzahlen schreibt man im deutschen Excel mit Komma, z. B. 0,25.');
+      if (j < n && isL(src[j])){ let k = j; while (k < n && /[A-Za-z0-9]/.test(src[k])) k++; throw new FErr(`„${src.slice(i, k)}“ verstehe ich nicht. Ein Zellbezug beginnt mit dem Buchstaben der Spalte, z. B. B4.`); }
+      t.push({type:'num', v:parseFloat(src.slice(i, j).replace(',', '.'))}); i = j; continue;
+    }
+    if (isL(c)){
+      let j = i; while (j < n && /[A-Za-z0-9ÄÖÜäöüß$_.]/.test(src[j])) j++;
+      const w = src.slice(i, j), up = w.toUpperCase();
+      let k = j; while (k < n && /\s/.test(src[k])) k++;
+      if (src[k] === '('){ t.push({type:'fn', v:up.replace(/\./g, '')}); i = j; continue; }
+      if (CELLRE.test(w)){ t.push({type:'ref', v:normRef(w)}); i = j; continue; }
+      if (FUNCS.includes(up)) throw new FErr(`Nach ${up} muss eine Klammer folgen: ${up}(…)`);
+      if (/^\$?[A-Za-z]{1,3}\$?\d+\$?[A-Za-z]{1,3}\$?\d+$/.test(w)) throw new FErr(`Zwischen den Zellen in „${w}“ fehlt etwas. Für einen Bereich schreibst du einen Doppelpunkt, z. B. B4:B8.`);
+      if (ALIAS[up]) throw new FErr(`Meinst du ${ALIAS[up]}? Nach dem Funktionsnamen folgt eine Klammer: ${ALIAS[up]}(…)`);
+      throw new FErr(`„${w}“ ist weder ein Zellbezug (wie B4) noch eine Funktion.`);
+    }
+    if ('+-*/^();:'.includes(c)){ t.push({type:'op', v:c}); i++; continue; }
+    if (c === ',') throw new FErr('Im deutschen Excel trennt man die Teile einer Funktion mit einem Semikolon ; – und einen Bereich „von … bis“ schreibt man mit Doppelpunkt, z. B. B4:B8.');
+    if (c === '=') throw new FErr('Das = steht nur einmal ganz am Anfang der Formel.');
+    if (c === '<' || c === '>') throw new FErr('Vergleiche mit < oder > brauchst du hier nicht.');
+    if (c === '€' || c === '%') throw new FErr(`Das Zeichen ${c} gehört nicht in die Formel. Schreibe nur die Zahl bzw. den Zellbezug.`);
+    throw new FErr(`Das Zeichen „${c}“ gehört nicht in eine Formel.`);
+  }
+  return t;
+}
+
+/* ---- Parser: + - * / ^, Klammern, Funktionen mit Bereichen ---- */
+function noRange(n){ if (n.k === 'range') throw new FErr(`Ein Bereich wie ${n.a}:${n.b} funktioniert nur in einer Funktion, z. B. =SUMME(${n.a}:${n.b}).`); return n; }
+function parseFormula(raw){
+  const s = normQuotes(String(raw)).trim();
+  if (!s) throw new FErr('Gib zuerst eine Formel ein.');
+  if (s[0] !== '=') throw new FErr('Eine Formel beginnt in Excel immer mit einem Gleichheitszeichen =.');
+  const toks = tokenize(s.slice(1)); let p = 0;
+  if (!toks.length) throw new FErr('Nach dem = fehlt noch die Formel.');
+  const peek = () => toks[p], next = () => toks[p++];
+  const isOp = (t, v) => t && t.type === 'op' && t.v === v;
+  function expr(){ let a = term(); while (isOp(peek(), '+') || isOp(peek(), '-')){ const o = next().v; a = {k:'bin', o, a:noRange(a), b:noRange(term())}; } return a; }
+  function term(){ let a = factor(); while (isOp(peek(), '*') || isOp(peek(), '/')){ const o = next().v; a = {k:'bin', o, a:noRange(a), b:noRange(factor())}; } return a; }
+  function factor(){ if (isOp(peek(), '-') || isOp(peek(), '+')){ const o = next().v; return {k:'neg', o, a:noRange(factor())}; } return power(); }
+  function power(){ let a = atom(); if (isOp(peek(), '^')){ next(); a = {k:'bin', o:'^', a:noRange(a), b:noRange(factor())}; } return a; }
+  function atom(){
+    const t = next();
+    if (!t) throw new FErr('Die Formel hört zu früh auf – am Ende fehlt noch etwas.');
+    if (t.type === 'num') return {k:'num', v:t.v};
+    if (t.type === 'str') return {k:'str', v:t.v};
+    if (t.type === 'ref'){
+      if (isOp(peek(), ':')){
+        next(); const u = next();
+        if (!u || u.type !== 'ref') throw new FErr('Nach dem Doppelpunkt muss eine Zelle folgen, z. B. B4:B8.');
+        return {k:'range', a:t.v, b:u.v};
+      }
+      return {k:'ref', v:t.v};
+    }
+    if (t.type === 'fn'){
+      const name = t.v; next(); // (
+      if (!FUNCS.includes(name)){
+        if (ENGLISH.includes(name)) throw new FErr(`Im deutschen Excel heißt die Funktion ${ALIAS[name]} statt ${name}.`);
+        if (ALIAS[name]) throw new FErr(`Die Funktion heißt ${ALIAS[name]}, nicht ${name}.`);
+        if (CELLRE.test(name)) throw new FErr(`Nach der Zelle ${name} darf keine Klammer folgen. Fehlt ein Rechenzeichen?`);
+        throw new FErr(`Die Funktion ${name} gibt es hier nicht. Du brauchst SUMME, MITTELWERT, MIN, MAX, ANZAHL oder ANZAHL2.`);
+      }
+      if (isOp(peek(), ')')){ next(); throw new FErr(`In die Klammer von ${name} gehört ein Bereich, z. B. ${name}(B4:B8).`); }
+      const args = [];
+      for (;;){
+        if (isOp(peek(), ';') || isOp(peek(), ')')) throw new FErr(`In ${name}(…) fehlt zwischen den Semikolons etwas.`);
+        args.push(expr());
+        const u = next();
+        if (!u) throw new FErr(`Es fehlt die schließende Klammer ) von ${name}.`);
+        if (isOp(u, ';')) continue;
+        if (isOp(u, ')')) break;
+        if (isOp(u, ':')) throw new FErr('Vor und nach dem Doppelpunkt muss je eine Zelle stehen, z. B. B4:B8.');
+        throw new FErr(`In ${name}(…) fehlt ein ; oder ein Rechenzeichen zwischen zwei Teilen.`);
+      }
+      return {k:'call', name, args};
+    }
+    if (isOp(t, '(')){
+      const e = expr(), u = next();
+      if (!isOp(u, ')')) throw new FErr('Es fehlt eine schließende Klammer ).');
+      return {k:'par', a:noRange(e)};
+    }
+    if (isOp(t, ')')) throw new FErr('Hier steht eine Klammer ) zu viel oder an der falschen Stelle.');
+    if (isOp(t, ';')) throw new FErr('Das Semikolon ; trennt nur die Teile innerhalb einer Funktion, z. B. SUMME(B4:B8;D4:D8).');
+    if (isOp(t, ':')) throw new FErr('Vor dem Doppelpunkt muss eine Zelle stehen, z. B. B4:B8.');
+    throw new FErr(`Das Zeichen ${t.v} steht an der falschen Stelle.`);
+  }
+  const ast = expr();
+  if (p < toks.length){
+    const t = toks[p];
+    if (isOp(t, ')')) throw new FErr('Hier steht eine Klammer ) zu viel.');
+    if (isOp(t, ';')) throw new FErr('Das Semikolon ; steht außerhalb einer Funktion. Steht die Klammer ) zu früh?');
+    if (isOp(t, ':')) throw new FErr('Vor dem Doppelpunkt muss eine einzelne Zelle stehen, z. B. B4:B8.');
+    throw new FErr('Zwischen zwei Teilen der Formel fehlt ein Rechenzeichen.');
+  }
+  return noRange(ast);
+}
+
+/* ---- Bezüge einer Formel ---- */
+function refsOf(n, out = []){
+  if (!n) return out;
+  if (n.k === 'ref') out.push({a:n.v, b:n.v});
+  else if (n.k === 'range') out.push({a:n.a, b:n.b});
+  else if (n.k === 'call') n.args.forEach(x => refsOf(x, out));
+  else if (n.k === 'bin'){ refsOf(n.a, out); refsOf(n.b, out); }
+  else if (n.k === 'neg' || n.k === 'par') refsOf(n.a, out);
+  return out;
+}
+const cellsOfRefs = refs => new Set(refs.flatMap(r => rangeCells(r.a, r.b)));
+function fnsOf(n, out = new Set()){
+  if (!n) return out;
+  if (n.k === 'call'){ out.add(n.name); n.args.forEach(x => fnsOf(x, out)); }
+  else if (n.k === 'bin'){ fnsOf(n.a, out); fnsOf(n.b, out); }
+  else if (n.k === 'neg' || n.k === 'par') fnsOf(n.a, out);
+  return out;
+}
+function numsOf(n, out = []){
+  if (!n) return out;
+  if (n.k === 'num') out.push(n.v);
+  else if (n.k === 'call') n.args.forEach(x => numsOf(x, out));
+  else if (n.k === 'bin'){ numsOf(n.a, out); numsOf(n.b, out); }
+  else if (n.k === 'neg' || n.k === 'par') numsOf(n.a, out);
+  return out;
+}
+function topCall(n){ while (n && n.k === 'par') n = n.a; return n && n.k === 'call' ? n : null; }
+// Bezüge in einem (evtl. unfertigen) Formeltext finden – für die Farben in der Tabelle
+function refsInText(s){
+  const out = []; let inStr = false, chunk = '';
+  const scan = c => { const re = /(^|[^A-Za-z0-9_$ÄÖÜäöüß])(\$?[A-Za-z]{1,3}\$?\d{1,5})(?:\s*:\s*(\$?[A-Za-z]{1,3}\$?\d{1,5}))?(?![A-Za-z0-9(])/g; let m;
+    while ((m = re.exec(c))){ const a = normRef(m[2]), b = m[3] ? normRef(m[3]) : a; out.push({a, b, txt:m[3] ? `${a}:${b}` : a}); re.lastIndex = m.index + m[0].length; } };
+  for (const ch of normQuotes(s)){ if (ch === '"'){ if (!inStr){ scan(chunk); chunk = ''; } inStr = !inStr; continue; } if (!inStr) chunk += ch; }
+  scan(chunk);
+  return out;
+}
+
+/* ---- Auswertung wie in Excel ---- */
+const E = v => ({t:'err', v});
+function toNum(v){
+  if (v.t === 'num' || v.t === 'err') return v;
+  if (v.t === 'empty') return {t:'num', v:0};
+  return E('#WERT!');
+}
+function evalAst(n, sh){
+  switch (n.k){
+    case 'num': return {t:'num', v:n.v};
+    case 'str': return {t:'str', v:n.v};
+    case 'ref': return sh.val(n.v);
+    case 'par': return evalAst(n.a, sh);
+    case 'neg': { const x = toNum(evalAst(n.a, sh)); return x.t === 'err' ? x : {t:'num', v:n.o === '-' ? -x.v : x.v}; }
+    case 'bin': {
+      const a = toNum(evalAst(n.a, sh)); if (a.t === 'err') return a;
+      const b = toNum(evalAst(n.b, sh)); if (b.t === 'err') return b;
+      if (n.o === '+') return {t:'num', v:a.v + b.v};
+      if (n.o === '-') return {t:'num', v:a.v - b.v};
+      if (n.o === '*') return {t:'num', v:a.v * b.v};
+      if (n.o === '/') return b.v === 0 ? E('#DIV/0!') : {t:'num', v:a.v / b.v};
+      return {t:'num', v:Math.pow(a.v, b.v)};
+    }
+    case 'call': return callFn(n, sh);
+  }
+  return E('#WERT!');
+}
+function callFn(n, sh){
+  const vals = [];
+  for (const a of n.args){
+    if (a.k === 'range') rangeCells(a.a, a.b).forEach(c => vals.push({x:sh.val(c), ref:true}));
+    else if (a.k === 'ref') vals.push({x:sh.val(a.v), ref:true});
+    else vals.push({x:evalAst(a, sh), ref:false});
+  }
+  if (n.name === 'ANZAHL') return {t:'num', v:vals.filter(o => o.x.t === 'num').length};
+  if (n.name === 'ANZAHL2') return {t:'num', v:vals.filter(o => o.x.t !== 'empty').length};
+  const nums = [];
+  for (const o of vals){
+    if (o.x.t === 'err') return o.x;
+    if (o.x.t === 'num') nums.push(o.x.v);
+    else if (!o.ref && o.x.t === 'str') return E('#WERT!');
+  }
+  if (n.name === 'SUMME') return {t:'num', v:nums.reduce((s, x) => s + x, 0)};
+  if (n.name === 'MITTELWERT') return nums.length ? {t:'num', v:nums.reduce((s, x) => s + x, 0) / nums.length} : E('#DIV/0!');
+  if (n.name === 'MIN') return {t:'num', v:nums.length ? Math.min(...nums) : 0};
+  if (n.name === 'MAX') return {t:'num', v:nums.length ? Math.max(...nums) : 0};
+  return E('#NAME?');
+}
+const PCACHE = new Map();
+function parseCached(s){ if (!PCACHE.has(s)){ try { PCACHE.set(s, parseFormula(s)); } catch (e){ PCACHE.set(s, null); } } return PCACHE.get(s); }
+class Sheet {
+  constructor(cells){ this.cells = cells; this.memo = {}; this.busy = new Set(); }
+  with(a, raw){ return new Sheet(Object.assign({}, this.cells, {[a]:raw})); }
+  isFormula(a){ const r = this.cells[a]; return typeof r === 'string' && r[0] === '='; }
+  val(a){
+    if (a in this.memo) return this.memo[a];
+    const r = this.cells[a]; let v;
+    if (r == null || r === '') v = {t:'empty'};
+    else if (typeof r === 'number') v = {t:'num', v:r};
+    else if (this.isFormula(a) && r.includes('#BEZUG!')) v = E('#BEZUG!');
+    else if (this.isFormula(a)){
+      if (this.busy.has(a)) return E('Zirkelbezug');
+      this.busy.add(a);
+      const ast = parseCached(r);
+      v = ast ? evalAst(ast, this) : E('#NAME?');
+      this.busy.delete(a);
+    } else v = {t:'str', v:r};
+    this.memo[a] = v; return v;
+  }
+}
+function same(a, b){
+  if (a.t !== b.t) return false;
+  if (a.t === 'num') return Math.abs(a.v - b.v) < 1e-9 * Math.max(1, Math.abs(b.v));
+  return a.v === b.v;
+}
+function fmtNum(x, dp){ if (Math.abs(x) >= 1e11) return x.toExponential(2).replace('.', ',').replace('e+', 'E+'); return (dp != null ? x.toFixed(dp) : String(+x.toFixed(2))).replace('.', ','); }
+function fmtVal(v, f){
+  if (v.t === 'num') return f === 'eur' ? fmtNum(v.v, 2) + ' €' : f === 'usd' ? fmtNum(v.v, 2) + ' $' : f === 'pct' ? fmtNum(v.v * 100) + ' %' : fmtNum(v.v);
+  if (v.t === 'empty') return '';
+  if (v.t === 'err') return v.v === 'Zirkelbezug' ? '0' : v.v;
+  return v.v;
+}
+
+/* ---- Erklärung: Fortschritt je Thema (learn = {topic, prog:{id:{idx, done}}}) ---- */
+const topic = () => TOPICS.find(t => t.id === learn.topic);
+function prog(id){ id = id || learn.topic; return learn.prog[id] || (learn.prog[id] = {idx:0, done:[]}); }
+function saveLearn(){ store('learn', JSON.stringify(learn)); }
+const stepDone = i => prog().done.includes(i);
+function markStep(){ const p = prog(); if (!p.done.includes(p.idx)){ p.done.push(p.idx); saveLearn(); } }
+function firstOpen(){ const n = topic().steps.length; for (let i = 0; i < n; i++) if (!stepDone(i)) return i; return n - 1; }
+const stepUnlocked = i => i <= firstOpen() || stepDone(i);
+const curStep = () => topic().steps[prog().idx];
+function gotoStep(i){ prog().idx = i; pickerOpen = false; loadStep(); window.scrollTo({top:0, behavior:'smooth'}); }
+function openTopic(id){ learn.topic = id; saveLearn(); pickerOpen = false; loadStep(); window.scrollTo({top:0, behavior:'smooth'}); }
+function overview(){ learn.topic = null; saveLearn(); pickerOpen = false; loadTask(); window.scrollTo({top:0, behavior:'smooth'}); }
+
+/* ---- Modus- und Aufgabensteuerung ---- */
+function setMode(m){ if (m === mode) return; mode = m; store('mode', m); pickerOpen = false; if (m === 'endlos' && !endPick) newEndless(); loadTask(); window.scrollTo({top:0, behavior:'smooth'}); }
+function gotoTask(i){ pfadIdx = clamp(i, 0, STD.length - 1); store('idx', pfadIdx); pickerOpen = false; loadTask(); window.scrollTo({top:0, behavior:'smooth'}); }
+function canNext(){
+  if (mode === 'lernen') return !!learn.topic && prog().idx < topic().steps.length - 1 && stepDone(prog().idx);
+  return mode === 'pfad' ? (pfadIdx < STD.length - 1 && isSolved(pfadIdx)) : endCounted;
+}
+function nextTask(){
+  if (!canNext()) return;
+  if (mode === 'lernen'){ gotoStep(prog().idx + 1); return; }
+  if (mode === 'pfad') gotoTask(pfadIdx + 1); else { newEndless(); loadTask(); window.scrollTo({top:0, behavior:'smooth'}); }
+}
+
+/* ---- Darstellung ---- */
+function renderOverview(intro){
+  $('#lvlname').textContent = 'Erklärung';
+  $('#taskmeta').textContent = '';
+  $('#tasktext').innerHTML = `${intro}\n    <div class="topics">${TOPICS.map(t => { const p = learn.prog[t.id], n = p ? p.done.length : 0, all = n >= t.steps.length;
+      return `<button class="topic${all ? ' done' : ''}" data-topic="${t.id}"><b>${esc(t.name)}</b><span class="tdesc">${esc(t.desc)}</span><span class="tprog">${all ? '✓ erledigt' : n ? `${n} von ${t.steps.length} Schritten` : `${t.steps.length} Schritte`}</span></button>`; }).join('')}</div>`;
+  ['#sheetcard', '#workcard', '#actions'].forEach(id => { $(id).style.display = 'none'; });
+  $('#fb').innerHTML = ''; $('#dock').innerHTML = '';
+}
+function renderNav(){
+  if (mode === 'lernen') navLernen(prog().idx, topic().steps.length, curStep().type === 'info');
+  else navPfad();
+  renderDock();
+}
+function renderDock(){
+  const d = $('#dock');
+  if (mode !== 'lernen'){ d.innerHTML = dockHTML(GROUPS); return; }
+  const tp = topic(), p = prog();
+  let h = `<button class="dockbtn" id="dockBtn" aria-expanded="${pickerOpen}">📘 Schritt ${p.idx + 1}/${tp.steps.length} <span class="sub">· ${p.done.length} erledigt</span></button>`;
+  if (pickerOpen) h += `<div class="picker steps"><div class="ptitle">${esc(tp.name)} – erledigte Schritte sind grün</div>` +
+    tp.steps.map((st, i) => `<button data-step="${i}" class="stepbtn${stepDone(i) ? ' solved' : ''}${i === p.idx ? ' cur' : ''}"${stepUnlocked(i) ? '' : ' disabled'}>${i + 1}. ${esc(st.title)}</button>`).join('') +
+    '<button class="stepbtn" data-ov="1">◀ Zur Übersicht</button><button class="stepreset" data-learnreset="1">Fortschritt in diesem Thema zurücksetzen</button></div>';
+  d.innerHTML = h;
+}
+function renderFeedback(){ $('#fb').innerHTML = S.fb ? `<div class="fb ${S.fb.type}">${S.fb.html}</div>` : ''; }
+let hintTimer = null;
+function hint(msg){ const el = $('#selhint'); el.textContent = msg; clearTimeout(hintTimer); hintTimer = setTimeout(() => { el.textContent = ''; }, 4500); }
+
+/* ---- Fragen in der Erklärung (LS = {sel, checked}) ---- */
+function renderChoice(st){
+  $('#work').innerHTML = `<div class="opts${st.mono ? ' mono' : ''}">` + st.options.map((o, i) => {
+    let c = LS.sel.has(i) ? ' sel' : '';
+    if (LS.checked && LS.sel.has(i)) c += st.correct.includes(i) ? ' good' : ' bad';
+    return `<button class="opt${c}" data-opt="${i}">${esc(o)}</button>`;
+  }).join('') + `</div><div class="ohint">${st.correct.length > 1 ? 'Mehrere Antworten möglich.' : 'Genau eine Antwort ist richtig.'}</div>`;
+}
+function checkChoice(){
+  const st = curStep();
+  if (!LS.sel.size){ S.fb = {type:'err', html:'Wähle zuerst eine Antwort aus.'}; renderFeedback(); return; }
+  LS.checked = true;
+  const wrong = [...LS.sel].filter(i => !st.correct.includes(i)), missing = st.correct.filter(i => !LS.sel.has(i));
+  if (!wrong.length && !missing.length){
+    const erstmals = !stepDone(prog().idx); markStep(); logSolved(erstmals);
+    S.fb = {type:'ok', html:'<b>Richtig! 🎉</b>' + (st.after ? `<span class="note">${st.after}</span>` : '') + (canNext() ? '<span class="note">Weiter geht es mit „Weiter“.</span>' : '')};
+  } else {
+    const lines = wrong.map(i => (st.why && st.why[i]) || `„${esc(st.options[i])}“ passt nicht.`);
+    if (!wrong.length) lines.push('Es fehlt noch eine richtige Antwort.');
+    S.fb = {type:'err', html:'Noch nicht ganz.<br>' + lines.join('<br>')};
+  }
+  renderChoice(st); renderFeedback(); renderNav();
+}
+// Klicks auf Antworten, Themen, Schritte und Übersicht, danach navClick; die Seite ruft topicClick(e) am Ende ihres Klick-Handlers
+function topicClick(e){
+  const o = e.target.closest('[data-opt]');
+  if (o && LS){ const st = curStep(), i = +o.dataset.opt;
+    if (st.correct.length > 1){ LS.sel.has(i) ? LS.sel.delete(i) : LS.sel.add(i); } else LS.sel = new Set([i]);
+    LS.checked = false; S.fb = null; renderChoice(st); renderFeedback(); return; }
+  const tp = e.target.closest('[data-topic]'); if (tp){ openTopic(tp.dataset.topic); return; }
+  const tg = e.target.closest('[data-topic-go]'); if (tg){ openTopic(tg.dataset.topicGo); return; }
+  if (e.target.closest('[data-ov]')){ overview(); return; }
+  const mg = e.target.closest('[data-mode-go]'); if (mg){ setMode(mg.dataset.modeGo); return; }
+  const sp = e.target.closest('[data-step]'); if (sp){ gotoStep(+sp.dataset.step); return; }
+  if (e.target.closest('[data-learnreset]')){ if (confirm('Den Fortschritt in diesem Thema löschen und von vorne beginnen?')){ learn.prog[learn.topic] = {idx:0, done:[]}; gotoStep(0); } return; }
+  navClick(e);
+}
+
+/* ---- Zellen und Bereiche mit der Maus in Eingaben (.pin) einfügen, wie in Excel ---- */
+// Cursorposition einer Eingabe merken, auch wenn sie gerade nicht den Fokus hat
+function caret(inp){
+  if (document.activeElement === inp) return [inp.selectionStart, inp.selectionEnd];
+  const n = inp.value.length;
+  return [inp._s != null ? Math.min(inp._s, n) : n, inp._e != null ? Math.min(inp._e, n) : n];
+}
+function setCaret(inp, c){ inp._s = inp._e = c; if (document.activeElement === inp) inp.setSelectionRange(c, c); }
+function focusInp(inp){ const [s, e] = caret(inp); inp.focus({preventScroll:true}); inp.setSelectionRange(s, e); }
+// PT = {inp, anchor, cur, start, end, base}: laufende Markierung in der Tabelle
+function applyPT(){
+  const ref = PT.anchor === PT.cur ? PT.anchor : normRange(PT.anchor, PT.cur);
+  PT.inp.value = PT.base.slice(0, PT.start) + ref + PT.base.slice(PT.end);
+  setCaret(PT.inp, PT.start + ref.length);
+  S.sel = new Set(rangeCells(PT.anchor, PT.cur));
+  syncInput(PT.inp, true);
+}
+function cellAt(x, y){ const el = document.elementFromPoint(x, y); return el && el.closest ? el.closest('#grid td[data-c]') : null; }
+function endPT(){ if (!PT) return; const inp = PT.inp; PT = null; if (document.body.contains(inp)) focusInp(inp); }
+const gridEl = $('#grid');
+gridEl.addEventListener('pointerup', endPT);
+gridEl.addEventListener('pointercancel', endPT);
+gridEl.addEventListener('mousedown', e => { if (CUR && e.target.closest('td[data-c]')) e.preventDefault(); });
+gridEl.addEventListener('touchstart', e => { if (CUR && e.target.closest('td[data-c]')) e.preventDefault(); }, {passive:false});
+const trackCaret = e => { const t = e.target; if (t.matches && t.matches('.pin')){ t._s = t.selectionStart; t._e = t.selectionEnd; } };
+['keyup', 'click', 'select', 'focusout'].forEach(ev => document.addEventListener(ev, trackCaret, true));
+document.addEventListener('input', e => { if (e.target.matches('.pin')){ trackCaret(e); syncInput(e.target, false); } });
+
+$('#ovBtn').addEventListener('click', () => overview());
+$('#resetBtn').addEventListener('click', () => { if (mode === 'lernen') loadStep(); else { resetS(); render(); } });
+$('#prevBtn').addEventListener('click', () => { if (mode === 'lernen') gotoStep(prog().idx - 1); else gotoTask(pfadIdx - 1); });
+
+/* Funktionsnamen mit Ziffern (ANZAHL2), Wörter nach Rechenzeichen */
+AC.digits = true;
+AC.prev = /[=(;+\-*/^\s]/;
+
+</script>
+
+<!-- ===================== Übertragen, Aufgaben, Erklärung ===================== -->
+<script id="tasks">
+/* ---- Formel übertragen wie in Excel: relative Teile wandern, $-Teile bleiben ---- */
+const REFRE = () => /(^|[^A-Za-z0-9_$ÄÖÜäöüß.])(\$?)([A-Za-z]{1,3})(\$?)(\d{1,5})(?![A-Za-z0-9_(])/g;
+function outsideStrings(s, fn){
+  let out = '', chunk = '', inStr = false;
+  for (const ch of normQuotes(s)){
+    if (ch === '"'){ if (!inStr){ out += fn(chunk); chunk = ''; } out += ch; inStr = !inStr; continue; }
+    if (inStr) out += ch; else chunk += ch;
+  }
+  return out + fn(chunk);
+}
+function shiftFormula(s, dc, dr){
+  return outsideStrings(s, part => part.replace(REFRE(), (m, pre, d1, col, d2, row) => {
+    const c = colN(col) + (d1 ? 0 : dc), r = +row + (d2 ? 0 : dr);
+    if (c < 0 || r < 1) return pre + '#BEZUG!';
+    return pre + d1 + colL(c) + d2 + r;
+  }));
+}
+// alle Zellbezüge (auch Bereichsgrenzen) mit ihren $-Zeichen
+function refTokens(s){
+  const out = [];
+  outsideStrings(s, part => { const re = REFRE(); let m;
+    while ((m = re.exec(part))){ out.push({raw:(m[2] + m[3] + m[4] + m[5]).toUpperCase(), c:colN(m[3]), r:+m[5], fc:!!m[2], fr:!!m[4]}); re.lastIndex = m.index + m[0].length; }
+    return part; });
+  return out;
+}
+const strip$ = s => s.replace(/\$/g, '').replace(/\s+/g, '').toUpperCase();
+function offset(T, f){ const a = addr(T.src), b = addr(f); return {dc:b.c - a.c, dr:b.r - a.r}; }
+function runCopy(text, T, cells){
+  const c = Object.assign({}, cells), forms = {};
+  T.fill.forEach(f => { const o = offset(T, f); forms[f] = shiftFormula(text, o.dc, o.dr); c[f] = forms[f]; });
+  const sh = new Sheet(c), vals = {};
+  T.fill.forEach(f => { vals[f] = sh.val(f); });
+  return {vals, forms};
+}
+
+/* ---- Zufallszahlen ---- */
+const rd = (r, a, b, dp) => +(a + r() * (b - a)).toFixed(dp);
+const pickN = (r, arr, n) => shuffle(arr, r).slice(0, n);
+const NAMES = ['Mia', 'Ben', 'Lea', 'Tim', 'Emma', 'Noah', 'Lina', 'Paul', 'Zoe', 'Finn', 'Ella', 'Luca', 'Hanna', 'Jonas', 'Aylin', 'Elias'];
+const ART = {Kopfhörer:'den', Handyhülle:'die', Ladekabel:'das', Maus:'die', Tastatur:'die', 'USB-Stick':'den', Lautsprecher:'den'};
+const cols = (from, n) => [...Array(n)].map((_, i) => colL(colN(from) + i));
+// gleiche Tabelle mit anderen Zahlen – damit abgeschriebene Zahlen auffallen
+function perturb(cells, r){
+  const out = {};
+  for (const [k, v] of Object.entries(cells)){
+    if (typeof v !== 'number'){ out[k] = v; continue; }
+    let w;
+    if (Number.isInteger(v)) w = v <= 0 ? v + ri(r, -6, 6) || 1 : Math.max(1, Math.round(v * (0.5 + r() * 1.2)));
+    else if (v > 0 && v < 1) w = rd(r, 0.02, 0.45, 2);
+    else w = +(v * (0.5 + r() * 1.2)).toFixed(2);
+    if (w === v) w = v + 1;
+    out[k] = w;
+  }
+  return out;
+}
+
+/* ---- Aufgaben-Generatoren: gleiche Struktur, Zahlen je nach Zufallsstartwert ---- */
+const GENS = {
+  einkauf:{title:'Schulbedarf', make(r){
+    const it = pickN(r, ['Hefte', 'Bleistifte', 'Lineale', 'Radiergummis', 'Ordner', 'Klebestifte', 'Collegeblöcke', 'Textmarker'], 5);
+    const c = {A4:'Artikel', B4:'Menge', C4:'Einzelpreis', D4:'Gesamtpreis'}, fmt = {};
+    it.forEach((x, i) => { const n = 5 + i; c['A' + n] = x; c['B' + n] = ri(r, 2, 12); c['C' + n] = rd(r, 0.5, 4.5, 2); fmt['C' + n] = 'eur'; });
+    return {intro:'Die Klasse bestellt Schulbedarf für das neue Schuljahr.', cells:c, fmt, ffmt:'eur', fill:['D5', 'D9'], ref:'=B5*C5',
+      what:`den Gesamtpreis für die ${it[0]} berechnet`};
+  }},
+  punkte:{title:'Sportfest', make(r){
+    const nm = pickN(r, NAMES, 5), c = {A4:'Disziplin', A5:'Sprint', A6:'Weitsprung', A7:'Ballwurf', A8:'Gesamtpunkte'};
+    cols('B', 5).forEach((L, i) => { c[L + 4] = nm[i]; [5, 6, 7].forEach(n => { c[L + n] = ri(r, 10, 60); }); });
+    return {intro:'Beim Sportfest bekommt jedes Kind in drei Disziplinen Punkte.', cells:c, fill:['B8', 'F8'], ref:'=SUMME(B5:B7)',
+      what:`die Gesamtpunkte von ${nm[0]} berechnet`};
+  }},
+  kurs:{title:'Urlaubsgeld in Dollar', make(r){
+    const c = {A2:'Kurs: 1 € in Dollar', B2:rd(r, 1.05, 1.18, 2), A4:'Euro', A5:'Dollar'}, fmt = {};
+    cols('B', 5).forEach(L => { c[L + 4] = ri(r, 2, 40) * 5; fmt[L + 4] = 'eur'; });
+    return {intro:'Lena fährt in die USA und rechnet verschiedene Beträge von Euro in Dollar um. Der Kurs steht in B2.', cells:c, fmt, ffmt:'usd',
+      fill:['B5', 'F5'], ref:'=B4*$B$2', what:'den Betrag aus B4 in Dollar umrechnet'};
+  }},
+  mwst:{title:'Mehrwertsteuer', make(r){
+    const it = pickN(r, ['Kopfhörer', 'Handyhülle', 'Ladekabel', 'Maus', 'Tastatur', 'USB-Stick', 'Lautsprecher'], 5);
+    const c = {A2:'Mehrwertsteuersatz', B2:pick1(r, [0.19, 0.07]), A4:'Artikel', B4:'Nettopreis', C4:'Mehrwertsteuer'}, fmt = {B2:'pct'};
+    it.forEach((x, i) => { const n = 5 + i; c['A' + n] = x; c['B' + n] = rd(r, 5, 80, 2); fmt['B' + n] = 'eur'; });
+    return {intro:'Ein Elektronikladen berechnet die Mehrwertsteuer: Nettopreis · Steuersatz. Der Steuersatz steht in B2.', cells:c, fmt, ffmt:'eur',
+      fill:['C5', 'C9'], ref:'=B5*$B$2', what:`die Mehrwertsteuer für ${ART[it[0]]} ${it[0]} berechnet`};
+  }},
+  lohn:{title:'Ferienjob', make(r){
+    const nm = pickN(r, NAMES, 5), c = {A2:'Stundenlohn', B2:pick1(r, [12, 12.5, 13, 13.5, 14]), A4:'Name', B4:'Stunden', C4:'Verdienst'}, fmt = {B2:'eur'};
+    nm.forEach((x, i) => { c['A' + (5 + i)] = x; c['B' + (5 + i)] = ri(r, 3, 24); });
+    return {intro:'Fünf Jugendliche helfen in den Ferien im Supermarkt. Alle bekommen denselben Stundenlohn (B2).', cells:c, fmt, ffmt:'eur',
+      fill:['C5', 'C9'], ref:'=B5*$B$2', what:`den Verdienst von ${nm[0]} berechnet`};
+  }},
+  anteil:{title:'Umfrage: Lieblingsfach', make(r){
+    const f = pickN(r, ['Sport', 'Mathe', 'Deutsch', 'Englisch', 'Kunst', 'Musik', 'IT', 'Biologie'], 5);
+    const c = {A4:'Fach', B4:'Stimmen', C4:'Anteil', A10:'Gesamt', B10:'=SUMME(B5:B9)'};
+    f.forEach((x, i) => { c['A' + (5 + i)] = x; c['B' + (5 + i)] = ri(r, 2, 12); });
+    return {intro:'Die 7. Klassen haben ihr Lieblingsfach gewählt. In B10 steht, wie viele Stimmen es insgesamt gab.', cells:c, ffmt:'pct',
+      fill:['C5', 'C9'], ref:'=B5/$B$10', what:`berechnet, welcher Anteil aller Stimmen auf ${f[0]} entfällt`};
+  }},
+  schnitt:{title:'Weitsprung', make(r){
+    const nm = pickN(r, NAMES, 6), c = {A4:'Name', B4:'Weite (m)', C4:'Abweichung', A12:'Durchschnitt', B12:'=MITTELWERT(B5:B10)'};
+    nm.forEach((x, i) => { c['A' + (5 + i)] = x; c['B' + (5 + i)] = rd(r, 2.4, 4.8, 2); });
+    return {intro:'Im Sportunterricht wurde Weitsprung gemessen. In B12 steht die durchschnittliche Weite.', cells:c,
+      fill:['C5', 'C10'], ref:'=B5-$B$12', what:`berechnet, um wie viele Meter ${nm[0]} über (+) oder unter (−) dem Durchschnitt liegt`};
+  }},
+  einmaleins:{title:'Einmaleins-Tabelle', make(r){
+    const c = {A4:'·'}, s1 = ri(r, 2, 7), s2 = ri(r, 2, 7);
+    cols('B', 5).forEach((L, i) => { c[L + 4] = s1 + i; });
+    [5, 6, 7, 8, 9].forEach((n, i) => { c['A' + n] = s2 + i; });
+    return {intro:'Die Tabelle soll das Ergebnis jeder Zahl aus Spalte A mal jeder Zahl aus Zeile 4 zeigen.', cells:c,
+      fill:['B5', 'F9'], ref:'=$A5*B$4', what:'die Zahl aus Spalte A mit der Zahl aus Zeile 4 multipliziert'};
+  }},
+  eintritt:{title:'Eintrittspreise im Freibad', make(r){
+    const c = {C3:'Anzahl Personen', A4:'Gruppe', B4:'Preis', A5:'Kinder', A6:'Jugendliche', A7:'Erwachsene', A8:'Senioren'}, fmt = {};
+    cols('C', 5).forEach((L, i) => { c[L + 4] = i + 1; });
+    [5, 6, 7, 8].forEach(n => { c['B' + n] = rd(r, 1.5, 6.5, 1); fmt['B' + n] = 'eur'; });
+    return {intro:'Das Freibad möchte eine Preistabelle aushängen: Was kostet der Eintritt für 1, 2, 3 … Personen?', cells:c, fmt, ffmt:'eur',
+      fill:['C5', 'G8'], ref:'=$B5*C$4', what:'berechnet, was der Eintritt für die Gruppe in dieser Zeile bei der Personenzahl aus Zeile 4 kostet'};
+  }},
+  zins:{title:'Zinsen auf dem Sparbuch', make(r){
+    const c = {A3:'', B3:'Zinssatz', A4:'Betrag'}, fmt = {};
+    const z = shuffle([0.01, 0.015, 0.02, 0.025, 0.03, 0.035, 0.04], r).slice(0, 4).sort((a, b) => a - b);
+    cols('B', 4).forEach((L, i) => { c[L + 4] = z[i]; fmt[L + 4] = 'pct'; });
+    [5, 6, 7, 8].forEach(n => { c['A' + n] = ri(r, 2, 40) * 50; fmt['A' + n] = 'eur'; });
+    return {intro:'Wie viele Zinsen bringt ein Jahr auf dem Sparbuch? Das hängt vom Betrag (Spalte A) und vom Zinssatz (Zeile 4) ab.', cells:c, fmt, ffmt:'eur',
+      fill:['B5', 'E8'], ref:'=$A5*B$4', what:'die Zinsen für den Betrag aus Spalte A beim Zinssatz aus Zeile 4 berechnet'};
+  }},
+  rabatt:{title:'Rabatte im Sportgeschäft', make(r){
+    const c = {B3:'Rabatt', A4:'Preis'}, fmt = {};
+    const z = shuffle([0.05, 0.1, 0.15, 0.2, 0.25, 0.3], r).slice(0, 4).sort((a, b) => a - b);
+    cols('B', 4).forEach((L, i) => { c[L + 4] = z[i]; fmt[L + 4] = 'pct'; });
+    [5, 6, 7, 8, 9].forEach(n => { c['A' + n] = ri(r, 3, 30) * 5 - 0.01; fmt['A' + n] = 'eur'; });
+    return {intro:'Ein Sportgeschäft gibt verschiedene Rabatte. Die Tabelle soll zeigen, wie viel Euro man jeweils spart.', cells:c, fmt, ffmt:'eur',
+      fill:['B5', 'E9'], ref:'=$A5*B$4', what:'berechnet, wie viel Euro man beim Preis aus Spalte A mit dem Rabatt aus Zeile 4 spart'};
+  }},
+  ausflug:{title:'Wahl des Ausflugsziels', make(r){
+    const z = ['Freizeitpark', 'Kletterhalle', 'Museum', 'Zoo'], k = ['7a', '7b', '7c', '7d'];
+    const c = {A4:'Ziel', A9:'Gesamt', A11:'Anteile'};
+    cols('B', 4).forEach((L, i) => { c[L + 4] = k[i]; c[L + 11] = k[i]; [5, 6, 7, 8].forEach(n => { c[L + n] = ri(r, 1, 12); }); c[L + 9] = `=SUMME(${L}5:${L}8)`; });
+    z.forEach((x, i) => { c['A' + (5 + i)] = x; c['A' + (12 + i)] = x; });
+    return {intro:'Jede 7. Klasse hat über das Ausflugsziel abgestimmt. In Zeile 9 steht, wie viele Stimmen jede Klasse abgegeben hat.', cells:c, ffmt:'pct',
+      fill:['B12', 'E15'], ref:'=B5/B$9', what:'berechnet, welcher Anteil der Stimmen der 7a auf den Freizeitpark entfällt',
+      tip:'Jede Klasse hat ihr eigenes Gesamt in Zeile 9.'};
+  }},
+  wachstum:{title:'Pflanzen-Wachstum', make(r){
+    const p = ['Bohne', 'Kresse', 'Sonnenblume', 'Mais'], c = {A4:'Höhe in cm', A10:'Zuwachs seit Woche 1'};
+    cols('B', 5).forEach((L, i) => { c[L + 4] = `Woche ${i + 1}`; });
+    cols('C', 4).forEach((L, i) => { c[L + 10] = `Woche ${i + 2}`; });
+    p.forEach((x, i) => { const n = 5 + i; c['A' + n] = x; c['A' + (11 + i)] = x; let h = rd(r, 1, 4, 1);
+      cols('B', 5).forEach(L => { c[L + n] = h; h = +(h + rd(r, 0.5, 4, 1)).toFixed(1); }); });
+    return {intro:'Die Klasse misst jede Woche, wie hoch ihre Pflanzen sind.', cells:c,
+      fill:['C11', 'F14'], ref:'=C5-$B5', what:'berechnet, um wie viele Zentimeter die Bohne seit Woche 1 gewachsen ist',
+      tip:'Woche 1 steht für jede Pflanze in Spalte B.'};
+  }},
+  kiosk:{title:'Kiosk-Umsatz', make(r){
+    const it = ['Brezeln', 'Wasser', 'Äpfel', 'Müsliriegel'], d = ['Mo', 'Di', 'Mi', 'Do'];
+    const c = {A4:'Umsatz', A9:'Gesamt', B9:'=SUMME(B5:E8)', A11:'Anteil am Gesamtumsatz'}, fmt = {B9:'eur'};
+    cols('B', 4).forEach((L, i) => { c[L + 4] = d[i]; c[L + 11] = d[i]; [5, 6, 7, 8].forEach(n => { c[L + n] = rd(r, 8, 60, 2); fmt[L + n] = 'eur'; }); });
+    it.forEach((x, i) => { c['A' + (5 + i)] = x; c['A' + (12 + i)] = x; });
+    return {intro:'Der Schulkiosk hat vier Tage lang den Umsatz notiert. In B9 steht der Umsatz aller Tage zusammen.', cells:c, fmt, ffmt:'pct',
+      fill:['B12', 'E15'], ref:'=B5/$B$9', what:'berechnet, welchen Anteil die Brezeln am Montag am Gesamtumsatz haben'};
+  }},
+  sparschwein:{title:'Sparschwein', make(r){
+    const m = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni'], c = {A4:'Monat', B4:'Eingezahlt', C4:'Gespart insgesamt'}, fmt = {};
+    m.forEach((x, i) => { c['A' + (5 + i)] = x; c['B' + (5 + i)] = ri(r, 1, 8) * 5; fmt['B' + (5 + i)] = 'eur'; });
+    return {intro:'Ben zahlt jeden Monat Geld in sein Sparschwein ein.', cells:c, fmt, ffmt:'eur',
+      fill:['C5', 'C10'], ref:'=SUMME($B$5:B5)', what:'mit SUMME berechnet, wie viel bis zu diesem Monat insgesamt im Sparschwein ist',
+      tip:'Der Bereich beginnt immer bei B5 – nur das Ende soll mitwandern.'};
+  }},
+  sparplan:{title:'Taschengeld-Sparplan', make(r){
+    const nm = pickN(r, NAMES, 4), m = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai'], c = {A4:'Eingezahlt', A10:'Gespart bis dahin'}, fmt = {};
+    cols('B', 5).forEach((L, i) => { c[L + 4] = m[i]; c[L + 10] = m[i]; nm.forEach((_, j) => { c[L + (5 + j)] = ri(r, 1, 6) * 5; fmt[L + (5 + j)] = 'eur'; }); });
+    nm.forEach((x, j) => { c['A' + (5 + j)] = x; c['A' + (11 + j)] = x; });
+    return {intro:'Vier Kinder sparen einen Teil ihres Taschengelds. Oben steht, was sie jeden Monat einzahlen.', cells:c, fmt, ffmt:'eur',
+      fill:['B11', 'F14'], ref:'=SUMME($B5:B5)', what:`mit SUMME berechnet, wie viel ${nm[0]} bis zu diesem Monat insgesamt gespart hat`,
+      tip:'Jede Summe beginnt im Januar (Spalte B) – aber in der Zeile des jeweiligen Kindes.'};
+  }},
+  brutto:{title:'Preisliste mit Mehrwertsteuer', make(r){
+    const it = pickN(r, ['Kopfhörer', 'Handyhülle', 'Ladekabel', 'Maus', 'USB-Stick', 'Tastatur'], 4);
+    const c = {A2:'Mehrwertsteuersatz', B2:0.19, C3:'Anzahl', A4:'Artikel', B4:'Nettopreis'}, fmt = {B2:'pct'};
+    cols('C', 4).forEach((L, i) => { c[L + 4] = i + 1; });
+    it.forEach((x, j) => { c['A' + (5 + j)] = x; c['B' + (5 + j)] = rd(r, 4, 40, 2); fmt['B' + (5 + j)] = 'eur'; });
+    return {intro:'Der Elektronikladen druckt eine Preisliste: Was kosten 1, 2, 3 oder 4 Stück mit Mehrwertsteuer? Bruttopreis = Nettopreis · Anzahl · (1 + Steuersatz).', cells:c, fmt, ffmt:'eur',
+      fill:['C5', 'F8'], ref:'=$B5*C$4*(1+$B$2)', what:'den Bruttopreis für den Artikel in dieser Zeile und die Anzahl aus Zeile 4 berechnet'};
+  }},
+  temperatur:{title:'Temperaturen im Vergleich', make(r){
+    const st = pickN(r, ['München', 'Hamburg', 'Berlin', 'Köln', 'Nürnberg', 'Dresden'], 4), d = ['Mo', 'Di', 'Mi', 'Do'];
+    const c = {A4:'°C', A9:'Mittelwert', A11:'Abweichung vom Mittelwert'};
+    cols('B', 4).forEach((L, i) => { c[L + 4] = d[i]; c[L + 11] = d[i]; c[L + 9] = `=MITTELWERT(${L}5:${L}8)`; st.forEach((_, j) => { c[L + (5 + j)] = ri(r, -2, 24); }); });
+    st.forEach((x, j) => { c['A' + (5 + j)] = x; c['A' + (12 + j)] = x; });
+    return {intro:'Mittags wurde in vier Städten die Temperatur gemessen. In Zeile 9 steht der Mittelwert jedes Tages.', cells:c,
+      fill:['B12', 'E15'], ref:'=B5-B$9', what:`berechnet, um wie viel Grad die Temperatur in ${st[0]} am Montag vom Mittelwert des Tages abweicht`};
+  }}
+};
+
+// Formel in Bausteine zerlegen: Funktion mit Klammer, Zellbezug, Zahl oder einzelnes Zeichen
+function piecesOf(ref){
+  const out = []; let i = 0;
+  while (i < ref.length){
+    const rest = ref.slice(i); let m;
+    if ((m = rest.match(/^[A-ZÄÖÜ]{2,}\d*\(/))) out.push({lit:m[0]});
+    else if ((m = rest.match(/^\$?[A-Z]{1,3}\$?\d{1,5}/))) out.push({cell:true, raw:m[0]});
+    else if ((m = rest.match(/^\d+(,\d+)?/))) out.push({lit:m[0]});
+    else { m = [rest[0]]; out.push({lit:m[0]}); }
+    i += m[0].length;
+  }
+  return out;
+}
+function makeTask(gid, seed, lv){
+  const G = GENS[gid], s0 = seed == null ? 4711 : seed, o = G.make(rng(s0));
+  const [src, end] = o.fill, fill = rangeCells(src, end), a = addr(src), b = addr(end);
+  const dir = a.c === b.c ? `nach unten bis ${B(end)}` : a.r === b.r ? `nach rechts bis ${B(end)}` : `in den ganzen Bereich ${B(src + ':' + end)}`;
+  const how = {
+    2:' Die Rechenzeichen sind schon vorgegeben: Klicke in ein Zell-Feld, dann auf die passende Zelle in der Tabelle, und setze – wo nötig – $-Zeichen.',
+    3:' Ziehe die Bausteine in der richtigen Reihenfolge in die Formelzeile. In die Zell-Felder setzt du die passenden Zellen – wo nötig mit $.',
+    4:' Baue die Formel aus den Zeichen-Bausteinen. Für jede Zelle ziehst du einen Baustein „Zelle“ in die Formel und wählst dann die Zelle aus – wo nötig mit $.'};
+  let text = lv === 1
+    ? `In ${B(src)} steht schon eine Formel, die ${o.what}. Sie rechnet in ${src} richtig. Setze die $-Zeichen so, dass sie sich ${dir} übertragen lässt. Wo kein $ nötig ist, lässt du es weg.`
+    : `Schreibe in ${B(src)} eine Formel, die ${o.what}. Die Formel soll sich ${dir} übertragen lassen.` + (how[lv] || '');
+  if (o.tip && lv <= 4) text += `<br><i>Tipp:</i> ${o.tip}`;
+  const fmt = Object.assign({}, o.fmt || {});
+  if (o.ffmt) fill.forEach(f => { fmt[f] = o.ffmt; });
+  const vr = rng(s0 ^ 0x5bd1e995), variants = [];
+  for (let i = 0; i < 8; i++) variants.push(perturb(o.cells, vr));
+  const top = Math.min(...Object.keys(o.cells).map(k => addr(k).r));
+  return {gid, seed:s0, lv, title:G.title, intro:o.intro, cells:o.cells, fmt, src, end, fill, ref:o.ref, text, variants, top,
+    dcMax:b.c - a.c, drMax:b.r - a.r, pre:lv === 1 ? o.ref.replace(/\$/g, '') : '',
+    pieces:piecesOf(o.ref), nums:piecesOf(o.ref).filter(p => /^\d/.test(p.lit || '')).map(p => p.lit)};
+}
+
+const LEVELS = {1:{name:'$-Zeichen setzen'}, 2:{name:'Zellen auswählen und $ setzen'}, 3:{name:'Rechnung aus Bausteinen'}, 4:{name:'Zeichen als Bausteine'}, 5:{name:'Freie Eingabe mit Hinweisen'}, 6:{name:'Freie Eingabe ohne Hinweise'}};
+const GROUPS = [null, 'Mitwandern oder ganz festhalten ($B$2)', 'Nur Spalte oder nur Zeile festhalten ($A5, B$4)', 'Mehrere $ in einer Formel'];
+// [Generator, Zufallsstartwert, Gruppe]
+const STD = [
+  ['einkauf', 11, 1], ['punkte', 12, 1], ['kurs', 13, 1], ['lohn', 14, 1], ['mwst', 15, 1], ['anteil', 16, 1], ['schnitt', 17, 1],
+  ['einmaleins', 21, 2], ['eintritt', 22, 2], ['zins', 23, 2], ['rabatt', 24, 2], ['ausflug', 25, 2], ['wachstum', 26, 2], ['kiosk', 27, 2],
+  ['sparschwein', 31, 3], ['sparplan', 32, 3], ['brutto', 33, 3], ['temperatur', 34, 3]
+];
+
+const HELP_BZ = `<details class="help"><summary>Hilfe: Was bewirkt das $?</summary>
+<table class="dl"><tr><th>Bezug</th><th>beim Übertragen nach rechts</th><th>beim Übertragen nach unten</th></tr>
+<tr><td>B5</td><td>Spalte wandert mit</td><td>Zeile wandert mit</td></tr>
+<tr><td>$B$5</td><td>bleibt B</td><td>bleibt 5</td></tr>
+<tr><td>$B5</td><td>bleibt B</td><td>Zeile wandert mit</td></tr>
+<tr><td>B$5</td><td>Spalte wandert mit</td><td>bleibt 5</td></tr></table>
+<p>Merke: Das $ hält fest, was direkt dahinter steht – den Buchstaben (Spalte) oder die Zahl (Zeile).</p>
+<p>Setze den Cursor in einen Bezug und drücke <b>F4</b> (oder den Knopf <code>$ F4</code>): B5 → $B$5 → B$5 → $B5 → B5.</p></details>`;
+
+/* ---- Erklärung: Themen mit Schritten ---- */
+const TOPICS = [
+  {id:'kopieren', name:'Formeln übertragen', desc:'Was passiert mit B5, wenn man eine Formel nach unten oder rechts überträgt? (relative Bezüge)', steps:[
+    {type:'info', title:'Einmal schreiben, oft verwenden', sheet:{gid:'einkauf', seed:11, formula:'=B5*C5', sel:'D5'}, html:`
+      <p>In Excel schreibt man eine Formel nur <b>einmal</b> und überträgt sie dann auf die anderen Zellen – zum Beispiel mit dem kleinen Ausfüllkästchen unten rechts an der Zelle oder mit Kopieren und Einfügen.</p>
+      <p>In D5 steht <code>=B5*C5</code>. Diese Formel wurde nach unten bis D9 übertragen.</p>
+      <p><b>Klicke in der Tabelle auf D6, D7, D8 …</b> und sieh dir oben an, welche Formel dort steht.</p>`},
+    {type:'info', title:'Excel passt die Bezüge an', sheet:{gid:'einkauf', seed:11, formula:'=B5*C5', sel:'D8'}, html:`
+      <p>Excel hat die Formel beim Übertragen <b>angepasst</b>: In D6 steht <code>=B6*C6</code>, in D8 steht <code>=B8*C8</code>.</p>
+      <ul><li>Überträgt man eine Formel <b>nach unten</b>, wird die <b>Zeilennummer</b> größer: B5 → B6 → B7 …</li>
+      <li>Überträgt man sie <b>nach rechts</b>, rückt der <b>Spaltenbuchstabe</b> weiter: B5 → C5 → D5 …</li></ul>
+      <p>Solche Bezüge heißen <b>relative Bezüge</b>: Sie wandern mit. Das ist meistens genau richtig – jede Zeile rechnet mit ihren eigenen Werten.</p>`},
+    {type:'choice', title:'Frage: nach unten', mono:true, html:'<p>In D5 steht <code>=B5*C5</code>. Die Formel wird nach unten übertragen. Was steht dann in <b>D9</b>?</p>',
+      options:['=B5*C5', '=B9*C9', '=B9*C5', '=D9*D9'], correct:[1],
+      why:{0:'Dann würde jede Zeile mit den Werten aus Zeile 5 rechnen. Excel passt die Zeilennummer an.', 2:'Beide Bezüge sind relativ – beide wandern mit.', 3:'Die Spalten bleiben gleich, wenn man nach unten überträgt. Nur die Zeilennummer ändert sich.'},
+      after:'Von Zeile 5 nach Zeile 9 sind es 4 Zeilen – also wird aus B5 → B9 und aus C5 → C9.'},
+    {type:'choice', title:'Frage: nach rechts', mono:true, html:'<p>In B8 steht <code>=SUMME(B5:B7)</code>. Die Formel wird nach rechts bis F8 übertragen. Was steht dann in <b>D8</b>?</p>',
+      options:['=SUMME(B5:B7)', '=SUMME(D5:D7)', '=SUMME(B7:B9)', '=SUMME(D8:D10)'], correct:[1],
+      why:{0:'Dann würde jede Spalte die Punkte aus Spalte B zusammenzählen.', 2:'Nach rechts ändern sich die Buchstaben, nicht die Zeilennummern.', 3:'Die Zeilennummern bleiben gleich, wenn man nach rechts überträgt.'},
+      after:'Nach rechts rücken die Buchstaben weiter: B → C → D. Die Zeilen 5 bis 7 bleiben.'},
+    {type:'task', title:'Probiere es aus: nach unten', task:['einkauf', 11, 2], html:'<p>Jetzt du: Wähle die Zellen für die Formel in D5 aus. Der Trainer überträgt sie dann bis D9 – so wie Excel.</p>'},
+    {type:'task', title:'Probiere es aus: nach rechts', task:['punkte', 12, 5], final:true, html:'<p>Diesmal schreibst du die ganze Formel selbst – und sie wird nach rechts übertragen.</p>'}
+  ]},
+  {id:'absolut', name:'Feste Bezüge: $B$2', desc:'Wenn alle Zeilen dieselbe Zelle brauchen – zum Beispiel einen Kurs oder Steuersatz.', steps:[
+    {type:'info', title:'Das Problem', sheet:{gid:'kurs', seed:13, formula:'=B4*B2', sel:'C5'}, html:`
+      <p>Lena rechnet Euro in Dollar um. In B5 steht <code>=B4*B2</code> – das stimmt. Nach dem Übertragen nach rechts kommt aber in C5 bis F5 <b>0</b> heraus.</p>
+      <p><b>Klicke auf C5 und D5.</b> Was ist mit B2 passiert?</p>`},
+    {type:'info', title:'Die Lösung: das $-Zeichen', sheet:{gid:'kurs', seed:13, formula:'=B4*$B$2', sel:'D5'}, html:`
+      <p>Aus B2 wurde beim Übertragen C2, D2, E2 … – und dort steht nichts. Der Kurs steht aber nur in <b>B2</b>.</p>
+      <p>Mit einem <b>$</b> hält man einen Teil des Bezugs fest: <code>$B$2</code> bleibt beim Übertragen immer B2. Das nennt man einen <b>absoluten Bezug</b>.</p>
+      <p>In B5 steht jetzt <code>=B4*$B$2</code>. Klicke auf C5, D5 …: B4 wandert mit, $B$2 bleibt.</p>
+      <p>Tipp: Setze den Cursor in einen Bezug und drücke <b>F4</b> – dann setzt Excel die $-Zeichen für dich.</p>`},
+    {type:'choice', title:'Frage: Welche Formel?', mono:true, html:'<p>Welche Formel in B5 kann man richtig nach rechts übertragen? Der Kurs steht in B2, die Euro-Beträge in Zeile 4.</p>',
+      options:['=B4*B2', '=B4*$B$2', '=$B$4*$B$2', '=$B$4*B2'], correct:[1],
+      why:{0:'Aus B2 wird beim Übertragen C2, D2 … – dort steht kein Kurs.', 2:'Mit $B$4 rechnet jede Spalte mit dem Betrag aus B4. Der Betrag soll aber mitwandern.', 3:'Genau falsch herum: Der Betrag soll mitwandern, der Kurs soll fest bleiben.'}},
+    {type:'choice', title:'Frage: nach unten', mono:true, html:'<p>In C5 steht <code>=B5*$B$2</code>. Die Formel wird nach unten übertragen. Was steht dann in <b>C8</b>?</p>',
+      options:['=B8*$B$2', '=B8*$B$5', '=B5*$B$2', '=C8*$C$2'], correct:[0],
+      why:{1:'$B$2 bleibt immer B2 – das $ vor der 2 hält die Zeile fest.', 2:'B5 hat kein $, also wandert es mit.', 3:'Nach unten bleiben die Buchstaben gleich.'}},
+    {type:'task', title:'$ setzen', task:['kurs', 13, 1], html:'<p>Setze die $-Zeichen in die Formel. Tipp: Klicke in den Bezug und drücke F4 oder den Knopf <code>$ F4</code>.</p>'},
+    {type:'task', title:'Zellen auswählen', task:['lohn', 14, 2], html:'<p>Jetzt wählst du die Zellen selbst aus und setzt die $-Zeichen.</p>'},
+    {type:'task', title:'Anteile berechnen', task:['anteil', 16, 5], final:true, html:'<p>Jetzt schreibst du die ganze Formel selbst. Auch für Anteile braucht man einen festen Bezug: Jede Zeile teilt durch dieselbe Gesamtzahl.</p>'}
+  ]},
+  {id:'gemischt', name:'Nur Spalte oder Zeile fest', desc:'$A5 und B$4: wenn eine Formel nach rechts und nach unten übertragen wird.', steps:[
+    {type:'info', title:'Eine Tabelle in zwei Richtungen', sheet:{gid:'einmaleins', seed:21, formula:'=$A5*B$4', sel:'D7'}, html:`
+      <p>In der Einmaleins-Tabelle wird eine Formel nach rechts <b>und</b> nach unten übertragen. In B5 steht <code>=$A5*B$4</code>.</p>
+      <ul><li><code>$A5</code>: Das $ steht vor dem <b>A</b> – die <b>Spalte</b> bleibt immer A, die Zeile wandert mit.</li>
+      <li><code>B$4</code>: Das $ steht vor der <b>4</b> – die <b>Zeile</b> bleibt immer 4, die Spalte wandert mit.</li></ul>
+      <p><b>Klicke auf verschiedene Zellen der Tabelle</b> und vergleiche die Formeln.</p>`},
+    {type:'choice', title:'Frage: Was wird daraus?', mono:true, html:'<p>In B5 steht <code>=$A5*B$4</code>. Was steht nach dem Übertragen in <b>D7</b>?</p>',
+      options:['=$A7*D$4', '=$A5*D$4', '=$A7*B$4', '=$C7*D$6'], correct:[0],
+      why:{1:'Bei $A5 steht kein $ vor der 5 – die Zeile wandert also mit.', 2:'Bei B$4 steht kein $ vor dem B – die Spalte wandert also mit.', 3:'Das $ vor dem A hält die Spalte fest, das $ vor der 4 die Zeile.'}},
+    {type:'choice', title:'Frage: Wohin das $?', mono:true, html:'<p>Die Formel soll nach rechts und nach unten übertragen werden. Ein Wert steht in Spalte A, jede Zeile hat ihren eigenen Wert. Wie muss der Bezug in Zeile 5 aussehen?</p>',
+      options:['$A5', 'A$5', '$A$5', 'A5'], correct:[0],
+      why:{1:'A$5 hält die Zeile fest – dann würde jede Zeile den Wert aus Zeile 5 nehmen.', 2:'$A$5 hält beides fest – dann rechnet jede Zeile mit dem Wert aus A5.', 3:'Ohne $ wandert beim Übertragen nach rechts auch die Spalte A mit (B, C, D …).'}},
+    {type:'task', title:'$ setzen', task:['einmaleins', 21, 1], html:'<p>Setze die $-Zeichen so, dass die Formel im ganzen Bereich stimmt.</p>'},
+    {type:'task', title:'Zellen auswählen', task:['eintritt', 22, 2], html:'<p>Wähle die Zellen aus und setze die $-Zeichen.</p>'},
+    {type:'task', title:'Nur die Zeile festhalten', task:['ausflug', 25, 5], final:true, html:'<p>Jetzt schreibst du die ganze Formel selbst. Hier hat jede Klasse ihr eigenes Gesamt – welcher Teil des Bezugs muss also fest bleiben?</p>'}
+  ]}
+];
+const STEP_TOTAL = TOPICS.reduce((s, t) => s + t.steps.length, 0);
+</script>
+
+<!-- ===================== Oberfläche ===================== -->
+<script>
+const KEY = 'bz-';
+const NLV = 6;
+const IA = 'autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"';
+const isBlk = () => !!CUR && CUR.lv >= 2 && CUR.lv <= 4;
+
+let mode = ['pfad', 'endlos', 'lernen'].includes(load('mode')) ? load('mode') : 'lernen';
+let level = clamp(parseInt(load('level')) || 1, 1, NLV);
+let pfadIdx = clamp(parseInt(load('idx')) || 0, 0, STD.length - 1);
+let solved = {}; try { const x = JSON.parse(load('solved') || '{}'); solved = x && !Array.isArray(x) ? x : {}; } catch (e) {}
+let endPick = null, endCounted = false, streak = 0, best = parseInt(load('best')) || 0;
+let learn = {topic:null, prog:{}};
+try { const o = JSON.parse(load('learn') || '{}'); learn.prog = o.prog || {}; learn.topic = TOPICS.some(t => t.id === o.topic) ? o.topic : null; } catch (e) {}
+let CUR = null, S = {}, LS = null, LSHEET = null, pickerOpen = false, PT = null;
+
+/* gelöste Aufgabe bzw. erledigten Schritt an den Server melden (nur wenn die Seite über PocketBase läuft) */
+function logSolved(erstmals){
+  if (!window.TrainerSync) return;
+  if (mode === 'lernen'){
+    const tp = topic(), i = prog().idx, st = tp.steps[i];
+    TrainerSync.event({modus:'erarbeitung', stufe:st.task ? st.task[2] : 0, aufgabe:`${tp.id}-${i + 1}`, titel:`${tp.name}: ${st.title}`, gesamt:STEP_TOTAL, erstmals});
+  } else TrainerSync.event({modus:mode === 'pfad' ? 'uebungen' : 'endlos', stufe:level,
+    aufgabe:mode === 'pfad' ? String(pfadIdx + 1) : CUR.gid, titel:CUR.title, gesamt:mode === 'pfad' ? STD.length : 0, erstmals});
+}
+
+/* ---------- Aufgaben- und Modussteuerung ---------- */
+function resetS(){
+  S = {text:CUR ? CUR.pre : '', row:[], p3:[], gi:null, success:false, fb:null, vals:null, forms:null, bad:new Set(), peek:null, inspect:null, sel:null};
+  if (!CUR) return;
+  // Stufe 2: Rechenzeichen fest, Zellen als Felder; Stufe 3: die Teile der Formel als Bausteine
+  if (CUR.lv === 2) S.row = CUR.pieces.map(p => p.cell ? {t:'cell', v:''} : {t:'sym', lit:p.lit});
+  if (CUR.lv === 3) S.p3 = shuffle(CUR.pieces.map((p, i) => ({pid:i, lit:p.cell ? null : p.lit})), rng(CUR.seed + 7));
+}
+const liveText = () => isBlk() ? S.row.map(x => x.t === 'cell' ? x.v : x.lit).join('') : S.text;
+function loadTask(){
+  PT = null; LS = null; LSHEET = null; CUR = null;
+  if (mode === 'lernen'){ if (learn.topic) loadStep(); else { resetS(); render(); } return; }
+  if (mode === 'pfad'){ const e = STD[pfadIdx]; CUR = makeTask(e[0], e[1], level); }
+  else CUR = makeTask(endPick.gid, endPick.seed, level);
+  resetS(); render();
+}
+function demoSheet(sh){
+  const T = makeTask(sh.gid, sh.seed, 2), cells = Object.assign({}, T.cells);
+  if (sh.formula) T.fill.forEach(f => { const o = offset(T, f); cells[f] = shiftFormula(sh.formula, o.dc, o.dr); });
+  return {cells, fmt:T.fmt, top:T.top};
+}
+function loadStep(){
+  const p = prog(), tp = topic();
+  p.idx = clamp(p.idx, 0, tp.steps.length - 1); saveLearn();
+  const st = tp.steps[p.idx];
+  CUR = null; LS = null; LSHEET = null;
+  if (st.type === 'task') CUR = makeTask(...st.task);
+  resetS();
+  if (st.type === 'choice') LS = {sel:new Set(), checked:false};
+  if (st.sheet){ LSHEET = demoSheet(st.sheet); S.inspect = st.sheet.sel || null; }
+  if (st.type === 'info') markStep();
+  render();
+}
+function newEndless(){
+  const ids = Object.keys(GENS), pool = ids.filter(g => !endPick || g !== endPick.gid);
+  endPick = {gid:pick1(Math.random, pool), seed:rand()}; endCounted = false;
+}
+function setLevel(n){ level = n; store('level', n); pickerOpen = false; loadTask(); }
+/* ---------- Rendering ---------- */
+function render(){
+  renderHeader();
+  const show = (id, on) => { $(id).style.display = on ? '' : 'none'; };
+  if (mode === 'lernen' && !learn.topic){ renderOverview(OV_INTRO); return; }
+  show('#actions', true);
+  const st = mode === 'lernen' ? curStep() : null;
+  if (st){
+    const tp = topic();
+    $('#lvlname').textContent = `${tp.name} · ${st.title}`;
+    $('#taskmeta').textContent = `Schritt ${prog().idx + 1} von ${tp.steps.length}`;
+    let h = st.html;
+    if (CUR) h += `<div class="assign"><div class="intro">${esc(CUR.intro)}</div><b>Aufgabe:</b> ${CUR.text}</div>${HELP_BZ}`;
+    if (st.final) h += finalButtons();
+    $('#tasktext').innerHTML = h;
+  } else {
+    $('#lvlname').textContent = `Stufe ${level}: ${LEVELS[level].name}`;
+    $('#taskmeta').textContent = mode === 'pfad' ? `Übungen · Aufgabe ${pfadIdx + 1} von ${STD.length}` : `Endlos · ${CUR.title}`;
+    $('#tasktext').innerHTML = `<div class="intro"><b>${esc(CUR.title)}:</b> ${esc(CUR.intro)}</div><p>${CUR.text}</p>${CUR.lv < 6 ? HELP_BZ : ''}`;
+  }
+  show('#sheetcard', !!(CUR || LSHEET));
+  show('#workcard', !!(st && st.type === 'choice'));
+  if (CUR || LSHEET){ renderFbar(); renderGrid(); }
+  if (st && st.type === 'choice') renderChoice(st);
+  renderFeedback(); renderNav();
+}
+
+function finalButtons(){
+  const i = TOPICS.findIndex(t => t.id === learn.topic), nx = TOPICS[i + 1];
+  return `<p style="margin-top:12px">${nx ? `<button class="btn primary" data-topic-go="${nx.id}">Weiter mit „${esc(nx.name)}“</button> ` : ''}<button class="btn${nx ? '' : ' primary'}" data-ov="1">Zur Übersicht</button> <button class="btn" data-mode-go="pfad">Zu den Übungen</button></p>`;
+}
+
+const OV_INTRO = '<p>Was passiert mit den Zellbezügen, wenn man eine Formel auf andere Zellen überträgt – und wann braucht man das $-Zeichen? Jedes Thema erklärt das an einem Beispiel, stellt dir ein paar Fragen – und dann schreibst du selbst Formeln. Am besten gehst du die Themen der Reihe nach durch.</p>';
+
+/* ---------- Tabelle & Bearbeitungsleiste ---------- */
+function curSheet(){ return CUR ? {cells:CUR.cells, fmt:CUR.fmt, top:CUR.top} : LSHEET; }
+const inFill = a => !!CUR && CUR.fill.includes(a);
+function curRefs(sh){
+  if (CUR) return refsInText(S.peek && S.forms ? S.forms[S.peek] : liveText());
+  const raw = S.inspect && sh.cells[S.inspect];
+  return typeof raw === 'string' && raw[0] === '=' ? refsInText(raw) : [];
+}
+
+function renderGrid(){
+  const sh = curSheet(); if (!sh) return;
+  const cells = sh.cells, keys = Object.keys(cells).concat(CUR ? CUR.fill : []);
+  let maxC = 0, maxR = sh.top;
+  keys.forEach(a => { const x = addr(a); maxC = Math.max(maxC, x.c); maxR = Math.max(maxR, x.r); });
+  const book = new Sheet(cells), refs = curRefs(sh), col = {};
+  refs.forEach((rg, i) => { if (rg.a.includes('#')) return; rangeCells(rg.a, rg.b).forEach(c => { col[c] = i % 6; }); });
+  let h = `<table class="xl${CUR ? ' pick' : ''}"><tr><th></th>`;
+  for (let c = 0; c <= maxC; c++) h += `<th>${colL(c)}</th>`;
+  h += '</tr>';
+  for (let r = sh.top; r <= maxR; r++){
+    h += `<tr><th>${r}</th>`;
+    for (let c = 0; c <= maxC; c++){
+      const a = ad(c, r), cls = [];
+      let content = '';
+      if (inFill(a)){
+        if (a === CUR.src) cls.push('tgt');
+        if (S.vals){ cls.push(S.bad.has(a) ? 'bad' : 'good'); content = esc(fmtVal(S.vals[a], sh.fmt[a])); if (S.peek === a) cls.push('peekc'); }
+        else if (a === CUR.src) content = esc(liveText());
+        else cls.push('fill');
+      } else {
+        const v = book.val(a);
+        content = esc(fmtVal(v, sh.fmt[a]));
+        if (typeof cells[a] === 'string' && cells[a][0] !== '=') cls.push(c === 0 ? 'lbl' : 'hd');
+        if (v.t === 'num' || v.t === 'err') cls.push('num');
+        if (LSHEET && typeof cells[a] === 'string' && cells[a][0] === '=') cls.push('fill');
+      }
+      if (col[a] != null) cls.push('rc' + col[a]);
+      if (S.sel && S.sel.has(a)) cls.push('sel');
+      if (!CUR && S.inspect === a) cls.push('ins');
+      h += `<td data-c="${a}" class="${cls.join(' ')}">${content}</td>`;
+    }
+    h += '</tr>';
+  }
+  $('#grid').innerHTML = h + '</table>';
+  $('#sheetcard').classList.toggle('solved', !!S.success);
+  if (!CUR){ $('#chips').innerHTML = '<span class="howto">Klicke auf eine Zelle, um oben zu sehen, was darin steht.</span>'; return; }
+  if (S.peek && S.forms){
+    const v = S.vals[S.peek];
+    $('#chips').innerHTML = `<span class="peek">Nach dem Übertragen steht in <b>${S.peek}</b>: <code>${esc(S.forms[S.peek])}</code> → ${esc(fmtVal(v, sh.fmt[S.peek]) || '(leer)')}</span>`;
+  } else if (S.vals) $('#chips').innerHTML = '<span class="howto">Klicke auf eine Zelle im grünen Bereich, um zu sehen, welche Formel nach dem Übertragen darin steht.</span>';
+  else {
+    const chips = refs.map((rg, i) => `<span class="chip c${i % 6}">${esc(rg.txt || rg.a)}</span>`).join('');
+    $('#chips').innerHTML = chips + `<span class="howto">${chips ? '' : 'Tipp: '}${isBlk() ? 'Klicke in ein Zell-Feld und dann auf eine Zelle in der Tabelle.' : 'Zellen kannst du auch anklicken.'} $-Zeichen setzt du mit F4 oder dem Knopf <code>$ F4</code>.</span>`;
+  }
+}
+
+function renderFbar(){
+  const sh = curSheet(); if (!sh) return;
+  const ia = 'autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"';
+  if (CUR){
+    const lv = CUR.lv;
+    let inner;
+    if (lv === 2) inner = `<div class="fixrow">${S.row.map((x, i) => x.t === 'cell' ? cellInput(i) : `<span>${esc(x.lit)}</span>`).join('')}</div>`;
+    else if (lv === 3 || lv === 4) inner = `<div class="row" data-drop="row">${S.row.map((x, i) => `<span class="iw">${rowBlock(x, i)}</span>`).join('') || '<span class="ph">Ziehe die Bausteine hierher, um die Formel zu bauen.</span>'}</div>`;
+    else inner = `<input id="ft" class="ftin acin pin" ${ia} placeholder="Formel eingeben, z. B. =B5*$B$2" value="${esc(S.text)}" aria-label="Formel">`;
+    $('#fbar').innerHTML = `<div class="nbox" title="Namenfeld: Hier kommt deine Formel hin">${CUR.src}</div><span class="fxl">fx</span><div class="fin">${inner}<button class="btn small dbtn" id="f4Btn" title="$-Zeichen im Bezug am Cursor setzen (wie F4 in Excel)">$ F4</button></div>`;
+    renderPools();
+  } else {
+    $('#pools').innerHTML = '';
+    const raw = S.inspect ? sh.cells[S.inspect] : null;
+    const txt = raw == null ? '' : typeof raw === 'number' ? fmtNum(raw) : raw;
+    $('#fbar').innerHTML = `<div class="nbox">${S.inspect || ''}</div><span class="fxl">fx</span><div class="fshow${txt ? '' : ' empty'}">${txt ? esc(txt) : (S.inspect ? '(leer)' : 'Klicke auf eine Zelle')}</div>`;
+  }
+  $('#selhint').textContent = '';
+}
+
+/* ---------- Bausteine (Stufe 2 bis 4) ---------- */
+const SYM4 = ['=', '+', '-', '*', '/', '(', ')', ':', ';', 'SUMME(', 'MITTELWERT('];
+const blockKind = lit => /^[A-ZÄÖÜ]{2,}/.test(lit) ? 'fn' : /^\d/.test(lit) ? 'val' : 'sym';
+const cellInput = i => `<input class="gapin pin cg" data-ci="${i}" ${IA} placeholder="Zelle" value="${esc(S.row[i].v)}" aria-label="Zelle">`;
+function rowBlock(x, i){
+  return x.t === 'cell'
+    ? `<div class="block val" data-drag="1" data-kind="rowitem" data-ri="${i}">${cellInput(i)}</div>`
+    : `<div class="block ${blockKind(x.lit)}" data-drag="1" data-kind="rowitem" data-ri="${i}">${esc(x.lit)}</div>`;
+}
+function poolBlock(lit, o){
+  return `<div class="block ${lit == null ? 'val' : blockKind(lit)}${o.ghost ? ' ghost' : ''}" data-drag="1" data-kind="pool" data-val="${lit == null ? '' : esc(lit)}"${o.pid != null ? ` data-pid="${o.pid}"` : ''}>${lit == null ? 'Zelle' : esc(lit)}</div>`;
+}
+function renderPools(){
+  const P = $('#pools');
+  if (!CUR || (CUR.lv !== 3 && CUR.lv !== 4)){ P.innerHTML = ''; return; }
+  let items, title;
+  if (CUR.lv === 3){
+    const used = new Set(S.row.map(x => x.pid));
+    items = S.p3.map(p => poolBlock(p.lit, {pid:p.pid, ghost:used.has(p.pid)}));
+    title = 'Bausteine – jeder wird genau einmal gebraucht';
+  } else {
+    items = [...SYM4, ...CUR.nums.filter(n => !SYM4.includes(n))].map(l => poolBlock(l, {})).concat(poolBlock(null, {}));
+    title = 'Zeichen – beliebig oft verwendbar';
+  }
+  P.innerHTML = `<div class="pool sympool" data-drop="pool"><div class="pool-title">${title}</div><div class="pool-items">${items.join('')}</div></div>`;
+}
+
+/* Drag & Drop: Hooks für den Kern in basis.js */
+function dropOk(t){ const d = t.dataset.drop; return d === 'row' || (d === 'pool' && D.kind === 'rowitem'); }
+function dragData(b, e){
+  if (!CUR || e.target.closest('input,button') || b.classList.contains('ghost')) return null;
+  const pid = b.dataset.pid != null ? +b.dataset.pid : null;
+  return {kind:b.dataset.kind, val:b.dataset.val, pid, ri:b.dataset.ri != null ? +b.dataset.ri : null, src:b.dataset.kind === 'rowitem' || pid != null};
+}
+function dragGhost(g){ g.querySelectorAll('input').forEach(x => { x.className = 'gapin'; x.removeAttribute('data-ci'); }); }
+function dragTap(d){ if (d.kind === 'pool') applyDrop(d, 'row', S.row.length); }   // Antippen statt Ziehen: hinten anhängen
+function applyDrop(d, type, idx){
+  let focusCell = null;
+  if (type === 'row'){
+    if (d.kind === 'rowitem'){ const [it] = S.row.splice(d.ri, 1); if (d.ri < idx) idx--; S.row.splice(idx, 0, it); }
+    else {
+      const it = d.val === '' ? {t:'cell', v:''} : {t:'sym', lit:d.val};
+      if (d.pid != null) it.pid = d.pid;
+      S.row.splice(idx, 0, it);
+      if (it.t === 'cell') focusCell = it;
+    }
+  } else if (type === 'pool' && d.kind === 'rowitem') S.row.splice(d.ri, 1);
+  S.gi = focusCell ? S.row.indexOf(focusCell) : null;
+  S.sel = null; clearMarks(); renderFbar(); renderGrid();
+  if (focusCell){ const g = document.querySelector(`.cg[data-ci="${S.gi}"]`); if (g) g.focus({preventScroll:true}); }
+}
+
+/* ---------- F4: $-Zeichen am Cursor durchschalten ---------- */
+function f4(inp){
+  inp = inp || $('#ft') || document.querySelector(`.cg[data-ci="${S.gi}"]`);
+  if (!inp){ hint('Klicke zuerst in ein Zell-Feld – dann setzt F4 die $-Zeichen.'); return; }
+  const v = inp.value, [s] = caret(inp), re = REFRE();
+  let m, hit = null;
+  while ((m = re.exec(v))){ const st = m.index + m[1].length, en = m.index + m[0].length; if (s >= st && s <= en){ hit = {st, en, m}; break; } re.lastIndex = en; }
+  if (!hit){ hint('Setze den Cursor in einen Zellbezug (z. B. B2) – dann setzt F4 die $-Zeichen.'); focusInp(inp); return; }
+  const [, , d1, cl, d2, rw] = hit.m, state = d1 && d2 ? 1 : d2 ? 2 : d1 ? 3 : 0, nx = (state + 1) % 4;
+  const nw = (nx === 1 || nx === 3 ? '$' : '') + cl.toUpperCase() + (nx === 1 || nx === 2 ? '$' : '') + rw;
+  inp.value = v.slice(0, hit.st) + nw + v.slice(hit.en);
+  setCaret(inp, hit.st + nw.length); syncInput(inp, false); focusInp(inp);
+}
+
+/* ---------- Zellen mit der Maus einfügen (wie in Excel) ---------- */
+function insertionPoint(inp){
+  const v = inp.value, [s, e] = caret(inp), before = v.slice(0, s);
+  const okBefore = pc => /[=(;+\-*/^:]/.test(pc);
+  const m = before.match(/\$?[A-Za-z]{1,3}\$?\d{1,5}(?:\s*:\s*\$?[A-Za-z]{1,3}\$?\d{1,5})?$/);
+  if (m){
+    const st = s - m[0].length, pre = v.slice(0, st).replace(/\s+$/, '');
+    if (okBefore(pre.slice(-1))) return {start:st, end:Math.max(s, e)};
+  }
+  const pc = before.replace(/\s+$/, '').slice(-1);
+  if (okBefore(pc)) return {start:s, end:e};
+  return {err:'Hier kann kein Bezug eingefügt werden. Setze den Cursor hinter „=“, ein Rechenzeichen oder „(“.'};
+}
+function syncInput(inp, keepSel){
+  if (inp.classList.contains('cg')){ S.row[+inp.dataset.ci].v = inp.value; S.gi = +inp.dataset.ci; } else S.text = inp.value;
+  if (!keepSel) S.sel = null;
+  clearMarks(); renderGrid();
+  acUpdate(inp);
+}
+gridEl.addEventListener('pointerdown', e => {
+  const td = e.target.closest('td[data-c]'); if (!td || e.button > 0) return;
+  const a = td.dataset.c;
+  if (!CUR){ if (curSheet()){ S.inspect = a; renderFbar(); renderGrid(); } return; }
+  e.preventDefault();
+  if (S.vals && inFill(a)){ S.peek = a; renderGrid(); return; }
+  if (isBlk()){
+    const gaps = [...document.querySelectorAll('.cg')];
+    const g = gaps.find(x => +x.dataset.ci === S.gi) || gaps.find(x => !x.value);
+    if (!g){ hint(gaps.length ? 'Klicke zuerst in das Zell-Feld, das du ändern möchtest.' : 'Ziehe zuerst einen Baustein „Zelle“ in die Formel – dann kannst du eine Zelle auswählen.'); return; }
+    if (a === CUR.src){ hint(`In ${a} steht deine Formel selbst.`); return; }
+    g.value = a; setCaret(g, a.length); syncInput(g, false); focusInp(g);
+    return;
+  }
+  const inp = $('#ft');
+  if (a === CUR.src){ hint(`In ${a} steht deine Formel selbst.`); focusInp(inp); return; }
+  if (!inp.value.trim()){ inp.value = '='; setCaret(inp, 1); }
+  const at = insertionPoint(inp);
+  if (at.err){ hint(at.err); focusInp(inp); return; }
+  $('#selhint').textContent = '';
+  PT = {inp, anchor:a, cur:a, start:at.start, end:at.end, base:inp.value};
+  applyPT();
+  try { gridEl.setPointerCapture(e.pointerId); } catch (x) {}
+});
+gridEl.addEventListener('pointermove', e => {
+  if (!PT) return;
+  const td = cellAt(e.clientX, e.clientY);
+  if (td && td.dataset.c !== PT.cur && td.dataset.c !== CUR.src){ PT.cur = td.dataset.c; applyPT(); }
+});
+/* ---------- Prüfen ---------- */
+const cellName = t => ad(t.c, t.r);
+// Bezüge der Schülerformel den Bezügen der Musterlösung zuordnen (gleiche Zelle) und $-Fehler benennen
+function refHints(text, T){
+  const mine = refTokens(text), want = refTokens(T.ref), used = new Set(), out = [];
+  const far = T.end, o = offset(T, far);
+  let unmatched = 0;
+  want.forEach(q => {
+    const i = mine.findIndex((s, k) => !used.has(k) && s.c === q.c && s.r === q.r);
+    if (i < 0){ unmatched++; return; }
+    used.add(i); const s = mine[i];
+    const colBad = T.dcMax > 0 && s.fc !== q.fc, rowBad = T.drMax > 0 && s.fr !== q.fr;
+    if (!colBad && !rowBad) return;
+    let m = `Aus ${C(s.raw)} wird beim Übertragen nach ${far} ${C(shiftFormula(s.raw, o.dc, o.dr))}.`;
+    if (colBad) m += q.fc ? ` Die Spalte ${colL(q.c)} soll aber fest bleiben – setze ein $ vor das ${colL(q.c)}.` : ` Die Spalte soll aber mitwandern – vor dem ${colL(q.c)} darf kein $ stehen.`;
+    if (rowBad) m += q.fr ? ` Die Zeile ${q.r} soll aber fest bleiben – setze ein $ vor die ${q.r}.` : ` Die Zeile soll aber mitwandern – vor der ${q.r} darf kein $ stehen.`;
+    out.push(m);
+  });
+  const extra = mine.filter((s, k) => !used.has(k));
+  if (unmatched || extra.length) out.unshift(extra.length
+    ? `Prüfe ${extra.length > 1 ? 'die Bezüge' : 'den Bezug'} ${extra.map(s => C(s.raw)).join(', ')} – ist das die richtige Zelle für diese Rechnung?`
+    : 'In deiner Formel fehlt noch ein Wert aus der Tabelle.');
+  return [...new Set(out)];
+}
+// halbe $-Zeichen, die hier nichts bewirken (z. B. $B5, wenn nur nach unten übertragen wird); $B$2 gilt immer als fester Bezug
+function extraDollars(text, T){
+  return refTokens(text).filter(s => s.fc !== s.fr && ((s.fc && T.dcMax === 0) || (s.fr && T.drMax === 0))).map(s => s.raw);
+}
+function judge(text, T){
+  const lv = T.lv;
+  let ast;
+  try { ast = parseFormula(text); }
+  catch (e){ if (!(e instanceof FErr)) throw e; return {err:lv >= 6 ? 'Die Formel enthält einen Fehler.' : esc(e.message)}; }
+  if (!refsOf(ast).length) return {err:'Deine Formel enthält keinen Zellbezug. Verwende Zellen wie B5 – nur dann kann Excel die Formel beim Übertragen anpassen.'};
+  const runs = [T.cells, ...T.variants];
+  let first = null;
+  for (let k = 0; k < runs.length; k++){
+    const mine = runCopy(text, T, runs[k]), want = runCopy(T.ref, T, runs[k]);
+    const bad = T.fill.filter(f => !same(mine.vals[f], want.vals[f]));
+    if (k === 0) first = {mine, bad};
+    if (!bad.length) continue;
+    const res = {vals:first.mine.vals, forms:first.mine.forms, bad:k === 0 ? bad : [], peek:k === 0 ? bad[0] : null};
+    const f = bad[0], fmt = T.fmt[f], hints = lv < 6 ? refHints(text, T) : [];
+    let msg;
+    if (k > 0){
+      const nums = numsOf(ast).filter(x => x !== 1 && x !== 100);
+      msg = nums.length
+        ? `Deine Formel liefert hier nur zufällig das richtige Ergebnis. Du hast die Zahl ${fmtNum(nums[0])} abgeschrieben – verwende stattdessen den Zellbezug. Dann rechnet Excel richtig weiter, wenn sich ein Wert in der Tabelle ändert.`
+        : 'Deine Formel liefert nur mit genau diesen Zahlen das richtige Ergebnis – sobald sich ein Wert in der Tabelle ändert, nicht mehr.' + (hints.length ? '<br>' + hints.join('<br>') : '');
+    } else if (f === T.src){
+      msg = `Schon in ${B(T.src)} stimmt das Ergebnis noch nicht: Deine Formel ergibt ${esc(fmtVal(mine.vals[f], fmt) || '0')}.`;
+      if (lv < 6) msg += '<br>' + (hints.length ? hints.join('<br>') : 'Prüfe, ob du die richtigen Zellen und Rechenzeichen verwendest.');
+    } else if (lv >= 6){
+      msg = `In ${B(T.src)} stimmt das Ergebnis – aber nach dem Übertragen nicht mehr überall, zum Beispiel in ${B(f)}. Klicke auf die rot markierten Zellen, um die Formeln zu sehen.`;
+    } else {
+      const v = mine.vals[f];
+      msg = `In ${B(T.src)} stimmt das Ergebnis – aber nach dem Übertragen nicht mehr. In ${B(f)} steht dann ${C(esc(mine.forms[f]))}` +
+        (v.t === 'err' ? `, und Excel zeigt ${C(esc(v.v === 'Zirkelbezug' ? 'einen Zirkelbezug' : v.v))}.` : v.t === 'empty' ? '.' : ` – das ergibt ${esc(fmtVal(v, fmt))}.`) +
+        (hints.length ? '<br>' + hints.join('<br>') : '');
+    }
+    if (lv === 1 && strip$(text) !== strip$(T.pre)) msg += '<span class="note">Auf dieser Stufe musst du nur $-Zeichen setzen – der Rest der Formel stimmt schon. Mit „Zurücksetzen“ bekommst du die Formel wieder.</span>';
+    return Object.assign(res, {err:msg});
+  }
+  const notes = [];
+  if (lv < 6){ const x = extraDollars(text, T); if (x.length) notes.push(`Kleiner Hinweis: Die $-Zeichen in ${x.map(C).join(', ')} bewirken hier nichts, weil die Formel nur ${T.dcMax ? 'nach rechts' : 'nach unten'} übertragen wird. Sie schaden aber auch nicht.`); }
+  return {ok:true, vals:first.mine.vals, forms:first.mine.forms, bad:[], notes};
+}
+
+function check(){
+  if (!CUR){ if (LS) checkChoice(); return; }
+  if (S.success) return;
+  const text = liveText();
+  let miss = null;
+  if (isBlk() && !S.row.length) miss = 'Ziehe zuerst Bausteine in die Formelzeile.';
+  else if (isBlk() && S.row.some(x => x.t === 'cell' && !x.v.trim())) miss = 'Es ist noch ein Zell-Feld leer. Klicke hinein und wähle eine Zelle in der Tabelle aus.';
+  else if (!text.trim()) miss = `Schreibe zuerst eine Formel in ${CUR.src}.`;
+  if (miss){ S.fb = {type:'err', html:miss}; renderFeedback(); return; }
+  const j = judge(text, CUR);
+  S.vals = j.vals || null; S.forms = j.forms || null; S.bad = new Set(j.bad || []); S.peek = j.peek || null;
+  if (j.ok){
+    S.success = true;
+    let erstmals;
+    if (mode === 'lernen'){ erstmals = !stepDone(prog().idx); markStep(); }
+    else erstmals = countSolved();
+    logSolved(erstmals);
+    const nx = canNext() ? `<span class="note">Weiter geht es mit „${mode === 'lernen' ? 'Weiter' : 'Nächste Aufgabe'}“.</span>` : '';
+    S.fb = {type:'ok', html:`<b>Richtig! 🎉</b> Die Formel stimmt in allen Zellen von ${CUR.src} bis ${CUR.end}.<br><span class="fcol">${esc(text)}</span>` +
+      j.notes.map(n => `<span class="note">${n}</span>`).join('') + '<span class="note">Klicke auf eine Zelle im grünen Bereich, um zu sehen, welche Formel dort nach dem Übertragen steht.</span>' + nx};
+  } else S.fb = {type:'err', html:j.err};
+  renderGrid(); renderFeedback(); renderNav();
+}
+
+function clearMarks(){
+  if (!S.success && !S.fb && !S.vals) return;
+  S.success = false; S.fb = null; S.vals = null; S.forms = null; S.bad = new Set(); S.peek = null;
+  renderFeedback();
+}
+
+/* ---------- Autovervollständigung (basis.js): Funktionen dieser Seite ---------- */
+const AC_FN = [
+  {n:'MITTELWERT', v:'Zahl', d:'Berechnet den Durchschnitt (das arithmetische Mittel) der Argumente.'},
+  {n:'SUMME',      v:'Zahl', d:'Addiert alle Zahlen.'}
+];
+AC.word = before => { const m = before.match(/[A-Za-zÄÖÜäöüß]+$/); return m && m[0].length >= 2 && before.trimStart().startsWith('=') ? m[0] : null; };
+
+document.addEventListener('focusin', e => { if (e.target.matches && e.target.matches('.cg')) S.gi = +e.target.dataset.ci; });
+/* ---------- Ereignisse ---------- */
+document.addEventListener('pointerdown', e => { if (e.target.closest('#f4Btn')) e.preventDefault(); });
+document.addEventListener('click', e => {
+  if (e.target.closest('#f4Btn')){ f4(); return; }
+  if (e.target.closest('.cg')) return;
+  topicClick(e);
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'F4' && (e.target.id === 'ft' || e.target.matches('.cg'))){ e.preventDefault(); f4(e.target); return; }
+  if (e.key === 'Enter' && e.target.matches && e.target.matches('.pin')){ e.preventDefault(); check(); }
+});
+if (mode === 'endlos') newEndless();
+loadTask();
+</script>
+</body>
+</html>

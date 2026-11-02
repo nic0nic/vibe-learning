@@ -1,0 +1,809 @@
+<!doctype html>
+<html lang="de" data-trainer="bz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zellbezüge – vibe learning</title>
+<script src="../katalog.js"></script>
+<script src="../nav.js"></script>
+<script src="../sync.js"></script>
+<script>
+(function(){var t=null;try{t=localStorage.getItem('wenn-theme');}catch(e){}
+document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');})();
+</script>
+<link rel="stylesheet" href="basis.css">
+<link rel="stylesheet" href="tabelle.css">
+<style>
+.xl td.fill{background:color-mix(in srgb,var(--then) 6%,var(--cell));outline:1px dashed color-mix(in srgb,var(--then) 70%,transparent);outline-offset:-4px}
+.xl td.good{background:color-mix(in srgb,var(--then) 22%,var(--cell));text-align:right;cursor:pointer}
+.xl td.bad{background:color-mix(in srgb,var(--else) 18%,var(--cell));outline:2px solid var(--else);outline-offset:-3px;text-align:right;cursor:pointer}
+.xl td.peekc{outline:3px solid var(--cond);outline-offset:-3px}
+.peek{font:15px system-ui,sans-serif;align-self:center}
+.peek code{font-size:15px}
+.dbtn{font-family:var(--mono);white-space:nowrap}
+.cg{width:5.6em;font-size:18px;padding:5px 8px}
+.block .cg{background:var(--slot);border-style:solid}
+.fixrow{display:flex;flex-wrap:wrap;align-items:center;gap:4px;font:700 20px var(--mono)}
+.dl{border-collapse:collapse;font-size:15px;margin:6px 0}
+.dl td,.dl th{border:1px solid var(--border);padding:3px 10px;text-align:left}
+.dl td:first-child{font:700 15px var(--mono)}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <linearGradient id="fg" x1="0" y1="1" x2="0" y2="0">
+    <stop offset="0" stop-color="#d9230f"/><stop offset=".55" stop-color="#ff7a00"/><stop offset="1" stop-color="#ffd23f"/>
+  </linearGradient></defs></svg>
+
+<header>
+  <div class="hdr-left">
+    <div class="brand"><span>=$</span>Zellbezüge<span>$</span></div>
+    <div class="modes" role="group" aria-label="Modus">
+      <button data-mode="lernen">Erklärung</button><button data-mode="pfad">Übungen</button><button data-mode="endlos">Endlos</button>
+    </div>
+  </div>
+  <div class="hdr-right">
+    <button class="iconbtn" id="themeBtn" aria-label="Hell/Dunkel umschalten"></button>
+    <div class="flames" id="flames" aria-label="Stufe wählen"></div>
+  </div>
+</header>
+
+<main>
+  <section class="card" id="taskcard">
+    <div class="meta">
+      <span class="lvlname" id="lvlname"></span>
+      <span id="taskmeta"></span>
+    </div>
+    <div class="tasktext" id="tasktext"></div>
+  </section>
+
+  <section class="card" id="sheetcard">
+    <div class="fbar" id="fbar"></div>
+    <div class="selhint" id="selhint"></div>
+    <div class="pools" id="pools"></div>
+    <div class="tscroll"><div id="grid"></div></div>
+    <div class="chips" id="chips"></div>
+  </section>
+
+  <section class="card" id="workcard">
+    <div class="worktitle">Deine Antwort</div>
+    <div id="work"></div>
+  </section>
+
+  <div class="actions" id="actions">
+    <button class="btn primary" id="checkBtn">Prüfen</button>
+    <button class="btn" id="resetBtn">Zurücksetzen</button>
+    <button class="btn" id="ovBtn">Übersicht</button>
+    <span class="spacer"></span>
+    <button class="btn" id="skipBtn" title="Neue Aufgabe – die Serie beginnt wieder bei 0">Andere Aufgabe</button>
+    <button class="btn" id="prevBtn" aria-label="Zurück">◀</button>
+    <button class="btn" id="nextBtn">Nächste Aufgabe ▶</button>
+  </div>
+  <div id="fb"></div>
+</main>
+
+<div class="dock" id="dock"></div>
+
+<script src="basis.js"></script>
+<script src="tabelle.js"></script>
+
+<!-- ===================== Übertragen, Aufgaben, Erklärung ===================== -->
+<script id="tasks">
+/* ---- Formel übertragen wie in Excel: relative Teile wandern, $-Teile bleiben ---- */
+const REFRE = () => /(^|[^A-Za-z0-9_$ÄÖÜäöüß.])(\$?)([A-Za-z]{1,3})(\$?)(\d{1,5})(?![A-Za-z0-9_(])/g;
+function outsideStrings(s, fn){
+  let out = '', chunk = '', inStr = false;
+  for (const ch of normQuotes(s)){
+    if (ch === '"'){ if (!inStr){ out += fn(chunk); chunk = ''; } out += ch; inStr = !inStr; continue; }
+    if (inStr) out += ch; else chunk += ch;
+  }
+  return out + fn(chunk);
+}
+function shiftFormula(s, dc, dr){
+  return outsideStrings(s, part => part.replace(REFRE(), (m, pre, d1, col, d2, row) => {
+    const c = colN(col) + (d1 ? 0 : dc), r = +row + (d2 ? 0 : dr);
+    if (c < 0 || r < 1) return pre + '#BEZUG!';
+    return pre + d1 + colL(c) + d2 + r;
+  }));
+}
+// alle Zellbezüge (auch Bereichsgrenzen) mit ihren $-Zeichen
+function refTokens(s){
+  const out = [];
+  outsideStrings(s, part => { const re = REFRE(); let m;
+    while ((m = re.exec(part))){ out.push({raw:(m[2] + m[3] + m[4] + m[5]).toUpperCase(), c:colN(m[3]), r:+m[5], fc:!!m[2], fr:!!m[4]}); re.lastIndex = m.index + m[0].length; }
+    return part; });
+  return out;
+}
+const strip$ = s => s.replace(/\$/g, '').replace(/\s+/g, '').toUpperCase();
+function offset(T, f){ const a = addr(T.src), b = addr(f); return {dc:b.c - a.c, dr:b.r - a.r}; }
+function runCopy(text, T, cells){
+  const c = Object.assign({}, cells), forms = {};
+  T.fill.forEach(f => { const o = offset(T, f); forms[f] = shiftFormula(text, o.dc, o.dr); c[f] = forms[f]; });
+  const sh = new Sheet(c), vals = {};
+  T.fill.forEach(f => { vals[f] = sh.val(f); });
+  return {vals, forms};
+}
+
+/* ---- Zufallszahlen ---- */
+const rd = (r, a, b, dp) => +(a + r() * (b - a)).toFixed(dp);
+const pickN = (r, arr, n) => shuffle(arr, r).slice(0, n);
+const NAMES = ['Mia', 'Ben', 'Lea', 'Tim', 'Emma', 'Noah', 'Lina', 'Paul', 'Zoe', 'Finn', 'Ella', 'Luca', 'Hanna', 'Jonas', 'Aylin', 'Elias'];
+const ART = {Kopfhörer:'den', Handyhülle:'die', Ladekabel:'das', Maus:'die', Tastatur:'die', 'USB-Stick':'den', Lautsprecher:'den'};
+const cols = (from, n) => [...Array(n)].map((_, i) => colL(colN(from) + i));
+// gleiche Tabelle mit anderen Zahlen – damit abgeschriebene Zahlen auffallen
+function perturb(cells, r){
+  const out = {};
+  for (const [k, v] of Object.entries(cells)){
+    if (typeof v !== 'number'){ out[k] = v; continue; }
+    let w;
+    if (Number.isInteger(v)) w = v <= 0 ? v + ri(r, -6, 6) || 1 : Math.max(1, Math.round(v * (0.5 + r() * 1.2)));
+    else if (v > 0 && v < 1) w = rd(r, 0.02, 0.45, 2);
+    else w = +(v * (0.5 + r() * 1.2)).toFixed(2);
+    if (w === v) w = v + 1;
+    out[k] = w;
+  }
+  return out;
+}
+
+/* ---- Aufgaben-Generatoren: gleiche Struktur, Zahlen je nach Zufallsstartwert ---- */
+const GENS = {
+  einkauf:{title:'Schulbedarf', make(r){
+    const it = pickN(r, ['Hefte', 'Bleistifte', 'Lineale', 'Radiergummis', 'Ordner', 'Klebestifte', 'Collegeblöcke', 'Textmarker'], 5);
+    const c = {A4:'Artikel', B4:'Menge', C4:'Einzelpreis', D4:'Gesamtpreis'}, fmt = {};
+    it.forEach((x, i) => { const n = 5 + i; c['A' + n] = x; c['B' + n] = ri(r, 2, 12); c['C' + n] = rd(r, 0.5, 4.5, 2); fmt['C' + n] = 'eur'; });
+    return {intro:'Die Klasse bestellt Schulbedarf für das neue Schuljahr.', cells:c, fmt, ffmt:'eur', fill:['D5', 'D9'], ref:'=B5*C5',
+      what:`den Gesamtpreis für die ${it[0]} berechnet`};
+  }},
+  punkte:{title:'Sportfest', make(r){
+    const nm = pickN(r, NAMES, 5), c = {A4:'Disziplin', A5:'Sprint', A6:'Weitsprung', A7:'Ballwurf', A8:'Gesamtpunkte'};
+    cols('B', 5).forEach((L, i) => { c[L + 4] = nm[i]; [5, 6, 7].forEach(n => { c[L + n] = ri(r, 10, 60); }); });
+    return {intro:'Beim Sportfest bekommt jedes Kind in drei Disziplinen Punkte.', cells:c, fill:['B8', 'F8'], ref:'=SUMME(B5:B7)',
+      what:`die Gesamtpunkte von ${nm[0]} berechnet`};
+  }},
+  kurs:{title:'Urlaubsgeld in Dollar', make(r){
+    const c = {A2:'Kurs: 1 € in Dollar', B2:rd(r, 1.05, 1.18, 2), A4:'Euro', A5:'Dollar'}, fmt = {};
+    cols('B', 5).forEach(L => { c[L + 4] = ri(r, 2, 40) * 5; fmt[L + 4] = 'eur'; });
+    return {intro:'Lena fährt in die USA und rechnet verschiedene Beträge von Euro in Dollar um. Der Kurs steht in B2.', cells:c, fmt, ffmt:'usd',
+      fill:['B5', 'F5'], ref:'=B4*$B$2', what:'den Betrag aus B4 in Dollar umrechnet'};
+  }},
+  mwst:{title:'Mehrwertsteuer', make(r){
+    const it = pickN(r, ['Kopfhörer', 'Handyhülle', 'Ladekabel', 'Maus', 'Tastatur', 'USB-Stick', 'Lautsprecher'], 5);
+    const c = {A2:'Mehrwertsteuersatz', B2:pick1(r, [0.19, 0.07]), A4:'Artikel', B4:'Nettopreis', C4:'Mehrwertsteuer'}, fmt = {B2:'pct'};
+    it.forEach((x, i) => { const n = 5 + i; c['A' + n] = x; c['B' + n] = rd(r, 5, 80, 2); fmt['B' + n] = 'eur'; });
+    return {intro:'Ein Elektronikladen berechnet die Mehrwertsteuer: Nettopreis · Steuersatz. Der Steuersatz steht in B2.', cells:c, fmt, ffmt:'eur',
+      fill:['C5', 'C9'], ref:'=B5*$B$2', what:`die Mehrwertsteuer für ${ART[it[0]]} ${it[0]} berechnet`};
+  }},
+  lohn:{title:'Ferienjob', make(r){
+    const nm = pickN(r, NAMES, 5), c = {A2:'Stundenlohn', B2:pick1(r, [12, 12.5, 13, 13.5, 14]), A4:'Name', B4:'Stunden', C4:'Verdienst'}, fmt = {B2:'eur'};
+    nm.forEach((x, i) => { c['A' + (5 + i)] = x; c['B' + (5 + i)] = ri(r, 3, 24); });
+    return {intro:'Fünf Jugendliche helfen in den Ferien im Supermarkt. Alle bekommen denselben Stundenlohn (B2).', cells:c, fmt, ffmt:'eur',
+      fill:['C5', 'C9'], ref:'=B5*$B$2', what:`den Verdienst von ${nm[0]} berechnet`};
+  }},
+  anteil:{title:'Umfrage: Lieblingsfach', make(r){
+    const f = pickN(r, ['Sport', 'Mathe', 'Deutsch', 'Englisch', 'Kunst', 'Musik', 'IT', 'Biologie'], 5);
+    const c = {A4:'Fach', B4:'Stimmen', C4:'Anteil', A10:'Gesamt', B10:'=SUMME(B5:B9)'};
+    f.forEach((x, i) => { c['A' + (5 + i)] = x; c['B' + (5 + i)] = ri(r, 2, 12); });
+    return {intro:'Die 7. Klassen haben ihr Lieblingsfach gewählt. In B10 steht, wie viele Stimmen es insgesamt gab.', cells:c, ffmt:'pct',
+      fill:['C5', 'C9'], ref:'=B5/$B$10', what:`berechnet, welcher Anteil aller Stimmen auf ${f[0]} entfällt`};
+  }},
+  schnitt:{title:'Weitsprung', make(r){
+    const nm = pickN(r, NAMES, 6), c = {A4:'Name', B4:'Weite (m)', C4:'Abweichung', A12:'Durchschnitt', B12:'=MITTELWERT(B5:B10)'};
+    nm.forEach((x, i) => { c['A' + (5 + i)] = x; c['B' + (5 + i)] = rd(r, 2.4, 4.8, 2); });
+    return {intro:'Im Sportunterricht wurde Weitsprung gemessen. In B12 steht die durchschnittliche Weite.', cells:c,
+      fill:['C5', 'C10'], ref:'=B5-$B$12', what:`berechnet, um wie viele Meter ${nm[0]} über (+) oder unter (−) dem Durchschnitt liegt`};
+  }},
+  einmaleins:{title:'Einmaleins-Tabelle', make(r){
+    const c = {A4:'·'}, s1 = ri(r, 2, 7), s2 = ri(r, 2, 7);
+    cols('B', 5).forEach((L, i) => { c[L + 4] = s1 + i; });
+    [5, 6, 7, 8, 9].forEach((n, i) => { c['A' + n] = s2 + i; });
+    return {intro:'Die Tabelle soll das Ergebnis jeder Zahl aus Spalte A mal jeder Zahl aus Zeile 4 zeigen.', cells:c,
+      fill:['B5', 'F9'], ref:'=$A5*B$4', what:'die Zahl aus Spalte A mit der Zahl aus Zeile 4 multipliziert'};
+  }},
+  eintritt:{title:'Eintrittspreise im Freibad', make(r){
+    const c = {C3:'Anzahl Personen', A4:'Gruppe', B4:'Preis', A5:'Kinder', A6:'Jugendliche', A7:'Erwachsene', A8:'Senioren'}, fmt = {};
+    cols('C', 5).forEach((L, i) => { c[L + 4] = i + 1; });
+    [5, 6, 7, 8].forEach(n => { c['B' + n] = rd(r, 1.5, 6.5, 1); fmt['B' + n] = 'eur'; });
+    return {intro:'Das Freibad möchte eine Preistabelle aushängen: Was kostet der Eintritt für 1, 2, 3 … Personen?', cells:c, fmt, ffmt:'eur',
+      fill:['C5', 'G8'], ref:'=$B5*C$4', what:'berechnet, was der Eintritt für die Gruppe in dieser Zeile bei der Personenzahl aus Zeile 4 kostet'};
+  }},
+  zins:{title:'Zinsen auf dem Sparbuch', make(r){
+    const c = {A3:'', B3:'Zinssatz', A4:'Betrag'}, fmt = {};
+    const z = shuffle([0.01, 0.015, 0.02, 0.025, 0.03, 0.035, 0.04], r).slice(0, 4).sort((a, b) => a - b);
+    cols('B', 4).forEach((L, i) => { c[L + 4] = z[i]; fmt[L + 4] = 'pct'; });
+    [5, 6, 7, 8].forEach(n => { c['A' + n] = ri(r, 2, 40) * 50; fmt['A' + n] = 'eur'; });
+    return {intro:'Wie viele Zinsen bringt ein Jahr auf dem Sparbuch? Das hängt vom Betrag (Spalte A) und vom Zinssatz (Zeile 4) ab.', cells:c, fmt, ffmt:'eur',
+      fill:['B5', 'E8'], ref:'=$A5*B$4', what:'die Zinsen für den Betrag aus Spalte A beim Zinssatz aus Zeile 4 berechnet'};
+  }},
+  rabatt:{title:'Rabatte im Sportgeschäft', make(r){
+    const c = {B3:'Rabatt', A4:'Preis'}, fmt = {};
+    const z = shuffle([0.05, 0.1, 0.15, 0.2, 0.25, 0.3], r).slice(0, 4).sort((a, b) => a - b);
+    cols('B', 4).forEach((L, i) => { c[L + 4] = z[i]; fmt[L + 4] = 'pct'; });
+    [5, 6, 7, 8, 9].forEach(n => { c['A' + n] = ri(r, 3, 30) * 5 - 0.01; fmt['A' + n] = 'eur'; });
+    return {intro:'Ein Sportgeschäft gibt verschiedene Rabatte. Die Tabelle soll zeigen, wie viel Euro man jeweils spart.', cells:c, fmt, ffmt:'eur',
+      fill:['B5', 'E9'], ref:'=$A5*B$4', what:'berechnet, wie viel Euro man beim Preis aus Spalte A mit dem Rabatt aus Zeile 4 spart'};
+  }},
+  ausflug:{title:'Wahl des Ausflugsziels', make(r){
+    const z = ['Freizeitpark', 'Kletterhalle', 'Museum', 'Zoo'], k = ['7a', '7b', '7c', '7d'];
+    const c = {A4:'Ziel', A9:'Gesamt', A11:'Anteile'};
+    cols('B', 4).forEach((L, i) => { c[L + 4] = k[i]; c[L + 11] = k[i]; [5, 6, 7, 8].forEach(n => { c[L + n] = ri(r, 1, 12); }); c[L + 9] = `=SUMME(${L}5:${L}8)`; });
+    z.forEach((x, i) => { c['A' + (5 + i)] = x; c['A' + (12 + i)] = x; });
+    return {intro:'Jede 7. Klasse hat über das Ausflugsziel abgestimmt. In Zeile 9 steht, wie viele Stimmen jede Klasse abgegeben hat.', cells:c, ffmt:'pct',
+      fill:['B12', 'E15'], ref:'=B5/B$9', what:'berechnet, welcher Anteil der Stimmen der 7a auf den Freizeitpark entfällt',
+      tip:'Jede Klasse hat ihr eigenes Gesamt in Zeile 9.'};
+  }},
+  wachstum:{title:'Pflanzen-Wachstum', make(r){
+    const p = ['Bohne', 'Kresse', 'Sonnenblume', 'Mais'], c = {A4:'Höhe in cm', A10:'Zuwachs seit Woche 1'};
+    cols('B', 5).forEach((L, i) => { c[L + 4] = `Woche ${i + 1}`; });
+    cols('C', 4).forEach((L, i) => { c[L + 10] = `Woche ${i + 2}`; });
+    p.forEach((x, i) => { const n = 5 + i; c['A' + n] = x; c['A' + (11 + i)] = x; let h = rd(r, 1, 4, 1);
+      cols('B', 5).forEach(L => { c[L + n] = h; h = +(h + rd(r, 0.5, 4, 1)).toFixed(1); }); });
+    return {intro:'Die Klasse misst jede Woche, wie hoch ihre Pflanzen sind.', cells:c,
+      fill:['C11', 'F14'], ref:'=C5-$B5', what:'berechnet, um wie viele Zentimeter die Bohne seit Woche 1 gewachsen ist',
+      tip:'Woche 1 steht für jede Pflanze in Spalte B.'};
+  }},
+  kiosk:{title:'Kiosk-Umsatz', make(r){
+    const it = ['Brezeln', 'Wasser', 'Äpfel', 'Müsliriegel'], d = ['Mo', 'Di', 'Mi', 'Do'];
+    const c = {A4:'Umsatz', A9:'Gesamt', B9:'=SUMME(B5:E8)', A11:'Anteil am Gesamtumsatz'}, fmt = {B9:'eur'};
+    cols('B', 4).forEach((L, i) => { c[L + 4] = d[i]; c[L + 11] = d[i]; [5, 6, 7, 8].forEach(n => { c[L + n] = rd(r, 8, 60, 2); fmt[L + n] = 'eur'; }); });
+    it.forEach((x, i) => { c['A' + (5 + i)] = x; c['A' + (12 + i)] = x; });
+    return {intro:'Der Schulkiosk hat vier Tage lang den Umsatz notiert. In B9 steht der Umsatz aller Tage zusammen.', cells:c, fmt, ffmt:'pct',
+      fill:['B12', 'E15'], ref:'=B5/$B$9', what:'berechnet, welchen Anteil die Brezeln am Montag am Gesamtumsatz haben'};
+  }},
+  sparschwein:{title:'Sparschwein', make(r){
+    const m = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni'], c = {A4:'Monat', B4:'Eingezahlt', C4:'Gespart insgesamt'}, fmt = {};
+    m.forEach((x, i) => { c['A' + (5 + i)] = x; c['B' + (5 + i)] = ri(r, 1, 8) * 5; fmt['B' + (5 + i)] = 'eur'; });
+    return {intro:'Ben zahlt jeden Monat Geld in sein Sparschwein ein.', cells:c, fmt, ffmt:'eur',
+      fill:['C5', 'C10'], ref:'=SUMME($B$5:B5)', what:'mit SUMME berechnet, wie viel bis zu diesem Monat insgesamt im Sparschwein ist',
+      tip:'Der Bereich beginnt immer bei B5 – nur das Ende soll mitwandern.'};
+  }},
+  sparplan:{title:'Taschengeld-Sparplan', make(r){
+    const nm = pickN(r, NAMES, 4), m = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai'], c = {A4:'Eingezahlt', A10:'Gespart bis dahin'}, fmt = {};
+    cols('B', 5).forEach((L, i) => { c[L + 4] = m[i]; c[L + 10] = m[i]; nm.forEach((_, j) => { c[L + (5 + j)] = ri(r, 1, 6) * 5; fmt[L + (5 + j)] = 'eur'; }); });
+    nm.forEach((x, j) => { c['A' + (5 + j)] = x; c['A' + (11 + j)] = x; });
+    return {intro:'Vier Kinder sparen einen Teil ihres Taschengelds. Oben steht, was sie jeden Monat einzahlen.', cells:c, fmt, ffmt:'eur',
+      fill:['B11', 'F14'], ref:'=SUMME($B5:B5)', what:`mit SUMME berechnet, wie viel ${nm[0]} bis zu diesem Monat insgesamt gespart hat`,
+      tip:'Jede Summe beginnt im Januar (Spalte B) – aber in der Zeile des jeweiligen Kindes.'};
+  }},
+  brutto:{title:'Preisliste mit Mehrwertsteuer', make(r){
+    const it = pickN(r, ['Kopfhörer', 'Handyhülle', 'Ladekabel', 'Maus', 'USB-Stick', 'Tastatur'], 4);
+    const c = {A2:'Mehrwertsteuersatz', B2:0.19, C3:'Anzahl', A4:'Artikel', B4:'Nettopreis'}, fmt = {B2:'pct'};
+    cols('C', 4).forEach((L, i) => { c[L + 4] = i + 1; });
+    it.forEach((x, j) => { c['A' + (5 + j)] = x; c['B' + (5 + j)] = rd(r, 4, 40, 2); fmt['B' + (5 + j)] = 'eur'; });
+    return {intro:'Der Elektronikladen druckt eine Preisliste: Was kosten 1, 2, 3 oder 4 Stück mit Mehrwertsteuer? Bruttopreis = Nettopreis · Anzahl · (1 + Steuersatz).', cells:c, fmt, ffmt:'eur',
+      fill:['C5', 'F8'], ref:'=$B5*C$4*(1+$B$2)', what:'den Bruttopreis für den Artikel in dieser Zeile und die Anzahl aus Zeile 4 berechnet'};
+  }},
+  temperatur:{title:'Temperaturen im Vergleich', make(r){
+    const st = pickN(r, ['München', 'Hamburg', 'Berlin', 'Köln', 'Nürnberg', 'Dresden'], 4), d = ['Mo', 'Di', 'Mi', 'Do'];
+    const c = {A4:'°C', A9:'Mittelwert', A11:'Abweichung vom Mittelwert'};
+    cols('B', 4).forEach((L, i) => { c[L + 4] = d[i]; c[L + 11] = d[i]; c[L + 9] = `=MITTELWERT(${L}5:${L}8)`; st.forEach((_, j) => { c[L + (5 + j)] = ri(r, -2, 24); }); });
+    st.forEach((x, j) => { c['A' + (5 + j)] = x; c['A' + (12 + j)] = x; });
+    return {intro:'Mittags wurde in vier Städten die Temperatur gemessen. In Zeile 9 steht der Mittelwert jedes Tages.', cells:c,
+      fill:['B12', 'E15'], ref:'=B5-B$9', what:`berechnet, um wie viel Grad die Temperatur in ${st[0]} am Montag vom Mittelwert des Tages abweicht`};
+  }}
+};
+
+// Formel in Bausteine zerlegen: Funktion mit Klammer, Zellbezug, Zahl oder einzelnes Zeichen
+function piecesOf(ref){
+  const out = []; let i = 0;
+  while (i < ref.length){
+    const rest = ref.slice(i); let m;
+    if ((m = rest.match(/^[A-ZÄÖÜ]{2,}\d*\(/))) out.push({lit:m[0]});
+    else if ((m = rest.match(/^\$?[A-Z]{1,3}\$?\d{1,5}/))) out.push({cell:true, raw:m[0]});
+    else if ((m = rest.match(/^\d+(,\d+)?/))) out.push({lit:m[0]});
+    else { m = [rest[0]]; out.push({lit:m[0]}); }
+    i += m[0].length;
+  }
+  return out;
+}
+function makeTask(gid, seed, lv){
+  const G = GENS[gid], s0 = seed == null ? 4711 : seed, o = G.make(rng(s0));
+  const [src, end] = o.fill, fill = rangeCells(src, end), a = addr(src), b = addr(end);
+  const dir = a.c === b.c ? `nach unten bis ${B(end)}` : a.r === b.r ? `nach rechts bis ${B(end)}` : `in den ganzen Bereich ${B(src + ':' + end)}`;
+  const how = {
+    2:' Die Rechenzeichen sind schon vorgegeben: Klicke in ein Zell-Feld, dann auf die passende Zelle in der Tabelle, und setze – wo nötig – $-Zeichen.',
+    3:' Ziehe die Bausteine in der richtigen Reihenfolge in die Formelzeile. In die Zell-Felder setzt du die passenden Zellen – wo nötig mit $.',
+    4:' Baue die Formel aus den Zeichen-Bausteinen. Für jede Zelle ziehst du einen Baustein „Zelle“ in die Formel und wählst dann die Zelle aus – wo nötig mit $.'};
+  let text = lv === 1
+    ? `In ${B(src)} steht schon eine Formel, die ${o.what}. Sie rechnet in ${src} richtig. Setze die $-Zeichen so, dass sie sich ${dir} übertragen lässt. Wo kein $ nötig ist, lässt du es weg.`
+    : `Schreibe in ${B(src)} eine Formel, die ${o.what}. Die Formel soll sich ${dir} übertragen lassen.` + (how[lv] || '');
+  if (o.tip && lv <= 4) text += `<br><i>Tipp:</i> ${o.tip}`;
+  const fmt = Object.assign({}, o.fmt || {});
+  if (o.ffmt) fill.forEach(f => { fmt[f] = o.ffmt; });
+  const vr = rng(s0 ^ 0x5bd1e995), variants = [];
+  for (let i = 0; i < 8; i++) variants.push(perturb(o.cells, vr));
+  const top = Math.min(...Object.keys(o.cells).map(k => addr(k).r));
+  return {gid, seed:s0, lv, title:G.title, intro:o.intro, cells:o.cells, fmt, src, end, fill, ref:o.ref, text, variants, top,
+    dcMax:b.c - a.c, drMax:b.r - a.r, pre:lv === 1 ? o.ref.replace(/\$/g, '') : '',
+    pieces:piecesOf(o.ref), nums:piecesOf(o.ref).filter(p => /^\d/.test(p.lit || '')).map(p => p.lit)};
+}
+
+const LEVELS = {1:{name:'$-Zeichen setzen'}, 2:{name:'Zellen auswählen und $ setzen'}, 3:{name:'Rechnung aus Bausteinen'}, 4:{name:'Zeichen als Bausteine'}, 5:{name:'Freie Eingabe mit Hinweisen'}, 6:{name:'Freie Eingabe ohne Hinweise'}};
+const GROUPS = [null, 'Mitwandern oder ganz festhalten ($B$2)', 'Nur Spalte oder nur Zeile festhalten ($A5, B$4)', 'Mehrere $ in einer Formel'];
+// [Generator, Zufallsstartwert, Gruppe]
+const STD = [
+  ['einkauf', 11, 1], ['punkte', 12, 1], ['kurs', 13, 1], ['lohn', 14, 1], ['mwst', 15, 1], ['anteil', 16, 1], ['schnitt', 17, 1],
+  ['einmaleins', 21, 2], ['eintritt', 22, 2], ['zins', 23, 2], ['rabatt', 24, 2], ['ausflug', 25, 2], ['wachstum', 26, 2], ['kiosk', 27, 2],
+  ['sparschwein', 31, 3], ['sparplan', 32, 3], ['brutto', 33, 3], ['temperatur', 34, 3]
+];
+
+const HELP_BZ = `<details class="help"><summary>Hilfe: Was bewirkt das $?</summary>
+<table class="dl"><tr><th>Bezug</th><th>beim Übertragen nach rechts</th><th>beim Übertragen nach unten</th></tr>
+<tr><td>B5</td><td>Spalte wandert mit</td><td>Zeile wandert mit</td></tr>
+<tr><td>$B$5</td><td>bleibt B</td><td>bleibt 5</td></tr>
+<tr><td>$B5</td><td>bleibt B</td><td>Zeile wandert mit</td></tr>
+<tr><td>B$5</td><td>Spalte wandert mit</td><td>bleibt 5</td></tr></table>
+<p>Merke: Das $ hält fest, was direkt dahinter steht – den Buchstaben (Spalte) oder die Zahl (Zeile).</p>
+<p>Setze den Cursor in einen Bezug und drücke <b>F4</b> (oder den Knopf <code>$ F4</code>): B5 → $B$5 → B$5 → $B5 → B5.</p></details>`;
+
+/* ---- Erklärung: Themen mit Schritten ---- */
+const TOPICS = [
+  {id:'kopieren', name:'Formeln übertragen', desc:'Was passiert mit B5, wenn man eine Formel nach unten oder rechts überträgt? (relative Bezüge)', steps:[
+    {type:'info', title:'Einmal schreiben, oft verwenden', sheet:{gid:'einkauf', seed:11, formula:'=B5*C5', sel:'D5'}, html:`
+      <p>In Excel schreibt man eine Formel nur <b>einmal</b> und überträgt sie dann auf die anderen Zellen – zum Beispiel mit dem kleinen Ausfüllkästchen unten rechts an der Zelle oder mit Kopieren und Einfügen.</p>
+      <p>In D5 steht <code>=B5*C5</code>. Diese Formel wurde nach unten bis D9 übertragen.</p>
+      <p><b>Klicke in der Tabelle auf D6, D7, D8 …</b> und sieh dir oben an, welche Formel dort steht.</p>`},
+    {type:'info', title:'Excel passt die Bezüge an', sheet:{gid:'einkauf', seed:11, formula:'=B5*C5', sel:'D8'}, html:`
+      <p>Excel hat die Formel beim Übertragen <b>angepasst</b>: In D6 steht <code>=B6*C6</code>, in D8 steht <code>=B8*C8</code>.</p>
+      <ul><li>Überträgt man eine Formel <b>nach unten</b>, wird die <b>Zeilennummer</b> größer: B5 → B6 → B7 …</li>
+      <li>Überträgt man sie <b>nach rechts</b>, rückt der <b>Spaltenbuchstabe</b> weiter: B5 → C5 → D5 …</li></ul>
+      <p>Solche Bezüge heißen <b>relative Bezüge</b>: Sie wandern mit. Das ist meistens genau richtig – jede Zeile rechnet mit ihren eigenen Werten.</p>`},
+    {type:'choice', title:'Frage: nach unten', mono:true, html:'<p>In D5 steht <code>=B5*C5</code>. Die Formel wird nach unten übertragen. Was steht dann in <b>D9</b>?</p>',
+      options:['=B5*C5', '=B9*C9', '=B9*C5', '=D9*D9'], correct:[1],
+      why:{0:'Dann würde jede Zeile mit den Werten aus Zeile 5 rechnen. Excel passt die Zeilennummer an.', 2:'Beide Bezüge sind relativ – beide wandern mit.', 3:'Die Spalten bleiben gleich, wenn man nach unten überträgt. Nur die Zeilennummer ändert sich.'},
+      after:'Von Zeile 5 nach Zeile 9 sind es 4 Zeilen – also wird aus B5 → B9 und aus C5 → C9.'},
+    {type:'choice', title:'Frage: nach rechts', mono:true, html:'<p>In B8 steht <code>=SUMME(B5:B7)</code>. Die Formel wird nach rechts bis F8 übertragen. Was steht dann in <b>D8</b>?</p>',
+      options:['=SUMME(B5:B7)', '=SUMME(D5:D7)', '=SUMME(B7:B9)', '=SUMME(D8:D10)'], correct:[1],
+      why:{0:'Dann würde jede Spalte die Punkte aus Spalte B zusammenzählen.', 2:'Nach rechts ändern sich die Buchstaben, nicht die Zeilennummern.', 3:'Die Zeilennummern bleiben gleich, wenn man nach rechts überträgt.'},
+      after:'Nach rechts rücken die Buchstaben weiter: B → C → D. Die Zeilen 5 bis 7 bleiben.'},
+    {type:'task', title:'Probiere es aus: nach unten', task:['einkauf', 11, 2], html:'<p>Jetzt du: Wähle die Zellen für die Formel in D5 aus. Der Trainer überträgt sie dann bis D9 – so wie Excel.</p>'},
+    {type:'task', title:'Probiere es aus: nach rechts', task:['punkte', 12, 5], final:true, html:'<p>Diesmal schreibst du die ganze Formel selbst – und sie wird nach rechts übertragen.</p>'}
+  ]},
+  {id:'absolut', name:'Feste Bezüge: $B$2', desc:'Wenn alle Zeilen dieselbe Zelle brauchen – zum Beispiel einen Kurs oder Steuersatz.', steps:[
+    {type:'info', title:'Das Problem', sheet:{gid:'kurs', seed:13, formula:'=B4*B2', sel:'C5'}, html:`
+      <p>Lena rechnet Euro in Dollar um. In B5 steht <code>=B4*B2</code> – das stimmt. Nach dem Übertragen nach rechts kommt aber in C5 bis F5 <b>0</b> heraus.</p>
+      <p><b>Klicke auf C5 und D5.</b> Was ist mit B2 passiert?</p>`},
+    {type:'info', title:'Die Lösung: das $-Zeichen', sheet:{gid:'kurs', seed:13, formula:'=B4*$B$2', sel:'D5'}, html:`
+      <p>Aus B2 wurde beim Übertragen C2, D2, E2 … – und dort steht nichts. Der Kurs steht aber nur in <b>B2</b>.</p>
+      <p>Mit einem <b>$</b> hält man einen Teil des Bezugs fest: <code>$B$2</code> bleibt beim Übertragen immer B2. Das nennt man einen <b>absoluten Bezug</b>.</p>
+      <p>In B5 steht jetzt <code>=B4*$B$2</code>. Klicke auf C5, D5 …: B4 wandert mit, $B$2 bleibt.</p>
+      <p>Tipp: Setze den Cursor in einen Bezug und drücke <b>F4</b> – dann setzt Excel die $-Zeichen für dich.</p>`},
+    {type:'choice', title:'Frage: Welche Formel?', mono:true, html:'<p>Welche Formel in B5 kann man richtig nach rechts übertragen? Der Kurs steht in B2, die Euro-Beträge in Zeile 4.</p>',
+      options:['=B4*B2', '=B4*$B$2', '=$B$4*$B$2', '=$B$4*B2'], correct:[1],
+      why:{0:'Aus B2 wird beim Übertragen C2, D2 … – dort steht kein Kurs.', 2:'Mit $B$4 rechnet jede Spalte mit dem Betrag aus B4. Der Betrag soll aber mitwandern.', 3:'Genau falsch herum: Der Betrag soll mitwandern, der Kurs soll fest bleiben.'}},
+    {type:'choice', title:'Frage: nach unten', mono:true, html:'<p>In C5 steht <code>=B5*$B$2</code>. Die Formel wird nach unten übertragen. Was steht dann in <b>C8</b>?</p>',
+      options:['=B8*$B$2', '=B8*$B$5', '=B5*$B$2', '=C8*$C$2'], correct:[0],
+      why:{1:'$B$2 bleibt immer B2 – das $ vor der 2 hält die Zeile fest.', 2:'B5 hat kein $, also wandert es mit.', 3:'Nach unten bleiben die Buchstaben gleich.'}},
+    {type:'task', title:'$ setzen', task:['kurs', 13, 1], html:'<p>Setze die $-Zeichen in die Formel. Tipp: Klicke in den Bezug und drücke F4 oder den Knopf <code>$ F4</code>.</p>'},
+    {type:'task', title:'Zellen auswählen', task:['lohn', 14, 2], html:'<p>Jetzt wählst du die Zellen selbst aus und setzt die $-Zeichen.</p>'},
+    {type:'task', title:'Anteile berechnen', task:['anteil', 16, 5], final:true, html:'<p>Jetzt schreibst du die ganze Formel selbst. Auch für Anteile braucht man einen festen Bezug: Jede Zeile teilt durch dieselbe Gesamtzahl.</p>'}
+  ]},
+  {id:'gemischt', name:'Nur Spalte oder Zeile fest', desc:'$A5 und B$4: wenn eine Formel nach rechts und nach unten übertragen wird.', steps:[
+    {type:'info', title:'Eine Tabelle in zwei Richtungen', sheet:{gid:'einmaleins', seed:21, formula:'=$A5*B$4', sel:'D7'}, html:`
+      <p>In der Einmaleins-Tabelle wird eine Formel nach rechts <b>und</b> nach unten übertragen. In B5 steht <code>=$A5*B$4</code>.</p>
+      <ul><li><code>$A5</code>: Das $ steht vor dem <b>A</b> – die <b>Spalte</b> bleibt immer A, die Zeile wandert mit.</li>
+      <li><code>B$4</code>: Das $ steht vor der <b>4</b> – die <b>Zeile</b> bleibt immer 4, die Spalte wandert mit.</li></ul>
+      <p><b>Klicke auf verschiedene Zellen der Tabelle</b> und vergleiche die Formeln.</p>`},
+    {type:'choice', title:'Frage: Was wird daraus?', mono:true, html:'<p>In B5 steht <code>=$A5*B$4</code>. Was steht nach dem Übertragen in <b>D7</b>?</p>',
+      options:['=$A7*D$4', '=$A5*D$4', '=$A7*B$4', '=$C7*D$6'], correct:[0],
+      why:{1:'Bei $A5 steht kein $ vor der 5 – die Zeile wandert also mit.', 2:'Bei B$4 steht kein $ vor dem B – die Spalte wandert also mit.', 3:'Das $ vor dem A hält die Spalte fest, das $ vor der 4 die Zeile.'}},
+    {type:'choice', title:'Frage: Wohin das $?', mono:true, html:'<p>Die Formel soll nach rechts und nach unten übertragen werden. Ein Wert steht in Spalte A, jede Zeile hat ihren eigenen Wert. Wie muss der Bezug in Zeile 5 aussehen?</p>',
+      options:['$A5', 'A$5', '$A$5', 'A5'], correct:[0],
+      why:{1:'A$5 hält die Zeile fest – dann würde jede Zeile den Wert aus Zeile 5 nehmen.', 2:'$A$5 hält beides fest – dann rechnet jede Zeile mit dem Wert aus A5.', 3:'Ohne $ wandert beim Übertragen nach rechts auch die Spalte A mit (B, C, D …).'}},
+    {type:'task', title:'$ setzen', task:['einmaleins', 21, 1], html:'<p>Setze die $-Zeichen so, dass die Formel im ganzen Bereich stimmt.</p>'},
+    {type:'task', title:'Zellen auswählen', task:['eintritt', 22, 2], html:'<p>Wähle die Zellen aus und setze die $-Zeichen.</p>'},
+    {type:'task', title:'Nur die Zeile festhalten', task:['ausflug', 25, 5], final:true, html:'<p>Jetzt schreibst du die ganze Formel selbst. Hier hat jede Klasse ihr eigenes Gesamt – welcher Teil des Bezugs muss also fest bleiben?</p>'}
+  ]}
+];
+const STEP_TOTAL = TOPICS.reduce((s, t) => s + t.steps.length, 0);
+</script>
+
+<!-- ===================== Oberfläche ===================== -->
+<script>
+const KEY = 'bz-';
+const NLV = 6;
+const IA = 'autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"';
+const isBlk = () => !!CUR && CUR.lv >= 2 && CUR.lv <= 4;
+
+let mode = ['pfad', 'endlos', 'lernen'].includes(load('mode')) ? load('mode') : 'lernen';
+let level = clamp(parseInt(load('level')) || 1, 1, NLV);
+let pfadIdx = clamp(parseInt(load('idx')) || 0, 0, STD.length - 1);
+let solved = {}; try { const x = JSON.parse(load('solved') || '{}'); solved = x && !Array.isArray(x) ? x : {}; } catch (e) {}
+let endPick = null, endCounted = false, streak = 0, best = parseInt(load('best')) || 0;
+let learn = {topic:null, prog:{}};
+try { const o = JSON.parse(load('learn') || '{}'); learn.prog = o.prog || {}; learn.topic = TOPICS.some(t => t.id === o.topic) ? o.topic : null; } catch (e) {}
+let CUR = null, S = {}, LS = null, LSHEET = null, pickerOpen = false, PT = null;
+
+/* gelöste Aufgabe bzw. erledigten Schritt an den Server melden (nur wenn die Seite über PocketBase läuft) */
+function logSolved(erstmals){
+  if (!window.TrainerSync) return;
+  if (mode === 'lernen'){
+    const tp = topic(), i = prog().idx, st = tp.steps[i];
+    TrainerSync.event({modus:'erarbeitung', stufe:st.task ? st.task[2] : 0, aufgabe:`${tp.id}-${i + 1}`, titel:`${tp.name}: ${st.title}`, gesamt:STEP_TOTAL, erstmals});
+  } else TrainerSync.event({modus:mode === 'pfad' ? 'uebungen' : 'endlos', stufe:level,
+    aufgabe:mode === 'pfad' ? String(pfadIdx + 1) : CUR.gid, titel:CUR.title, gesamt:mode === 'pfad' ? STD.length : 0, erstmals});
+}
+
+/* ---------- Aufgaben- und Modussteuerung ---------- */
+function resetS(){
+  S = {text:CUR ? CUR.pre : '', row:[], p3:[], gi:null, success:false, fb:null, vals:null, forms:null, bad:new Set(), peek:null, inspect:null, sel:null};
+  if (!CUR) return;
+  // Stufe 2: Rechenzeichen fest, Zellen als Felder; Stufe 3: die Teile der Formel als Bausteine
+  if (CUR.lv === 2) S.row = CUR.pieces.map(p => p.cell ? {t:'cell', v:''} : {t:'sym', lit:p.lit});
+  if (CUR.lv === 3) S.p3 = shuffle(CUR.pieces.map((p, i) => ({pid:i, lit:p.cell ? null : p.lit})), rng(CUR.seed + 7));
+}
+const liveText = () => isBlk() ? S.row.map(x => x.t === 'cell' ? x.v : x.lit).join('') : S.text;
+function loadTask(){
+  PT = null; LS = null; LSHEET = null; CUR = null;
+  if (mode === 'lernen'){ if (learn.topic) loadStep(); else { resetS(); render(); } return; }
+  if (mode === 'pfad'){ const e = STD[pfadIdx]; CUR = makeTask(e[0], e[1], level); }
+  else CUR = makeTask(endPick.gid, endPick.seed, level);
+  resetS(); render();
+}
+function demoSheet(sh){
+  const T = makeTask(sh.gid, sh.seed, 2), cells = Object.assign({}, T.cells);
+  if (sh.formula) T.fill.forEach(f => { const o = offset(T, f); cells[f] = shiftFormula(sh.formula, o.dc, o.dr); });
+  return {cells, fmt:T.fmt, top:T.top};
+}
+function loadStep(){
+  const p = prog(), tp = topic();
+  p.idx = clamp(p.idx, 0, tp.steps.length - 1); saveLearn();
+  const st = tp.steps[p.idx];
+  CUR = null; LS = null; LSHEET = null;
+  if (st.type === 'task') CUR = makeTask(...st.task);
+  resetS();
+  if (st.type === 'choice') LS = {sel:new Set(), checked:false};
+  if (st.sheet){ LSHEET = demoSheet(st.sheet); S.inspect = st.sheet.sel || null; }
+  if (st.type === 'info') markStep();
+  render();
+}
+function newEndless(){
+  const ids = Object.keys(GENS), pool = ids.filter(g => !endPick || g !== endPick.gid);
+  endPick = {gid:pick1(Math.random, pool), seed:rand()}; endCounted = false;
+}
+function setLevel(n){ level = n; store('level', n); pickerOpen = false; loadTask(); }
+/* ---------- Rendering ---------- */
+function render(){
+  renderHeader();
+  const show = (id, on) => { $(id).style.display = on ? '' : 'none'; };
+  if (mode === 'lernen' && !learn.topic){ renderOverview(OV_INTRO); return; }
+  show('#actions', true);
+  const st = mode === 'lernen' ? curStep() : null;
+  if (st){
+    const tp = topic();
+    $('#lvlname').textContent = `${tp.name} · ${st.title}`;
+    $('#taskmeta').textContent = `Schritt ${prog().idx + 1} von ${tp.steps.length}`;
+    let h = st.html;
+    if (CUR) h += `<div class="assign"><div class="intro">${esc(CUR.intro)}</div><b>Aufgabe:</b> ${CUR.text}</div>${HELP_BZ}`;
+    if (st.final) h += finalButtons();
+    $('#tasktext').innerHTML = h;
+  } else {
+    $('#lvlname').textContent = `Stufe ${level}: ${LEVELS[level].name}`;
+    $('#taskmeta').textContent = mode === 'pfad' ? `Übungen · Aufgabe ${pfadIdx + 1} von ${STD.length}` : `Endlos · ${CUR.title}`;
+    $('#tasktext').innerHTML = `<div class="intro"><b>${esc(CUR.title)}:</b> ${esc(CUR.intro)}</div><p>${CUR.text}</p>${CUR.lv < 6 ? HELP_BZ : ''}`;
+  }
+  show('#sheetcard', !!(CUR || LSHEET));
+  show('#workcard', !!(st && st.type === 'choice'));
+  if (CUR || LSHEET){ renderFbar(); renderGrid(); }
+  if (st && st.type === 'choice') renderChoice(st);
+  renderFeedback(); renderNav();
+}
+
+function finalButtons(){
+  const i = TOPICS.findIndex(t => t.id === learn.topic), nx = TOPICS[i + 1];
+  return `<p style="margin-top:12px">${nx ? `<button class="btn primary" data-topic-go="${nx.id}">Weiter mit „${esc(nx.name)}“</button> ` : ''}<button class="btn${nx ? '' : ' primary'}" data-ov="1">Zur Übersicht</button> <button class="btn" data-mode-go="pfad">Zu den Übungen</button></p>`;
+}
+
+const OV_INTRO = '<p>Was passiert mit den Zellbezügen, wenn man eine Formel auf andere Zellen überträgt – und wann braucht man das $-Zeichen? Jedes Thema erklärt das an einem Beispiel, stellt dir ein paar Fragen – und dann schreibst du selbst Formeln. Am besten gehst du die Themen der Reihe nach durch.</p>';
+
+/* ---------- Tabelle & Bearbeitungsleiste ---------- */
+function curSheet(){ return CUR ? {cells:CUR.cells, fmt:CUR.fmt, top:CUR.top} : LSHEET; }
+const inFill = a => !!CUR && CUR.fill.includes(a);
+function curRefs(sh){
+  if (CUR) return refsInText(S.peek && S.forms ? S.forms[S.peek] : liveText());
+  const raw = S.inspect && sh.cells[S.inspect];
+  return typeof raw === 'string' && raw[0] === '=' ? refsInText(raw) : [];
+}
+
+function renderGrid(){
+  const sh = curSheet(); if (!sh) return;
+  const cells = sh.cells, keys = Object.keys(cells).concat(CUR ? CUR.fill : []);
+  let maxC = 0, maxR = sh.top;
+  keys.forEach(a => { const x = addr(a); maxC = Math.max(maxC, x.c); maxR = Math.max(maxR, x.r); });
+  const book = new Sheet(cells), refs = curRefs(sh), col = {};
+  refs.forEach((rg, i) => { if (rg.a.includes('#')) return; rangeCells(rg.a, rg.b).forEach(c => { col[c] = i % 6; }); });
+  let h = `<table class="xl${CUR ? ' pick' : ''}"><tr><th></th>`;
+  for (let c = 0; c <= maxC; c++) h += `<th>${colL(c)}</th>`;
+  h += '</tr>';
+  for (let r = sh.top; r <= maxR; r++){
+    h += `<tr><th>${r}</th>`;
+    for (let c = 0; c <= maxC; c++){
+      const a = ad(c, r), cls = [];
+      let content = '';
+      if (inFill(a)){
+        if (a === CUR.src) cls.push('tgt');
+        if (S.vals){ cls.push(S.bad.has(a) ? 'bad' : 'good'); content = esc(fmtVal(S.vals[a], sh.fmt[a])); if (S.peek === a) cls.push('peekc'); }
+        else if (a === CUR.src) content = esc(liveText());
+        else cls.push('fill');
+      } else {
+        const v = book.val(a);
+        content = esc(fmtVal(v, sh.fmt[a]));
+        if (typeof cells[a] === 'string' && cells[a][0] !== '=') cls.push(c === 0 ? 'lbl' : 'hd');
+        if (v.t === 'num' || v.t === 'err') cls.push('num');
+        if (LSHEET && typeof cells[a] === 'string' && cells[a][0] === '=') cls.push('fill');
+      }
+      if (col[a] != null) cls.push('rc' + col[a]);
+      if (S.sel && S.sel.has(a)) cls.push('sel');
+      if (!CUR && S.inspect === a) cls.push('ins');
+      h += `<td data-c="${a}" class="${cls.join(' ')}">${content}</td>`;
+    }
+    h += '</tr>';
+  }
+  $('#grid').innerHTML = h + '</table>';
+  $('#sheetcard').classList.toggle('solved', !!S.success);
+  if (!CUR){ $('#chips').innerHTML = '<span class="howto">Klicke auf eine Zelle, um oben zu sehen, was darin steht.</span>'; return; }
+  if (S.peek && S.forms){
+    const v = S.vals[S.peek];
+    $('#chips').innerHTML = `<span class="peek">Nach dem Übertragen steht in <b>${S.peek}</b>: <code>${esc(S.forms[S.peek])}</code> → ${esc(fmtVal(v, sh.fmt[S.peek]) || '(leer)')}</span>`;
+  } else if (S.vals) $('#chips').innerHTML = '<span class="howto">Klicke auf eine Zelle im grünen Bereich, um zu sehen, welche Formel nach dem Übertragen darin steht.</span>';
+  else {
+    const chips = refs.map((rg, i) => `<span class="chip c${i % 6}">${esc(rg.txt || rg.a)}</span>`).join('');
+    $('#chips').innerHTML = chips + `<span class="howto">${chips ? '' : 'Tipp: '}${isBlk() ? 'Klicke in ein Zell-Feld und dann auf eine Zelle in der Tabelle.' : 'Zellen kannst du auch anklicken.'} $-Zeichen setzt du mit F4 oder dem Knopf <code>$ F4</code>.</span>`;
+  }
+}
+
+function renderFbar(){
+  const sh = curSheet(); if (!sh) return;
+  const ia = 'autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"';
+  if (CUR){
+    const lv = CUR.lv;
+    let inner;
+    if (lv === 2) inner = `<div class="fixrow">${S.row.map((x, i) => x.t === 'cell' ? cellInput(i) : `<span>${esc(x.lit)}</span>`).join('')}</div>`;
+    else if (lv === 3 || lv === 4) inner = `<div class="row" data-drop="row">${S.row.map((x, i) => `<span class="iw">${rowBlock(x, i)}</span>`).join('') || '<span class="ph">Ziehe die Bausteine hierher, um die Formel zu bauen.</span>'}</div>`;
+    else inner = `<input id="ft" class="ftin acin pin" ${ia} placeholder="Formel eingeben, z. B. =B5*$B$2" value="${esc(S.text)}" aria-label="Formel">`;
+    $('#fbar').innerHTML = `<div class="nbox" title="Namenfeld: Hier kommt deine Formel hin">${CUR.src}</div><span class="fxl">fx</span><div class="fin">${inner}<button class="btn small dbtn" id="f4Btn" title="$-Zeichen im Bezug am Cursor setzen (wie F4 in Excel)">$ F4</button></div>`;
+    renderPools();
+  } else {
+    $('#pools').innerHTML = '';
+    const raw = S.inspect ? sh.cells[S.inspect] : null;
+    const txt = raw == null ? '' : typeof raw === 'number' ? fmtNum(raw) : raw;
+    $('#fbar').innerHTML = `<div class="nbox">${S.inspect || ''}</div><span class="fxl">fx</span><div class="fshow${txt ? '' : ' empty'}">${txt ? esc(txt) : (S.inspect ? '(leer)' : 'Klicke auf eine Zelle')}</div>`;
+  }
+  $('#selhint').textContent = '';
+}
+
+/* ---------- Bausteine (Stufe 2 bis 4) ---------- */
+const SYM4 = ['=', '+', '-', '*', '/', '(', ')', ':', ';', 'SUMME(', 'MITTELWERT('];
+const blockKind = lit => /^[A-ZÄÖÜ]{2,}/.test(lit) ? 'fn' : /^\d/.test(lit) ? 'val' : 'sym';
+const cellInput = i => `<input class="gapin pin cg" data-ci="${i}" ${IA} placeholder="Zelle" value="${esc(S.row[i].v)}" aria-label="Zelle">`;
+function rowBlock(x, i){
+  return x.t === 'cell'
+    ? `<div class="block val" data-drag="1" data-kind="rowitem" data-ri="${i}">${cellInput(i)}</div>`
+    : `<div class="block ${blockKind(x.lit)}" data-drag="1" data-kind="rowitem" data-ri="${i}">${esc(x.lit)}</div>`;
+}
+function poolBlock(lit, o){
+  return `<div class="block ${lit == null ? 'val' : blockKind(lit)}${o.ghost ? ' ghost' : ''}" data-drag="1" data-kind="pool" data-val="${lit == null ? '' : esc(lit)}"${o.pid != null ? ` data-pid="${o.pid}"` : ''}>${lit == null ? 'Zelle' : esc(lit)}</div>`;
+}
+function renderPools(){
+  const P = $('#pools');
+  if (!CUR || (CUR.lv !== 3 && CUR.lv !== 4)){ P.innerHTML = ''; return; }
+  let items, title;
+  if (CUR.lv === 3){
+    const used = new Set(S.row.map(x => x.pid));
+    items = S.p3.map(p => poolBlock(p.lit, {pid:p.pid, ghost:used.has(p.pid)}));
+    title = 'Bausteine – jeder wird genau einmal gebraucht';
+  } else {
+    items = [...SYM4, ...CUR.nums.filter(n => !SYM4.includes(n))].map(l => poolBlock(l, {})).concat(poolBlock(null, {}));
+    title = 'Zeichen – beliebig oft verwendbar';
+  }
+  P.innerHTML = `<div class="pool sympool" data-drop="pool"><div class="pool-title">${title}</div><div class="pool-items">${items.join('')}</div></div>`;
+}
+
+/* Drag & Drop: Hooks für den Kern in basis.js */
+function dropOk(t){ const d = t.dataset.drop; return d === 'row' || (d === 'pool' && D.kind === 'rowitem'); }
+function dragData(b, e){
+  if (!CUR || e.target.closest('input,button') || b.classList.contains('ghost')) return null;
+  const pid = b.dataset.pid != null ? +b.dataset.pid : null;
+  return {kind:b.dataset.kind, val:b.dataset.val, pid, ri:b.dataset.ri != null ? +b.dataset.ri : null, src:b.dataset.kind === 'rowitem' || pid != null};
+}
+function dragGhost(g){ g.querySelectorAll('input').forEach(x => { x.className = 'gapin'; x.removeAttribute('data-ci'); }); }
+function dragTap(d){ if (d.kind === 'pool') applyDrop(d, 'row', S.row.length); }   // Antippen statt Ziehen: hinten anhängen
+function applyDrop(d, type, idx){
+  let focusCell = null;
+  if (type === 'row'){
+    if (d.kind === 'rowitem'){ const [it] = S.row.splice(d.ri, 1); if (d.ri < idx) idx--; S.row.splice(idx, 0, it); }
+    else {
+      const it = d.val === '' ? {t:'cell', v:''} : {t:'sym', lit:d.val};
+      if (d.pid != null) it.pid = d.pid;
+      S.row.splice(idx, 0, it);
+      if (it.t === 'cell') focusCell = it;
+    }
+  } else if (type === 'pool' && d.kind === 'rowitem') S.row.splice(d.ri, 1);
+  S.gi = focusCell ? S.row.indexOf(focusCell) : null;
+  S.sel = null; clearMarks(); renderFbar(); renderGrid();
+  if (focusCell){ const g = document.querySelector(`.cg[data-ci="${S.gi}"]`); if (g) g.focus({preventScroll:true}); }
+}
+
+/* ---------- F4: $-Zeichen am Cursor durchschalten ---------- */
+function f4(inp){
+  inp = inp || $('#ft') || document.querySelector(`.cg[data-ci="${S.gi}"]`);
+  if (!inp){ hint('Klicke zuerst in ein Zell-Feld – dann setzt F4 die $-Zeichen.'); return; }
+  const v = inp.value, [s] = caret(inp), re = REFRE();
+  let m, hit = null;
+  while ((m = re.exec(v))){ const st = m.index + m[1].length, en = m.index + m[0].length; if (s >= st && s <= en){ hit = {st, en, m}; break; } re.lastIndex = en; }
+  if (!hit){ hint('Setze den Cursor in einen Zellbezug (z. B. B2) – dann setzt F4 die $-Zeichen.'); focusInp(inp); return; }
+  const [, , d1, cl, d2, rw] = hit.m, state = d1 && d2 ? 1 : d2 ? 2 : d1 ? 3 : 0, nx = (state + 1) % 4;
+  const nw = (nx === 1 || nx === 3 ? '$' : '') + cl.toUpperCase() + (nx === 1 || nx === 2 ? '$' : '') + rw;
+  inp.value = v.slice(0, hit.st) + nw + v.slice(hit.en);
+  setCaret(inp, hit.st + nw.length); syncInput(inp, false); focusInp(inp);
+}
+
+/* ---------- Zellen mit der Maus einfügen (wie in Excel) ---------- */
+function insertionPoint(inp){
+  const v = inp.value, [s, e] = caret(inp), before = v.slice(0, s);
+  const okBefore = pc => /[=(;+\-*/^:]/.test(pc);
+  const m = before.match(/\$?[A-Za-z]{1,3}\$?\d{1,5}(?:\s*:\s*\$?[A-Za-z]{1,3}\$?\d{1,5})?$/);
+  if (m){
+    const st = s - m[0].length, pre = v.slice(0, st).replace(/\s+$/, '');
+    if (okBefore(pre.slice(-1))) return {start:st, end:Math.max(s, e)};
+  }
+  const pc = before.replace(/\s+$/, '').slice(-1);
+  if (okBefore(pc)) return {start:s, end:e};
+  return {err:'Hier kann kein Bezug eingefügt werden. Setze den Cursor hinter „=“, ein Rechenzeichen oder „(“.'};
+}
+function syncInput(inp, keepSel){
+  if (inp.classList.contains('cg')){ S.row[+inp.dataset.ci].v = inp.value; S.gi = +inp.dataset.ci; } else S.text = inp.value;
+  if (!keepSel) S.sel = null;
+  clearMarks(); renderGrid();
+  acUpdate(inp);
+}
+gridEl.addEventListener('pointerdown', e => {
+  const td = e.target.closest('td[data-c]'); if (!td || e.button > 0) return;
+  const a = td.dataset.c;
+  if (!CUR){ if (curSheet()){ S.inspect = a; renderFbar(); renderGrid(); } return; }
+  e.preventDefault();
+  if (S.vals && inFill(a)){ S.peek = a; renderGrid(); return; }
+  if (isBlk()){
+    const gaps = [...document.querySelectorAll('.cg')];
+    const g = gaps.find(x => +x.dataset.ci === S.gi) || gaps.find(x => !x.value);
+    if (!g){ hint(gaps.length ? 'Klicke zuerst in das Zell-Feld, das du ändern möchtest.' : 'Ziehe zuerst einen Baustein „Zelle“ in die Formel – dann kannst du eine Zelle auswählen.'); return; }
+    if (a === CUR.src){ hint(`In ${a} steht deine Formel selbst.`); return; }
+    g.value = a; setCaret(g, a.length); syncInput(g, false); focusInp(g);
+    return;
+  }
+  const inp = $('#ft');
+  if (a === CUR.src){ hint(`In ${a} steht deine Formel selbst.`); focusInp(inp); return; }
+  if (!inp.value.trim()){ inp.value = '='; setCaret(inp, 1); }
+  const at = insertionPoint(inp);
+  if (at.err){ hint(at.err); focusInp(inp); return; }
+  $('#selhint').textContent = '';
+  PT = {inp, anchor:a, cur:a, start:at.start, end:at.end, base:inp.value};
+  applyPT();
+  try { gridEl.setPointerCapture(e.pointerId); } catch (x) {}
+});
+gridEl.addEventListener('pointermove', e => {
+  if (!PT) return;
+  const td = cellAt(e.clientX, e.clientY);
+  if (td && td.dataset.c !== PT.cur && td.dataset.c !== CUR.src){ PT.cur = td.dataset.c; applyPT(); }
+});
+/* ---------- Prüfen ---------- */
+const cellName = t => ad(t.c, t.r);
+// Bezüge der Schülerformel den Bezügen der Musterlösung zuordnen (gleiche Zelle) und $-Fehler benennen
+function refHints(text, T){
+  const mine = refTokens(text), want = refTokens(T.ref), used = new Set(), out = [];
+  const far = T.end, o = offset(T, far);
+  let unmatched = 0;
+  want.forEach(q => {
+    const i = mine.findIndex((s, k) => !used.has(k) && s.c === q.c && s.r === q.r);
+    if (i < 0){ unmatched++; return; }
+    used.add(i); const s = mine[i];
+    const colBad = T.dcMax > 0 && s.fc !== q.fc, rowBad = T.drMax > 0 && s.fr !== q.fr;
+    if (!colBad && !rowBad) return;
+    let m = `Aus ${C(s.raw)} wird beim Übertragen nach ${far} ${C(shiftFormula(s.raw, o.dc, o.dr))}.`;
+    if (colBad) m += q.fc ? ` Die Spalte ${colL(q.c)} soll aber fest bleiben – setze ein $ vor das ${colL(q.c)}.` : ` Die Spalte soll aber mitwandern – vor dem ${colL(q.c)} darf kein $ stehen.`;
+    if (rowBad) m += q.fr ? ` Die Zeile ${q.r} soll aber fest bleiben – setze ein $ vor die ${q.r}.` : ` Die Zeile soll aber mitwandern – vor der ${q.r} darf kein $ stehen.`;
+    out.push(m);
+  });
+  const extra = mine.filter((s, k) => !used.has(k));
+  if (unmatched || extra.length) out.unshift(extra.length
+    ? `Prüfe ${extra.length > 1 ? 'die Bezüge' : 'den Bezug'} ${extra.map(s => C(s.raw)).join(', ')} – ist das die richtige Zelle für diese Rechnung?`
+    : 'In deiner Formel fehlt noch ein Wert aus der Tabelle.');
+  return [...new Set(out)];
+}
+// halbe $-Zeichen, die hier nichts bewirken (z. B. $B5, wenn nur nach unten übertragen wird); $B$2 gilt immer als fester Bezug
+function extraDollars(text, T){
+  return refTokens(text).filter(s => s.fc !== s.fr && ((s.fc && T.dcMax === 0) || (s.fr && T.drMax === 0))).map(s => s.raw);
+}
+function judge(text, T){
+  const lv = T.lv;
+  let ast;
+  try { ast = parseFormula(text); }
+  catch (e){ if (!(e instanceof FErr)) throw e; return {err:lv >= 6 ? 'Die Formel enthält einen Fehler.' : esc(e.message)}; }
+  if (!refsOf(ast).length) return {err:'Deine Formel enthält keinen Zellbezug. Verwende Zellen wie B5 – nur dann kann Excel die Formel beim Übertragen anpassen.'};
+  const runs = [T.cells, ...T.variants];
+  let first = null;
+  for (let k = 0; k < runs.length; k++){
+    const mine = runCopy(text, T, runs[k]), want = runCopy(T.ref, T, runs[k]);
+    const bad = T.fill.filter(f => !same(mine.vals[f], want.vals[f]));
+    if (k === 0) first = {mine, bad};
+    if (!bad.length) continue;
+    const res = {vals:first.mine.vals, forms:first.mine.forms, bad:k === 0 ? bad : [], peek:k === 0 ? bad[0] : null};
+    const f = bad[0], fmt = T.fmt[f], hints = lv < 6 ? refHints(text, T) : [];
+    let msg;
+    if (k > 0){
+      const nums = numsOf(ast).filter(x => x !== 1 && x !== 100);
+      msg = nums.length
+        ? `Deine Formel liefert hier nur zufällig das richtige Ergebnis. Du hast die Zahl ${fmtNum(nums[0])} abgeschrieben – verwende stattdessen den Zellbezug. Dann rechnet Excel richtig weiter, wenn sich ein Wert in der Tabelle ändert.`
+        : 'Deine Formel liefert nur mit genau diesen Zahlen das richtige Ergebnis – sobald sich ein Wert in der Tabelle ändert, nicht mehr.' + (hints.length ? '<br>' + hints.join('<br>') : '');
+    } else if (f === T.src){
+      msg = `Schon in ${B(T.src)} stimmt das Ergebnis noch nicht: Deine Formel ergibt ${esc(fmtVal(mine.vals[f], fmt) || '0')}.`;
+      if (lv < 6) msg += '<br>' + (hints.length ? hints.join('<br>') : 'Prüfe, ob du die richtigen Zellen und Rechenzeichen verwendest.');
+    } else if (lv >= 6){
+      msg = `In ${B(T.src)} stimmt das Ergebnis – aber nach dem Übertragen nicht mehr überall, zum Beispiel in ${B(f)}. Klicke auf die rot markierten Zellen, um die Formeln zu sehen.`;
+    } else {
+      const v = mine.vals[f];
+      msg = `In ${B(T.src)} stimmt das Ergebnis – aber nach dem Übertragen nicht mehr. In ${B(f)} steht dann ${C(esc(mine.forms[f]))}` +
+        (v.t === 'err' ? `, und Excel zeigt ${C(esc(v.v === 'Zirkelbezug' ? 'einen Zirkelbezug' : v.v))}.` : v.t === 'empty' ? '.' : ` – das ergibt ${esc(fmtVal(v, fmt))}.`) +
+        (hints.length ? '<br>' + hints.join('<br>') : '');
+    }
+    if (lv === 1 && strip$(text) !== strip$(T.pre)) msg += '<span class="note">Auf dieser Stufe musst du nur $-Zeichen setzen – der Rest der Formel stimmt schon. Mit „Zurücksetzen“ bekommst du die Formel wieder.</span>';
+    return Object.assign(res, {err:msg});
+  }
+  const notes = [];
+  if (lv < 6){ const x = extraDollars(text, T); if (x.length) notes.push(`Kleiner Hinweis: Die $-Zeichen in ${x.map(C).join(', ')} bewirken hier nichts, weil die Formel nur ${T.dcMax ? 'nach rechts' : 'nach unten'} übertragen wird. Sie schaden aber auch nicht.`); }
+  return {ok:true, vals:first.mine.vals, forms:first.mine.forms, bad:[], notes};
+}
+
+function check(){
+  if (!CUR){ if (LS) checkChoice(); return; }
+  if (S.success) return;
+  const text = liveText();
+  let miss = null;
+  if (isBlk() && !S.row.length) miss = 'Ziehe zuerst Bausteine in die Formelzeile.';
+  else if (isBlk() && S.row.some(x => x.t === 'cell' && !x.v.trim())) miss = 'Es ist noch ein Zell-Feld leer. Klicke hinein und wähle eine Zelle in der Tabelle aus.';
+  else if (!text.trim()) miss = `Schreibe zuerst eine Formel in ${CUR.src}.`;
+  if (miss){ S.fb = {type:'err', html:miss}; renderFeedback(); return; }
+  const j = judge(text, CUR);
+  S.vals = j.vals || null; S.forms = j.forms || null; S.bad = new Set(j.bad || []); S.peek = j.peek || null;
+  if (j.ok){
+    S.success = true;
+    let erstmals;
+    if (mode === 'lernen'){ erstmals = !stepDone(prog().idx); markStep(); }
+    else erstmals = countSolved();
+    logSolved(erstmals);
+    const nx = canNext() ? `<span class="note">Weiter geht es mit „${mode === 'lernen' ? 'Weiter' : 'Nächste Aufgabe'}“.</span>` : '';
+    S.fb = {type:'ok', html:`<b>Richtig! 🎉</b> Die Formel stimmt in allen Zellen von ${CUR.src} bis ${CUR.end}.<br><span class="fcol">${esc(text)}</span>` +
+      j.notes.map(n => `<span class="note">${n}</span>`).join('') + '<span class="note">Klicke auf eine Zelle im grünen Bereich, um zu sehen, welche Formel dort nach dem Übertragen steht.</span>' + nx};
+  } else S.fb = {type:'err', html:j.err};
+  renderGrid(); renderFeedback(); renderNav();
+}
+
+function clearMarks(){
+  if (!S.success && !S.fb && !S.vals) return;
+  S.success = false; S.fb = null; S.vals = null; S.forms = null; S.bad = new Set(); S.peek = null;
+  renderFeedback();
+}
+
+/* ---------- Autovervollständigung (basis.js): Funktionen dieser Seite ---------- */
+const AC_FN = [
+  {n:'MITTELWERT', v:'Zahl', d:'Berechnet den Durchschnitt (das arithmetische Mittel) der Argumente.'},
+  {n:'SUMME',      v:'Zahl', d:'Addiert alle Zahlen.'}
+];
+AC.word = before => { const m = before.match(/[A-Za-zÄÖÜäöüß]+$/); return m && m[0].length >= 2 && before.trimStart().startsWith('=') ? m[0] : null; };
+
+document.addEventListener('focusin', e => { if (e.target.matches && e.target.matches('.cg')) S.gi = +e.target.dataset.ci; });
+/* ---------- Ereignisse ---------- */
+document.addEventListener('pointerdown', e => { if (e.target.closest('#f4Btn')) e.preventDefault(); });
+document.addEventListener('click', e => {
+  if (e.target.closest('#f4Btn')){ f4(); return; }
+  if (e.target.closest('.cg')) return;
+  topicClick(e);
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'F4' && (e.target.id === 'ft' || e.target.matches('.cg'))){ e.preventDefault(); f4(e.target); return; }
+  if (e.key === 'Enter' && e.target.matches && e.target.matches('.pin')){ e.preventDefault(); check(); }
+});
+if (mode === 'endlos') newEndless();
+loadTask();
+</script>
+</body>
+</html>

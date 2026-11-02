@@ -1,0 +1,18 @@
+/* Gemeinsames Aussehen der Übersichtsseiten (Startseite und Bereichsseiten) */
+/* Farben nach dem Nord-Farbschema (nordtheme.com); Akzent je Bereich kommt aus katalog.js */
+:root{--bg:#e5e9f0;--panel:#f6f8fb;--panel2:#eceff4;--text:#2e3440;--muted:#5b6578;--border:#cdd3de;--slot:#e5e9f0;--slot-border:#a7b1c2;--accent:#5e81ac;--then:#5e8a45;--else:#a8434d;--err:#a8434d;--mono:ui-monospace,Consolas,"Liberation Mono",monospace}
+[data-theme=dark]{--bg:#2e3440;--panel:#3b4252;--panel2:#434c5e;--text:#eceff4;--muted:#a9b3c4;--border:#4c566a;--slot:#434c5e;--slot-border:#616e88;--accent:#88c0d0;--then:#a3be8c;--else:#bf616a;--err:#d4848b}
+*{box-sizing:border-box} html,body{margin:0}
+body{background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;min-height:100vh}
+main{width:min(760px,100%);margin:0 auto;padding:32px 16px 48px}
+h1{font:800 28px var(--mono);margin:0 0 6px}
+h2{font:800 21px var(--mono);margin:0 0 2px} h2 a{color:inherit;text-decoration:none} h2 a:hover{color:var(--accent-text,var(--accent))}
+.pf-lead{color:var(--muted);margin:0 0 26px}
+.pf-sec{margin-bottom:30px}
+.pf-text{color:var(--muted);margin:0 0 10px}
+.pf-grid{display:grid;gap:12px}
+a.pf-tile{display:block;text-decoration:none;color:inherit;background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px 20px;transition:transform .1s,border-color .1s}
+a.pf-tile:hover{transform:translateY(-2px);border-color:var(--accent)}
+a.pf-tile b{font:800 19px var(--mono)} a.pf-tile span{display:block;color:var(--muted);margin-top:4px}
+.pf-hinweis{color:var(--muted);font-style:italic;background:var(--panel);border:1px dashed var(--border);border-radius:14px;padding:14px 20px;margin:0}
+.small{margin-top:28px;font-size:14px;text-align:center} .small a{color:var(--muted)}

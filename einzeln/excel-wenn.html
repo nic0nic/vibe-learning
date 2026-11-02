@@ -1,0 +1,2028 @@
+<!doctype html>
+<html lang="de" data-trainer="wenn">
+<head>
+<script>window.PF_EINZELDATEI = true;</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WENN – vibe learning</title>
+<script>/* ../katalog.js */
+/* Inhaltsverzeichnis der Übungsplattform
+ *
+ * Das ist die einzige Stelle, an der ein neues Tool eingetragen werden muss.
+ * Menüleiste, Startseite, Bereichsseiten, Speichern und Lehrerbereich lesen von hier.
+ *
+ * Bereich:  id      = Name des Unterordners in pb_public (nur a–z, 0–9, -)
+ *           titel   = Text in der Menüleiste
+ *           farbe   = Akzentfarbe im dunklen Design (Nord-Farben, nordtheme.com),
+ *           farbeHell = dunklerer Ton derselben Farbe für das helle Design (sonst schlecht lesbar)
+ *           farbeSchrift = optional: hellerer Ton für Schrift im dunklen Design, wenn farbe dort zu wenig Kontrast hat
+ *           Ohne farbe bekommt der Bereich das neutrale Nord-Blau.
+ * Tool:     id      = Kürzel für Speicherstand und Auswertung (nie mehr ändern,
+ *                     sonst geht der gespeicherte Fortschritt verloren)
+ *           datei   = HTML-Datei im Ordner des Bereichs
+ *           titel, text = Anzeige im Menü und auf den Übersichtsseiten
+ *
+ * In der HTML-Datei eines Tools steht dieselbe id: <html lang="de" data-trainer="…">
+ */
+window.KATALOG = {
+  name: 'vibe learning',
+  untertitel: 'Übungen für den IT-Unterricht. Wähle oben einen Bereich aus.',
+  bereiche: [
+    {
+      id: 'excel', titel: 'Excel', farbe: '#a3be8c', farbeHell: '#5e8a45',
+      text: 'Tabellenkalkulation: Funktionen, Bedingungen und Verknüpfungen.',
+      tools: [
+        {id: 'fn',   datei: 'funktionen.html', titel: 'SUMME, MIN, MAX …', text: 'SUMME, MITTELWERT, MIN, MAX, ANZAHL und ANZAHL2 – mit Erklärung, Übungen und Endlos-Modus.'},
+        {id: 'wenn', datei: 'wenn.html',       titel: 'WENN-Funktion',     text: 'Die WENN-Funktion üben – von Bausteinen bis zur eigenen Formel.'},
+        {id: 'uo',   datei: 'und-oder.html',   titel: 'UND / ODER',        text: 'Bedingungen verknüpfen – mit Erarbeitung, Übungen und Endlos-Modus.'},
+        {id: 'bz',   datei: 'bezuege.html',    titel: 'Zellbezüge $',      text: 'Relative und absolute Bezüge: Formeln übertragen und $-Zeichen richtig setzen.'}
+      ]
+    },
+    {id: 'python',      titel: 'Python', farbe: '#b48ead', farbeHell: '#8a5f84', text: 'Programmieren mit Python.',
+      tools: [
+        {id: 'py', datei: 'editor.html', titel: 'Python-Editor', text: 'Python direkt im Browser schreiben und ausführen – mit Terminal für Ein- und Ausgabe.'},
+        {id: 'pyif', datei: 'bedingungen.html', titel: 'Bedingte Anweisung', text: 'if, elif und else: 10 Aufgaben mit Erklärung und automatischer Prüfung.'}
+      ]
+    },
+    {id: 'datenbanken', titel: 'Datenbanken', farbe: '#bf616a', farbeHell: '#a3434c', farbeSchrift: '#e0959b', text: 'Tabellen, Beziehungen und SQL-Abfragen.',       tools: []},
+    {id: 'schaltungen', titel: 'Logische Schaltungen', text: 'Gatter, Wahrheitstabellen und Schaltnetze.',  tools: []}
+  ]
+};
+
+</script>
+<script>/* ../nav.js */
+/* Menüleiste der Übungsplattform
+ *
+ * Baut oben auf jeder Seite die Leiste mit den Bereichen aus katalog.js.
+ * Fährt man mit der Maus über einen Bereich (am Handy: antippen), klappen
+ * dessen Übungen auf. Außerdem füllt das Skript die Startseite (#pf-start)
+ * und die Übersichtsseite eines Bereichs (#pf-bereich).
+ *
+ * Fehlt katalog.js oder nav.js, läuft das Tool trotzdem – nur ohne Menüleiste.
+ * In Einzeldateien (werkzeuge/einzeldateien.py, window.PF_EINZELDATEI) zeigt die
+ * Leiste nur Name und Hell/Dunkel-Knopf, weil es keine anderen Seiten gibt.
+ */
+(function () {
+  'use strict';
+  const K = window.KATALOG;
+  if (!K) return;
+
+  // Wurzel der Plattform = Ordner, in dem nav.js liegt (funktioniert auch per Doppelklick)
+  const me = document.currentScript && document.currentScript.src;
+  const BASE = me ? me.replace(/[^/]*$/, '') : '';
+  const root = document.documentElement;
+  const TOOL = root.dataset.trainer || '';
+  let BEREICH = root.dataset.bereich || '';
+  K.bereiche.forEach(b => { if (b.tools.some(t => t.id === TOOL)) BEREICH = b.id; });
+
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+  const bereichUrl = b => BASE + b.id + '/index.html';
+  const toolUrl = (b, t) => BASE + b.id + '/' + t.datei;
+
+  const CSS = `
+.pf-nav{background:var(--panel,#f6f8fb);color:var(--text,#2e3440);border-bottom:1px solid var(--border,#cdd3de);position:relative;z-index:60;font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.pf-in{max-width:1100px;margin:0 auto;display:flex;align-items:center;gap:6px;padding:0 16px;min-height:50px}
+.pf-brand{font:800 18px ui-monospace,Consolas,"Liberation Mono",monospace;color:inherit;text-decoration:none;margin-right:14px;white-space:nowrap}
+.pf-brand span{color:var(--accent-text,var(--accent,#5e81ac))}
+.pf-menu{display:flex;gap:2px;list-style:none;margin:0;padding:0}
+.pf-item{position:relative;--bc:#5e81ac}
+html[data-theme=dark] .pf-item{--bc:#88c0d0}
+.pf-item>a{display:flex;align-items:center;gap:5px;padding:14px 11px;color:inherit;text-decoration:none;font-weight:600;border-bottom:3px solid transparent;white-space:nowrap}
+.pf-item>a::after{content:"";width:6px;height:6px;border:solid currentColor;border-width:0 2px 2px 0;transform:rotate(45deg) translateY(-2px);opacity:.5}
+.pf-item:hover>a,.pf-item.open>a{color:var(--bc)}
+.pf-item>a[aria-current]{border-bottom-color:var(--bc)}
+.pf-drop{display:none;position:absolute;top:100%;left:0;min-width:280px;background:var(--panel,#f6f8fb);border:1px solid var(--border,#cdd3de);border-radius:0 0 12px 12px;box-shadow:0 14px 30px rgba(0,0,0,.18);padding:6px;list-style:none;margin:0}
+.pf-item:hover .pf-drop,.pf-item:focus-within .pf-drop,.pf-item.open .pf-drop{display:block}
+.pf-drop a{display:block;padding:8px 10px;border-radius:8px;color:inherit;text-decoration:none}
+.pf-drop a:hover,.pf-drop a:focus{background:var(--panel2,#eceff4);outline:none}
+.pf-drop a[aria-current]{color:var(--bc);font-weight:600}
+.pf-drop small{display:block;color:var(--muted,#5b6578);font-size:13px}
+.pf-drop .pf-all{font-size:13px;color:var(--muted,#5b6578);border-top:1px solid var(--border,#cdd3de);border-radius:0 0 8px 8px;margin-top:4px}
+.pf-drop .pf-leer{padding:8px 10px;color:var(--muted,#5b6578);font-style:italic}
+.pf-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.pf-btn{background:var(--panel2,#eceff4);border:1px solid var(--border,#cdd3de);color:inherit;border-radius:10px;width:38px;height:38px;display:grid;place-items:center;cursor:pointer;font-size:17px;padding:0}
+.pf-burger{display:none}
+.pf-einzeln .pf-menu{display:none!important}
+@media (max-width:760px){
+  .pf-burger{display:grid}
+  .pf-menu{display:none;position:absolute;top:100%;left:0;right:0;flex-direction:column;background:var(--panel,#f6f8fb);border-bottom:1px solid var(--border,#cdd3de);box-shadow:0 14px 30px rgba(0,0,0,.18);padding:6px 16px 12px;max-height:80vh;overflow:auto}
+  .pf-nav.open .pf-menu{display:flex}
+  .pf-item>a{padding:10px 0 4px;border:0}
+  .pf-item>a::after{display:none}
+  .pf-drop{display:block;position:static;min-width:0;border:0;box-shadow:none;padding:0 0 4px 10px}
+}
+.pf-fade,.pf-fade *{transition:background-color .35s,color .35s,border-color .35s,fill .35s!important}
+.pf-gesperrt{opacity:.5;cursor:default!important}
+@media print{.pf-nav{display:none}}`;
+
+  // Farben der Bereiche (katalog.js: farbe = dunkles Design, farbeHell = helles Design,
+  // farbeSchrift = optional hellerer Ton für Schrift im dunklen Design).
+  // --accent gilt für die ganze Seite des aktuellen Bereichs, --bc nur für den eigenen Menüpunkt.
+  function akzentCss(){
+    let css = '';
+    K.bereiche.forEach(b => {
+      if (!b.farbe) return;
+      const dunkel = b.farbeSchrift || b.farbe;
+      css += `\n.pf-item[data-b="${b.id}"]{--bc:${b.farbeHell || b.farbe}}\nhtml[data-theme=dark] .pf-item[data-b="${b.id}"]{--bc:${dunkel}}`;
+      if (b.id === BEREICH) css += `\nhtml[data-theme]{--accent:${b.farbeHell || b.farbe};--accent-text:${b.farbeHell || b.farbe}}\nhtml[data-theme=dark]{--accent:${b.farbe};--accent-text:${dunkel}}`;
+    });
+    return css;
+  }
+
+  const SONNE = '☀', MOND = '☾';
+  function theme(){ return root.dataset.theme === 'dark' ? 'dark' : 'light'; }
+
+  function buildNav(){
+    const s = document.createElement('style'); s.textContent = CSS + akzentCss(); document.head.appendChild(s);
+    const nav = document.createElement('nav');
+    nav.className = 'pf-nav' + (window.PF_EINZELDATEI ? ' pf-einzeln' : '');
+    nav.setAttribute('aria-label', 'Bereiche');
+    const name = esc(K.name).replace(/^(\S+)/, '<span>$1</span>');
+    const EINZELN = !!window.PF_EINZELDATEI;
+    nav.innerHTML = `<div class="pf-in">
+      ${EINZELN ? `<span class="pf-brand">${name}</span>` : `<a class="pf-brand" href="${BASE}index.html">${name}</a>`}
+      <ul class="pf-menu">${K.bereiche.map(b => `
+        <li class="pf-item" data-b="${esc(b.id)}">
+          <a href="${bereichUrl(b)}"${b.id === BEREICH ? ' aria-current="true"' : ''}>${esc(b.titel)}</a>
+          <ul class="pf-drop">${b.tools.length
+            ? b.tools.map(t => `<li><a href="${toolUrl(b, t)}"${t.id === TOOL ? ' aria-current="page"' : ''}>${esc(t.titel)}</a></li>`).join('')
+              + `<li><a class="pf-all" href="${bereichUrl(b)}">Alle Übungen zu ${esc(b.titel)}</a></li>`
+            : '<li class="pf-leer">Hier entstehen bald Übungen.</li>'}
+          </ul>
+        </li>`).join('')}
+      </ul>
+      <div class="pf-right">
+        ${document.getElementById('themeBtn') ? '' : `<button class="pf-btn" id="pfTheme" type="button" aria-label="Hell/Dunkel umschalten">${theme() === 'dark' ? SONNE : MOND}</button>`}
+        ${EINZELN ? '' : '<button class="pf-btn pf-burger" type="button" aria-label="Menü">☰</button>'}
+      </div>
+    </div>`;
+    document.body.insertBefore(nav, document.body.firstChild);
+
+    const burger = nav.querySelector('.pf-burger');
+    if (burger) burger.addEventListener('click', () => nav.classList.toggle('open'));
+    const tb = nav.querySelector('#pfTheme');
+    if (tb) tb.addEventListener('click', () => {
+      const t = theme() === 'dark' ? 'light' : 'dark';
+      root.dataset.theme = t; tb.textContent = t === 'dark' ? SONNE : MOND;
+      try { localStorage.setItem('wenn-theme', t); } catch (e) {}
+    });
+
+    // Geräte ohne Maus: erstes Antippen klappt auf, zweites öffnet die Bereichsseite
+    const items = [...nav.querySelectorAll('.pf-item')];
+    if (matchMedia('(hover: none)').matches) items.forEach(li => li.firstElementChild.addEventListener('click', e => {
+      if (matchMedia('(max-width:760px)').matches || li.classList.contains('open')) return;
+      e.preventDefault();
+      items.forEach(x => x.classList.toggle('open', x === li));
+    }));
+    document.addEventListener('click', e => { if (!nav.contains(e.target)){ items.forEach(x => x.classList.remove('open')); nav.classList.remove('open'); } });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape'){ items.forEach(x => x.classList.remove('open')); nav.classList.remove('open'); } });
+  }
+
+  /* ---------- Übersichtsseiten ---------- */
+  function kacheln(b){
+    if (!b.tools.length) return '<p class="pf-hinweis">Hier entstehen bald Übungen.</p>';
+    return `<div class="pf-grid">${b.tools.map(t => `<a class="pf-tile" href="${toolUrl(b, t)}"><b>${esc(t.titel)}</b><span>${esc(t.text)}</span></a>`).join('')}</div>`;
+  }
+  function buildPages(){
+    const start = document.getElementById('pf-start');
+    if (start){
+      start.innerHTML = `<h1>${esc(K.name)}</h1><p class="pf-lead">${esc(K.untertitel)}</p>`
+        + K.bereiche.map(b => `<section class="pf-sec"><h2><a href="${bereichUrl(b)}">${esc(b.titel)}</a></h2><p class="pf-text">${esc(b.text)}</p>${kacheln(b)}</section>`).join('');
+    }
+    const be = document.getElementById('pf-bereich');
+    const b = K.bereiche.find(x => x.id === BEREICH);
+    if (be && b){
+      document.title = b.titel + ' – ' + K.name;
+      be.innerHTML = `<h1>${esc(b.titel)}</h1><p class="pf-lead">${esc(b.text)}</p>${kacheln(b)}`;
+    }
+  }
+
+  // Hell/Dunkel höchstens einmal pro Sekunde umschalten und weich überblenden – kein Flackern beim schnellen Klicken
+  let themeSperre = 0;
+  document.addEventListener('click', e => {
+    const btn = e.target.closest('#themeBtn,#pfTheme');
+    if (!btn) return;
+    if (Date.now() < themeSperre){ e.stopImmediatePropagation(); e.preventDefault(); return; }
+    themeSperre = Date.now() + 1000;
+    root.classList.add('pf-fade'); btn.classList.add('pf-gesperrt');
+    setTimeout(() => root.classList.remove('pf-fade'), 400);
+    setTimeout(() => btn.classList.remove('pf-gesperrt'), 1000);
+  }, true);
+
+  function init(){ buildNav(); buildPages(); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();
+
+</script>
+<script>/* ../sync.js */
+/* vibe learning – Anmeldung und Anbindung an PocketBase
+ *
+ * Läuft die Seite über den PocketBase-Server, erscheint beim ersten Öffnen ein
+ * Anmeldefenster: ein Feld für Code oder Benutzername (bei Benutzernamen folgt das
+ * Passwort), alternativ „Seite ohne Anmeldung nutzen“. Oben rechts in der Leiste
+ * steht danach, wer angemeldet ist; dort meldet man sich auch an und ab.
+ *
+ * Schüler: Fortschritt wird auf dem Server gespeichert, jede gelöste Aufgabe protokolliert.
+ * Lehrkraft/Admin: Anmeldung gilt bis zum Schließen des Browsers, im Menü steht
+ * der Link zur Verwaltung (lehrer.html).
+ * Wird die HTML-Datei direkt geöffnet (oder läuft kein PocketBase dahinter),
+ * passiert nichts davon – die Seite speichert dann wie bisher nur im Browser.
+ *
+ * Die Seite ruft auf:
+ *   TrainerSync.changed()      nach jeder Änderung am gespeicherten Stand
+ *   TrainerSync.event({...})   wenn eine Aufgabe richtig gelöst wurde
+ */
+(function () {
+  'use strict';
+
+  const CONFIG = {
+    api: '/api/trainer',
+    verwaltung: 'lehrer.html'   // relativ zum Ordner von sync.js
+  };
+
+  const me = document.currentScript && document.currentScript.src;
+  const BASE = me ? me.replace(/[^/]*$/, '') : '';
+  const PAGE = document.documentElement.dataset.trainer || '';          // Tool-id aus katalog.js, leer auf Übersichtsseiten
+  const TOOL_IDS = window.KATALOG ? [].concat(...window.KATALOG.bereiche.map(b => b.tools.map(t => t.id))) : [];
+  const ALL_PREFIXES = [...new Set(['wenn', 'uo', 'fn', PAGE].concat(TOOL_IDS))].filter(Boolean).map(id => id + '-');
+  const OWN = PAGE + '-';
+  const SKIP = ['wenn-theme'];                                             // Hell/Dunkel bleibt pro Gerät
+  const K = {code: 'ts-code', anzeige: 'ts-anzeige', klasse: 'ts-klasse', queue: 'ts-queue', stand: 'ts-stand-' + PAGE};
+  const SS = {gast: 'ts-gast', lehrer: 'ts-lehrer'};                      // gilt nur bis zum Schließen des Browsers
+
+  const ls = {
+    get(k){ try { return localStorage.getItem(k); } catch (e) { return null; } },
+    set(k, v){ try { localStorage.setItem(k, v); } catch (e) {} },
+    del(k){ try { localStorage.removeItem(k); } catch (e) {} },
+    keys(){ try { return Object.keys(localStorage); } catch (e) { return []; } }
+  };
+  const ss = {
+    get(k){ try { return sessionStorage.getItem(k); } catch (e) { return null; } },
+    set(k, v){ try { sessionStorage.setItem(k, v); } catch (e) {} },
+    del(k){ try { sessionStorage.removeItem(k); } catch (e) {} }
+  };
+  function lehrerSitzung(){ try { return JSON.parse(ss.get(SS.lehrer) || 'null'); } catch (e) { return null; } }
+
+  const hosted = /^https?:$/.test(location.protocol);
+  let aktiv = false, pushTimer = null, pushPending = false, menuEl = null, lastSnap = '';
+
+  /* ---------- Hilfen ---------- */
+  function api(path, opt){
+    opt = opt || {};
+    return fetch(CONFIG.api + path, {
+      method: opt.method || 'GET',
+      keepalive: !!opt.keepalive,
+      headers: {'Content-Type': 'application/json', 'X-Trainer-Code': ls.get(K.code) || ''},
+      body: opt.body ? JSON.stringify(opt.body) : undefined
+    }).then(async r => {
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok){ const err = new Error(j.message || ('HTTP ' + r.status)); err.status = r.status; err.data = j; throw err; }
+      return j;
+    });
+  }
+  const trainerKeys = prefix => ls.keys().filter(k => k.startsWith(prefix) && !SKIP.includes(k));
+  function snapshot(prefix){ prefix = prefix || OWN; const d = {}; trainerKeys(prefix).sort().forEach(k => { d[k] = ls.get(k); }); return d; }
+  function applySnapshot(d, prefix){
+    prefix = prefix || OWN;
+    trainerKeys(prefix).forEach(k => ls.del(k));
+    Object.keys(d || {}).forEach(k => { if (k.startsWith(prefix) && !SKIP.includes(k) && typeof d[k] === 'string') ls.set(k, d[k]); });
+  }
+  function wipeLocal(){
+    ALL_PREFIXES.forEach(p => trainerKeys(p).forEach(k => ls.del(k)));
+    ls.keys().filter(k => k.startsWith('ts-stand-')).forEach(k => ls.del(k));
+    [K.queue, K.code, K.klasse, K.anzeige].forEach(k => ls.del(k));
+  }
+  function reloadOnce(){
+    let last = 0; try { last = +sessionStorage.getItem('ts-reload') || 0; } catch (e) {}
+    if (Date.now() - last < 8000) return;
+    try { sessionStorage.setItem('ts-reload', Date.now()); } catch (e) {}
+    location.reload();
+  }
+
+  /* ---------- Fortschritt abgleichen ---------- */
+  async function pull(){
+    if (!PAGE){ setStatus('ok'); return; }
+    const r = await api('/state?seite=' + PAGE);
+    const local = +ls.get(K.stand) || 0, server = +r.stand || 0;
+    if (r.daten && server > local){
+      const before = JSON.stringify(snapshot());
+      applySnapshot(r.daten);
+      ls.set(K.stand, server);
+      lastSnap = JSON.stringify(snapshot());
+      if (lastSnap !== before) reloadOnce();
+    } else if (local > server) await push();
+    setStatus('ok');
+  }
+
+  async function push(keepalive){
+    clearTimeout(pushTimer); pushPending = false;
+    if (!aktiv || !PAGE) return;
+    const stand = +ls.get(K.stand) || Date.now();
+    setStatus('saving');
+    try {
+      await api('/state', {method: 'POST', body: {seite: PAGE, daten: snapshot(), stand}, keepalive});
+      setStatus('ok');
+    } catch (err){
+      if (err.status === 409){ await pull().catch(() => setStatus('offline')); }
+      else if (err.status === 401) abgelaufen();
+      else { pushPending = true; setStatus('offline'); }
+    }
+  }
+
+  function changed(){
+    if (!PAGE) return;
+    // Seiten schreiben ihren Stand auch beim Öffnen neu – nur echte Änderungen zählen,
+    // sonst würde ein frisch geöffnetes Gerät einen neueren Stand vom Server überschreiben.
+    const snap = JSON.stringify(snapshot());
+    if (snap === lastSnap) return;
+    lastSnap = snap;
+    ls.set(K.stand, Date.now());
+    if (!aktiv) return;
+    pushPending = true;
+    clearTimeout(pushTimer);
+    pushTimer = setTimeout(push, 700);
+  }
+
+  /* ---------- Protokoll gelöster Aufgaben ---------- */
+  function queue(){ try { return JSON.parse(ls.get(K.queue) || '[]'); } catch (e) { return []; } }
+  function event(ev){
+    if (!aktiv || !PAGE) return;
+    const q = queue(); q.push(Object.assign({seite: PAGE}, ev)); ls.set(K.queue, JSON.stringify(q.slice(-500)));
+    flush();
+  }
+  let flushing = false;
+  async function flush(keepalive){
+    if (!aktiv || flushing) return;
+    const q = queue(); if (!q.length) return;
+    flushing = true;
+    try {
+      await api('/events', {method: 'POST', body: {events: q.slice(0, 200)}, keepalive});
+      ls.set(K.queue, JSON.stringify(queue().slice(Math.min(q.length, 200))));
+    } catch (err){
+      if (err.status === 401) abgelaufen(); else setStatus('offline');
+    } finally { flushing = false; }
+    if (queue().length && !keepalive) setTimeout(flush, 2000);
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden' && aktiv){ if (pushPending) push(true); flush(true); }
+  });
+  window.addEventListener('online', () => { if (aktiv){ flush(); if (pushPending) push(); else pull().catch(() => {}); } });
+
+
+  /* ---------- Gast-Fortschritt beim Anmelden übernehmen ---------- */
+  // Für jede Übung: Ist das Konto dort noch leer, wird der Stand dieses Geräts hochgeladen,
+  // sonst gilt der Stand vom Server.
+  async function uebernehmen(){
+    for (const p of ALL_PREFIXES){
+      const id = p.slice(0, -1), lokal = snapshot(p);
+      const st = await api('/state?seite=' + id);
+      const leer = !st.daten || !Object.keys(st.daten).length;
+      if (leer){
+        if (!Object.keys(lokal).length) continue;
+        const stand = Date.now();
+        await api('/state', {method: 'POST', body: {seite: id, daten: lokal, stand}});
+        ls.set('ts-stand-' + id, stand);
+      } else {
+        applySnapshot(st.daten, p);
+        ls.set('ts-stand-' + id, +st.stand || 0);
+      }
+    }
+  }
+
+  /* ---------- Oberfläche: Anmeldefenster + Menü oben rechts ---------- */
+  const CSS = `
+.ts-ov{position:fixed;inset:0;z-index:2000;background:rgba(20,24,32,.6);backdrop-filter:blur(3px);display:grid;place-items:center;padding:16px}
+.ts-box{position:relative;background:var(--panel,#f6f8fb);color:var(--text,#2e3440);border:1px solid var(--border,#cdd3de);border-radius:16px;padding:24px;width:min(420px,100%);box-shadow:0 20px 50px rgba(0,0,0,.3);font:16px/1.5 system-ui,sans-serif}
+.ts-box h2{margin:0 0 6px;font-size:21px}
+.ts-box p{margin:0 0 14px;color:var(--muted,#5b6578)}
+.ts-x{position:absolute;top:10px;right:10px;width:34px;height:34px;border-radius:9px;border:0;background:none;color:var(--muted,#5b6578);font-size:22px;line-height:1;cursor:pointer}
+.ts-x:hover{background:var(--panel2,#eceff4);color:var(--text,#2e3440)}
+.ts-in{width:100%;box-sizing:border-box;font:700 20px ui-monospace,Consolas,monospace;letter-spacing:.03em;padding:12px 14px;border-radius:10px;border:2px solid var(--slot-border,var(--border,#a7b1c2));background:var(--slot,var(--panel2,#eceff4));color:var(--text,#2e3440);outline:none}
+.ts-in:focus{border-color:var(--accent,#5e81ac)}
+.ts-btn{margin-top:12px;width:100%;font:600 17px system-ui,sans-serif;padding:12px;border-radius:10px;border:1px solid color-mix(in srgb,var(--accent,#5e81ac) 50%,var(--panel,#f6f8fb));background:color-mix(in srgb,var(--accent,#5e81ac) 22%,var(--panel,#f6f8fb));color:color-mix(in srgb,var(--accent,#5e81ac) 60%,var(--text,#2e3440));cursor:pointer}
+.ts-btn:disabled{opacity:.6;cursor:wait}
+.ts-err{color:var(--err,#a8434d);min-height:1.4em;margin-top:8px;font-size:14px}
+.ts-zurueck{background:none;border:0;padding:0;margin-top:10px;color:var(--muted,#5b6578);text-decoration:underline;cursor:pointer;font-size:14px}
+.ts-gast{display:block;width:100%;margin-top:18px;padding:12px;border-radius:10px;border:1px solid var(--border,#cdd3de);background:var(--panel2,#eceff4);color:var(--text,#2e3440);font:600 16px system-ui,sans-serif;cursor:pointer}
+.ts-gast small{display:block;font-weight:400;font-size:13px;color:var(--muted,#5b6578)}
+.ts-wrap{position:relative}
+.ts-badge{display:inline-flex;align-items:center;gap:6px;font:600 13px system-ui,sans-serif;padding:7px 11px;border-radius:999px;border:1px solid var(--border,#cdd3de);background:var(--panel2,#eceff4);color:var(--text,#2e3440);cursor:pointer;white-space:nowrap}
+.ts-badge .ts-dot{width:8px;height:8px;border-radius:50%;background:#8a95ab}
+.ts-badge.ok .ts-dot{background:var(--then,#a3be8c)}
+.ts-badge.saving .ts-dot{background:#ebcb8b}
+.ts-badge.offline .ts-dot{background:var(--else,#bf616a)}
+.ts-badge.gast{border-color:color-mix(in srgb,#d08770 60%,var(--border,#cdd3de));background:color-mix(in srgb,#d08770 16%,var(--panel,#f6f8fb))}
+.ts-badge.gast .ts-dot{background:#d08770}
+.ts-dd{display:none;position:absolute;right:0;top:calc(100% + 6px);min-width:240px;z-index:70;background:var(--panel,#f6f8fb);color:var(--text,#2e3440);border:1px solid var(--border,#cdd3de);border-radius:12px;box-shadow:0 14px 30px rgba(0,0,0,.18);padding:6px;font:14px/1.4 system-ui,sans-serif}
+.ts-wrap.open .ts-dd{display:block}
+.ts-dd .ts-info{padding:8px 10px;color:var(--muted,#5b6578);border-bottom:1px solid var(--border,#cdd3de);margin-bottom:4px}
+.ts-dd .ts-info b{color:var(--text,#2e3440)}
+.ts-dd a,.ts-dd button{display:block;width:100%;text-align:left;padding:8px 10px;border-radius:8px;border:0;background:none;color:inherit;font:inherit;text-decoration:none;cursor:pointer}
+.ts-dd a:hover,.ts-dd button:hover{background:var(--panel2,#eceff4)}
+@media (max-width:640px){.ts-badge .ts-lang{display:none}}`;
+
+  function injectCss(){ const s = document.createElement('style'); s.textContent = CSS; document.head.appendChild(s); }
+  const escH = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+
+  function setStatus(st){
+    const b = menuEl && menuEl.querySelector('.ts-badge');
+    if (!b || !aktiv) return;
+    b.className = 'ts-badge ' + st;
+    const t = {ok: 'Fortschritt gespeichert', saving: 'Wird gespeichert …', offline: 'Keine Verbindung – wird später gespeichert'}[st] || '';
+    b.title = t;
+    const i = menuEl.querySelector('.ts-status'); if (i) i.textContent = t;
+  }
+
+  // Menü oben rechts: angemeldet (Dropdown mit Abmelden) oder Gast (Klick öffnet die Anmeldung)
+  function showMenu(){
+    if (menuEl) menuEl.remove();
+    const host = document.querySelector('.pf-right') || document.querySelector('.hdr-right') || document.querySelector('header') || document.body;
+    const L = lehrerSitzung();
+    menuEl = document.createElement('div');
+    menuEl.className = 'ts-wrap';
+    if (aktiv){
+      const klasse = ls.get(K.klasse);
+      menuEl.innerHTML = `<button class="ts-badge saving" type="button"><span class="ts-dot"></span>👤 <span class="ts-lang">${escH(ls.get(K.anzeige) || ls.get(K.code))}</span></button>
+        <div class="ts-dd"><div class="ts-info">Angemeldet als <b>${escH(ls.get(K.anzeige) || ls.get(K.code))}</b>${klasse ? ' (Klasse ' + escH(klasse) + ')' : ''}<br><span class="ts-status"></span></div>
+        <button type="button" data-a="ab">Abmelden</button></div>`;
+    } else if (L){
+      menuEl.innerHTML = `<button class="ts-badge" type="button">👤 <span class="ts-lang">${escH(L.name)}</span></button>
+        <div class="ts-dd"><div class="ts-info">Angemeldet als <b>${escH(L.name)}</b> (${L.rolle === 'admin' ? 'Admin' : 'Lehrkraft'})</div>
+        <a href="${BASE + CONFIG.verwaltung}">Verwaltung: Klassen und Auswertung</a>
+        <button type="button" data-a="ab">Abmelden</button></div>`;
+    } else {
+      menuEl.innerHTML = `<button class="ts-badge gast" type="button" title="Fortschritt wird nicht gespeichert. Klicken zum Anmelden."><span class="ts-dot"></span>Nicht angemeldet<span class="ts-lang">&nbsp;– Fortschritt wird nicht gespeichert</span></button>`;
+    }
+    host.insertBefore(menuEl, host.firstChild);
+    menuEl.querySelector('.ts-badge').addEventListener('click', () => {
+      if (!aktiv && !L){ showLogin(); return; }
+      menuEl.classList.toggle('open');
+    });
+    const ab = menuEl.querySelector('[data-a="ab"]');
+    if (ab) ab.addEventListener('click', abmelden);
+    document.addEventListener('click', e => { if (menuEl && !menuEl.contains(e.target)) menuEl.classList.remove('open'); });
+  }
+
+  function showLogin(msg){
+    if (document.querySelector('.ts-ov')) return;
+    const ov = document.createElement('div');
+    ov.className = 'ts-ov';
+    ov.innerHTML = `<div class="ts-box" role="dialog" aria-modal="true" aria-label="Anmelden">
+      <button class="ts-x" type="button" aria-label="Schließen und ohne Anmeldung nutzen" title="Ohne Anmeldung nutzen">×</button>
+      <form class="ts-f1" autocomplete="off">
+        <h2>Anmelden</h2>
+        <p>Gib deinen Zugangscode oder deinen Benutzernamen ein.</p>
+        <input class="ts-in" name="kennung" placeholder="Code oder Benutzername" autocapitalize="none" spellcheck="false" aria-label="Code oder Benutzername">
+        <button class="ts-btn" type="submit">Weiter</button>
+      </form>
+      <form class="ts-f2" hidden>
+        <h2>Passwort</h2>
+        <p>für <b class="ts-wer"></b></p>
+        <input class="ts-in" name="passwort" type="password" autocomplete="current-password" aria-label="Passwort">
+        <button class="ts-btn" type="submit">Anmelden</button>
+        <button class="ts-zurueck" type="button">Anderen Namen eingeben</button>
+      </form>
+      <div class="ts-err">${msg || ''}</div>
+      <button class="ts-gast" type="button">Seite ohne Anmeldung nutzen<small>Dein Fortschritt wird dann nur in diesem Browser gespeichert.</small></button>
+    </div>`;
+    document.body.appendChild(ov);
+    const f1 = ov.querySelector('.ts-f1'), f2 = ov.querySelector('.ts-f2'), err = ov.querySelector('.ts-err');
+    const k = f1.kennung, pw = f2.passwort;
+    setTimeout(() => k.focus(), 50);
+
+    const gast = () => { ss.set(SS.gast, '1'); ov.remove(); document.removeEventListener('keydown', esc); };
+    const esc = e => { if (e.key === 'Escape') gast(); };
+    document.addEventListener('keydown', esc);
+    ov.querySelector('.ts-x').addEventListener('click', gast);
+    ov.querySelector('.ts-gast').addEventListener('click', gast);
+    ov.querySelector('.ts-zurueck').addEventListener('click', () => { f2.hidden = true; f1.hidden = false; err.textContent = ''; k.select(); });
+
+    async function senden(btn, body){
+      btn.disabled = true; err.textContent = '';
+      try {
+        const r = await fetch(CONFIG.api + '/login', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)})
+          .then(async x => { const j = await x.json().catch(() => ({})); if (!x.ok) throw new Error(x.status === 429 ? 'Zu viele Versuche – bitte kurz warten.' : (j.message || 'Anmeldung fehlgeschlagen.')); return j; });
+        if (r.passwort){ f1.hidden = true; f2.hidden = false; ov.querySelector('.ts-wer').textContent = body.kennung; pw.value = ''; pw.focus(); return; }
+        if (r.rolle === 'schueler'){
+          ls.set(K.code, r.cred); ls.set(K.anzeige, r.anzeige); ls.set(K.klasse, r.klasse || '');
+          ss.del(SS.lehrer); ss.del('ts-reload');
+          aktiv = true;
+          await uebernehmen().catch(() => {});
+        } else {
+          ss.set(SS.lehrer, JSON.stringify({rolle: r.rolle, token: r.token, name: r.name}));
+        }
+        location.reload();
+      } catch (x){
+        err.textContent = x.message || 'Anmeldung fehlgeschlagen.';
+        (f2.hidden ? k : pw).select();
+      } finally { btn.disabled = false; }
+    }
+    f1.addEventListener('submit', e => {
+      e.preventDefault();
+      const v = k.value.trim();
+      if (!v){ err.textContent = 'Bitte gib deinen Code oder Benutzernamen ein.'; return; }
+      senden(f1.querySelector('.ts-btn'), {kennung: v});
+    });
+    f2.addEventListener('submit', e => {
+      e.preventDefault();
+      if (!pw.value){ err.textContent = 'Bitte gib dein Passwort ein.'; return; }
+      senden(f2.querySelector('.ts-btn'), {kennung: k.value.trim(), passwort: pw.value});
+    });
+  }
+
+  async function abmelden(){
+    if (lehrerSitzung()){ ss.del(SS.lehrer); ss.del(SS.gast); location.reload(); return; }
+    if (!confirm(`Abmelden?\n\nAngemeldet als ${ls.get(K.anzeige) || ls.get(K.code)}. Dein Fortschritt bleibt auf dem Server gespeichert.`)) return;
+    if (pushPending) await push();
+    await flush();
+    if (queue().length && !confirm('Einige gelöste Aufgaben konnten noch nicht übertragen werden (keine Verbindung). Trotzdem abmelden?')) return;
+    wipeLocal(); ss.del(SS.gast);
+    location.reload();
+  }
+  function abgelaufen(){
+    aktiv = false;
+    wipeLocal();
+    showMenu();
+    showLogin('Deine Anmeldung ist nicht mehr gültig. Bitte melde dich neu an.');
+  }
+
+  /* ---------- Start ---------- */
+  async function start(){
+    if (!hosted || window.PF_EINZELDATEI) return;          // Einzeldatei: immer ohne Anmeldung, Fortschritt nur im Browser
+    try {
+      const h = await fetch('/api/health', {cache: 'no-store'});
+      if (!h.ok) return;                                    // kein PocketBase: Seite läuft nur lokal
+    } catch (e){ return; }
+    injectCss();
+    aktiv = !!ls.get(K.code);
+    showMenu();
+    if (!aktiv){
+      if (!lehrerSitzung() && !ss.get(SS.gast)) showLogin();
+      return;
+    }
+    try { await pull(); flush(); }
+    catch (err){ if (err.status === 401) abgelaufen(); else setStatus('offline'); }
+  }
+
+  lastSnap = JSON.stringify(snapshot());   // Stand beim Laden der Seite (vor deren Initialisierung)
+  window.TrainerSync = {changed, event, anmelden: () => showLogin(), get aktiv(){ return aktiv; }, get lehrer(){ return lehrerSitzung(); }, abmelden};
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
+})();
+
+</script>
+<script>
+(function(){var t=null;try{t=localStorage.getItem('wenn-theme');}catch(e){}
+document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');})();
+</script>
+<style>/* basis.css */
+/* basis.css – gemeinsame Gestaltung aller Excel-Trainer (Nord-Farben, hell/dunkel über [data-theme=dark]).
+ * Ergänzung je Seitenart danach laden: bausteine.css (wenn, und-oder) oder tabelle.css (funktionen, bezuege).
+ * Seitenspezifisches steht im <style> der Seite. */
+:root{
+  --bg:#e5e9f0; --panel:#f6f8fb; --panel2:#eceff4; --text:#2e3440; --muted:#5b6578; --border:#cdd3de;
+  --accent:#5e8a45; --cond:#5e81ac; --then:#5e8a45; --else:#a8434d; --blk-val:#ebcb8b; --blk-val-text:#2e3440;
+  --blk-cond:#8a5f84; --blk-sym:#4c566a; --slot:#e5e9f0; --slot-border:#a7b1c2; --ok-bg:#dfe9d6;
+  --err-bg:#f1d9db; --err:#a8434d; --solved-bg:#e3ebdc; --solved-border:#a3be8c; --solved-text:#4a7034;
+  --flame-off:#d8dee9; --flame-num-off:#6b7589;
+  --mono:ui-monospace,"Cascadia Mono","SF Mono",Consolas,"Liberation Mono",monospace;
+  --hex:polygon(16px 0,calc(100% - 16px) 0,100% 50%,calc(100% - 16px) 100%,16px 100%,0 50%); --on-color:#ffffff;
+  --blk-fn:#4c8a89; --cell:#ffffff; --cellhd:#eceff4; --grid:#cdd3de; --r0:#5e81ac; --r1:#a8434d; --r2:#8a5f84;
+  --r3:#5e8a45; --r4:#b0663f; --r5:#4c8a89;
+}
+[data-theme=dark]{
+  --bg:#2e3440; --panel:#3b4252; --panel2:#434c5e; --text:#eceff4; --muted:#a9b3c4; --border:#4c566a;
+  --cond:#81a1c1; --then:#a3be8c; --else:#bf616a; --slot:#434c5e; --slot-border:#616e88; --ok-bg:#3e4a45;
+  --err-bg:#4a3c45; --err:#d4848b; --solved-bg:#3e4a45; --solved-border:#6f8a5c; --solved-text:#a3be8c;
+  --flame-off:#4c566a; --flame-num-off:#9aa4b8; --blk-val:#ebcb8b; --blk-val-text:#2e3440; --blk-cond:#b48ead;
+  --blk-sym:#8a95ab; --on-color:#2e3440; --accent:#a3be8c; --blk-fn:#8fbcbb; --cell:#3b4252; --cellhd:#434c5e;
+  --grid:#4c566a; --r0:#81a1c1; --r1:#d4848b; --r2:#b48ead; --r3:#a3be8c; --r4:#d08770; --r5:#8fbcbb;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding-bottom:110px}
+header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:12px 20px;background:var(--panel);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:20}
+.brand{font-weight:800;font-size:20px;font-family:var(--mono);letter-spacing:-.5px}
+.brand span{color:var(--accent)}
+.hdr-right{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.flames{display:flex;gap:4px;align-items:flex-end}
+.flame{background:none;border:0;padding:2px;cursor:pointer;transform-origin:50% 90%;line-height:0}
+.flame svg{width:30px;height:38px;display:block}
+.flame path{fill:var(--flame-off);transition:fill .2s}
+.flame text{fill:var(--flame-num-off);font:800 13px system-ui,sans-serif}
+.flame:hover path{fill:#f0b27a}
+.flame.on path{fill:url(#fg)}
+.flame.on text{fill:#fff}
+.flame.on{filter:drop-shadow(0 0 5px rgba(255,150,0,.95)) drop-shadow(0 0 12px rgba(255,70,0,.6));animation:flick 1.4s ease-in-out infinite alternate}
+@keyframes flick{0%{transform:scale(1) rotate(-2deg)}50%{transform:scale(1.05,1.1) rotate(0)}100%{transform:scale(1.02) rotate(2deg)}}
+.iconbtn{background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:10px;width:40px;height:40px;display:grid;place-items:center;cursor:pointer}
+.iconbtn svg{width:20px;height:20px}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px 18px;margin-bottom:14px}
+.meta{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;font-size:14px;color:var(--muted);margin-bottom:6px}
+.lvlname{font-weight:700;color:var(--accent)}
+.taskrow{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start}
+code{font-family:var(--mono);background:var(--panel2);padding:1px 5px;border-radius:5px;font-size:.95em}
+.grid{border-collapse:collapse;font-size:14px;font-family:var(--mono)}
+.grid th,.grid td{border:1px solid var(--border);padding:4px 10px;min-width:44px;text-align:left;white-space:nowrap}
+.grid th{background:var(--panel2);color:var(--muted);font-weight:600;text-align:center}
+.grid td.fx{outline:2px solid var(--then);outline-offset:-2px;min-width:110px}
+.grid td.lbl{color:var(--muted);font-family:system-ui,sans-serif}
+.wthint{text-transform:none;letter-spacing:0;font-weight:500;opacity:.8;margin-left:6px}
+.ph{color:var(--muted);font-size:14px;font-weight:500;font-family:system-ui,sans-serif;opacity:.75;padding:0 8px;pointer-events:none}
+.block[data-drag]{cursor:grab}
+.block.val{background:var(--blk-val);color:var(--blk-val-text);border-radius:999px;box-shadow:inset 0 -3px 0 rgba(0,0,0,.15)}
+.block.hex{background:var(--blk-cond);clip-path:var(--hex);padding:7px 26px}
+.block.sym{background:var(--blk-sym);border-radius:7px;min-width:38px;justify-content:center;box-shadow:inset 0 -3px 0 rgba(0,0,0,.2)}
+.block.fn .gapin{background:var(--slot);border-style:solid}
+.block.ghost{opacity:.18;filter:grayscale(1);pointer-events:none}
+.block.drag-src{opacity:.3}
+.drag-ghost{position:fixed;z-index:1000;pointer-events:none;opacity:.95;transform:scale(1.06);filter:drop-shadow(0 6px 12px rgba(0,0,0,.35))}
+.block.r-cond{background:var(--cond);color:var(--on-color)}
+.block.r-then{background:var(--then);color:var(--on-color)}
+.block.r-else{background:var(--else);color:var(--on-color)}
+.builder .cellref{padding:0 2px}
+.builder .grip{font-size:20px;opacity:.75;margin-left:-8px;padding:0 2px}
+.opsel{font:700 17px var(--mono);background:rgba(255,255,255,.92);color:#1c2130;border:0;border-radius:7px;padding:4px 4px;cursor:pointer}
+.cvin{font:700 17px var(--mono);background:rgba(255,255,255,.92);color:#1c2130;border:0;border-radius:999px;padding:5px 10px;min-width:60px;outline:none}
+.cvin:focus{box-shadow:0 0 0 3px rgba(255,255,255,.6)}
+.slot{display:inline-flex;align-items:center;justify-content:center;position:relative}
+.slot.pill{min-width:130px;min-height:48px;border:2px dashed var(--slot-border);border-radius:999px;background:var(--slot);padding:2px}
+.slot.pill.small{min-width:70px;min-height:38px}
+.slot.hex{min-width:210px;min-height:54px;padding:4px 22px}
+.slot.hex::before,.slot.hex::after{content:"";position:absolute;clip-path:var(--hex)}
+.slot.hex::before{inset:0;background:var(--slot-border)}
+.slot.hex::after{inset:2px;background:var(--slot)}
+.slot.hex>*{position:relative;z-index:1}
+.slot.hex.drop-hover::before{background:var(--accent)}
+.slot.hex.drop-hover::after{background:color-mix(in srgb,var(--accent) 14%,var(--slot))}
+.slot-fixed{display:inline-flex}
+.iw{position:relative;display:inline-flex}
+.iw.ins::before,.iw.ins-after::after{content:"";position:absolute;top:2px;bottom:2px;width:4px;border-radius:2px;background:var(--accent)}
+.iw.ins::before{left:-6px}
+.iw.ins-after::after{right:-6px}
+.bx{position:absolute;top:-8px;right:-8px;width:20px;height:20px;border-radius:50%;border:none;background:var(--err);color:var(--on-color);font:700 13px/20px system-ui,sans-serif;padding:0;cursor:pointer}
+.mkrow{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.pool{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:12px 14px}
+.pool-items{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.pool.sympool{background:var(--panel2)}
+.actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:14px 0}
+.btn{font:600 16px system-ui,sans-serif;border-radius:10px;padding:10px 18px;border:1px solid var(--border);background:var(--panel);color:var(--text);cursor:pointer}
+.btn.primary{background:color-mix(in srgb,var(--accent) 22%,var(--panel));border-color:color-mix(in srgb,var(--accent) 50%,var(--panel));color:color-mix(in srgb,var(--accent) 60%,var(--text))}
+.btn:hover{filter:brightness(1.07)}
+.spacer{flex:1}
+.fb{border-radius:12px;padding:12px 16px;border-left:5px solid;margin-bottom:14px}
+.fb.err{background:var(--err-bg);border-color:var(--err)}
+.fb.ok{background:var(--ok-bg);border-color:var(--then);animation:pop .35s ease-out}
+@keyframes pop{0%{transform:scale(.97);opacity:.4}100%{transform:scale(1);opacity:1}}
+.fcol{font:700 18px var(--mono);display:inline-block;margin:6px 0;background:var(--panel);padding:4px 10px;border-radius:8px}
+.topics{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;margin-top:12px}
+.topic{display:flex;flex-direction:column;gap:4px;text-align:left;background:var(--panel2);border:2px solid var(--border);border-radius:14px;padding:14px 16px;cursor:pointer;color:var(--text);font:15px/1.4 system-ui,sans-serif}
+.topic:hover{border-color:var(--accent)}
+.topic b{font:800 19px var(--mono)}
+.topic .tdesc{color:var(--muted)}
+.topic .tprog{font-size:13px;color:var(--muted);margin-top:4px}
+.topic.done{border-color:var(--solved-border);background:var(--solved-bg)}
+.topic.done .tprog{color:var(--solved-text);font-weight:600}
+.c-cond{color:var(--cond)}
+.c-then{color:var(--then)}
+.c-else{color:var(--else)}
+.tt th,.tt td{border:1px solid var(--border);padding:3px 10px;text-align:left}
+.fbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.nbox{font:600 14px var(--mono);min-width:62px;text-align:center;padding:9px 8px;border:1px solid var(--border);border-radius:8px;background:var(--panel2)}
+.fxl{font:italic 700 15px Georgia,serif;color:var(--muted);padding:0 2px}
+.fin{flex:1 1 300px;display:flex;align-items:center;gap:4px;flex-wrap:wrap;min-height:48px;font:700 20px var(--mono)}
+.gapin{font:700 20px var(--mono);padding:7px 10px;border-radius:10px;border:2px dashed var(--slot-border);background:var(--slot);color:var(--text);outline:none;width:9em}
+.fnsel{font:700 18px var(--mono);padding:7px 8px;border-radius:10px;border:2px dashed var(--slot-border);background:var(--slot);color:var(--text);cursor:pointer}
+.fshow{flex:1;font:600 18px var(--mono);padding:9px 12px;border-radius:10px;border:1px solid var(--border);background:var(--panel2);min-height:46px;white-space:pre}
+.fshow.empty{color:var(--muted);font:italic 15px system-ui,sans-serif}
+.selhint{font-size:14px;color:var(--err);min-height:0;margin:-4px 0 8px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;font:600 13px var(--mono);min-height:4px}
+.chip{padding:2px 8px;border-radius:6px;border:2px solid;background:var(--panel)}
+.howto{font:13px system-ui,sans-serif;color:var(--muted);align-self:center}
+.xl{border-collapse:collapse;font:14px system-ui,sans-serif;user-select:none;-webkit-user-select:none}
+.xl th{background:var(--cellhd);color:var(--muted);font-weight:600;border:1px solid var(--grid);padding:3px 8px;min-width:30px;text-align:center}
+.xl td{background:var(--cell);border:1px solid var(--grid);padding:5px 9px;min-width:70px;height:32px;white-space:nowrap;cursor:cell;position:relative}
+.xl.pick td{touch-action:none}
+.xl td.hd{font-weight:700}
+.xl td.lbl{font-weight:500}
+.xl td.num{text-align:right;font-variant-numeric:tabular-nums}
+.xl td.calc{color:var(--muted)}
+.xl td.tgt{outline:3px solid var(--then);outline-offset:-3px;font:700 14px var(--mono)}
+.xl td.tgt.done{background:color-mix(in srgb,var(--then) 16%,var(--cell));color:var(--text);text-align:right}
+.xl td.ins{outline:3px solid var(--cond);outline-offset:-3px}
+.xl td.sel{outline:2px dashed var(--accent);outline-offset:-3px}
+.xl td.rc0{background:color-mix(in srgb,var(--r0) 16%,var(--cell));box-shadow:inset 0 0 0 1px var(--r0)}
+.xl td.rc1{background:color-mix(in srgb,var(--r1) 16%,var(--cell));box-shadow:inset 0 0 0 1px var(--r1)}
+.xl td.rc2{background:color-mix(in srgb,var(--r2) 16%,var(--cell));box-shadow:inset 0 0 0 1px var(--r2)}
+.xl td.rc3{background:color-mix(in srgb,var(--r3) 16%,var(--cell));box-shadow:inset 0 0 0 1px var(--r3)}
+.xl td.rc4{background:color-mix(in srgb,var(--r4) 16%,var(--cell));box-shadow:inset 0 0 0 1px var(--r4)}
+.xl td.rc5{background:color-mix(in srgb,var(--r5) 16%,var(--cell));box-shadow:inset 0 0 0 1px var(--r5)}
+.c0{color:var(--r0);border-color:var(--r0)}
+.c3{color:var(--r3);border-color:var(--r3)}
+.c4{color:var(--r4);border-color:var(--r4)}
+.c5{color:var(--r5);border-color:var(--r5)}
+.legend{font-size:13px;color:var(--muted)}
+body.dragging,body.dragging *{cursor:grabbing!important}
+.assign{margin-top:12px;padding:12px 14px;border-left:4px solid var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--panel));border-radius:8px}
+.intro{color:var(--muted);font-size:15px;margin-bottom:6px}
+.formula-ex{margin:8px 0}
+.formula-ex code{font-size:17px;padding:4px 10px}
+.opts.mono{flex-direction:column;align-items:stretch}
+.opt{font:600 16px system-ui,sans-serif;padding:10px 16px;border-radius:10px;border:2px solid var(--border);background:var(--panel2);color:var(--text);cursor:pointer;text-align:left}
+.opt.sel{border-color:var(--cond);background:color-mix(in srgb,var(--cond) 15%,var(--panel))}
+.opt.good{border-color:var(--then);background:color-mix(in srgb,var(--then) 18%,var(--panel))}
+.opt.bad{border-color:var(--else);background:color-mix(in srgb,var(--else) 15%,var(--panel))}
+.ohint{font-size:13px;color:var(--muted);margin-top:8px}
+.stepbtn{text-align:left;font:500 14px system-ui,sans-serif;padding:7px 10px;border-radius:8px;border:1px solid var(--border);background:var(--panel2);color:var(--text);cursor:pointer}
+.stepbtn.solved{border-color:var(--then);background:color-mix(in srgb,var(--then) 14%,var(--panel))}
+.stepbtn.cur{outline:2px solid var(--accent)}
+.stepbtn:disabled{opacity:.45;cursor:not-allowed}
+.stepreset{margin-top:6px;font:500 13px system-ui,sans-serif;background:none;border:0;color:var(--muted);text-decoration:underline;cursor:pointer;text-align:left}
+.acpop{position:fixed;z-index:60;display:none;background:var(--panel);border:1px solid var(--border);border-radius:6px;box-shadow:0 6px 20px rgba(0,0,0,.22);min-width:200px;max-width:min(420px,calc(100vw - 16px));font-size:14px;overflow:hidden}
+.acl{max-height:220px;overflow:auto;padding:3px 0}
+.aci{display:flex;align-items:center;gap:8px;padding:5px 10px;font:600 14px var(--mono);cursor:pointer;white-space:nowrap}
+.aci.sel{background:color-mix(in srgb,var(--cond) 20%,var(--panel))}
+.acfx{font:italic 700 11px Georgia,serif;color:var(--cond);border:1px solid color-mix(in srgb,var(--cond) 50%,transparent);border-radius:3px;padding:0 3px}
+.acdesc{border-top:1px solid var(--border);padding:7px 10px;color:var(--muted);font:13px/1.4 system-ui,sans-serif;white-space:normal}
+.ackey{padding:4px 10px 6px;color:var(--muted);font:11px system-ui,sans-serif;opacity:.8}
+.actip{position:fixed;z-index:59;display:none;background:var(--panel);border:1px solid var(--border);border-radius:4px;box-shadow:0 3px 10px rgba(0,0,0,.15);padding:3px 9px;font:13px system-ui,sans-serif;color:var(--muted);white-space:nowrap;max-width:calc(100vw - 16px);overflow:hidden;text-overflow:ellipsis}
+.actip b{color:var(--text)}
+.acfn{color:var(--cond);text-decoration:underline}
+.card.solved{background:var(--solved-bg);border-color:var(--solved-border);box-shadow:0 0 0 1px var(--solved-border) inset;transition:background .3s,border-color .3s}
+.card.solved .wthint{display:none}
+.hdr-left{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.modes{display:inline-flex;background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:3px}
+.modes button{border:0;background:none;color:var(--muted);font:600 14px system-ui,sans-serif;padding:7px 14px;border-radius:7px;cursor:pointer}
+.modes button.on{background:var(--panel);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.18)}
+.btn:disabled{opacity:.45;cursor:not-allowed;filter:none}
+.dock{position:fixed;left:22px;bottom:22px;z-index:30}
+.dockbtn{font:600 15px system-ui,sans-serif;background:var(--panel);color:var(--text);border:2px solid var(--border);border-radius:999px;padding:12px 18px;box-shadow:0 4px 14px rgba(0,0,0,.15);cursor:pointer;display:flex;gap:8px;align-items:center}
+.dockbtn.static{cursor:default}
+.dockbtn .sub{color:var(--muted);font-weight:500}
+.picker .ptitle{font-size:13px;color:var(--muted);margin-bottom:8px}
+.pg button{height:38px;border-radius:8px;border:1px solid var(--border);background:var(--panel2);color:var(--text);font:600 14px system-ui,sans-serif;cursor:pointer}
+.pg button.solved{background:var(--then);color:var(--on-color);border-color:transparent}
+.pg button.cur{outline:3px solid var(--accent);outline-offset:1px}
+.pgl{font-size:12px;color:var(--muted);margin:8px 0 4px}
+@media (max-width:640px){
+  header{padding:10px 12px}
+  .flame svg{width:26px;height:33px}
+  .slot.hex{min-width:170px}
+  body{padding-bottom:24px}
+  .picker{bottom:auto;top:auto;position:relative;margin-bottom:8px}
+}
+
+</style>
+<style>/* bausteine.css */
+/* bausteine.css – nach basis.css laden; Formeln aus Bausteinen (wenn, und-oder) */
+main{max-width:980px;margin:0 auto;padding:18px 16px}
+.tasktext{flex:1 1 380px;margin:0;font-size:17px}
+.worktitle,.pool-title{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700;margin-bottom:8px}
+.formula{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-family:var(--mono);font-size:22px;font-weight:700}
+.ft{padding:0 2px}
+.block{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:17px;font-weight:700;padding:7px 15px;min-height:40px;user-select:none;-webkit-user-select:none;touch-action:none;white-space:pre;color:#fff;transition:background .25s,opacity .2s}
+.slot.drop-hover{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,var(--slot))}
+.row{display:flex;flex-wrap:wrap;align-items:center;gap:6px;min-height:68px;border:2px dashed var(--slot-border);background:var(--slot);border-radius:14px;padding:10px 12px}
+.row.drop-hover{border-color:var(--accent)}
+.pools{display:grid;gap:12px}
+.ftin{width:100%;font:700 22px var(--mono);padding:12px 14px;border-radius:12px;border:2px solid var(--slot-border);background:var(--slot);color:var(--text);outline:none}
+.ftin:focus{border-color:var(--accent)}
+.tip{margin-top:6px;display:inline-block;font:14px var(--mono);background:var(--panel2);border:1px solid var(--border);border-radius:6px;padding:3px 9px;color:var(--muted)}
+.tip b{color:var(--text)}
+.tt{border-collapse:collapse;font:14px var(--mono);margin-top:6px}
+.tt th{font-family:system-ui,sans-serif;color:var(--muted)}
+.card.solved .worktitle{color:var(--solved-text)}
+.card.solved .worktitle::after{content:" ✓ richtig gelöst";text-transform:none;letter-spacing:0}
+.picker{position:absolute;bottom:62px;left:0;background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:14px;box-shadow:0 8px 28px rgba(0,0,0,.25);width:min(320px,calc(100vw - 44px))}
+.pg{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+@media (max-width:640px){
+  .formula{font-size:19px}
+  .block{font-size:15px;min-height:38px}
+  .dock{position:static;margin:0 16px 16px;display:inline-block}
+}
+@media (max-width:640px){
+  .dock{display:flex;flex-direction:column-reverse;align-items:flex-start}
+}
+
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <linearGradient id="fg" x1="0" y1="1" x2="0" y2="0">
+    <stop offset="0" stop-color="#d9230f"/><stop offset=".55" stop-color="#ff7a00"/><stop offset="1" stop-color="#ffd23f"/>
+  </linearGradient></defs></svg>
+
+<header>
+  <div class="hdr-left">
+    <div class="brand"><span>=</span>WENN<span>()</span></div>
+    <div class="modes" role="group" aria-label="Modus">
+      <button data-mode="pfad">Übungen</button><button data-mode="endlos">Endlos</button>
+    </div>
+  </div>
+  <div class="hdr-right">
+    <button class="iconbtn" id="themeBtn" aria-label="Hell/Dunkel umschalten"></button>
+    <div class="flames" id="flames" aria-label="Stufe wählen"></div>
+  </div>
+</header>
+
+<main>
+  <section class="card">
+    <div class="meta">
+      <span class="lvlname" id="lvlname"></span>
+      <span id="taskmeta"></span>
+    </div>
+    <div class="taskrow">
+      <p class="tasktext" id="tasktext"></p>
+      <div id="grid"></div>
+    </div>
+  </section>
+
+  <section class="card" id="workcard">
+    <div class="worktitle">Deine Formel <span class="wthint" id="wthint"></span></div>
+    <div id="work"></div>
+  </section>
+
+  <div class="pools" id="pools"></div>
+
+  <div class="actions">
+    <button class="btn primary" id="checkBtn">Prüfen</button>
+    <button class="btn" id="resetBtn">Zurücksetzen</button>
+    <span class="spacer"></span>
+    <button class="btn" id="skipBtn" title="Neue Aufgabe – die Serie beginnt wieder bei 0">Andere Aufgabe</button>
+    <button class="btn" id="prevBtn" aria-label="Vorherige Aufgabe">◀</button>
+    <button class="btn" id="nextBtn">Nächste Aufgabe ▶</button>
+  </div>
+  <div id="fb"></div>
+</main>
+
+<div class="dock" id="dock"></div>
+
+
+<script>/* basis.js */
+/* basis.js – gemeinsamer Kern aller Excel-Trainer (wenn, und-oder, funktionen, bezuege)
+ *
+ * Einbinden (nach dem Markup, vor den eigenen <script>s), dazu genau eine Ergänzung je Seitenart:
+ *   Formeln aus Bausteinen (wenn, und-oder):   basis.css + bausteine.css, basis.js + bausteine.js
+ *   Tabellenblatt (funktionen, bezuege):       basis.css + tabelle.css,   basis.js + tabelle.js
+ * Alles sind globale Namen, kein Build-Schritt, läuft auch per file://.
+ *
+ * API
+ *   $, esc, rand, clamp, rng, shuffle, pick1, ri, C, B, normQuotes, FErr   Helfer und Zufall
+ *   store(k, v), load(k)       localStorage unter KEY + k; store meldet TrainerSync.changed()
+ *   isSolved(i), markSolved()  gelöste Übung je Stufe (solved[level])
+ *   countSolved()              zählt eine gelöste Übung bzw. Endlos-Aufgabe (Serie, Rekord), → „erstmals“
+ *   skipTask()                 Endlos: andere Aufgabe, Serie auf 0
+ *   renderHeader()             Flammen (Stufen 1 … solange LEVELS[n] existiert), Modusknöpfe, Theme-Symbol
+ *   navPfad(), navLernen(idx, n, info)   Knöpfe Prüfen/Zurücksetzen/Zurück/Weiter je Modus
+ *   dockHTML(groups)           Dock für Übungen/Endlos; groups = Gruppennamen (Gruppe = letztes STD-Feld)
+ *   navClick(e)                Flammen, Modi, Aufgabenwahl, Dock – am Ende des Klick-Handlers aufrufen
+ *   Drag & Drop (Maus/Touch)   Ziehen, Ablageziel hervorheben, Einfügemarke in Zeilen (.iw)
+ *   AC                         Autovervollständigung wie in Excel für Eingaben mit Klasse .acin
+ *   Verdrahtet: #themeBtn, #checkBtn → check(), #nextBtn → nextTask(), #skipBtn → skipTask(),
+ *   Escape schließt die Aufgabenwahl.
+ *
+ * Die Seite (bzw. bausteine.js/tabelle.js) liefert
+ *   KEY, LEVELS, STD; let mode, level, pfadIdx, solved, streak, best, endCounted, pickerOpen
+ *   check, loadTask, setLevel, setMode, gotoTask, canNext, nextTask, newEndless, renderDock
+ *   Drag-Hooks: dragData(b, e) → Zusatzfelder für D (src:true = Quelle blass) oder null;
+ *     dropOk(t); applyDrop(d, type, idx, t); dragTap(d) bei Klick ohne Ziehen; optional dragGhost(g)
+ *   AC_FN = [{n, v | a, d}]; optional AC.word(before, inp) → getipptes Wort oder null
+ *
+ * Gerüst einer Seite
+ *   <link rel="stylesheet" href="basis.css"><link rel="stylesheet" href="tabelle.css"> … Markup
+ *   <script src="basis.js"><\/script><script src="tabelle.js"><\/script>
+ *   <script>
+ *     const KEY = 'xy-', LEVELS = [null, {name:'…'}], STD = [[…, 1]];
+ *     let mode = load('mode') || 'pfad', level = 1, pfadIdx = 0, solved = {}, streak = 0,
+ *         best = 0, endCounted = false, pickerOpen = false, …;
+ *     function check(){ … logSolved(countSolved()); … }   function loadTask(){ … }  …
+ *     if (mode === 'endlos') newEndless();
+ *     loadTask();
+ *   <\/script>
+ */
+
+/* ================= Teil A: alle Seiten ================= */
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const rand = () => (Math.random() * 1e9) | 0;
+const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+function rng(a){ return function(){ a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function shuffle(arr, r){ const a = arr.slice(); for (let i = a.length - 1; i > 0; i--){ const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+const pick1 = (r, a) => a[Math.floor(r() * a.length)];
+const ri = (r, a, b) => a + Math.floor(r() * (b - a + 1));
+const C = s => `<code>${s}</code>`, B = s => `<b>${s}</b>`;
+function normQuotes(s){ return s.replace(/[„“”″«»]/g, '"'); }
+class FErr extends Error { constructor(msg){ super(msg); this.name = 'FErr'; } }
+
+/* Speicher (Schlüssel KEY + k) und Fortschritt */
+function store(k, v){ try{ localStorage.setItem(KEY + k, v); }catch(e){} if (window.TrainerSync) TrainerSync.changed(); }
+function load(k){ try{ return localStorage.getItem(KEY + k); }catch(e){ return null; } }
+function isSolved(i){ return (solved[level] || []).includes(i); }
+function markSolved(){ const a = solved[level] || (solved[level] = []); if (!a.includes(pfadIdx)){ a.push(pfadIdx); store('solved', JSON.stringify(solved)); } }
+function countSolved(){
+  if (mode === 'pfad'){ const erstmals = !isSolved(pfadIdx); markSolved(); return erstmals; }
+  const erstmals = !endCounted;
+  if (!endCounted){ endCounted = true; streak++; if (streak > best){ best = streak; store('best', best); } }
+  return erstmals;
+}
+function skipTask(){ streak = 0; newEndless(); loadTask(); }
+
+/* Kopfzeile, Navigation, Dock */
+function renderHeader(){
+  let h = '';
+  for (let n = 1; LEVELS[n]; n++){
+    h += `<button class="flame${n === level ? ' on' : ''}" data-level="${n}" title="Stufe ${n}: ${esc(LEVELS[n].name)}" aria-label="Stufe ${n}" aria-pressed="${n === level}">
+      <svg viewBox="0 0 32 40"><path d="M16 2C18 9 27 14 27 26C27 33 22 38 16 38C10 38 5 33 5 26C5 20 9 16 11 11C12 15 13 17 15 18C16 13 17 8 16 2Z"/>
+      <text x="16" y="32" text-anchor="middle">${n}</text></svg></button>`;
+  }
+  $('#flames').innerHTML = h;
+  $('#flames').style.display = mode === 'lernen' ? 'none' : '';
+  document.querySelectorAll('.modes button').forEach(b => b.classList.toggle('on', b.dataset.mode === mode));
+  const dark = document.documentElement.dataset.theme === 'dark';
+  $('#themeBtn').innerHTML = dark
+    ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>'
+    : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>';
+}
+function navButtons(){ return {nb:$('#nextBtn'), pb:$('#prevBtn'), sb:$('#skipBtn'), cb:$('#checkBtn'), rb:$('#resetBtn'), ob:$('#ovBtn')}; }
+function navPfad(){
+  const {nb, pb, sb, cb, rb, ob} = navButtons();
+  cb.style.display = rb.style.display = nb.style.display = ''; if (ob) ob.style.display = 'none';
+  pb.style.display = mode === 'pfad' ? '' : 'none'; pb.disabled = pfadIdx === 0;
+  sb.style.display = mode === 'endlos' ? '' : 'none';
+  const ok = canNext(); nb.disabled = !ok;
+  if (mode === 'pfad' && pfadIdx === STD.length - 1 && isSolved(pfadIdx)) nb.textContent = 'Alle Übungen geschafft 🎉';
+  else nb.textContent = (ok ? '' : '🔒 ') + 'Nächste Aufgabe ▶';
+  nb.title = ok ? '' : 'Erst die aktuelle Aufgabe richtig lösen';
+}
+function navLernen(idx, n, info){
+  const {nb, pb, sb, cb, rb, ob} = navButtons();
+  pb.style.display = ''; pb.disabled = idx === 0; sb.style.display = 'none'; if (ob) ob.style.display = '';
+  cb.style.display = rb.style.display = info ? 'none' : '';
+  nb.style.display = idx === n - 1 ? 'none' : '';
+  const ok = canNext(); nb.disabled = !ok;
+  nb.textContent = (ok ? '' : '🔒 ') + 'Weiter ▶';
+  nb.title = ok ? '' : 'Erst die Aufgabe in diesem Schritt richtig lösen';
+}
+function dockHTML(groups){
+  if (mode === 'endlos') return `<div class="dockbtn static">🔥 Serie: ${streak} <span class="sub">· Rekord ${best}</span></div>`;
+  let h = `<button class="dockbtn" id="dockBtn" aria-expanded="${pickerOpen}">▦ Aufgabe ${pfadIdx + 1}/${STD.length} <span class="sub">· ${(solved[level] || []).length} gelöst</span></button>`;
+  if (!pickerOpen) return h;
+  const btn = i => `<button data-goto="${i}" class="${isSolved(i) ? 'solved' : ''}${i === pfadIdx ? ' cur' : ''}">${i + 1}</button>`;
+  h += `<div class="picker"><div class="ptitle">Zu Aufgabe springen – grün = auf Stufe ${level} gelöst</div>`;
+  if (!groups) h += '<div class="pg">' + STD.map((_, i) => btn(i)).join('') + '</div>';
+  else for (let g = 1; g < groups.length; g++)
+    h += `<div class="pgl">${esc(groups[g])}</div><div class="pg">` + STD.map((e, i) => e[e.length - 1] !== g ? '' : btn(i)).join('') + '</div>';
+  return h + '</div>';
+}
+function navClick(e){
+  const f = e.target.closest('.flame'); if (f){ setLevel(+f.dataset.level); return; }
+  const m = e.target.closest('.modes button'); if (m){ setMode(m.dataset.mode); return; }
+  const g = e.target.closest('[data-goto]'); if (g){ gotoTask(+g.dataset.goto); return; }
+  if (e.target.closest('#dockBtn')){ pickerOpen = !pickerOpen; renderDock(); return; }
+  if (pickerOpen && !e.target.closest('.picker')){ pickerOpen = false; renderDock(); }
+}
+$('#checkBtn').addEventListener('click', () => check());
+$('#nextBtn').addEventListener('click', () => nextTask());
+$('#skipBtn').addEventListener('click', () => skipTask());
+$('#themeBtn').addEventListener('click', () => {
+  const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+  document.documentElement.dataset.theme = t; try { localStorage.setItem('wenn-theme', t); } catch (e) {} renderHeader();
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && pickerOpen){ pickerOpen = false; renderDock(); } });
+
+/* Drag & Drop (Maus + Touch über Pointer Events) */
+let D = null, hoverEl = null, insEl = null, scrollRAF = null;
+function findTarget(x, y){
+  const el = document.elementFromPoint(x, y);
+  let t = el && el.closest && el.closest('[data-drop]');
+  // ein Baustein darf nicht in sich selbst abgelegt werden (z. B. Wert in den eigenen Baustein)
+  while (t && D.el.contains(t)) t = t.parentElement && t.parentElement.closest('[data-drop]');
+  return t && dropOk(t) ? t : null;
+}
+function rowIndex(row, x, y){
+  const kids = [...row.querySelectorAll(':scope > .iw')];
+  for (let i = 0; i < kids.length; i++){
+    const r = kids[i].getBoundingClientRect();
+    if (y < r.top) return i;
+    if (y <= r.bottom && x < r.left + r.width / 2) return i;
+  }
+  return kids.length;
+}
+function clearHover(){
+  if (hoverEl){ hoverEl.classList.remove('drop-hover'); hoverEl = null; }
+  if (insEl){ insEl.classList.remove('ins', 'ins-after'); insEl = null; }
+}
+function updateHover(x, y){
+  clearHover();
+  const t = findTarget(x, y); if (!t) return;
+  hoverEl = t; t.classList.add('drop-hover');
+  if (t.dataset.drop === 'row'){
+    const kids = [...t.querySelectorAll(':scope > .iw')], i = rowIndex(t, x, y);
+    if (kids.length){ insEl = i < kids.length ? kids[i] : kids[kids.length - 1]; insEl.classList.add(i < kids.length ? 'ins' : 'ins-after'); }
+  }
+}
+function autoScroll(){
+  if (!D || !D.started) return;
+  const topEdge = document.querySelector('header').getBoundingClientRect().bottom + 20;
+  if (D.y < topEdge) window.scrollBy(0, -8); else if (D.y > innerHeight - 30) window.scrollBy(0, 8);
+  updateHover(D.x, D.y);
+  scrollRAF = requestAnimationFrame(autoScroll);
+}
+function endDrag(cancel){
+  cancelAnimationFrame(scrollRAF);
+  const t = cancel ? null : findTarget(D.x, D.y);
+  const idx = t && t.dataset.drop === 'row' ? rowIndex(t, D.x, D.y) : 0;
+  clearHover(); D.ghost.remove(); D.el.classList.remove('drag-src'); document.body.classList.remove('dragging');
+  const d = D; D = null;
+  if (t) applyDrop(d, t.dataset.drop, idx, t);
+}
+document.addEventListener('pointerdown', e => {
+  const b = e.target.closest('.block[data-drag]');
+  if (!b || (e.pointerType === 'mouse' && e.button !== 0)) return;
+  const extra = dragData(b, e); if (!extra) return;
+  e.preventDefault();
+  D = Object.assign({el:b, x0:e.clientX, y0:e.clientY, x:e.clientX, y:e.clientY, started:false}, extra);
+});
+window.addEventListener('pointermove', e => {
+  if (!D) return;
+  D.x = e.clientX; D.y = e.clientY;
+  if (!D.started){
+    if (Math.hypot(e.clientX - D.x0, e.clientY - D.y0) < 5) return;
+    const r = D.el.getBoundingClientRect(), g = D.el.cloneNode(true);
+    ['select', 'input'].forEach(sel => { const gs = g.querySelectorAll(sel); D.el.querySelectorAll(sel).forEach((s, i) => { gs[i].value = s.value; }); });
+    if (window.dragGhost) dragGhost(g);
+    g.classList.add('drag-ghost'); g.classList.remove('drag-src');
+    g.style.width = r.width + 'px'; g.style.left = r.left + 'px'; g.style.top = r.top + 'px';
+    document.body.appendChild(g);
+    D.ghost = g; D.dx = D.x0 - r.left; D.dy = D.y0 - r.top; D.started = true;
+    if (D.src) D.el.classList.add('drag-src');
+    document.body.classList.add('dragging');
+    autoScroll();
+  }
+  D.ghost.style.left = (e.clientX - D.dx) + 'px'; D.ghost.style.top = (e.clientY - D.dy) + 'px';
+  updateHover(e.clientX, e.clientY);
+}, {passive:false});
+window.addEventListener('pointerup', () => {
+  if (!D) return;
+  if (D.started){ endDrag(false); return; }
+  const d = D; D = null;
+  dragTap(d);
+});
+window.addEventListener('pointercancel', () => { if (!D) return; if (D.started) endDrag(true); else D = null; });
+
+/* Autovervollständigung wie in Excel: Funktionsliste beim Tippen, Argument-Hinweis in Klammern */
+const acCanvas = document.createElement('canvas').getContext('2d');
+const AC = {list:[], sel:0, key:'', start:0, token:'', closed:'', input:null,
+  digits:false,           // Funktionsnamen dürfen Ziffern enthalten (ANZAHL2)
+  prev:/[=(;<>\s,]/,      // erlaubtes Zeichen vor dem getippten Wort
+  // getipptes Wort am Cursor (oder null); in #ft erst nach einem „=“
+  word:(before, inp) => { const m = before.match(/[A-Za-zÄÖÜäöüß]+$/); return m && (inp.id !== 'ft' || before.trimStart().startsWith('=')) ? m[0] : null; }};
+function acArgs(f, i){
+  if (f.a) return f.a;
+  const n = Math.max(2, i + 1), out = [];
+  for (let k = 1; k <= n; k++) out.push(k === 1 ? f.v + k : `[${f.v}${k}]`);
+  return [...out, '…'];
+}
+function acCaretX(inp, idx){
+  const cs = getComputedStyle(inp), r = inp.getBoundingClientRect();
+  acCanvas.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+  return r.left + parseFloat(cs.paddingLeft) + parseFloat(cs.borderLeftWidth) + acCanvas.measureText(inp.value.slice(0, idx)).width - inp.scrollLeft;
+}
+function acEls(){
+  let pop = document.getElementById('acpop'), tip = document.getElementById('actip');
+  if (!pop){
+    pop = document.createElement('div'); pop.id = 'acpop'; pop.className = 'acpop'; document.body.appendChild(pop);
+    tip = document.createElement('div'); tip.id = 'actip'; tip.className = 'actip'; document.body.appendChild(tip);
+    pop.addEventListener('pointerdown', e => { const it = e.target.closest('[data-aci]'); e.preventDefault(); if (it){ AC.sel = +it.dataset.aci; acInsert(); } });
+  }
+  return {pop, tip};
+}
+function acHide(){ const {pop, tip} = acEls(); pop.style.display = 'none'; tip.style.display = 'none'; AC.list = []; }
+function acPlace(el, x, inp){
+  const r = inp.getBoundingClientRect();
+  el.style.display = 'block';
+  el.style.left = Math.max(8, Math.min(x - 6, innerWidth - el.offsetWidth - 8)) + 'px';
+  el.style.top = (r.bottom + 4) + 'px';
+}
+function acUpdate(inp){
+  inp = inp || document.activeElement;
+  if (!inp || !inp.matches || !inp.matches('.acin') || document.activeElement !== inp){ acHide(); return; }
+  AC.input = inp;
+  const {pop, tip} = acEls();
+  const pos = inp.selectionStart ?? inp.value.length, before = normQuotes(inp.value.slice(0, pos));
+  // Zeichen für Zeichen lesen: Textbereiche überspringen, offene Funktionen merken
+  const stack = []; let inStr = false, word = '', wstart = 0;
+  for (let i = 0; i < before.length; i++){
+    const ch = before[i];
+    if (ch === '"'){ inStr = !inStr; word = ''; continue; }
+    if (inStr) continue;
+    if (/[A-Za-zÄÖÜäöüß]/.test(ch) || (AC.digits && word && /[0-9]/.test(ch))){ if (!word) wstart = i; word += ch; continue; }
+    if (ch === '(') stack.push({fn:word.toUpperCase(), i:0, at:wstart});
+    else if (ch === ';' && stack.length) stack[stack.length - 1].i++;
+    else if (ch === ')') stack.pop();
+    word = '';
+  }
+  // Funktionsliste: nur wenn gerade ein Funktionsname getippt wird (nicht in Text, nicht Teil einer Zelle)
+  let list = [], token = '', start = pos;
+  const w = !inStr && AC.word(before, inp);
+  if (w){
+    token = w; start = pos - token.length;
+    const prev = before[start - 1];
+    if (!prev || AC.prev.test(prev)) list = AC_FN.filter(f => f.n.startsWith(token.toUpperCase()));
+    if (list.length === 1 && list[0].n === token.toUpperCase() && inp.value[pos] === '(') list = [];
+  }
+  const key = start + ':' + token.toUpperCase();
+  if (AC.closed === key) list = [];
+  if (key !== AC.key) AC.sel = 0;
+  AC.key = key; AC.token = token; AC.start = start; AC.list = list;
+  if (AC.sel >= list.length) AC.sel = 0;
+  if (list.length){
+    const f = list[AC.sel];
+    pop.innerHTML = `<div class="acl">${list.map((x, i) => `<div class="aci${i === AC.sel ? ' sel' : ''}" data-aci="${i}"><span class="acfx">fx</span>${x.n}</div>`).join('')}</div><div class="acdesc">${esc(f.d)}</div><div class="ackey">Tab ↹ fügt ein · ↑ ↓ wählen</div>`;
+    acPlace(pop, acCaretX(inp, start), inp);
+    tip.style.display = 'none';
+    return;
+  }
+  pop.style.display = 'none';
+  const top = stack[stack.length - 1], f = top && AC_FN.find(x => x.n === top.fn);
+  if (f){
+    const args = acArgs(f, top.i);
+    const act = f.a ? Math.min(top.i, args.length - 1) : top.i;
+    tip.innerHTML = `<span class="acfn">${f.n}</span>(${args.map((a, i) => i === act ? `<b>${esc(a)}</b>` : esc(a)).join('; ')})`;
+    acPlace(tip, acCaretX(inp, top.at), inp);
+  } else tip.style.display = 'none';
+}
+function acInsert(){
+  const inp = AC.input, f = AC.list[AC.sel];
+  if (!inp || !f) return;
+  const pos = inp.selectionStart ?? inp.value.length;
+  const after = inp.value.slice(pos), add = after.startsWith('(') ? f.n : f.n + '(';
+  inp.value = inp.value.slice(0, AC.start) + add + after;
+  const c = AC.start + f.n.length + 1;
+  inp.focus(); inp.setSelectionRange(c, c);
+  inp.dispatchEvent(new Event('input', {bubbles:true}));
+  acUpdate(inp);
+}
+document.addEventListener('keydown', e => {
+  if (!e.target.matches || !e.target.matches('.acin') || !AC.list.length) return;
+  if (e.key === 'ArrowDown'){ e.preventDefault(); AC.sel = (AC.sel + 1) % AC.list.length; acUpdate(e.target); }
+  else if (e.key === 'ArrowUp'){ e.preventDefault(); AC.sel = (AC.sel - 1 + AC.list.length) % AC.list.length; acUpdate(e.target); }
+  else if (e.key === 'Tab'){ e.preventDefault(); acInsert(); }
+  else if (e.key === 'Escape'){ e.preventDefault(); AC.closed = AC.key; acUpdate(e.target); }
+  else if (e.key === 'Enter'){ acHide(); }
+}, true);
+document.addEventListener('keyup', e => { if (e.target.matches && e.target.matches('.acin') && !['ArrowDown', 'ArrowUp', 'Tab', 'Escape', 'Enter', 'F4'].includes(e.key)) acUpdate(e.target); });
+document.addEventListener('focusin', e => { if (e.target.matches && e.target.matches('.acin')) acUpdate(e.target); });
+document.addEventListener('focusout', () => setTimeout(() => acUpdate(), 0));
+window.addEventListener('scroll', () => { if (AC.input && document.activeElement === AC.input) acUpdate(AC.input); }, {passive:true});
+window.addEventListener('resize', () => acUpdate());
+
+</script>
+<script>/* bausteine.js */
+/* bausteine.js – Ergänzung zu basis.js für Trainer, die Formeln aus Bausteinen bauen (wenn, und-oder)
+ * Laden nach basis.js; dazu bausteine.css nach basis.css.
+ *
+ * API
+ *   SEP, CELL, OPS, rank, cmp, opTest, same, fmtNum, fmtVal   Vergleich und Ausgabe nach Excel-Regeln
+ *   fx, pickV, SUBJ, DAYS, stripQ                             Aufgabentexte
+ *   setLevel(n), newEndless(), gotoTask(i)                    Stufe wechseln, Endlos-Szenario, Übung wählen
+ *   role, isPlaced, renderFeedback, clearMarks, updateTip     Darstellung (S.slots, S.row, S.fb, #fb, #workcard)
+ *   dragData, dragKind, dropOk, dragTap, shiftPlace           Drag-Hooks für basis.js, Shift+Klick setzt ein
+ *   AC_FN                                                     Funktionsliste der Autovervollständigung
+ *
+ * Die Seite liefert
+ *   SCEN, setup(), accepts(target, kind), applyDrop(d, type, idx, t), renderGrid(),
+ *   let endScen, endSeed, poolSeed, CUR, S = {items, slots, row, fb, success, result, …}
+ *   außerdem für basis.js: setMode, canNext, nextTask, renderNav, renderDock (Pfad/Endlos über dockHTML())
+ */
+
+const SEP = '\u0001'; // trennt Bausteine beim Zusammensetzen (außerhalb von Text = Leerraum)
+const CELL = /^\$?([A-Za-z]{1,3})\$?([0-9]{1,7})$/;
+const OPS = ['=','<>','<','<=','>','>='];
+/* Auswertung nach Excel-Regeln: Zahl < Text < Wahrheitswert, Text ohne Groß/Klein */
+function rank(v){ return v.t === 'num' ? 1 : v.t === 'str' ? 2 : 3; }
+function cmp(a, b){
+  if (rank(a) !== rank(b)) return rank(a) - rank(b);
+  if (a.t === 'str'){ const x = a.v.toLowerCase(), y = b.v.toLowerCase(); return x < y ? -1 : x > y ? 1 : 0; }
+  if (a.t === 'bool') return (a.v ? 1 : 0) - (b.v ? 1 : 0);
+  return Math.abs(a.v - b.v) < 1e-9 ? 0 : a.v - b.v;
+}
+function opTest(op, c){ return {'=':c===0,'<>':c!==0,'<':c<0,'<=':c<=0,'>':c>0,'>=':c>=0}[op]; }
+function same(a, b){ if (a.t !== b.t) return false; if (a.t === 'num') return Math.abs(a.v - b.v) < 1e-9; return a.v === b.v; }
+function fmtNum(x){ return String(+x.toFixed(10)).replace('.', ','); }
+function fmtVal(v){ if (v.t === 'num') return fmtNum(v.v); if (v.t === 'str') return '"' + v.v + '"'; if (v.t === 'err') return v.v; return v.v ? 'WAHR' : 'FALSCH'; }
+
+/* Aufgabentexte */
+const fx = (n, dp) => n.toFixed(dp || 0).replace('.', ',');
+const pickV = (V, p) => V[(p.v || 0) % V.length];
+const SUBJ = ['Mathematik', 'Deutsch', 'Englisch', 'BwR', 'Physik'];
+const DAYS = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'];
+function stripQ(l){ const m = l.match(/^"(.*)"$/); return m ? m[1].replace(/""/g, '"') : l; }
+
+/* Übungen und Endlos */
+function setLevel(n){ level = n; store('level', n); poolSeed = rand(); setup(); }
+function newEndless(){ const ids = Object.keys(SCEN).filter(k => k !== endScen); endScen = ids[Math.floor(Math.random() * ids.length)]; endSeed = rand(); endCounted = false; }
+function gotoTask(i){ pfadIdx = Math.max(0, Math.min(STD.length - 1, i)); store('idx', pfadIdx); pickerOpen = false; loadTask(); window.scrollTo({top:0, behavior:'smooth'}); }
+
+/* Darstellung */
+function role(r){ return S.success ? r : ''; }
+function isPlaced(id){ return Object.values(S.slots).includes(id) || S.row.includes(id); }
+function renderFeedback(){ const fb = $('#fb'); $('#workcard').classList.toggle('solved', !!(S.fb && S.fb.type === 'ok')); fb.innerHTML = S.fb ? `<div class="fb ${S.fb.type}">${S.fb.html}</div>` : ''; }
+function clearMarks(){
+  if (!S.success && !S.fb) return;
+  const was = S.success;
+  S.success = false; S.fb = null; S.result = null;
+  document.querySelectorAll('.r-cond,.r-then,.r-else').forEach(el => el.classList.remove('r-cond', 'r-then', 'r-else'));
+  document.querySelectorAll('.fixv').forEach(el => el.classList.remove('c-then', 'c-else'));
+  renderFeedback(); if (was) renderGrid();
+}
+/* Syntax-Hinweis und Autovervollständigung übernimmt acUpdate (wie in Excel) */
+function updateTip(){ acUpdate(); }
+
+/* Drag-Hooks: Bausteine haben data-id, Zeichen data-sym; die Seite liefert accepts(t, kind) */
+function dragData(b, e){
+  if (e.target.closest('select,input,option')) return null;
+  if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+  return {id:b.dataset.id, sym:b.dataset.sym, shift:e.shiftKey, src:!b.dataset.sym};
+}
+function dragKind(){ return D.sym ? 'sym' : S.items[D.id].kind; }
+const dropOk = t => accepts(t, dragKind());
+const dragTap = d => { if (d.shift) shiftPlace(d); };
+// Shift+Klick statt Ziehen: Baustein in die erste freie Lücke, in die er passt, sonst hinten an die Formel anhängen
+function shiftPlace(d){
+  if (!d.sym && isPlaced(d.id)) return;
+  const kind = d.sym ? 'sym' : S.items[d.id].kind;
+  const t = [...document.querySelectorAll('[data-drop]')].find(t =>
+    t.dataset.drop !== 'pool' && !d.el.contains(t) && accepts(t, kind) && (t.dataset.drop !== 'slot' || !S.slots[t.dataset.slot]));
+  if (t) applyDrop(d, t.dataset.drop, t.dataset.drop === 'row' ? S.row.length : 0, t);
+}
+
+const AC_FN = [
+  {n:'ANZAHL',     v:'Wert',           d:'Zählt, wie viele Zellen in einem Bereich Zahlen enthalten.'},
+  {n:'MAX',        v:'Zahl',           d:'Gibt den größten Wert aus einer Reihe von Werten zurück.'},
+  {n:'MIN',        v:'Zahl',           d:'Gibt den kleinsten Wert aus einer Reihe von Werten zurück.'},
+  {n:'MITTELWERT', v:'Zahl',           d:'Berechnet den Durchschnitt (das arithmetische Mittel) der Argumente.'},
+  {n:'NICHT',      a:['Wahrheitswert'], d:'Kehrt einen Wahrheitswert um: Aus WAHR wird FALSCH und aus FALSCH wird WAHR.'},
+  {n:'ODER',       v:'Wahrheitswert',  d:'Prüft, ob mindestens eines der Argumente WAHR ist. Gibt nur FALSCH zurück, wenn alle Argumente FALSCH sind.'},
+  {n:'SUMME',      v:'Zahl',           d:'Addiert alle Zahlen.'},
+  {n:'UND',        v:'Wahrheitswert',  d:'Prüft, ob alle Argumente WAHR sind, und gibt nur dann WAHR zurück.'},
+  {n:'WENN',       a:['Wahrheitstest', '[Wert_wenn_wahr]', '[Wert_wenn_falsch]'], d:'Prüft, ob eine Bedingung erfüllt ist, und gibt einen Wert zurück, wenn sie WAHR ist, und einen anderen, wenn sie FALSCH ist.'},
+  {n:'WENNFEHLER', a:['Wert', 'Wert_falls_Fehler'], d:'Gibt einen anderen Wert zurück, wenn die Formel einen Fehler ergibt.'},
+  {n:'WENNS',      a:['Wahrheitstest1', 'Wert_wenn_wahr1', '…'], d:'Prüft mehrere Bedingungen nacheinander und gibt den Wert der ersten erfüllten Bedingung zurück.'}
+];
+
+</script>
+
+<!-- ===================== Kern: Parser & Auswertung ===================== -->
+<script id="core">
+function tokenize(src){
+  const t = []; let i = 0; const n = src.length;
+  const isL = ch => /[A-Za-zÄÖÜäöüß$_]/.test(ch);
+  while (i < n){
+    const c = src[i];
+    if (c === ' ' || c === '\t' || c === '\n' || c === SEP){ i++; continue; }
+    const start = i;
+    if (c === '"'){
+      i++; let v = ''; let closed = false;
+      while (i < n){
+        if (src[i] === '"'){
+          if (src[i+1] === '"'){ v += '"'; i += 2; continue; }
+          closed = true; i++; break;
+        }
+        if (src[i] !== SEP) v += src[i];
+        i++;
+      }
+      if (!closed) throw new FErr('Ein Anführungszeichen wurde geöffnet, aber nicht wieder geschlossen.');
+      t.push({type:'str', value:v, start, end:i}); continue;
+    }
+    if (/[0-9]/.test(c)){
+      let j = i; while (j < n && /[0-9]/.test(src[j])) j++;
+      if (src[j] === ',' && /[0-9]/.test(src[j+1] || '')){ j++; while (j < n && /[0-9]/.test(src[j])) j++; }
+      if (src[j] === '.' && /[0-9]/.test(src[j+1] || ''))
+        throw new FErr('Dezimalzahlen schreibt man im deutschen Excel mit Komma, z. B. 4,95.');
+      if (j < n && isL(src[j])){
+        let k = j; while (k < n && /[A-Za-zÄÖÜäöüß0-9]/.test(src[k])) k++;
+        const w = src.slice(i, k);
+        throw new FErr(`„${w}“ ist keine Zahl. Text muss in Anführungszeichen stehen: "${w}"`);
+      }
+      t.push({type:'num', value:parseFloat(src.slice(i, j).replace(',', '.')), start, end:j});
+      i = j; continue;
+    }
+    if (isL(c)){
+      let j = i; while (j < n && /[A-Za-zÄÖÜäöüß$_0-9]/.test(src[j])) j++;
+      t.push({type:'id', value:src.slice(i, j), start, end:j}); i = j; continue;
+    }
+    const two = src.substr(i, 2);
+    if (two === '=>') throw new FErr('Das Zeichen „=>“ gibt es in Excel nicht. Meinst du „>=“?');
+    if (two === '=<') throw new FErr('Das Zeichen „=<“ gibt es in Excel nicht. Meinst du „<=“?');
+    if (two === '><') throw new FErr('Das Zeichen „><“ gibt es in Excel nicht. „Ungleich“ schreibt man „<>“.');
+    if (two === '!=') throw new FErr('„Ungleich“ schreibt man in Excel „<>“.');
+    if (two === '<=' || two === '>=' || two === '<>'){ t.push({type:'op', value:two, start, end:i+2}); i += 2; continue; }
+    if ('<>='.includes(c)){ t.push({type:'op', value:c, start, end:i+1}); i++; continue; }
+    if ('();,'.includes(c)){ t.push({type:c, value:c, start, end:i+1}); i++; continue; }
+    if (c === '€') throw new FErr('Das €-Zeichen gehört nicht in die Formel – schreibe nur die Zahl.');
+    if (c === '%') throw new FErr('Das %-Zeichen gehört hier nicht in die Formel – schreibe nur die Zahl.');
+    throw new FErr(`Das Zeichen „${c}“ ist an dieser Stelle nicht erlaubt.`);
+  }
+  return t;
+}
+
+const PART = {
+  'Prüfung':    {fehlt:'Die Prüfung (der erste Teil) fehlt.',   nach:'Nach der Prüfung'},
+  'Dann_Wert':  {fehlt:'Der Dann_Wert (der zweite Teil) fehlt.', nach:'Nach dem Dann_Wert'},
+  'Sonst_Wert': {fehlt:'Der Sonst_Wert (der dritte Teil) fehlt.', nach:'Nach dem Sonst_Wert'}
+};
+
+function parseFormula(raw){
+  const src = normQuotes(raw);
+  const t = tokenize(src); let p = 0;
+  const peek = () => t[p], next = () => t[p++];
+  if (!t.length) throw new FErr('Es wurde noch nichts eingegeben.');
+  if (!(t[0].type === 'op' && t[0].value === '=')) throw new FErr('Eine Formel beginnt in Excel immer mit einem „=“.');
+  p = 1;
+  const f = next();
+  if (!f) throw new FErr('Nach dem „=“ fehlt die Funktion WENN.');
+  if (f.type !== 'id' || f.value.toUpperCase() !== 'WENN'){
+    if (f.type === 'id' && f.value.toUpperCase() === 'IF') throw new FErr('Im deutschen Excel heißt die Funktion WENN (nicht IF).');
+    throw new FErr('Nach dem „=“ muss die Funktion WENN stehen.');
+  }
+  const o = next();
+  if (!o || o.type !== '(') throw new FErr('Direkt nach WENN folgt eine öffnende Klammer „(“.');
+
+  const cS = peek() ? peek().start : src.length;
+  const left = operand('Prüfung');
+  const op = peek();
+  if (!op || op.type !== 'op') throw new FErr('In der Prüfung fehlt ein Vergleichszeichen (z. B. >=).');
+  next();
+  const right = operand('Prüfung');
+  const cE = t[p-1].end;
+  sep('Prüfung');
+  const tS = peek() ? peek().start : src.length;
+  const thenV = operand('Dann_Wert'); const tE = t[p-1].end;
+  sep('Dann_Wert');
+  const eS = peek() ? peek().start : src.length;
+  const elseV = operand('Sonst_Wert'); const eE = t[p-1].end;
+  const c = next();
+  if (!c) throw new FErr('Am Ende fehlt die schließende Klammer „)“.');
+  if (c.type === ';') throw new FErr('WENN hat genau drei Teile – hier ist ein Semikolon zu viel.');
+  if (c.type === 'op') throw new FErr('Ein Vergleich gehört nur in die Prüfung (den ersten Teil).');
+  if (c.type !== ')') throw new FErr('Nach dem Sonst_Wert folgt nur noch die schließende Klammer „)“.');
+  if (p < t.length) throw new FErr('Nach der schließenden Klammer darf nichts mehr stehen.');
+  return {cond:{left, op:op.value, right}, then:thenV, else:elseV,
+          spans:{cond:[cS,cE], then:[tS,tE], else:[eS,eE]}};
+
+  function operand(part){
+    const k = peek();
+    if (!k) throw new FErr('Die Formel ist unvollständig: ' + PART[part].fehlt);
+    if (k.type === ';' || k.type === ')' || k.type === ',') throw new FErr(PART[part].fehlt);
+    if (k.type === 'op') throw new FErr(part === 'Prüfung'
+      ? 'Vor bzw. nach dem Vergleichszeichen fehlt etwas (z. B. die Zelle oder der Vergleichswert).'
+      : 'Ein Vergleichszeichen ist hier fehl am Platz.');
+    if (k.type === '(') throw new FErr('Hier ist eine Klammer zu viel.');
+    next();
+    if (k.type === 'num') return {t:'num', v:k.value};
+    if (k.type === 'str') return {t:'str', v:k.value};
+    const u = k.value.toUpperCase();
+    if (u === 'WAHR') return {t:'bool', v:true};
+    if (u === 'FALSCH') return {t:'bool', v:false};
+    const m = k.value.match(CELL);
+    if (m && !(peek() && peek().type === 'id')) return {t:'ref', v:(m[1] + m[2]).toUpperCase()};
+    while (peek() && (peek().type === 'id' || peek().type === 'num')) next();
+    const txt = src.slice(k.start, t[p-1].end).split(SEP).join('');
+    throw new FErr(`„${txt}“ ist Text und muss in Anführungszeichen stehen: "${txt}"`);
+  }
+  function sep(part){
+    const k = next();
+    if (!k) throw new FErr('Die Formel ist unvollständig.');
+    if (k.type === ';') return;
+    if (k.type === ',') throw new FErr('Im deutschen Excel trennt man die Teile der WENN-Funktion mit einem Semikolon „;“.');
+    if (k.type === ')') throw new FErr('WENN braucht drei Teile: Prüfung; Dann_Wert; Sonst_Wert.');
+    if (k.type === 'op') throw new FErr(part === 'Prüfung' ? 'In der Prüfung darf nur ein Vergleich stehen.' : 'Ein Vergleich gehört nur in die Prüfung (den ersten Teil).');
+    throw new FErr(PART[part].nach + ' fehlt ein Semikolon „;“.');
+  }
+}
+
+/* Auswertung nach Excel-Regeln: Zahl < Text < Wahrheitswert, Text ohne Groß/Klein */
+function valOf(o, env){ if (o.t === 'ref'){ const x = env[o.v]; return x === undefined ? {t:'num', v:0} : x; } return o; }
+function evalF(ast, env){
+  const c = cmp(valOf(ast.cond.left, env), valOf(ast.cond.right, env));
+  return opTest(ast.cond.op, c) ? valOf(ast.then, env) : valOf(ast.else, env);
+}
+function fmtOperand(o){ if (o.t === 'ref') return o.v; if (o.t === 'str') return '"' + o.v.replace(/"/g, '""') + '"'; return fmtVal(o); }
+
+/* Testwerte werden pro Aufgabe beim Erzeugen festgelegt (Grenzwert, Nachbarn, Randwerte) */
+function testValues(task){ return task.tests; }
+
+function checkAgainst(src, task){
+  const ast = parseFormula(src);
+  const ref = parseFormula(task.sol);
+  const rows = testValues(task).map(input => {
+    const env = {[task.cell]: input};
+    return {input, got: evalF(ast, env), exp: evalF(ref, env)};
+  });
+  const fail = rows.find(r => !same(r.got, r.exp)) || null;
+  return {ast, ref, rows, fail, ok: !fail};
+}
+</script>
+
+<!-- ===================== Szenarien & Aufgabenerzeugung ===================== -->
+<script id="scen">
+/* ---- Grundmengen ---- */
+const FILMS = [
+  {t:'Harry Potter und der Stein der Weisen', fsk:6},
+  {t:'Titanic', fsk:12}, {t:'Avatar', fsk:12}, {t:'Jurassic Park', fsk:12}, {t:'Fluch der Karibik', fsk:12},
+  {t:'Pulp Fiction', fsk:16}, {t:'Matrix', fsk:16}, {t:'Joker', fsk:16}, {t:'Deadpool', fsk:16}
+];
+const RIDES = [{n:'Wilde Maus', h:1.0}, {n:'Feuerwirbel', h:1.1}, {n:'Blitzschlange', h:1.2}, {n:'Schwarzer Falke', h:1.3}, {n:'Donnerkeil', h:1.4}];
+const ITEMS = [{n:'die Kopfhörer', p:59.99}, {n:'den Fahrradhelm', p:49.9}, {n:'das Videospiel', p:69.99}, {n:'die Sneaker', p:89.95}, {n:'das Skateboard', p:74.5}];
+const NAMES = ['Lena', 'Tim', 'Aylin', 'Jonas', 'Mia', 'Elias'];
+const PRODUCTS = ['USB-Sticks', 'Kopfhörern', 'Druckerpatronen', 'Collegeblöcken', 'Ladekabeln'];
+const FEVER = [
+  {b:37.5, t:'erhöhter Temperatur', a:'erhöht', z:'normal'},
+  {b:38,   t:'Fieber',              a:'Fieber', z:'kein Fieber'},
+  {b:39,   t:'hohem Fieber',        a:'hohes Fieber', z:'kein hohes Fieber'}
+];
+
+/* ---- Szenarien: pick(r) wählt Zufallswerte, build(p) erzeugt Regel, Text und Ablenker ---- */
+const SCEN = {
+  kino: { name:'Kino',
+    pick: r => ({film:pick1(r, FILMS).t, v:ri(r, 0, 1)}),
+    build: p => { const f = FILMS.find(x => x.t === p.film);
+      const V = pickV([
+        {op:'>=', then:'darf', else:'darf nicht', rule:`Der Film <i>${f.t}</i> ist ab ${f.fsk} Jahren freigegeben (FSK ${f.fsk}).`},
+        {op:'<', then:'darf nicht', else:'darf', rule:`Personen unter ${f.fsk} Jahren dürfen den Film <i>${f.t}</i> (FSK ${f.fsk}) nicht ansehen.`}], p);
+      return {...V, type:'int', b:f.fsk, lo:5, hi:70, colLabel:'Alter', resLabel:'Film erlaubt?',
+        text:(c, o) => `In Zelle ${B(c)} steht das Alter einer Person. ${V.rule} Entscheide in Zelle ${B(o)} mithilfe einer WENN-Funktion, ob die Person den Film ansehen darf. Ausgegeben werden soll ${C('darf')} bzw. ${C('darf nicht')}.`,
+        resD:['ja', 'nein', 'darf nicht ansehen', 'FSK ' + f.fsk, 'nicht', 'erlaubt', f.fsk]}; } },
+
+  achterbahn: { name:'Achterbahn',
+    pick: r => ({ride:pick1(r, RIDES).n, v:ri(r, 0, 1)}),
+    build: p => { const k = RIDES.find(x => x.n === p.ride), h = fx(k.h, 2);
+      const V = pickV([
+        {op:'>=', then:'darf mitfahren', else:'darf nicht mitfahren', rule:`Mitfahren darf nur, wer mindestens ${h} m groß ist.`},
+        {op:'<', then:'darf nicht mitfahren', else:'darf mitfahren', rule:`Wer kleiner als ${h} m ist, darf nicht mitfahren.`}], p);
+      return {...V, type:'dec', dp:2, b:k.h, lo:0.95, hi:1.95, colLabel:'Größe (m)', resLabel:'Achterbahn',
+        text:(c, o) => `In Zelle ${B(c)} steht die Körpergröße eines Kindes in Metern. Für die Achterbahn <i>${k.n}</i> gilt: ${V.rule} Entscheide in Zelle ${B(o)} mithilfe einer WENN-Funktion, ob das Kind mitfahren darf. Ausgegeben werden soll ${C('darf mitfahren')} bzw. ${C('darf nicht mitfahren')}.`,
+        resD:['mitfahren', 'nicht mitfahren', 'ja', 'nein', 'zu klein', 'groß genug', k.h]}; } },
+
+  klassenarbeit: { name:'Klassenarbeit',
+    pick: r => ({max:pick1(r, [30, 40, 50, 60]), v:ri(r, 0, 1)}),
+    build: p => { const b = p.max / 2;
+      const V = pickV([
+        {op:'>=', then:'bestanden', else:'nicht bestanden', rule:`Ab ${b} Punkten ist die Arbeit bestanden.`},
+        {op:'<', then:'nicht bestanden', else:'bestanden', rule:`Bei weniger als ${b} Punkten ist die Arbeit nicht bestanden.`}], p);
+      return {...V, type:'int', b, lo:0, hi:p.max, colLabel:'Punkte', resLabel:'Ergebnis',
+        text:(c, o) => `In Zelle ${B(c)} steht die erreichte Punktzahl einer Klassenarbeit (maximal ${p.max} Punkte). ${V.rule} Gib in Zelle ${B(o)} mithilfe einer WENN-Funktion ${C('bestanden')} bzw. ${C('nicht bestanden')} aus.`,
+        resD:['durchgefallen', 'bestanden!', 'nicht', 'ja', 'Note 4', b + ' Punkte', b]}; } },
+
+  versand: { name:'Versandkosten',
+    pick: r => ({b:pick1(r, [25, 29, 39, 49, 50]), fee:pick1(r, [3.95, 4.49, 4.95, 5.9]), v:ri(r, 0, 1)}),
+    build: p => { const f = fx(p.fee, 2);
+      const V = pickV([
+        {op:'>=', then:0, else:p.fee, rule:`Ab einem Bestellwert von ${p.b} € ist der Versand kostenlos, sonst kostet er ${f} €.`},
+        {op:'<', then:p.fee, else:0, rule:`Liegt der Bestellwert unter ${p.b} €, kostet der Versand ${f} €, ansonsten ist er kostenlos.`}], p);
+      return {...V, type:'dec', dp:2, b:p.b, lo:5, hi:150, colLabel:'Bestellwert (€)', resLabel:'Versand (€)',
+        text:(c, o) => `In Zelle ${B(c)} steht der Bestellwert eines Online-Einkaufs in €. ${V.rule} Berechne in Zelle ${B(o)} mithilfe einer WENN-Funktion die Versandkosten in € (als Zahl, ohne €-Zeichen).`,
+        resD:['0', f, 'kostenlos', f + ' €', p.b, Math.round(p.fee)]}; } },
+
+  lager: { name:'Lagerbestand',
+    pick: r => ({b:pick1(r, [10, 15, 20, 25, 30, 40, 50]), prod:pick1(r, PRODUCTS), v:ri(r, 0, 2)}),
+    build: p => {
+      const V = pickV([
+        {op:'<', then:'nachbestellen', else:'ausreichend', rule:`Fällt der Bestand unter ${p.b} Stück, muss nachbestellt werden.`},
+        {op:'<=', then:'nachbestellen', else:'ausreichend', rule:`Sind höchstens noch ${p.b} Stück auf Lager, muss nachbestellt werden.`},
+        {op:'>=', then:'ausreichend', else:'nachbestellen', rule:`Erst ab ${p.b} Stück auf Lager ist der Bestand ausreichend.`}], p);
+      return {...V, type:'int', b:p.b, lo:0, hi:200, colLabel:'Bestand', resLabel:'Hinweis',
+        text:(c, o) => `In Zelle ${B(c)} steht der Lagerbestand an ${p.prod}. ${V.rule} Gib in Zelle ${B(o)} mithilfe einer WENN-Funktion ${C('nachbestellen')} bzw. ${C('ausreichend')} aus.`,
+        resD:['bestellen', 'nachbestellt', 'genug', 'ok', 'leer', p.b]}; } },
+
+  freibad: { name:'Freibad',
+    pick: r => ({b:ri(r, 20, 24), v:ri(r, 0, 1)}),
+    build: p => {
+      const V = pickV([
+        {op:'>=', then:'geöffnet', else:'geschlossen', rule:`Das Freibad öffnet ab einer Höchsttemperatur von ${p.b} °C.`},
+        {op:'<', then:'geschlossen', else:'geöffnet', rule:`Bei weniger als ${p.b} °C bleibt das Freibad geschlossen.`}], p);
+      return {...V, type:'int', b:p.b, lo:12, hi:35, colLabel:'Temperatur (°C)', resLabel:'Freibad',
+        text:(c, o) => `In Zelle ${B(c)} steht die vorhergesagte Höchsttemperatur des Tages in °C. ${V.rule} Gib in Zelle ${B(o)} mithilfe einer WENN-Funktion ${C('geöffnet')} bzw. ${C('geschlossen')} aus.`,
+        resD:['offen', 'zu', 'warm', 'kalt', 'Badewetter', p.b]}; } },
+
+  tempo: { name:'Geschwindigkeit',
+    pick: r => ({b:pick1(r, [30, 50, 70, 100]), v:ri(r, 0, 1)}),
+    build: p => {
+      const V = pickV([
+        {op:'>', then:'zu schnell', else:'in Ordnung', rule:`Wer mehr als ${p.b} km/h fährt, ist zu schnell.`},
+        {op:'<=', then:'in Ordnung', else:'zu schnell', rule:`Erlaubt sind höchstens ${p.b} km/h.`}], p);
+      return {...V, type:'int', b:p.b, lo:Math.round(p.b / 2), hi:p.b + 40, colLabel:'km/h', resLabel:'Ergebnis',
+        text:(c, o) => `An einer Messstelle wird die Geschwindigkeit von Autos gemessen. In Zelle ${B(c)} steht die gemessene Geschwindigkeit in km/h. ${V.rule} Gib in Zelle ${B(o)} mithilfe einer WENN-Funktion ${C('zu schnell')} bzw. ${C('in Ordnung')} aus.`,
+        resD:['zu langsam', 'schnell', 'ok', 'Bußgeld', 'geblitzt', p.b]}; } },
+
+  daten: { name:'Datenvolumen',
+    pick: r => ({b:pick1(r, [5, 10, 15, 20, 30]), v:ri(r, 0, 1)}),
+    build: p => {
+      const V = pickV([
+        {op:'>', then:'gedrosselt', else:'volle Geschwindigkeit', rule:`Wer in diesem Monat mehr als ${p.b} GB verbraucht hat, surft nur noch gedrosselt.`},
+        {op:'<=', then:'volle Geschwindigkeit', else:'gedrosselt', rule:`Bis einschließlich ${p.b} GB surft man mit voller Geschwindigkeit, danach gedrosselt.`}], p);
+      return {...V, type:'int', b:p.b, lo:0, hi:p.b * 2 + 5, colLabel:'Verbrauch (GB)', resLabel:'Status',
+        text:(c, o) => `In Zelle ${B(c)} steht das verbrauchte Datenvolumen eines Handyvertrags in GB. ${V.rule} Gib in Zelle ${B(o)} mithilfe einer WENN-Funktion ${C('gedrosselt')} bzw. ${C('volle Geschwindigkeit')} aus.`,
+        resD:['langsam', 'schnell', 'gesperrt', 'aufgebraucht', 'ok', p.b]}; } },
+
+  sparziel: { name:'Sparziel',
+    pick: r => ({item:pick1(r, ITEMS).n, name:pick1(r, NAMES), v:ri(r, 0, 1)}),
+    build: p => { const it = ITEMS.find(x => x.n === p.item), pf = fx(it.p, 2), n = p.name || 'Lena';
+      const V = pickV([
+        {op:'>=', then:'reicht', else:'reicht nicht', rule:`Gib in Zelle ##O## mithilfe einer WENN-Funktion ${C('reicht')} aus, wenn das Geld für den Kauf reicht, ansonsten ${C('reicht nicht')}.`},
+        {op:'<', then:'reicht nicht', else:'reicht', rule:`Gib in Zelle ##O## mithilfe einer WENN-Funktion ${C('reicht nicht')} aus, wenn noch Geld fehlt, ansonsten ${C('reicht')}.`}], p);
+      return {...V, type:'dec', dp:2, b:it.p, lo:10, hi:150, colLabel:'Erspartes (€)', resLabel:'Kauf möglich?',
+        text:(c, o) => `${n} möchte sich ${it.n} für ${pf} € kaufen. In Zelle ${B(c)} steht, wie viel Geld ${n} bereits gespart hat (in €). ${V.rule.replace('##O##', B(o))}`,
+        resD:['genug', 'zu wenig', 'kaufen', 'ja', it.p, pf + ' €']}; } },
+
+  gepaeck: { name:'Fluggepäck',
+    pick: r => ({b:pick1(r, [20, 23]), v:ri(r, 0, 1)}),
+    build: p => {
+      const V = pickV([
+        {op:'>', then:'Übergepäck', else:'ok', rule:`Wiegt ein Koffer mehr als ${p.b} kg, muss Übergepäck bezahlt werden.`},
+        {op:'<=', then:'ok', else:'Übergepäck', rule:`Koffer bis einschließlich ${p.b} kg sind im Ticketpreis enthalten, schwerere kosten Übergepäck.`}], p);
+      return {...V, type:'dec', dp:1, b:p.b, lo:8, hi:32, colLabel:'Gewicht (kg)', resLabel:'Gepäck',
+        text:(c, o) => `In Zelle ${B(c)} steht das Gewicht eines Koffers in kg. ${V.rule} Gib in Zelle ${B(o)} mithilfe einer WENN-Funktion ${C('Übergepäck')} bzw. ${C('ok')} aus.`,
+        resD:['zu schwer', 'erlaubt', 'Aufpreis', 'leicht', 'okay', p.b]}; } },
+
+  fieber: { name:'Fieber',
+    pick: r => ({lvl:ri(r, 0, FEVER.length - 1), v:ri(r, 0, 1)}),
+    build: p => { const F = FEVER[p.lvl], bs = fx(F.b, 1);
+      const V = pickV([
+        {op:'>=', then:F.a, else:F.z, rule:`Ab ${bs} °C spricht man von ${F.t}.`},
+        {op:'<', then:F.z, else:F.a, rule:`Unter ${bs} °C spricht man noch nicht von ${F.t}.`}], p);
+      return {...V, type:'dec', dp:1, b:F.b, lo:35.8, hi:41, colLabel:'Temperatur (°C)', resLabel:'Befund',
+        text:(c, o) => `In Zelle ${B(c)} steht die gemessene Körpertemperatur in °C. ${V.rule} Gib in Zelle ${B(o)} mithilfe einer WENN-Funktion ${C(F.a)} bzw. ${C(F.z)} aus.`,
+        resD:['krank', 'gesund', 'warm', 'Fieber!', 'normal', 'erhöht', 'kein Fieber', F.b]}; } },
+
+  mengenrabatt: { name:'Mengenrabatt',
+    pick: r => ({b:pick1(r, [10, 20, 25, 50, 100]), rate:pick1(r, [3, 5, 8, 10]), v:ri(r, 0, 1)}),
+    build: p => {
+      const V = pickV([
+        {op:'>=', then:p.rate, else:0, rule:`Ab ${p.b} Stück gibt es ${p.rate} % Mengenrabatt.`},
+        {op:'<', then:0, else:p.rate, rule:`Bei weniger als ${p.b} Stück gibt es keinen Rabatt, ansonsten ${p.rate} %.`}], p);
+      return {...V, type:'int', b:p.b, lo:1, hi:p.b * 3, colLabel:'Stückzahl', resLabel:'Rabatt (%)',
+        text:(c, o) => `Ein Schreibwarenhändler gewährt Mengenrabatt. In Zelle ${B(c)} steht die bestellte Stückzahl. ${V.rule} Gib in Zelle ${B(o)} mithilfe einer WENN-Funktion den Rabatt in Prozent als Zahl aus.`,
+        resD:[p.rate + ' %', String(p.rate), p.rate / 100, '0', 100, p.b]}; } },
+
+  akku: { name:'Handyakku',
+    pick: r => ({b:pick1(r, [10, 15, 20, 25]), v:ri(r, 0, 1)}),
+    build: p => {
+      const V = pickV([
+        {op:'<', then:'laden', else:'ok', rule:`Liegt der Akkustand unter ${p.b} %, soll das Handy geladen werden.`},
+        {op:'>=', then:'ok', else:'laden', rule:`Ab einem Akkustand von ${p.b} % muss das Handy noch nicht geladen werden.`}], p);
+      return {...V, type:'int', b:p.b, lo:0, hi:100, colLabel:'Akku (%)', resLabel:'Hinweis',
+        text:(c, o) => `In Zelle ${B(c)} steht der Akkustand eines Handys in Prozent (ohne %-Zeichen). ${V.rule} Gib in Zelle ${B(o)} mithilfe einer WENN-Funktion ${C('laden')} bzw. ${C('ok')} aus.`,
+        resD:['aufladen', 'leer', 'voll', 'gut', 'okay', p.b]}; } },
+
+  parkhaus: { name:'Parkhaus',
+    pick: r => ({b:pick1(r, [15, 30, 60]), fee:pick1(r, [1.5, 2, 2.5, 3]), v:ri(r, 0, 1)}),
+    build: p => { const ff = fx(p.fee, 2);
+      const V = pickV([
+        {op:'<=', then:0, else:p.fee, rule:`Wer höchstens ${p.b} Minuten parkt, zahlt nichts, ansonsten ${ff} €.`},
+        {op:'>', then:p.fee, else:0, rule:`Wer länger als ${p.b} Minuten parkt, zahlt ${ff} €, ansonsten nichts.`}], p);
+      return {...V, type:'int', b:p.b, lo:5, hi:300, colLabel:'Parkdauer (min)', resLabel:'Gebühr (€)',
+        text:(c, o) => `In Zelle ${B(c)} steht die Parkdauer in Minuten. ${V.rule} Berechne in Zelle ${B(o)} mithilfe einer WENN-Funktion die Parkgebühr in € (als Zahl, ohne €-Zeichen).`,
+        resD:['0', ff, 'kostenlos', ff + ' €', p.b, p.fee * 2]}; } },
+
+  note: { name:'Zeugnisnote',
+    pick: r => ({subj:pick1(r, SUBJ), v:ri(r, 0, 2)}),
+    build: p => { const s = p.subj || 'Mathematik';
+      const V = pickV([
+        {op:'>', b:4, then:'gefährdet', else:'in Ordnung', rule:'Bei einer Note schlechter als 4 ist das Vorrücken gefährdet.'},
+        {op:'>=', b:5, then:'gefährdet', else:'in Ordnung', rule:'Bei einer 5 oder 6 ist das Vorrücken gefährdet.'},
+        {op:'<=', b:4, then:'in Ordnung', else:'gefährdet', rule:'Mit einer Note von 4 oder besser ist alles in Ordnung, sonst ist das Vorrücken gefährdet.'}], p);
+      return {...V, type:'int', lo:1, hi:6, colLabel:'Note', resLabel:'Vorrücken',
+        text:(c, o) => `In Zelle ${B(c)} steht die Zeugnisnote im Fach ${s} (1 bis 6). ${V.rule} Gib in Zelle ${B(o)} mithilfe einer WENN-Funktion ${C('gefährdet')} bzw. ${C('in Ordnung')} aus.`,
+        resD:['bestanden', 'durchgefallen', 'gut', 'schlecht', 'Nachprüfung', V.b]}; } },
+
+  rabatt: { name:'Kundenrabatt',
+    pick: r => ({vip:pick1(r, ['Premium', 'Gold', 'VIP']), rate:pick1(r, [5, 10, 15, 20]), v:ri(r, 0, 1)}),
+    build: p => {
+      const V = pickV([
+        {op:'=', then:p.rate, else:0, rule:`${p.vip}-Mitglieder erhalten ${p.rate} % Rabatt, alle anderen 0 %.`},
+        {op:'<>', then:0, else:p.rate, rule:`Wer kein ${p.vip}-Mitglied ist, erhält keinen Rabatt (0 %), ${p.vip}-Mitglieder erhalten ${p.rate} %.`}], p);
+      return {...V, type:'text', b:p.vip, values:[p.vip, 'Basis', 'Standard'], colLabel:'Mitgliedschaft', resLabel:'Rabatt (%)',
+        text:(c, o) => `In Zelle ${B(c)} steht die Mitgliedschaft einer Kundin (z. B. ${C(p.vip)} oder ${C('Basis')}). ${V.rule} Gib in Zelle ${B(o)} mithilfe einer WENN-Funktion den Rabatt in Prozent als Zahl aus.`,
+        resD:[p.rate + ' %', String(p.rate), p.rate / 100, '0', 100, p.vip]}; } },
+
+  zahlungsart: { name:'Zahlungsart',
+    pick: r => ({m:pick1(r, ['Rechnung', 'Nachnahme']), fee:pick1(r, [0.99, 1.5, 1.95, 2.5]), v:ri(r, 0, 1)}),
+    build: p => { const ff = fx(p.fee, 2);
+      const V = pickV([
+        {op:'=', then:p.fee, else:0, rule:`Bei Zahlung per ${C(p.m)} fällt eine Gebühr von ${ff} € an, alle anderen Zahlungsarten sind kostenlos.`},
+        {op:'<>', then:0, else:p.fee, rule:`Alle Zahlungsarten außer ${C(p.m)} sind kostenlos, für ${C(p.m)} werden ${ff} € Gebühr berechnet.`}], p);
+      return {...V, type:'text', b:p.m, values:[p.m, 'PayPal', 'Lastschrift', 'Kreditkarte'], colLabel:'Zahlungsart', resLabel:'Gebühr (€)',
+        text:(c, o) => `In Zelle ${B(c)} steht die gewählte Zahlungsart (z. B. ${C('PayPal')}). ${V.rule} Berechne in Zelle ${B(o)} mithilfe einer WENN-Funktion die Gebühr in € (als Zahl, ohne €-Zeichen).`,
+        resD:['0', ff, 'kostenlos', ff + ' €', p.m, Math.round(p.fee)]}; } },
+
+  ruhetag: { name:'Ruhetag',
+    pick: r => ({day:pick1(r, DAYS), v:ri(r, 0, 1)}),
+    build: p => { const others = DAYS.filter(d => d !== p.day);
+      const V = pickV([
+        {op:'=', then:'Ruhetag', else:'geöffnet', rule:`Das Eiscafé hat jeden ${p.day} Ruhetag.`},
+        {op:'<>', then:'geöffnet', else:'Ruhetag', rule:`Das Eiscafé hat an allen Tagen außer ${p.day} geöffnet.`}], p);
+      return {...V, type:'text', b:p.day, values:[p.day, others[(DAYS.indexOf(p.day)) % 6], others[(DAYS.indexOf(p.day) + 3) % 6]], colLabel:'Wochentag', resLabel:'Eiscafé',
+        text:(c, o) => `In Zelle ${B(c)} steht ein Wochentag. ${V.rule} Gib in Zelle ${B(o)} mithilfe einer WENN-Funktion ${C('Ruhetag')} bzw. ${C('geöffnet')} aus.`,
+        resD:['geschlossen', 'offen', 'zu', 'frei', 'Ruhe', p.day]}; } }
+};
+
+/* ---- Übungen: 30 feste Aufgaben, aufsteigend schwieriger ---- */
+const STD = [
+  ['kino', {film:'Pulp Fiction', v:0, col:'A', row:10, sample:17}],
+  ['klassenarbeit', {max:40, v:0}],
+  ['freibad', {b:22, v:0}],
+  ['mengenrabatt', {b:20, rate:5, v:0}],
+  ['kino', {film:'Harry Potter und der Stein der Weisen', v:0}],
+  ['lager', {b:30, v:2}],
+  ['lager', {b:15, v:0}],
+  ['akku', {b:20, v:0}],
+  ['freibad', {b:21, v:1}],
+  ['kino', {film:'Joker', v:1}],
+  ['tempo', {b:50, v:0}],
+  ['daten', {b:10, v:0}],
+  ['note', {v:0}],
+  ['achterbahn', {ride:'Blitzschlange', v:0}],
+  ['versand', {b:49, fee:4.95, v:0}],
+  ['sparziel', {item:'die Kopfhörer', v:0}],
+  ['fieber', {lvl:1, v:0}],
+  ['gepaeck', {b:23, v:0}],
+  ['achterbahn', {ride:'Donnerkeil', v:1}],
+  ['versand', {b:29, fee:3.95, v:1}],
+  ['parkhaus', {b:30, fee:2.5, v:0}],
+  ['tempo', {b:30, v:1}],
+  ['daten', {b:20, v:1}],
+  ['note', {v:2}],
+  ['rabatt', {vip:'Premium', rate:10, v:0}],
+  ['zahlungsart', {m:'Rechnung', fee:1.5, v:0}],
+  ['ruhetag', {day:'Montag', v:0}],
+  ['rabatt', {vip:'Gold', rate:15, v:1}],
+  ['ruhetag', {day:'Dienstag', v:1}],
+  ['mengenrabatt', {b:50, rate:8, v:1}]
+];
+
+/* ---- Aus Szenario + Parametern eine vollständige Aufgabe bauen ---- */
+function pickFromGroups(r, groups, n, ok, exclude){
+  const out = [], seen = new Set(exclude);
+  const tryAdd = c => { if (out.length < n && !seen.has(c) && ok(c)){ out.push(c); seen.add(c); return true; } seen.add(c); return false; };
+  for (const g of groups){ for (const c of shuffle(g, r)) if (tryAdd(c)) break; }
+  for (const c of shuffle(groups.flat(), r)) tryAdd(c);
+  return out;
+}
+
+function buildTask(id, fixed, seedNum){
+  const sc = SCEN[id], r = rng(seedNum);
+  const p = {col:pick1(r, ['A', 'B', 'C', 'D', 'E']), row:ri(r, 2, 25), ...sc.pick(r), ...fixed};
+  const s = sc.build(p);
+  const cell = p.col + p.row, out = String.fromCharCode(p.col.charCodeAt(0) + 1) + p.row;
+  const dp = s.dp || 0, step = Math.pow(10, -dp), f10 = Math.pow(10, dp);
+  const rd = x => Math.round(x * f10) / f10;
+  const numLit = v => Number.isInteger(v) ? String(v) : fx(v, dp);              // Zahl in der Bedingung
+  const L = v => typeof v === 'number' ? numLit(v) : '"' + v + '"';
+  const O = v => typeof v === 'number' ? (Number.isInteger(v) ? String(v) : fx(v, 2)) : '"' + v + '"'; // DANN/SONST
+
+  let tests, sample;
+  if (s.type === 'text'){
+    tests = s.values.map(v => ({t:'str', v}));
+    sample = {t:'str', v:p.sample ?? pick1(r, s.values)};
+  } else {
+    tests = [...new Set([s.b - step, s.b, s.b + step, s.lo, s.hi].map(rd))].map(v => ({t:'num', v}));
+    let sv = p.sample;
+    if (sv === undefined) sv = rd(s.lo + ri(r, 0, Math.round((s.hi - s.lo) / step)) * step);
+    sample = {t:'num', v:sv};
+  }
+  const cond = cell + s.op + L(s.b);
+  const T = {scen:sc.name, id, cell, out, type:s.type, dp, tests, sample, colLabel:s.colLabel, resLabel:s.resLabel,
+             text:s.text(cell, out), cond, cval:L(s.b), then:O(s.then), else:O(s.else)};
+  T.sol = `=WENN(${cond};${T.then};${T.else})`;
+
+  // Ablenker sind nur gültig, wenn sie in KEINER Reihenfolge von DANN/SONST korrekt sind
+  const fails = c => [`=WENN(${c};${T.then};${T.else})`, `=WENN(${c};${T.else};${T.then})`]
+    .every(f => { try { return !checkAgainst(f, T).ok; } catch (e) { return true; } });
+  const other = p.col + (p.row > 2 ? p.row - 1 : p.row + 1);
+  let groups, cvals;
+  if (s.type === 'text'){
+    const oth = s.values.filter(v => v !== s.b);
+    groups = [oth.map(v => cell + s.op + L(v)), [cell + s.op + s.b], [other + s.op + L(s.b), cell + '>=' + L(s.b)]];
+    cvals = [s.b, ...shuffle(oth.map(L), r)];
+  } else {
+    const flip = {'>=':'>', '>':'>=', '<':'<=', '<=':'<'}[s.op], mir = {'>=':'<=', '>':'<', '<':'>', '<=':'>='}[s.op];
+    const bad = {'>=':'=>', '<=':'=<', '>':'=', '<':'='}[s.op];
+    groups = [[cell + flip + L(s.b), cell + mir + L(s.b)],
+              [cell + s.op + L(rd(s.b + step)), cell + s.op + L(rd(s.b - step))],
+              [cell + bad + L(s.b), cell + s.op + '"' + numLit(s.b) + '"', other + s.op + L(s.b)]];
+    cvals = ['"' + numLit(s.b) + '"', ...shuffle([1, -1, 2, -2, 10].map(k => L(rd(s.b + k * step))), r)];
+  }
+  T.condD = pickFromGroups(r, groups, 3, fails, [cond]);
+  const cv = [];
+  for (const v of cvals){ if (cv.length < 3 && v !== T.cval && !cv.includes(v) && fails(cell + s.op + v)) cv.push(v); }
+  T.cvalD = cv;
+  const used = new Set([T.then, T.else]), rd6 = [];
+  for (const v of shuffle(s.resD, r)){ const l = O(v); if (!used.has(l)){ used.add(l); rd6.push(l); } }
+  T.resD = rd6.slice(0, 6);
+  return T;
+}
+</script>
+
+<!-- ===================== Oberfläche ===================== -->
+<script>
+const KEY = 'wenn-';
+
+const LEVELS = [null,
+  {name:'DANN und SONST einsetzen',          mode:'slots', cond:'fixed',     resD:false},
+  {name:'DANN und SONST mit Ablenkern',      mode:'slots', cond:'fixed',     resD:true},
+  {name:'Bedingung auswählen',               mode:'slots', cond:'choose',    resD:true},
+  {name:'Bedingung bauen – Wert ziehen',     mode:'slots', cond:'buildDrag', resD:true},
+  {name:'Bedingung bauen – Wert eintippen',  mode:'slots', cond:'buildType', resD:true},
+  {name:'Zeichen selbst setzen',             mode:'row',   cond:'buildType', resD:true, quotes:false},
+  {name:'Zeichen inkl. Anführungszeichen',   mode:'row',   cond:'buildType', resD:true, quotes:true},
+  {name:'Freitext mit Hilfe',                mode:'text',  help:true},
+  {name:'Freitext ohne Hilfe',               mode:'text',  help:false}
+];
+
+/* gelöste Aufgabe an den Server melden (nur wenn die Seite über PocketBase läuft) */
+function logSolved(erstmals){
+  if (!window.TrainerSync) return;
+  TrainerSync.event({modus: mode === 'pfad' ? 'uebungen' : 'endlos', stufe: level,
+    aufgabe: mode === 'pfad' ? String(pfadIdx + 1) : CUR.scen, titel: CUR.scen,
+    gesamt: mode === 'pfad' ? STD.length : 0, erstmals});
+}
+let mode = load('mode') === 'endlos' ? 'endlos' : 'pfad';
+let level = Math.min(9, Math.max(1, parseInt(load('level')) || 1));
+let pfadIdx = Math.min(STD.length - 1, Math.max(0, parseInt(load('idx')) || 0));
+let solved = {}; try { solved = JSON.parse(load('solved') || '{}') || {}; } catch (e) {}
+let endScen = null, endSeed = 0, endCounted = false, streak = 0, best = parseInt(load('best')) || 0;
+let CUR, S, uid = 0, poolSeed = rand(), pickerOpen = false;
+
+/* ---------- Aufgaben- und Modussteuerung ---------- */
+function loadTask(){
+  if (mode === 'pfad'){ const [id, p] = STD[pfadIdx]; CUR = buildTask(id, p, 7919 * (pfadIdx + 1) + 13); }
+  else CUR = buildTask(endScen, {}, endSeed);
+  poolSeed = rand();
+  setup();
+}
+function setMode(m){
+  if (m === mode) return;
+  mode = m; store('mode', m); pickerOpen = false;
+  if (m === 'endlos' && !endScen) newEndless();
+  loadTask();
+}
+function canNext(){ return mode === 'pfad' ? (pfadIdx < STD.length - 1 && isSolved(pfadIdx)) : endCounted; }
+function nextTask(){
+  if (!canNext()) return;
+  if (mode === 'pfad') gotoTask(pfadIdx + 1);
+  else { newEndless(); loadTask(); window.scrollTo({top:0, behavior:'smooth'}); }
+}
+function setup(){
+  const T = CUR, L = LEVELS[level], r = rng(poolSeed);
+  S = {items:{}, pools:{res:[], cond:[], cval:[]}, slots:{cond:null, then:null, else:null, cval:null},
+       row:[], op:'', input:'', text:'', success:false, rowRoles:{}, fb:null, result:null};
+  uid = 0;
+  if (L.mode !== 'text'){
+    const mk = (kind, lit) => {
+      const id = 'b' + (++uid);
+      const l = (L.quotes && kind === 'val') ? stripQ(lit) : lit;
+      S.items[id] = {id, kind, lit:l, label:l};
+      return id;
+    };
+    const seen = new Set();
+    const res = [T.then, T.else].concat(L.resD ? T.resD : []).filter(l => {
+      const k = L.quotes ? stripQ(l) : l; if (seen.has(k)) return false; seen.add(k); return true;
+    });
+    S.pools.res = shuffle(res.map(l => mk('val', l)), r);
+    if (L.cond === 'choose') S.pools.cond = shuffle([T.cond, ...T.condD].map(l => mk('cond', l)), r);
+    if (L.cond === 'buildDrag') S.pools.cval = shuffle([T.cval, ...T.cvalD].map(l => mk('val', l)), r);
+    if (L.mode === 'row'){ S.builderId = mk('builder', ''); S.pools.res.unshift(S.builderId); }
+  }
+  render();
+}
+
+/* ---------- Rendering ---------- */
+function renderNav(){ navPfad(); renderDock(); }
+
+function renderDock(){ $('#dock').innerHTML = dockHTML(); }
+
+function renderGrid(){
+  const T = CUR;
+  const m = T.cell.match(/^([A-Z]+)(\d+)$/); const col = m[1], row = +m[2];
+  const nxt = T.out.replace(/\d+/, '');
+  const sample = T.sample.t === 'num' ? fx(T.sample.v, T.dp) : esc(T.sample.v);
+  const out = S.result ? esc(S.result.t === 'str' ? S.result.v : fmtVal(S.result)) : '';
+  $('#grid').innerHTML = `<table class="grid"><tr><th></th><th>${col}</th><th>${nxt}</th></tr>
+    <tr><th>${row - 1}</th><td class="lbl">${esc(T.colLabel)}</td><td class="lbl">${esc(T.resLabel)}</td></tr>
+    <tr><th>${row}</th><td>${sample}</td><td class="fx">${out}</td></tr></table>`;
+}
+
+function builderInner(grip){
+  const L = LEVELS[level];
+  const opts = ['', ...OPS].map(o => `<option value="${esc(o)}"${S.op === o ? ' selected' : ''}>${o === '' ? '?' : esc(o)}</option>`).join('');
+  let v;
+  if (L.cond === 'buildDrag'){
+    const id = S.slots.cval;
+    v = `<div class="slot pill small" data-drop="slot" data-slot="cval">${id ? blockHTML(S.items[id], {role:role('cond')}) : '<span class="ph">Wert</span>'}</div>`;
+  } else {
+    v = `<input class="cvin" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Wert" value="${esc(S.input)}" size="${Math.max(4, S.input.length + 1)}" aria-label="Vergleichswert">`;
+  }
+  return `${grip ? '<span class="grip" aria-hidden="true">⠿</span>' : ''}<span class="cellref">${CUR.cell}</span><select class="opsel" aria-label="Vergleichszeichen">${opts}</select>${v}`;
+}
+
+function blockHTML(it, o = {}){
+  const cls = ['block'];
+  if (it.kind === 'val') cls.push('val');
+  else if (it.kind === 'sym') cls.push('sym');
+  else cls.push('hex');
+  if (it.kind === 'builder') cls.push('builder');
+  if (o.role) cls.push('r-' + o.role);
+  if (o.ghost) cls.push('ghost');
+  const drag = o.drag !== false && !o.ghost && it.id ? ` data-drag="1" data-id="${it.id}"` : '';
+  const inner = it.kind === 'builder' ? builderInner(!!drag) : esc(it.label);
+  return `<div class="${cls.join(' ')}"${drag}>${inner}</div>`;
+}
+
+function render(){
+  const T = CUR, L = LEVELS[level];
+  renderHeader();
+  $('#lvlname').textContent = `Stufe ${level}: ${L.name}`;
+  $('#taskmeta').textContent = mode === 'pfad' ? `Übungen · Aufgabe ${pfadIdx + 1} von ${STD.length}` : `Endlos · Szenario: ${T.scen}`;
+  $('#tasktext').innerHTML = T.text;
+  renderGrid();
+  const W = $('#work'), P = $('#pools');
+
+  if (L.mode === 'slots'){
+    let condHTML;
+    if (L.cond === 'fixed') condHTML = `<span class="slot-fixed">${blockHTML({kind:'cond', label:T.cond}, {drag:false, role:role('cond')})}</span>`;
+    else if (L.cond === 'choose') condHTML = `<div class="slot hex" data-drop="slot" data-slot="cond">${S.slots.cond ? blockHTML(S.items[S.slots.cond], {role:role('cond')}) : '<span class="ph">Prüfung</span>'}</div>`;
+    else condHTML = `<span class="slot-fixed">${blockHTML({kind:'builder'}, {drag:false, role:role('cond')})}</span>`;
+    const pill = (s, ph) => `<div class="slot pill" data-drop="slot" data-slot="${s}">${S.slots[s] ? blockHTML(S.items[S.slots[s]], {role:role(s)}) : `<span class="ph">${ph}</span>`}</div>`;
+    W.innerHTML = `<div class="formula"><span class="ft">=WENN(</span>${condHTML}<span class="ft">;</span>${pill('then','Dann_Wert')}<span class="ft">;</span>${pill('else','Sonst_Wert')}<span class="ft">)</span></div>`;
+  } else if (L.mode === 'row'){
+    const kids = S.row.map(id => `<span class="iw">${blockHTML(S.items[id], {role:S.success ? (S.rowRoles[id] || '') : ''})}</span>`).join('');
+    W.innerHTML = `<div class="row" data-drop="row">${kids || '<span class="ph">Ziehe Zeichen und Bausteine hierher, um die Formel zu bauen.</span>'}</div>`;
+  } else {
+    W.innerHTML = `<input id="ft" class="ftin acin" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Formel eingeben …" value="${esc(S.text)}" aria-label="Formel">`;
+    updateTip();
+  }
+
+  let ph = '';
+  const pool = (title, key) => `<div class="pool" data-drop="pool"><div class="pool-title">${title}</div><div class="pool-items">${S.pools[key].map(id => blockHTML(S.items[id], {ghost:isPlaced(id)})).join('')}</div></div>`;
+  if (S.pools.cond.length) ph += pool('Bedingungen', 'cond');
+  if (S.pools.cval.length) ph += pool('Vergleichswerte', 'cval');
+  if (L.mode === 'slots') ph += pool('Werte für DANN und SONST', 'res');
+  if (L.mode === 'row'){
+    ph += pool('Bausteine', 'res');
+    const syms = ['=', 'WENN', '(', ';', ')'].concat(L.quotes ? ['"'] : []);
+    ph += `<div class="pool sympool" data-drop="pool"><div class="pool-title">Zeichen – beliebig oft verwendbar</div><div class="pool-items">${syms.map(s => `<div class="block sym" data-drag="1" data-sym="${esc(s)}">${esc(s)}</div>`).join('')}</div></div>`;
+  }
+  P.innerHTML = ph;
+  $('#wthint').textContent = L.mode === 'text' ? '' : '· Zum Entfernen einen Baustein zurück nach unten ziehen';
+  P.style.display = ph ? '' : 'none';
+  renderFeedback();
+  renderNav();
+}
+
+/* ---------- Formel zusammensetzen & prüfen ---------- */
+function builderStr(){
+  const L = LEVELS[level];
+  if (!S.op) return {missing:'Wähle in der Bedingung ein Vergleichszeichen aus.'};
+  let v;
+  if (L.cond === 'buildDrag'){
+    if (!S.slots.cval) return {missing:'Ziehe einen Vergleichswert in die Bedingung.'};
+    v = S.items[S.slots.cval].lit;
+  } else {
+    v = S.input.trim();
+    if (!v) return {missing:'Trage in der Bedingung einen Vergleichswert ein.'};
+  }
+  return {str: CUR.cell + S.op + v};
+}
+
+function currentFormula(){
+  const L = LEVELS[level];
+  if (L.mode === 'text') return {src:S.text};
+  if (L.mode === 'slots'){
+    let c;
+    if (L.cond === 'fixed') c = CUR.cond;
+    else if (L.cond === 'choose'){ if (!S.slots.cond) return {missing:'Ziehe eine Bedingung in das Feld „Prüfung“.'}; c = S.items[S.slots.cond].lit; }
+    else { const b = builderStr(); if (b.missing) return b; c = b.str; }
+    if (!S.slots.then) return {missing:'Das Feld „Dann_Wert“ ist noch leer.'};
+    if (!S.slots.else) return {missing:'Das Feld „Sonst_Wert“ ist noch leer.'};
+    return {src:'=WENN(' + c + ';' + S.items[S.slots.then].lit + ';' + S.items[S.slots.else].lit + ')'};
+  }
+  if (!S.row.length) return {missing:'Die Formelzeile ist noch leer.'};
+  let src = '', ranges = {};
+  for (let i = 0; i < S.row.length; i++){
+    const it = S.items[S.row[i]];
+    let piece = it.lit;
+    if (it.kind === 'builder'){ const b = builderStr(); if (b.missing) return b; piece = b.str; }
+    if (i) src += SEP;
+    ranges[it.id] = [src.length, src.length + piece.length];
+    src += piece;
+  }
+  return {src, ranges};
+}
+
+function check(){
+  const T = CUR, L = LEVELS[level];
+  const cur = currentFormula();
+  if (cur.missing){ S.fb = {type:'err', html:esc(cur.missing)}; S.success = false; renderFeedback(); return; }
+  let res;
+  try { res = checkAgainst(cur.src, T); }
+  catch (e){
+    if (!(e instanceof FErr)) throw e;
+    S.success = false;
+    S.fb = {type:'err', html: level === 9 ? 'Die Formel enthält einen Fehler.' : esc(e.message)};
+    renderFeedback(); return;
+  }
+  if (!res.ok){
+    S.success = false;
+    if (level === 9){ S.fb = {type:'err', html:'Die Formel ist gültig, liefert aber nicht in allen Fällen das richtige Ergebnis.'}; }
+    else {
+      const f = res.fail;
+      let h = `Die Formel ist gültig, aber das Ergebnis stimmt noch nicht in jedem Fall.<br>Wenn in <b>${T.cell}</b> der Wert <code>${esc(fmtVal(f.input))}</code> steht, liefert deine Formel <code>${esc(fmtVal(f.got))}</code> – richtig wäre <code>${esc(fmtVal(f.exp))}</code>.`;
+      if (f.got.t === 'str' && f.exp.t === 'str' && f.got.v.toLowerCase() === f.exp.v.toLowerCase()) h += '<br>Achte auf Groß- und Kleinschreibung.';
+      else if (f.got.t !== f.exp.t && fmtVal(f.got).replace(/"/g,'') === fmtVal(f.exp).replace(/"/g,'')) h += '<br>Achte darauf, ob eine Zahl oder ein Text ausgegeben werden soll.';
+      S.fb = {type:'err', html:h};
+    }
+    renderFeedback(); return;
+  }
+  // richtig
+  S.success = true;
+  logSolved(countSolved());
+  if (L.mode === 'row'){
+    const sp = res.ast.spans; S.rowRoles = {};
+    for (const [id, [a, b]] of Object.entries(cur.ranges)){
+      for (const r of ['cond', 'then', 'else']) if (a >= sp[r][0] && b <= sp[r][1]) S.rowRoles[id] = r;
+    }
+  }
+  S.result = evalF(res.ast, {[T.cell]: T.sample});
+  const a = res.ast;
+  const colored = `=WENN(<span class="c-cond">${esc(fmtOperand(a.cond.left) + a.cond.op + fmtOperand(a.cond.right))}</span>;<span class="c-then">${esc(fmtOperand(a.then))}</span>;<span class="c-else">${esc(fmtOperand(a.else))}</span>)`;
+  const norm = s => s.split(SEP).join('').replace(/\s+/g, '').toUpperCase();
+  let h = `<b>Glückwunsch, richtig! 🎉</b><br><span class="fcol">${colored}</span><br><span class="legend"><span class="c-cond">■</span> Prüfung &nbsp; <span class="c-then">■</span> Dann_Wert &nbsp; <span class="c-else">■</span> Sonst_Wert</span>`;
+  if (norm(normQuotes(cur.src)) !== norm(T.sol)) h += `<br>Deine Lösung ist gleichwertig zur Musterlösung <code>${esc(T.sol)}</code>.`;
+  if (level !== 9){
+    h += `<table class="tt"><tr><th>${T.cell}</th><th>Ergebnis</th></tr>${res.rows.map(r => `<tr><td>${esc(fmtVal(r.input))}</td><td>${esc(fmtVal(r.got))}</td></tr>`).join('')}</table>`;
+  }
+  if (canNext()) h += '<br>Weiter geht es mit „Nächste Aufgabe“.';
+  S.fb = {type:'ok', html:h};
+  render();
+}
+
+/* ---------- Drag & Drop: Ablageregeln (Ziehen: basis.js, Shift+Klick: bausteine.js) ---------- */
+function accepts(target, kind){
+  const t = target.dataset.drop;
+  if (t === 'slot'){ const s = target.dataset.slot; return s === 'cond' ? kind === 'cond' : kind === 'val'; }
+  if (t === 'row') return kind !== 'cond';
+  return t === 'pool';
+}
+function unplace(id){
+  for (const k in S.slots) if (S.slots[k] === id) S.slots[k] = null;
+  const i = S.row.indexOf(id); if (i >= 0) S.row.splice(i, 1);
+  if (S.items[id] && S.items[id].kind === 'sym') delete S.items[id];
+}
+
+function applyDrop(d, type, idx, t){
+  if (type === 'slot'){
+    const s = t.dataset.slot;
+    if (S.slots[s] === d.id) return;
+    const prev = Object.keys(S.slots).find(k => S.slots[k] === d.id);
+    const occ = S.slots[s];
+    if (prev) S.slots[prev] = null;
+    S.slots[s] = d.id;
+    if (prev && occ && accepts(document.querySelector(`[data-slot="${prev}"]`) || t, S.items[occ].kind)) S.slots[prev] = occ; // tauschen
+  } else if (type === 'row'){
+    let id = d.id;
+    if (d.sym){ id = 's' + (++uid); S.items[id] = {id, kind:'sym', lit:d.sym, label:d.sym}; }
+    const cur = S.row.indexOf(id);
+    if (cur >= 0){ S.row.splice(cur, 1); if (cur < idx) idx--; }
+    S.row.splice(idx, 0, id);
+  } else { // zurück in den Baustein-Bereich: Baustein an seinen Platz, Zeichen verschwinden
+    if (d.sym) return;
+    if (!isPlaced(d.id)) return;
+    unplace(d.id);
+  }
+  S.success = false; S.fb = null; S.result = null;
+  render();
+}
+
+/* ---------- Ereignisse ---------- */
+document.addEventListener('change', e => {
+  if (e.target.matches('.opsel')){ S.op = e.target.value; clearMarks(); }
+});
+document.addEventListener('input', e => {
+  if (e.target.matches('.cvin')){ S.input = e.target.value; e.target.size = Math.max(4, S.input.length + 1); clearMarks(); }
+  if (e.target.id === 'ft'){ S.text = e.target.value; updateTip(); clearMarks(); }
+});
+document.addEventListener('keyup', e => { if (e.target.id === 'ft') updateTip(); });
+document.addEventListener('click', e => { if (e.target.id === 'ft') updateTip(); navClick(e); });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && (e.target.id === 'ft' || e.target.matches('.cvin'))){ e.preventDefault(); check(); }
+});
+$('#resetBtn').addEventListener('click', setup);
+$('#prevBtn').addEventListener('click', () => gotoTask(pfadIdx - 1));
+if (mode === 'endlos') newEndless();
+loadTask();
+</script>
+</body>
+
+</html>

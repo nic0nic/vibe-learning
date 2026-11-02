@@ -1,0 +1,10 @@
+# Datenbank mit Schülerdaten: nie ins Repo
+pb_data/
+# PocketBase-Programm (wird lokal installiert bzw. auf TrueNAS geladen)
+pocketbase
+pocketbase.exe
+*.zip
+__pycache__/
+.DS_Store
+# persönliche Claude-Code-Einstellungen
+.claude/settings.local.json

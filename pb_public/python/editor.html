@@ -1,0 +1,453 @@
+<!doctype html>
+<html lang="de" data-trainer="py">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Python-Editor – vibe learning</title>
+<!--
+  Python-Editor: oben Code, unten Terminal.
+  Python läuft komplett im Browser (Skulpt, skulpt.org), Editor ist CodeMirror 5.
+  Beide liegen im Unterordner lib/ – kein Internet nötig, läuft auch per Doppelklick,
+  solange lib/ neben dieser Datei liegt.
+  Der Code wird im Browser gespeichert (Schlüssel py-code), über PocketBase pro Schüler.
+-->
+<script src="../katalog.js"></script>
+<script src="../nav.js"></script>
+<script src="../sync.js"></script>
+<script>
+(function(){var t=null;try{t=localStorage.getItem('wenn-theme');}catch(e){}
+document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');})();
+</script>
+<link rel="stylesheet" href="lib/codemirror.css">
+<script src="lib/codemirror.min.js"></script>
+<script src="lib/skulpt.min.js"></script>
+<script src="lib/skulpt-stdlib.js"></script>
+<style>
+:root{
+  --bg:#e5e9f0; --panel:#f6f8fb; --panel2:#eceff4; --text:#2e3440; --muted:#5b6578; --border:#cdd3de;
+  --accent:#8a5f84; --err:#a8434d; --ok:#5e8a45;
+  --term-bg:#eceff4; --term-text:#2e3440; --term-in:#5e81ac;
+  --ed-bg:#f6f8fb; --gutter:#e5e9f0; --gutter-text:#7b88a1; --active:#e9ecf2; --sel:#d8dee9;
+  --kw:#8a5f84; --str:#5e8a45; --num:#b0631f; --com:#7b88a1; --def:#4f73a3; --builtin:#3b7f8c; --op:#4c566a;
+  --mono:ui-monospace,"Cascadia Mono","SF Mono",Consolas,"Liberation Mono",monospace;
+}
+[data-theme=dark]{
+  --bg:#2e3440; --panel:#3b4252; --panel2:#434c5e; --text:#eceff4; --muted:#a9b3c4; --border:#4c566a;
+  --accent:#b48ead; --err:#d4848b; --ok:#a3be8c;
+  --term-bg:#242933; --term-text:#e5e9f0; --term-in:#88c0d0;
+  --ed-bg:#2e3440; --gutter:#2a2f3a; --gutter-text:#616e88; --active:#353b49; --sel:#434c5e;
+  --kw:#b48ead; --str:#a3be8c; --num:#d08770; --com:#7b88a1; --def:#88c0d0; --builtin:#8fbcbb; --op:#81a1c1;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;display:flex;flex-direction:column}
+.wrap{flex:1;display:flex;flex-direction:column;min-height:0;width:min(1400px,100%);margin:0 auto;padding:12px 16px 16px;gap:0}
+
+/* Werkzeugleiste */
+.bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:10px}
+.brand{font:800 20px var(--mono);letter-spacing:-.5px;margin-right:8px}
+.brand span{color:var(--accent)}
+.btn{font:600 15px system-ui,sans-serif;background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:7px 14px;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{border-color:var(--accent)}
+.btn:disabled{opacity:.45;cursor:default;border-color:var(--border)}
+.btn.run{background:var(--accent);border-color:var(--accent);color:#fff}
+[data-theme=dark] .btn.run{color:#2e3440}
+.btn.run:hover{filter:brightness(1.08)}
+.btn svg{width:16px;height:16px}
+.spacer{flex:1}
+select.btn{padding-right:10px}
+.iconbtn{background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:10px;width:38px;height:38px;display:grid;place-items:center;cursor:pointer}
+.iconbtn svg{width:20px;height:20px}
+.hint{font-size:13px;color:var(--muted)}
+
+/* Editor und Terminal */
+.pane{background:var(--panel);border:1px solid var(--border);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;min-height:0}
+.pane-head{display:flex;align-items:center;gap:10px;padding:4px 12px;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700;border-bottom:1px solid var(--border);background:var(--panel2)}
+.pane-head .status{margin-left:auto;text-transform:none;letter-spacing:0;font-weight:600}
+.status.laeuft{color:var(--accent)} .status.fehler{color:var(--err)} .status.ok{color:var(--ok)}
+#edPane{flex:3 1 0}
+#termPane{flex:2 1 0}
+.CodeMirror{flex:1;height:auto;min-height:0;font:15px/1.5 var(--mono);background:var(--ed-bg);color:var(--text)}
+.CodeMirror-gutters{background:var(--gutter);border-right:1px solid var(--border)}
+.CodeMirror-linenumber{color:var(--gutter-text)}
+.CodeMirror-cursor{border-left:2px solid var(--text)}
+.CodeMirror-activeline-background{background:var(--active)}
+.CodeMirror-selected,.CodeMirror-focused .CodeMirror-selected{background:var(--sel)}
+.CodeMirror-matchingbracket{color:inherit!important;background:var(--sel);outline:1px solid var(--muted)}
+.cm-s-default .cm-keyword{color:var(--kw);font-weight:600} .cm-s-default .cm-string{color:var(--str)} .cm-s-default .cm-number{color:var(--num)}
+.cm-s-default .cm-comment{color:var(--com);font-style:italic} .cm-s-default .cm-def{color:var(--def);font-weight:600}
+.cm-s-default .cm-builtin{color:var(--builtin)} .cm-s-default .cm-operator{color:var(--op)} .cm-s-default .cm-variable-2{color:var(--def)}
+.cm-s-default .cm-meta{color:var(--num)} .cm-s-default .cm-atom{color:var(--num)} .cm-s-default .cm-property,.cm-s-default .cm-variable{color:var(--text)}
+.cm-s-default .cm-error{color:var(--err)}
+.err-line{background:color-mix(in srgb,var(--err) 22%,transparent)!important}
+
+/* Trenner zum Ziehen */
+.split{height:12px;cursor:row-resize;display:grid;place-items:center;flex:none;touch-action:none}
+.split::after{content:"";width:48px;height:4px;border-radius:2px;background:var(--border)}
+.split:hover::after{background:var(--accent)}
+
+.term-body{flex:1;display:flex;min-height:0}
+#term{flex:1;margin:0;padding:10px 14px;overflow:auto;background:var(--term-bg);color:var(--term-text);font:15px/1.45 var(--mono);white-space:pre-wrap;word-break:break-word;cursor:text}
+#term .sys{color:var(--muted);font-style:italic}
+#term .err{color:var(--err)}
+#term .tip{color:var(--muted)}
+#term .inp{color:var(--term-in)}
+#term input{font:inherit;color:var(--term-in);background:transparent;border:0;outline:0;padding:0;margin:0;min-width:2ch;width:60%;caret-color:var(--term-in)}
+#turtleBox{display:none;border-left:1px solid var(--border);background:#fff;overflow:auto;flex:none}
+#turtleBox.an{display:block}
+#turtleBox canvas{display:block}
+
+@media (max-width:700px){
+  .hint{display:none}
+  .term-body{flex-direction:column}
+  #turtleBox{border-left:0;border-top:1px solid var(--border)}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="bar">
+    <div class="brand"><span>&gt;&gt;&gt;</span> Python</div>
+    <button class="btn run" id="runBtn" title="Ausführen (Strg+Enter)">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg>Ausführen</button>
+    <button class="btn" id="stopBtn" disabled title="Programm abbrechen (Strg+C im Terminal)">
+      <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1.5"/></svg>Stopp</button>
+    <button class="btn" id="clearBtn" title="Terminal leeren">Terminal leeren</button>
+    <select class="btn" id="beispiel" aria-label="Beispiel laden">
+      <option value="">Beispiel laden …</option>
+    </select>
+    <span class="spacer"></span>
+    <button class="btn" id="openBtn" title=".py-Datei öffnen">Öffnen</button>
+    <button class="btn" id="saveBtn" title="Als .py-Datei herunterladen">Speichern</button>
+    <input type="file" id="fileIn" accept=".py,.txt,text/plain" hidden>
+    <button class="iconbtn" id="themeBtn" aria-label="Hell/Dunkel umschalten"></button>
+  </div>
+
+  <section class="pane" id="edPane">
+    <div class="pane-head">programm.py<span class="status" id="saveState"></span></div>
+    <textarea id="code" spellcheck="false"></textarea>
+  </section>
+
+  <div class="split" id="split" role="separator" aria-label="Größe von Editor und Terminal ändern"></div>
+
+  <section class="pane" id="termPane">
+    <div class="pane-head">Terminal<span class="status" id="status">bereit</span></div>
+    <div class="term-body">
+      <pre id="term" tabindex="0" aria-live="polite"></pre>
+      <div id="turtleBox"><div id="turtle"></div></div>
+    </div>
+  </section>
+</div>
+
+<script>
+'use strict';
+const $ = s => document.querySelector(s);
+const KEY = 'py-code';
+const MAX_CODE = 90000;          // Grenze für das Speichern auf dem Server (100 000 Zeichen inkl. Verwaltung)
+const MAX_TERM = 200000;         // so viele Zeichen behält das Terminal, ältere fallen vorne weg
+
+const BEISPIELE = {
+  'Hallo Welt':
+`print("Hallo Welt!")
+print("Ich lerne Python.")
+`,
+  'Eingabe und Ausgabe':
+`name = input("Wie heißt du? ")
+alter = int(input("Wie alt bist du? "))
+print(f"Hallo {name}!")
+print(f"In 10 Jahren bist du {alter + 10} Jahre alt.")
+`,
+  'Würfeln mit random':
+`import random
+
+for wurf in range(1, 6):
+    augen = random.randint(1, 6)
+    print(f"Wurf {wurf}: {augen}")
+`,
+  'Zahlenraten':
+`import random
+
+geheim = random.randint(1, 100)
+versuche = 0
+print("Ich denke mir eine Zahl zwischen 1 und 100.")
+
+while True:
+    tipp = int(input("Dein Tipp: "))
+    versuche = versuche + 1
+    if tipp < geheim:
+        print("Zu klein!")
+    elif tipp > geheim:
+        print("Zu groß!")
+    else:
+        print(f"Richtig! Du hast {versuche} Versuche gebraucht.")
+        break
+`,
+  'Liste und Schleife':
+`noten = [2, 3, 1, 4, 2, 3]
+
+summe = 0
+for note in noten:
+    summe = summe + note
+
+print("Noten:", noten)
+print("Durchschnitt:", round(summe / len(noten), 2))
+print("Beste Note:", min(noten))
+`,
+  'Funktion':
+`def brutto(netto, steuersatz=19):
+    return netto * (1 + steuersatz / 100)
+
+print(brutto(100))
+print(brutto(100, 7))
+`,
+  'Turtle-Grafik':
+`import turtle
+
+t = turtle.Turtle()
+t.speed(10)   # 1 = langsam, 10 = schnell, 0 = sofort
+t.color("purple")
+
+for i in range(36):
+    t.forward(100)
+    t.left(170)
+`
+};
+
+/* ---------- Editor ---------- */
+const ed = CodeMirror.fromTextArea($('#code'), {
+  mode: {name: 'python', version: 3},
+  lineNumbers: true, indentUnit: 4, tabSize: 4, indentWithTabs: false,
+  matchBrackets: true, autoCloseBrackets: true, styleActiveLine: true,
+  extraKeys: {
+    'Tab': cm => cm.somethingSelected() ? cm.indentSelection('add') : cm.replaceSelection('    ', 'end'),
+    'Shift-Tab': cm => cm.indentSelection('subtract'),
+    'Ctrl-Enter': () => run(), 'Cmd-Enter': () => run(),
+    'Ctrl-/': 'toggleComment', 'Cmd-/': 'toggleComment', 'Ctrl-3': 'toggleComment',
+    "Ctrl-'": 'toggleComment'   // Strg+# auf deutscher Tastatur
+  }
+});
+// Strg+# kommt je nach Browser unterschiedlich an, daher zusätzlich direkt abfangen
+ed.on('keydown', (cm, e) => { if ((e.ctrlKey || e.metaKey) && (e.key === '#' || e.code === 'Backslash')){ e.preventDefault(); cm.toggleComment(); } });
+
+function load(k){ try { return localStorage.getItem(k); } catch (e) { return null; } }
+let saveTimer = null;
+function store(){
+  const code = ed.getValue();
+  if (code.length > MAX_CODE){ $('#saveState').textContent = 'zu lang zum Speichern – bitte als Datei sichern'; return; }
+  try { localStorage.setItem(KEY, code); } catch (e) {}
+  if (window.TrainerSync) TrainerSync.changed();
+  $('#saveState').textContent = 'gespeichert';
+}
+ed.setValue(load(KEY) ?? BEISPIELE['Hallo Welt']);
+ed.clearHistory();
+ed.on('change', () => {
+  clearErrLine();
+  $('#saveState').textContent = '';
+  clearTimeout(saveTimer); saveTimer = setTimeout(store, 600);
+});
+window.addEventListener('beforeunload', () => { if (saveTimer){ clearTimeout(saveTimer); store(); } });
+
+Object.keys(BEISPIELE).forEach(n => $('#beispiel').add(new Option(n, n)));
+$('#beispiel').addEventListener('change', e => {
+  const n = e.target.value; e.target.value = '';
+  if (!n) return;
+  const alt = ed.getValue().trim();
+  if (alt && !Object.values(BEISPIELE).some(b => b.trim() === alt) && !confirm('Dein bisheriger Code wird ersetzt. Weiter?')) return;
+  ed.setValue(BEISPIELE[n]); ed.focus();
+});
+
+/* Datei öffnen / speichern */
+$('#saveBtn').addEventListener('click', () => {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([ed.getValue()], {type: 'text/x-python'}));
+  a.download = 'programm.py'; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+});
+$('#openBtn').addEventListener('click', () => $('#fileIn').click());
+$('#fileIn').addEventListener('change', e => {
+  const f = e.target.files[0]; e.target.value = '';
+  if (!f) return;
+  if (ed.getValue().trim() && !confirm(`„${f.name}“ öffnen? Dein bisheriger Code wird ersetzt.`)) return;
+  f.text().then(t => { ed.setValue(t.replace(/\t/g, '    ')); ed.focus(); });
+});
+
+/* ---------- Terminal ---------- */
+const term = $('#term');
+function out(text, cls){
+  if (!text) return;
+  const pend = term.querySelector('input');
+  const node = cls ? Object.assign(document.createElement('span'), {className: cls, textContent: text}) : document.createTextNode(text);
+  term.insertBefore(node, pend || null);
+  if (term.textContent.length > MAX_TERM){
+    while (term.firstChild && term.textContent.length > MAX_TERM * 0.8 && term.firstChild !== pend) term.removeChild(term.firstChild);
+  }
+  term.scrollTop = term.scrollHeight;
+}
+function nl(){ const t = term.textContent; if (t && !t.endsWith('\n')) out('\n'); }
+function setStatus(text, cls){ const s = $('#status'); s.textContent = text; s.className = 'status ' + (cls || ''); }
+$('#clearBtn').addEventListener('click', () => { [...term.childNodes].forEach(n => { if (n.tagName !== 'INPUT') n.remove(); }); });
+term.addEventListener('click', () => { const i = term.querySelector('input'); if (i && !getSelection().toString()) i.focus(); });
+
+let pendingInput = null;        // {resolve, reject, el} solange input() auf eine Eingabe wartet
+function askInput(prompt){
+  return new Promise((resolve, reject) => {
+    if (prompt) out(String(prompt));
+    const el = document.createElement('input');
+    el.setAttribute('aria-label', 'Eingabe');
+    el.autocomplete = 'off'; el.spellcheck = false;
+    term.appendChild(el); el.focus();
+    term.scrollTop = term.scrollHeight;
+    pendingInput = {reject, el};
+    setStatus('wartet auf Eingabe …', 'laeuft');
+    el.addEventListener('keydown', e => {
+      if (e.key === 'Enter'){
+        const v = el.value; el.remove(); pendingInput = null;
+        out(v, 'inp'); out('\n');
+        setStatus('läuft …', 'laeuft');
+        resolve(v);
+      } else if (e.key === 'c' && e.ctrlKey && !el.selectionEnd){ e.preventDefault(); stop(); }
+    });
+  });
+}
+
+/* ---------- Fehlermeldungen ---------- */
+const TIPPS = {
+  SyntaxError: 'Die Schreibweise stimmt nicht. Prüfe Klammern, Anführungszeichen und den Doppelpunkt nach if/for/while/def.',
+  IndentationError: 'Die Einrückung passt nicht. Zeilen in einem Block müssen gleich weit (4 Leerzeichen) eingerückt sein.',
+  TabError: 'Tabs und Leerzeichen sind gemischt. Rücke nur mit Leerzeichen ein.',
+  NameError: 'Dieser Name ist unbekannt. Tippfehler? Groß-/Kleinschreibung? Wurde die Variable vorher angelegt?',
+  TypeError: 'Die Datentypen passen nicht zusammen, z. B. Text + Zahl. Tipp: input() liefert immer Text, mit int() oder float() umwandeln.',
+  ValueError: 'Der Wert lässt sich nicht umwandeln, z. B. int("abc"). Prüfe die Eingabe.',
+  ZeroDivisionError: 'Durch 0 kann man nicht teilen.',
+  IndexError: 'Diese Position gibt es in der Liste nicht. Achtung: Die erste Position ist 0.',
+  KeyError: 'Diesen Schlüssel gibt es im Dictionary nicht.',
+  AttributeError: 'Diese Methode oder Eigenschaft gibt es für diesen Datentyp nicht.',
+  ImportError: 'Dieses Modul gibt es hier nicht. Verfügbar sind u. a. random, math, time, string, turtle.',
+  ModuleNotFoundError: 'Dieses Modul gibt es hier nicht. Verfügbar sind u. a. random, math, time, string, turtle.',
+  RecursionError: 'Die Funktion ruft sich zu oft selbst auf. Fehlt die Abbruchbedingung?'
+};
+let errMark = null;
+function clearErrLine(){ if (errMark != null){ ed.removeLineClass(errMark, 'background', 'err-line'); errMark = null; } }
+function showError(err){
+  nl();
+  let text = String(err), name = '', line = 0;
+  if (err instanceof Sk.builtin.BaseException){
+    name = err.tp$name;
+    if (err.traceback && err.traceback.length) line = err.traceback[0].lineno;
+    text = err.toString();
+  }
+  out(text + '\n', 'err');
+  if (TIPPS[name]) out('Tipp: ' + TIPPS[name] + '\n', 'tip');
+  if (line > 0 && line <= ed.lineCount()){
+    errMark = ed.getLineHandle(line - 1);
+    ed.addLineClass(errMark, 'background', 'err-line');
+    ed.scrollIntoView({line: line - 1, ch: 0}, 60);
+  }
+}
+
+/* ---------- Ausführen ---------- */
+let running = false, stopRequested = false, runId = 0, abortRun = null;
+const ABBRUCH = {abbruch: true};
+
+function builtinRead(f){
+  if (Sk.builtinFiles === undefined || Sk.builtinFiles.files[f] === undefined) throw "File not found: '" + f + "'";
+  return Sk.builtinFiles.files[f];
+}
+
+function run(){
+  if (running) return;
+  stopRequested = false;
+  clearErrLine();
+  const code = ed.getValue();
+  const turtle = /^\s*(import\s+turtle|from\s+turtle\s+import)/m.test(code);
+  $('#turtleBox').classList.toggle('an', turtle);
+  nl();
+  out('>>> programm.py wird ausgeführt\n', 'sys');
+  const id = ++runId;
+  running = true; setButtons();
+  setStatus('läuft …', 'laeuft');
+  const t0 = performance.now();
+
+  Sk.configure({
+    __future__: Sk.python3,
+    output: s => { if (id === runId && !stopRequested) out(s); },
+    read: builtinRead,
+    inputfun: askInput,
+    inputfunTakesPrompt: true,
+    yieldLimit: 100,             // regelmäßig Pause machen, damit Stopp und Anzeige funktionieren
+    killableWhile: true, killableFor: true,
+    execLimit: null
+  });
+  const h = $('#termPane').clientHeight - 40;
+  (Sk.TurtleGraphics || (Sk.TurtleGraphics = {})).target = 'turtle';
+  Sk.TurtleGraphics.width = Math.max(300, Math.min(480, h));
+  Sk.TurtleGraphics.height = Math.max(300, Math.min(480, h));
+
+  // Stopp beendet sofort; ein noch laufender Rest (z. B. Turtle-Animation) bricht beim nächsten Schritt ab
+  const abgebrochen = new Promise((_, reject) => { abortRun = () => reject(ABBRUCH); });
+  Promise.race([abgebrochen, Sk.misceval.asyncToPromise(
+    () => Sk.importMainWithBody('<stdin>', false, code, true),
+    {'*': () => { if (id !== runId || stopRequested) throw ABBRUCH; }}
+  )]).then(() => {
+    nl();
+    const s = ((performance.now() - t0) / 1000).toFixed(2);
+    out(`>>> fertig (${s} s)\n`, 'sys');
+    setStatus('fertig', 'ok');
+  }, err => {
+    if (err === ABBRUCH || stopRequested){ nl(); out('>>> Programm abgebrochen\n', 'sys'); setStatus('abgebrochen'); }
+    else { showError(err); setStatus('Fehler', 'fehler'); }
+  }).finally(() => {
+    if (pendingInput){ pendingInput.el.remove(); pendingInput = null; }
+    running = false; abortRun = null; setButtons();
+  });
+}
+
+function stop(){
+  if (!running) return;
+  stopRequested = true;
+  if (pendingInput){ const p = pendingInput; p.el.remove(); pendingInput = null; p.reject(ABBRUCH); }
+  if (abortRun) abortRun();
+}
+function setButtons(){ $('#runBtn').disabled = running; $('#stopBtn').disabled = !running; }
+
+$('#runBtn').addEventListener('click', run);
+$('#stopBtn').addEventListener('click', stop);
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && running) stop(); });
+
+/* ---------- Trenner Editor/Terminal ---------- */
+(function(){
+  const sp = $('#split'), a = $('#edPane'), b = $('#termPane');
+  let saved = 0; try { saved = parseFloat(sessionStorage.getItem('py-split-local')); } catch (e) {}
+  function apply(r){ r = Math.min(.85, Math.max(.15, r)); a.style.flex = r + ' 1 0'; b.style.flex = (1 - r) + ' 1 0'; ed.refresh(); return r; }
+  if (saved) apply(saved);
+  sp.addEventListener('pointerdown', e => {
+    e.preventDefault(); sp.setPointerCapture(e.pointerId);
+    const top = a.getBoundingClientRect().top, total = b.getBoundingClientRect().bottom - top - sp.offsetHeight;
+    let r = null;
+    const move = ev => { r = apply((ev.clientY - top) / total); };
+    const up = () => { sp.removeEventListener('pointermove', move); sp.removeEventListener('pointerup', up);
+      if (r) try { sessionStorage.setItem('py-split-local', r); } catch (e) {} };
+    sp.addEventListener('pointermove', move); sp.addEventListener('pointerup', up);
+  });
+})();
+
+/* ---------- Hell/Dunkel ---------- */
+function renderTheme(){
+  const dark = document.documentElement.dataset.theme === 'dark';
+  $('#themeBtn').innerHTML = dark
+    ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>'
+    : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>';
+}
+$('#themeBtn').addEventListener('click', () => {
+  const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+  document.documentElement.dataset.theme = t;
+  try { localStorage.setItem('wenn-theme', t); } catch (e) {}
+  renderTheme();
+});
+renderTheme();
+
+out('Schreibe oben deinen Code und klicke auf „Ausführen“.\nTastenkürzel: Strg+Enter ausführen · Esc abbrechen · Strg+# Kommentar an/aus\n', 'sys');
+setButtons();
+</script>
+</body>
+</html>

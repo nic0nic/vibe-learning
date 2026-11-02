@@ -1,0 +1,29 @@
+/* bausteine.css – nach basis.css laden; Formeln aus Bausteinen (wenn, und-oder) */
+main{max-width:980px;margin:0 auto;padding:18px 16px}
+.tasktext{flex:1 1 380px;margin:0;font-size:17px}
+.worktitle,.pool-title{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700;margin-bottom:8px}
+.formula{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-family:var(--mono);font-size:22px;font-weight:700}
+.ft{padding:0 2px}
+.block{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:17px;font-weight:700;padding:7px 15px;min-height:40px;user-select:none;-webkit-user-select:none;touch-action:none;white-space:pre;color:#fff;transition:background .25s,opacity .2s}
+.slot.drop-hover{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,var(--slot))}
+.row{display:flex;flex-wrap:wrap;align-items:center;gap:6px;min-height:68px;border:2px dashed var(--slot-border);background:var(--slot);border-radius:14px;padding:10px 12px}
+.row.drop-hover{border-color:var(--accent)}
+.pools{display:grid;gap:12px}
+.ftin{width:100%;font:700 22px var(--mono);padding:12px 14px;border-radius:12px;border:2px solid var(--slot-border);background:var(--slot);color:var(--text);outline:none}
+.ftin:focus{border-color:var(--accent)}
+.tip{margin-top:6px;display:inline-block;font:14px var(--mono);background:var(--panel2);border:1px solid var(--border);border-radius:6px;padding:3px 9px;color:var(--muted)}
+.tip b{color:var(--text)}
+.tt{border-collapse:collapse;font:14px var(--mono);margin-top:6px}
+.tt th{font-family:system-ui,sans-serif;color:var(--muted)}
+.card.solved .worktitle{color:var(--solved-text)}
+.card.solved .worktitle::after{content:" ✓ richtig gelöst";text-transform:none;letter-spacing:0}
+.picker{position:absolute;bottom:62px;left:0;background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:14px;box-shadow:0 8px 28px rgba(0,0,0,.25);width:min(320px,calc(100vw - 44px))}
+.pg{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+@media (max-width:640px){
+  .formula{font-size:19px}
+  .block{font-size:15px;min-height:38px}
+  .dock{position:static;margin:0 16px 16px;display:inline-block}
+}
+@media (max-width:640px){
+  .dock{display:flex;flex-direction:column-reverse;align-items:flex-start}
+}

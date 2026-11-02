@@ -1,0 +1,613 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lehrerbereich – vibe learning</title>
+<script src="katalog.js"></script>
+<script src="nav.js"></script>
+<script src="sync.js"></script>
+<script>
+(function(){var t=null;try{t=localStorage.getItem('wenn-theme');}catch(e){}
+document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');})();
+</script>
+<style>
+:root{
+  --bg:#e5e9f0; --panel:#f6f8fb; --panel2:#eceff4; --text:#2e3440; --muted:#5b6578; --border:#cdd3de;
+  --accent:#5e81ac; --ok:#5e8a45; --warn:#b0663f; --bad:#a8434d;
+  --okbg:#dfe9d6; --badbg:#f1d9db; --warnbg:#f6e6d3;
+  --mono:ui-monospace,"Cascadia Mono","SF Mono",Consolas,"Liberation Mono",monospace;
+  --on-color:#ffffff;
+}
+[data-theme=dark]{
+  --bg:#2e3440; --panel:#3b4252; --panel2:#434c5e; --text:#eceff4; --muted:#a9b3c4; --border:#4c566a;
+  --ok:#a3be8c; --bad:#d4848b; --warn:#d08770;
+  --okbg:#3e4a45; --badbg:#4a3c45; --warnbg:#4a4540;
+  --on-color:#2e3440; --accent:#88c0d0;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;padding:12px 20px;background:var(--panel);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:5}
+.brand{font:800 19px var(--mono)} .brand span{color:var(--accent)}
+.tabs{display:inline-flex;background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:3px}
+.tabs button{border:0;background:none;color:var(--muted);font:600 14px system-ui,sans-serif;padding:7px 14px;border-radius:7px;cursor:pointer}
+.tabs button.on{background:var(--panel);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.18)}
+main{max-width:1180px;margin:0 auto;padding:18px 16px 60px}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px 18px;margin-bottom:14px}
+h2{margin:0 0 10px;font-size:18px}
+.muted{color:var(--muted)} .small{font-size:13px}
+.row{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}
+label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted);font-weight:600}
+input,select,textarea{font:15px system-ui,sans-serif;padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--panel2);color:var(--text)}
+textarea{font-family:var(--mono);width:100%;min-height:120px}
+.btn{font:600 14px system-ui,sans-serif;border-radius:9px;padding:9px 14px;border:1px solid var(--border);background:var(--panel);color:var(--text);cursor:pointer}
+.btn.primary{background:color-mix(in srgb,var(--accent) 22%,var(--panel));border-color:color-mix(in srgb,var(--accent) 50%,var(--panel));color:color-mix(in srgb,var(--accent) 60%,var(--text))}
+.btn.link{border:0;background:none;color:var(--muted);text-decoration:underline;padding:4px}
+.iconbtn{background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:9px;width:36px;height:36px;cursor:pointer}
+.tscroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%}
+th,td{border-bottom:1px solid var(--border);padding:8px 10px;text-align:left;vertical-align:middle}
+th{font-size:13px;color:var(--muted);font-weight:600;white-space:nowrap;background:var(--panel2)}
+td.code{font-family:var(--mono);font-weight:700;white-space:nowrap}
+td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+tr.clk{cursor:pointer} tr.clk:hover td{background:var(--panel2)}
+tr.none td{background:var(--badbg)}
+tr.sel td{outline:2px solid var(--accent);outline-offset:-2px}
+.nm{width:100%;min-width:120px;padding:5px 8px;font-size:14px}
+.pill{display:inline-block;font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--panel2)}
+.pill.ok{background:var(--okbg);color:var(--ok)} .pill.bad{background:var(--badbg);color:var(--bad)} .pill.warn{background:var(--warnbg);color:var(--warn)}
+.bar{display:inline-block;width:70px;height:8px;border-radius:4px;background:var(--panel2);vertical-align:middle;margin-right:6px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--ok)}
+.msg{padding:10px 14px;border-radius:10px;margin-top:10px}
+.msg.err{background:var(--badbg);color:var(--bad)} .msg.ok{background:var(--okbg);color:var(--ok)}
+.day{margin:12px 0 4px;font-weight:700}
+.ev{display:grid;grid-template-columns:62px 110px 1fr;gap:8px;padding:4px 0;border-bottom:1px dashed var(--border);font-size:14px}
+.ev .t{font-family:var(--mono);color:var(--muted)}
+.hidden{display:none!important}
+.login{max-width:380px;margin:60px auto}
+.login label{margin-bottom:10px}
+.codes-print{display:none}
+@media print{
+  header,.noprint,.card:not(.printme){display:none!important}
+  body{background:#fff;color:#000}
+  .codes-print{display:grid!important;grid-template-columns:1fr 1fr;gap:8px}
+  .printme{border:0;padding:0}
+  .printme > *:not(.codes-print){display:none!important}
+  .slip{border:1px dashed #888;border-radius:8px;padding:10px 12px;break-inside:avoid;font:14px system-ui,sans-serif}
+  .slip b{font:700 20px var(--mono);letter-spacing:.05em}
+}
+.btn.small{padding:5px 10px;font-size:13px}
+.btn.danger{color:var(--bad)}
+.acts{display:flex;gap:6px;flex-wrap:wrap}
+td.pw{font-family:var(--mono);font-weight:700}
+.grp{margin:14px 0 6px;font-weight:700}
+.grp:first-child{margin-top:0}
+.hint{font-size:13px;color:var(--muted);margin:6px 0 0}
+details > summary{cursor:pointer}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">Verwaltung</div>
+  <div class="row noprint" style="align-items:center">
+    <div class="tabs hidden" id="tabs"><button data-tab="uebersicht" class="on">Auswertung</button><button data-tab="klassen">Klassen und Zugänge</button><button data-tab="lehrer" class="hidden" id="tabLehrerBtn">Lehrkräfte</button></div>
+    <button class="iconbtn" id="themeBtn" title="Hell/Dunkel">◐</button>
+  </div>
+</header>
+
+<main>
+  <!-- Nicht angemeldet -->
+  <section class="card login" id="loginCard">
+    <h2>Verwaltung</h2>
+    <p class="muted" id="loginText">Melde dich oben rechts als Lehrkraft oder Admin an.</p>
+    <button class="btn primary" id="loginBtn">Anmelden</button>
+  </section>
+
+  <!-- Auswertung -->
+  <div id="tabUebersicht" class="hidden">
+    <section class="card noprint">
+      <div class="row">
+        <label class="nurAdmin hidden">Lehrkraft <select class="fLehrer" data-for="#fKlasse"></select></label>
+        <label>Klasse <select id="fKlasse"></select></label>
+        <label>von <input type="datetime-local" id="fVon"></label>
+        <label>bis <input type="datetime-local" id="fBis"></label>
+        <label>Seite <select id="fSeite"><option value="">alle</option></select></label>
+        <button class="btn primary" id="loadBtn">Anzeigen</button>
+        <button class="btn" id="csvBtn">CSV exportieren</button>
+      </div>
+      <div class="row small muted" style="margin-top:8px;gap:6px">
+        Schnellwahl:
+        <button class="btn link" data-range="today">heute</button>
+        <button class="btn link" data-range="7">letzte 7 Tage</button>
+        <button class="btn link" data-range="14">letzte 14 Tage</button>
+        <button class="btn link" data-range="all">gesamter Zeitraum</button>
+      </div>
+      <div id="repMsg"></div>
+    </section>
+
+    <section class="card">
+      <h2 id="repTitle">Übersicht</h2>
+      <p class="small muted">„Übungen“ zählt verschiedene Aufgaben, die im Zeitraum richtig gelöst wurden (dieselbe Aufgabe auf derselben Stufe zählt einmal). „Erarbeitung“ zeigt den Gesamtstand. Rot: im Zeitraum keine Aktivität. Zeile anklicken für Details.</p>
+      <div class="tscroll"><table id="repTable"></table></div>
+    </section>
+
+    <section class="card hidden" id="detailCard">
+      <h2 id="detailTitle"></h2>
+      <div id="detailBody"></div>
+    </section>
+  </div>
+
+  <!-- Klassen und Zugänge -->
+  <div id="tabKlassen" class="hidden">
+    <section class="card noprint">
+      <h2>Klassen</h2>
+      <div class="row nurAdmin hidden" style="margin-bottom:10px"><label>Lehrkraft <select class="fLehrer" data-for="klassenliste"></select></label></div>
+      <div id="klassenListe"></div>
+      <div class="row" style="margin-top:14px">
+        <label>Neue Klasse <input id="nkName" placeholder="z. B. 8b" maxlength="40"></label>
+        <label class="nurAdmin hidden">für <select id="nkLehrer"></select></label>
+        <button class="btn primary" id="nkBtn">Anlegen</button>
+      </div>
+      <div id="kMsg"></div>
+    </section>
+
+    <section class="card printme hidden" id="klasseCard">
+      <div class="row noprint" style="justify-content:space-between;align-items:center">
+        <h2 id="klasseTitel" style="margin:0"></h2>
+        <button class="btn" id="printBtn">Zugangszettel drucken</button>
+      </div>
+
+      <div class="row noprint" style="margin-top:14px">
+        <label>Zugangscodes <input id="cAnzahl" type="number" min="1" max="60" value="28" style="width:90px"></label>
+        <button class="btn primary" id="cBtn">Codes erzeugen</button>
+      </div>
+      <details class="noprint" style="margin-top:14px">
+        <summary><b>Konten mit Benutzername und Passwort anlegen</b></summary>
+        <p class="hint">CSV-Datei mit Überschriftenzeile. Benutzt werden die Spalte mit „name“ im Titel (z. B. „Benutzername“) und die Spalte mit „pass“ (z. B. „Passwort“), andere Spalten werden ignoriert. Ist das Passwort leer, wird eins erzeugt. Benutzernamen dürfen keine echten Namen enthalten.</p>
+        <div class="row" style="margin-top:8px"><input type="file" id="csvFile" accept=".csv,.txt,text/csv"></div>
+        <p class="hint">oder hier einfügen:</p>
+        <textarea id="csvTa" placeholder="Benutzername;Passwort&#10;8b-01;&#10;8b-02;sonne42"></textarea>
+        <div class="row" style="margin-top:8px"><button class="btn primary" id="kontenBtn">Konten anlegen</button></div>
+      </details>
+      <div id="sMsg" class="noprint"></div>
+
+      <p class="small muted noprint" style="margin-top:14px">Namen werden <b>nur in diesem Browser</b> gespeichert, nie auf dem Server. Neue Passwörter sind nur direkt nach dem Anlegen sichtbar – jetzt drucken oder notieren.</p>
+      <div class="tscroll noprint"><table id="sTable"></table></div>
+      <details class="noprint" style="margin-top:12px">
+        <summary class="small muted">Namensliste importieren / exportieren</summary>
+        <p class="small muted">Eine Zeile pro Schüler: <code>Code oder Benutzername;Name</code></p>
+        <textarea id="namesTa"></textarea>
+        <div class="row" style="margin-top:8px"><button class="btn" id="namesExport">Aktuelle Zuordnung anzeigen</button><button class="btn primary" id="namesImport">Übernehmen</button></div>
+      </details>
+      <div class="codes-print" id="codesPrint"></div>
+    </section>
+  </div>
+
+  <!-- Lehrkräfte (nur Admin) -->
+  <div id="tabLehrer" class="hidden">
+    <section class="card">
+      <h2>Lehrkräfte</h2>
+      <div class="tscroll"><table id="lTable"></table></div>
+      <div class="row" style="margin-top:14px">
+        <label>Benutzername <input id="nlName" placeholder="z. B. mueller" maxlength="40"></label>
+        <label>Anzeigename <input id="nlAnzeige" placeholder="z. B. Hr. Müller" maxlength="80"></label>
+        <label>Passwort <input id="nlPass" placeholder="leer = wird erzeugt" maxlength="200"></label>
+        <button class="btn primary" id="nlBtn">Anlegen</button>
+      </div>
+      <div id="lMsg"></div>
+      <p class="hint">Lehrkräfte sehen nur ihre eigenen Klassen. Wird eine Lehrkraft gelöscht, gehen ihre Klassen an den Admin.</p>
+    </section>
+  </div>
+</main>
+
+<script>
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+// Namen der Tools und Auswahlliste „Seite“ kommen aus katalog.js
+const SEITE = {};
+(window.KATALOG ? KATALOG.bereiche : []).forEach(b => {
+  if (!b.tools.length) return;
+  const g = document.createElement('optgroup'); g.label = b.titel;
+  b.tools.forEach(t => { SEITE[t.id] = b.titel + ': ' + t.titel; g.appendChild(new Option(t.titel, t.id)); });
+  document.getElementById('fSeite').appendChild(g);
+});
+const MODUS = {erarbeitung:'Erarbeitung', uebungen:'Übungen', endlos:'Endlos'};
+const PLATTFORM = window.KATALOG ? KATALOG.name : 'vibe learning';
+let ME = null, KLASSEN = [], LEHRER = [], SCH = [], klasseId = '', lastReport = null, selected = null;
+const PW = {};   // in dieser Sitzung vergebene Passwörter (zum Drucken), nie gespeichert
+
+const kennung = s => s.code || s.benutzername;
+function sitzung(){ try { return JSON.parse(sessionStorage.getItem('ts-lehrer') || 'null'); } catch (e) { return null; } }
+
+/* ---------- Namen nur lokal ---------- */
+function names(){ try { return JSON.parse(localStorage.getItem('lehrer-namen') || '{}'); } catch (e) { return {}; } }
+function setName(k, n){ const m = names(); if (n) m[k] = n; else delete m[k]; try { localStorage.setItem('lehrer-namen', JSON.stringify(m)); } catch (e) {} }
+
+/* ---------- API ---------- */
+async function api(path, opt = {}){
+  const S = sitzung(); if (!S) throw new Error('Bitte anmelden.');
+  const auth = S.rolle === 'admin' ? {Authorization: S.token} : {'X-Lehrer-Token': S.token};
+  const r = await fetch('/api/trainer' + path, {method: opt.method || 'GET', headers: {'Content-Type': 'application/json', ...auth}, body: opt.body ? JSON.stringify(opt.body) : undefined});
+  const j = await r.json().catch(() => ({}));
+  if (r.status === 401){ sessionStorage.removeItem('ts-lehrer'); showLoggedIn(false); throw new Error('Deine Anmeldung ist abgelaufen. Bitte neu anmelden.'); }
+  if (!r.ok) throw new Error(j.message || ('Fehler ' + r.status));
+  return j;
+}
+function msg(el, text, type){ $(el).innerHTML = text ? `<div class="msg ${type || 'err'}">${text}</div>` : ''; }
+
+/* ---------- Anmeldung ---------- */
+$('#loginBtn').addEventListener('click', () => window.TrainerSync ? TrainerSync.anmelden() : null);
+function showLoggedIn(on){
+  $('#loginCard').classList.toggle('hidden', on);
+  $('#tabs').classList.toggle('hidden', !on);
+  if (!on) ['#tabUebersicht', '#tabKlassen', '#tabLehrer'].forEach(s => $(s).classList.add('hidden'));
+}
+
+/* ---------- Tabs ---------- */
+$$('#tabs button').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
+function showTab(t){
+  $$('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
+  $('#tabUebersicht').classList.toggle('hidden', t !== 'uebersicht');
+  $('#tabKlassen').classList.toggle('hidden', t !== 'klassen');
+  $('#tabLehrer').classList.toggle('hidden', t !== 'lehrer');
+  if (t === 'klassen') renderKlassen();
+  if (t === 'lehrer') loadLehrer();
+}
+
+/* ---------- Klassen und Lehrkräfte (Grundlage für alle Auswahllisten) ---------- */
+const lehrerName = id => { if (!id) return 'Admin'; const l = LEHRER.find(x => x.id === id); return l ? (l.anzeigename || l.benutzername) : '?'; };
+const lehrerOptionen = (sel, mitAlle) => (mitAlle ? `<option value="*">alle Lehrkräfte</option>` : '') +
+  `<option value=""${sel === '' ? ' selected' : ''}>Admin (ich)</option>` +
+  LEHRER.map(l => `<option value="${l.id}"${sel === l.id ? ' selected' : ''}>${esc(l.anzeigename || l.benutzername)}</option>`).join('');
+const sortK = (a, b) => a.name.localeCompare(b.name, 'de', {numeric: true});
+
+async function loadUebersicht(){
+  const r = await api('/uebersicht');
+  ME = r; KLASSEN = r.klassen.sort(sortK); LEHRER = r.lehrer;
+  $$('.nurAdmin').forEach(el => el.classList.toggle('hidden', !r.admin));
+  $('#tabLehrerBtn').classList.toggle('hidden', !r.admin);
+  $$('.fLehrer').forEach(s => { const cur = s.value || '*'; s.innerHTML = lehrerOptionen(cur, true); });
+  $('#nkLehrer').innerHTML = lehrerOptionen($('#nkLehrer').value || '');
+  fillKlasseSelect();
+}
+// Klassen gruppiert nach Lehrkraft (Admin) bzw. nur die eigenen
+function gruppen(filter){
+  const ks = KLASSEN.filter(k => !ME.admin || filter === '*' || filter == null || k.lehrer === filter);
+  if (!ME.admin) return [{titel: '', klassen: ks}];
+  const ids = [''].concat(LEHRER.map(l => l.id));
+  return ids.map(id => ({titel: lehrerName(id), klassen: ks.filter(k => k.lehrer === id)})).filter(g => g.klassen.length);
+}
+function fillKlasseSelect(){
+  const sel = $('#fKlasse'), cur = sel.value || klasseId;
+  const gs = gruppen($('.fLehrer[data-for="#fKlasse"]').value || '*');
+  sel.innerHTML = gs.some(g => g.klassen.length)
+    ? gs.map(g => (g.titel ? `<optgroup label="${esc(g.titel)}">` : '') + g.klassen.map(k => `<option value="${k.id}"${k.id === cur ? ' selected' : ''}>${esc(k.name)}</option>`).join('') + (g.titel ? '</optgroup>' : '')).join('')
+    : '<option value="">– noch keine Klassen –</option>';
+}
+$$('.fLehrer').forEach(s => s.addEventListener('change', () => { if (s.dataset.for === '#fKlasse'){ fillKlasseSelect(); loadReport(); } else renderKlassen(); }));
+
+function renderKlassen(){
+  const gs = gruppen($('.fLehrer[data-for="klassenliste"]').value || '*');
+  if (!gs.some(g => g.klassen.length)){ $('#klassenListe').innerHTML = '<p class="muted">Noch keine Klassen. Lege unten eine an.</p>'; return; }
+  $('#klassenListe').innerHTML = gs.map(g => (g.titel ? `<div class="grp">${esc(g.titel)}</div>` : '') +
+    `<div class="tscroll"><table><tr><th>Klasse</th>${ME.admin ? '<th>Lehrkraft</th>' : ''}<th>Schüler</th><th></th></tr>` +
+    g.klassen.map(k => `<tr${k.id === klasseId ? ' class="sel"' : ''}><td><b>${esc(k.name)}</b></td>
+      ${ME.admin ? `<td><select data-umziehen="${k.id}">${lehrerOptionen(k.lehrer)}</select></td>` : ''}
+      <td class="num">${k.anzahl}</td>
+      <td><div class="acts"><button class="btn small primary" data-oeffnen="${k.id}">Schüler und Zugänge</button><button class="btn small danger" data-kloeschen="${k.id}">Löschen</button></div></td></tr>`).join('') +
+    '</table></div>').join('');
+}
+$('#klassenListe').addEventListener('click', async e => {
+  const o = e.target.closest('[data-oeffnen]'), d = e.target.closest('[data-kloeschen]');
+  if (o){ klasseId = o.dataset.oeffnen; renderKlassen(); await loadSchueler(); $('#klasseCard').scrollIntoView({behavior: 'smooth', block: 'start'}); }
+  if (d){
+    const k = KLASSEN.find(x => x.id === d.dataset.kloeschen);
+    if (!confirm(`Klasse ${k.name} mit allen ${k.anzahl} Schülern und ihrem Fortschritt endgültig löschen?`)) return;
+    try { await api('/klassen/' + k.id, {method: 'DELETE'}); if (klasseId === k.id){ klasseId = ''; $('#klasseCard').classList.add('hidden'); } await loadUebersicht(); renderKlassen(); msg('#kMsg', `Klasse ${esc(k.name)} gelöscht.`, 'ok'); }
+    catch (x){ msg('#kMsg', esc(x.message)); }
+  }
+});
+$('#klassenListe').addEventListener('change', async e => {
+  const s = e.target.closest('[data-umziehen]'); if (!s) return;
+  try { await api('/klassen/' + s.dataset.umziehen, {method: 'PATCH', body: {lehrer: s.value}}); await loadUebersicht(); renderKlassen(); msg('#kMsg', 'Klasse neu zugeordnet.', 'ok'); }
+  catch (x){ msg('#kMsg', esc(x.message)); renderKlassen(); }
+});
+$('#nkBtn').addEventListener('click', async () => {
+  const name = $('#nkName').value.trim();
+  if (!name){ msg('#kMsg', 'Bitte einen Klassennamen angeben.'); return; }
+  try {
+    const k = await api('/klassen', {method: 'POST', body: {name, lehrer: ME.admin ? $('#nkLehrer').value : undefined}});
+    $('#nkName').value = ''; klasseId = k.id;
+    await loadUebersicht(); renderKlassen(); await loadSchueler();
+    msg('#kMsg', `Klasse ${esc(k.name)} angelegt. Erzeuge jetzt Codes oder lege Konten an.`, 'ok');
+  } catch (x){ msg('#kMsg', esc(x.message)); }
+});
+
+/* ---------- Schüler einer Klasse ---------- */
+async function loadSchueler(){
+  if (!klasseId){ $('#klasseCard').classList.add('hidden'); return; }
+  const k = KLASSEN.find(x => x.id === klasseId); if (!k) return;
+  const r = await api('/schueler?klasse=' + klasseId);
+  SCH = r.schueler.sort((a, b) => (a.code ? 0 : 1) - (b.code ? 0 : 1) || kennung(a).localeCompare(kennung(b), 'de', {numeric: true}));
+  $('#klasseCard').classList.remove('hidden');
+  $('#klasseTitel').textContent = `Klasse ${k.name}${ME.admin ? ' · ' + lehrerName(k.lehrer) : ''}: ${SCH.length} Schüler`;
+  renderSchueler();
+}
+function renderSchueler(){
+  const nm = names();
+  $('#sTable').innerHTML = `<tr><th>#</th><th>Zugang</th><th>Art</th><th>Name (nur lokal)</th><th>Neues Passwort</th><th>Status</th><th></th></tr>` +
+    SCH.map((s, i) => `<tr><td class="num">${i + 1}</td><td class="code">${esc(kennung(s))}</td><td>${s.code ? 'Code' : 'Konto'}</td>
+      <td><input class="nm" data-k="${esc(kennung(s))}" value="${esc(nm[kennung(s)] || '')}" placeholder="Name eintragen"></td>
+      <td class="pw">${s.benutzername && PW[s.benutzername] ? esc(PW[s.benutzername]) : ''}</td>
+      <td>${s.gesperrt ? '<span class="pill bad">gesperrt</span>' : '<span class="pill ok">aktiv</span>'}</td>
+      <td><div class="acts">
+        <button class="btn small" data-sperren="${s.id}">${s.gesperrt ? 'Entsperren' : 'Sperren'}</button>
+        ${s.benutzername ? `<button class="btn small" data-pw="${s.id}">Passwort neu</button>` : ''}
+        <button class="btn small danger" data-sloeschen="${s.id}">Löschen</button></div></td></tr>`).join('');
+  const url = location.origin + '/';
+  $('#codesPrint').innerHTML = SCH.filter(s => !s.gesperrt).map(s => {
+    const n = nm[kennung(s)] ? esc(nm[kennung(s)]) + '<br>' : '';
+    if (s.code) return `<div class="slip">${n}Dein Zugangscode für ${esc(PLATTFORM)}:<br><b>${esc(s.code)}</b><br><span style="font-size:12px">${esc(url)}</span></div>`;
+    return `<div class="slip">${n}Deine Anmeldung für ${esc(PLATTFORM)}:<br>Benutzername: <b>${esc(s.benutzername)}</b><br>Passwort: <b>${PW[s.benutzername] ? esc(PW[s.benutzername]) : '__________'}</b><br><span style="font-size:12px">${esc(url)}</span></div>`;
+  }).join('');
+}
+$('#sTable').addEventListener('click', async e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const id = b.dataset.sperren || b.dataset.pw || b.dataset.sloeschen;
+  const s = SCH.find(x => x.id === id); if (!s) return;
+  try {
+    if (b.dataset.sperren){ await api('/schueler/' + id, {method: 'PATCH', body: {gesperrt: !s.gesperrt}}); }
+    else if (b.dataset.pw){
+      if (!confirm(`Neues Passwort für ${s.benutzername} erzeugen? Das alte gilt dann nicht mehr.`)) return;
+      const r = await api(`/schueler/${id}/passwort`, {method: 'POST', body: {}});
+      PW[s.benutzername] = r.passwort;
+      msg('#sMsg', `Neues Passwort für <b>${esc(s.benutzername)}</b>: <b>${esc(r.passwort)}</b>`, 'ok');
+    } else {
+      if (!confirm(`${kennung(s)} mit allem Fortschritt endgültig löschen?`)) return;
+      await api('/schueler/' + id, {method: 'DELETE'});
+    }
+    await loadUebersicht(); await loadSchueler();
+  } catch (x){ msg('#sMsg', esc(x.message)); }
+});
+$('#cBtn').addEventListener('click', async () => {
+  try {
+    const r = await api('/codes', {method: 'POST', body: {klasse: klasseId, anzahl: +$('#cAnzahl').value}});
+    msg('#sMsg', `${r.codes.length} Codes erzeugt.`, 'ok');
+    await loadUebersicht(); renderKlassen(); await loadSchueler();
+  } catch (x){ msg('#sMsg', esc(x.message)); }
+});
+
+/* ---------- CSV-Import: Spalte mit „name“ = Benutzername, Spalte mit „pass“ = Passwort ---------- */
+function csvZeilen(text){
+  text = text.replace(/^﻿/, '');
+  const erste = text.split(/\r?\n/)[0] || '';
+  const trenn = [';', '\t', ','].sort((a, b) => erste.split(b).length - erste.split(a).length)[0];
+  const rows = []; let row = [], f = '', q = false;
+  for (let i = 0; i < text.length; i++){
+    const c = text[i];
+    if (q){ if (c === '"' && text[i + 1] === '"'){ f += '"'; i++; } else if (c === '"') q = false; else f += c; }
+    else if (c === '"') q = true;
+    else if (c === trenn){ row.push(f); f = ''; }
+    else if (c === '\n' || c === '\r'){ if (c === '\r' && text[i + 1] === '\n') i++; row.push(f); rows.push(row); row = []; f = ''; }
+    else f += c;
+  }
+  if (f || row.length){ row.push(f); rows.push(row); }
+  return rows.filter(r => r.some(x => x.trim()));
+}
+function csvKonten(text){
+  const rows = csvZeilen(text);
+  if (rows.length < 2) throw new Error('Die Liste braucht eine Überschriftenzeile und mindestens eine Zeile mit einem Benutzernamen.');
+  const kopf = rows[0].map(h => h.trim().toLowerCase());
+  let nameCols = kopf.map((h, i) => h.includes('name') ? i : -1).filter(i => i >= 0);
+  if (nameCols.length > 1) nameCols = nameCols.filter(i => /nutzer|user|login/.test(kopf[i]));
+  if (nameCols.length !== 1) throw new Error(nameCols.length ? 'Mehrere Spalten passen zu „name“. Benenne die Spalte mit den Benutzernamen z. B. „Benutzername“.' : 'Keine Spalte mit „name“ in der Überschrift gefunden (z. B. „Benutzername“).');
+  const pi = kopf.findIndex(h => h.includes('pass'));
+  return rows.slice(1).map(r => ({name: (r[nameCols[0]] || '').trim(), pass: pi >= 0 ? (r[pi] || '').trim() : ''})).filter(k => k.name);
+}
+$('#csvFile').addEventListener('change', async e => {
+  const f = e.target.files[0]; if (!f) return;
+  let t = await f.text();
+  if (t.includes('�')) t = new TextDecoder('windows-1252').decode(await f.arrayBuffer());   // ältere Excel-Exporte
+  $('#csvTa').value = t;
+});
+$('#kontenBtn').addEventListener('click', async () => {
+  let konten;
+  try { konten = csvKonten($('#csvTa').value); } catch (x){ msg('#sMsg', esc(x.message)); return; }
+  if (!konten.length){ msg('#sMsg', 'Keine Benutzernamen gefunden.'); return; }
+  try {
+    const r = await api('/konten', {method: 'POST', body: {klasse: klasseId, konten}});
+    r.angelegt.forEach(a => { if (a.passwort) PW[a.benutzername] = a.passwort; });
+    let h = `${r.angelegt.length} Konten angelegt.`;
+    if (r.angelegt.some(a => a.passwort)) h += ' Erzeugte Passwörter stehen in der Tabelle – jetzt drucken oder notieren, später sind sie nicht mehr sichtbar.';
+    if (r.fehler.length) h += '<br><b>Nicht angelegt:</b><br>' + r.fehler.map(f => `Zeile ${f.zeile + 1} (${esc(f.name || '–')}): ${esc(f.grund)}`).join('<br>');
+    msg('#sMsg', h, r.fehler.length ? 'err' : 'ok');
+    if (r.angelegt.length){ $('#csvTa').value = ''; $('#csvFile').value = ''; }
+    await loadUebersicht(); renderKlassen(); await loadSchueler();
+  } catch (x){ msg('#sMsg', esc(x.message)); }
+});
+
+$('#printBtn').addEventListener('click', () => window.print());
+document.addEventListener('change', e => { if (e.target.matches('.nm')) setName(e.target.dataset.k, e.target.value.trim()); });
+$('#namesExport').addEventListener('click', () => { const nm = names(); $('#namesTa').value = SCH.map(s => `${kennung(s)};${nm[kennung(s)] || ''}`).join('\n'); });
+$('#namesImport').addEventListener('click', () => {
+  let n = 0;
+  for (const line of $('#namesTa').value.split(/\r?\n/)){
+    const [k, ...rest] = line.split(/[;,\t]/); const name = rest.join(' ').trim();
+    if (k && k.trim()){ const key = k.trim(); setName(/^[A-Z0-9]{1,6}-[A-Z0-9]{4}-[A-Z0-9]{4}$/i.test(key) ? key.toUpperCase() : key.toLowerCase(), name); n++; }
+  }
+  renderSchueler(); if (lastReport) renderReport();
+  alert(`${n} Zeilen übernommen.`);
+});
+
+/* ---------- Lehrkräfte (nur Admin) ---------- */
+async function loadLehrer(){
+  try {
+    const r = await api('/lehrer');
+    $('#lTable').innerHTML = `<tr><th>Benutzername</th><th>Anzeigename</th><th>Klassen</th><th></th></tr>` + (r.lehrer.length ? r.lehrer.map(l => `<tr>
+      <td class="code">${esc(l.benutzername)}</td><td>${esc(l.anzeigename)}</td><td class="num">${l.klassen}</td>
+      <td><div class="acts"><button class="btn small" data-lname="${l.id}">Anzeigename ändern</button><button class="btn small" data-lpw="${l.id}">Passwort ändern</button><button class="btn small danger" data-lloeschen="${l.id}">Löschen</button></div></td></tr>`).join('')
+      : '<tr><td colspan="4" class="muted">Noch keine Lehrkräfte angelegt.</td></tr>');
+    LEHRER = r.lehrer;
+  } catch (x){ msg('#lMsg', esc(x.message)); }
+}
+$('#lTable').addEventListener('click', async e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const id = b.dataset.lname || b.dataset.lpw || b.dataset.lloeschen;
+  const l = LEHRER.find(x => x.id === id); if (!l) return;
+  try {
+    if (b.dataset.lname){
+      const n = prompt(`Anzeigename für ${l.benutzername}:`, l.anzeigename || ''); if (n == null) return;
+      await api('/lehrer/' + id, {method: 'PATCH', body: {anzeigename: n}});
+      msg('#lMsg', 'Anzeigename geändert.', 'ok');
+    } else if (b.dataset.lpw){
+      const p = prompt(`Neues Passwort für ${l.benutzername} (mindestens 8 Zeichen, leer lassen = wird erzeugt):`, ''); if (p == null) return;
+      const r = await api('/lehrer/' + id, {method: 'PATCH', body: {passwort: p}});
+      msg('#lMsg', `Neues Passwort für <b>${esc(l.benutzername)}</b>: <b>${esc(r.passwort)}</b> – die Lehrkraft ist auf allen Geräten abgemeldet.`, 'ok');
+    } else {
+      if (!confirm(`Lehrkraft ${l.anzeigename || l.benutzername} löschen? Ihre ${l.klassen} Klassen gehen an dich (Admin).`)) return;
+      await api('/lehrer/' + id, {method: 'DELETE'});
+      msg('#lMsg', 'Lehrkraft gelöscht, ihre Klassen gehören jetzt dir.', 'ok');
+    }
+    await loadLehrer(); await loadUebersicht();
+  } catch (x){ msg('#lMsg', esc(x.message)); }
+});
+$('#nlBtn').addEventListener('click', async () => {
+  try {
+    const r = await api('/lehrer', {method: 'POST', body: {benutzername: $('#nlName').value, anzeigename: $('#nlAnzeige').value, passwort: $('#nlPass').value}});
+    msg('#lMsg', `Lehrkraft <b>${esc(r.benutzername)}</b> angelegt.${r.passwort ? ` Passwort: <b>${esc(r.passwort)}</b> (nur jetzt sichtbar)` : ''}`, 'ok');
+    ['#nlName', '#nlAnzeige', '#nlPass'].forEach(s => { $(s).value = ''; });
+    await loadLehrer(); await loadUebersicht();
+  } catch (x){ msg('#lMsg', esc(x.message)); }
+});
+
+/* ---------- Zeitraum ---------- */
+const pad = n => String(n).padStart(2, '0');
+const toLocalInput = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+function setRange(r){
+  const now = new Date(), end = new Date(now); end.setHours(23, 59, 0, 0);
+  let start = new Date(now); start.setHours(0, 0, 0, 0);
+  if (r === 'all') start = new Date(2020, 0, 1);
+  else if (r !== 'today') start.setDate(start.getDate() - (+r - 1));
+  $('#fVon').value = toLocalInput(start); $('#fBis').value = toLocalInput(end);
+}
+$$('[data-range]').forEach(b => b.addEventListener('click', () => { setRange(b.dataset.range); loadReport(); }));
+const pbDate = s => new Date(String(s).replace(' ', 'T'));
+
+/* ---------- Auswertung ---------- */
+async function loadReport(){
+  const k = $('#fKlasse').value;
+  if (!k){ msg('#repMsg', 'Lege zuerst unter „Klassen und Zugänge“ eine Klasse an.'); return; }
+  msg('#repMsg', '');
+  const von = $('#fVon').value ? new Date($('#fVon').value).toISOString() : '';
+  const bis = $('#fBis').value ? new Date($('#fBis').value).toISOString() : '';
+  try {
+    lastReport = await api(`/report?klasse=${encodeURIComponent(k)}&von=${encodeURIComponent(von)}&bis=${encodeURIComponent(bis)}`);
+    renderReport();
+  } catch (x){ msg('#repMsg', esc(x.message)); }
+}
+$('#loadBtn').addEventListener('click', loadReport);
+$('#fKlasse').addEventListener('change', loadReport);
+$('#fSeite').addEventListener('change', () => lastReport && renderReport());
+
+function summarize(){
+  const seite = $('#fSeite').value, nm = names();
+  const evs = lastReport.ereignisse.filter(e => !seite || e.seite === seite);
+  return lastReport.schueler.map(s => {
+    const mine = evs.filter(e => e.schueler === s.id);
+    const ueb = new Set(mine.filter(e => e.modus === 'uebungen').map(e => `${e.seite}|${e.stufe}|${e.aufgabe}`));
+    const endlos = mine.filter(e => e.modus === 'endlos').length;
+    const erarbIm = new Set(mine.filter(e => e.modus === 'erarbeitung').map(e => e.aufgabe)).size;
+    // Erarbeitung gesamt aus dem gespeicherten Fortschritt
+    let erDone = null, erTotal = null;
+    const fs = lastReport.fortschritt.find(f => f.schueler === s.id && f.seite === 'uo');
+    if (fs && fs.daten && fs.daten['uo-learn']){ try { erDone = (JSON.parse(fs.daten['uo-learn']).done || []).length; } catch (e) {} }
+    const lastEr = lastReport.ereignisse.filter(e => e.modus === 'erarbeitung' && e.gesamt).pop();
+    if (lastEr) erTotal = lastEr.gesamt;
+    const zeiten = mine.map(e => pbDate(e.created)).sort((a, b) => a - b);
+    const tage = new Set(zeiten.map(d => d.toDateString())).size;
+    const lastAll = lastReport.fortschritt.filter(f => f.schueler === s.id).map(f => pbDate(f.updated)).sort((a, b) => b - a)[0];
+    return {s, k: kennung(s), name: nm[kennung(s)] || '', mine, ueb: ueb.size, endlos, erarbIm, erDone, erTotal, n: mine.length, tage,
+            erste: zeiten[0], letzte: zeiten[zeiten.length - 1], lastAll};
+  });
+}
+
+function renderReport(){
+  const rows = summarize();
+  const showEr = ['', 'uo'].includes($('#fSeite').value);   // Spalte zeigt den Stand der UND/ODER-Erarbeitung
+  const aktivN = rows.filter(r => r.n).length;
+  const kl = KLASSEN.find(x => x.id === $('#fKlasse').value);
+  $('#repTitle').textContent = `Klasse ${kl ? kl.name : ''}: ${aktivN} von ${rows.length} im Zeitraum aktiv`;
+  const fmt = d => d ? d.toLocaleString('de-DE', {weekday:'short', day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'}) : '–';
+  $('#repTable').innerHTML = `<tr><th>Zugang</th><th>Name (nur lokal)</th>${showEr ? '<th>Erarbeitung UND/ODER</th><th>Schritte im Zeitraum</th>' : ''}<th>Übungen gelöst</th><th>Endlos gelöst</th><th>Aktive Tage</th><th>Erste – letzte Lösung im Zeitraum</th><th>Zuletzt gespeichert</th></tr>` +
+    rows.map(r => {
+      const pct = r.erDone != null && r.erTotal ? Math.round(100 * r.erDone / r.erTotal) : 0;
+      const erCell = r.erDone == null || r.erDone <= 1 ? '<span class="pill">nicht begonnen</span>'
+        : `<span class="bar"><i style="width:${pct}%"></i></span>${r.erDone}${r.erTotal ? ' / ' + r.erTotal : ''}${r.erTotal && r.erDone >= r.erTotal ? ' <span class="pill ok">fertig</span>' : ''}`;
+      return `<tr class="clk${r.n ? '' : ' none'}${selected === r.s.id ? ' sel' : ''}" data-id="${r.s.id}">
+        <td class="code">${esc(r.k)}${r.s.gesperrt ? ' <span class="pill bad">gesperrt</span>' : ''}</td>
+        <td><input class="nm" data-k="${esc(r.k)}" value="${esc(r.name)}" placeholder="Name eintragen"></td>
+        ${showEr ? `<td>${erCell}</td><td class="num">${r.erarbIm || '–'}</td>` : ''}
+        <td class="num">${r.ueb || '–'}</td><td class="num">${r.endlos || '–'}</td><td class="num">${r.tage || '–'}</td>
+        <td>${r.n ? fmt(r.erste) + ' – ' + fmt(r.letzte) : '<span class="pill bad">keine Aktivität</span>'}</td>
+        <td>${fmt(r.lastAll)}</td></tr>`;
+    }).join('');
+  if (selected) renderDetail(selected);
+}
+
+$('#repTable').addEventListener('click', e => {
+  if (e.target.closest('input')) return;
+  const tr = e.target.closest('tr[data-id]'); if (!tr) return;
+  selected = tr.dataset.id; renderReport(); renderDetail(selected);
+  $('#detailCard').scrollIntoView({behavior: 'smooth', block: 'start'});
+});
+
+function renderDetail(id){
+  const r = summarize().find(x => x.s.id === id); if (!r) return;
+  $('#detailCard').classList.remove('hidden');
+  $('#detailTitle').textContent = `${r.k}${r.name ? ' · ' + r.name : ''}: ${r.n} Lösungen im Zeitraum`;
+  if (!r.n){ $('#detailBody').innerHTML = '<p class="muted">Im gewählten Zeitraum wurde nichts gelöst.</p>'; return; }
+  let h = '', day = '';
+  for (const e of r.mine){
+    const d = pbDate(e.created), ds = d.toLocaleDateString('de-DE', {weekday:'long', day:'2-digit', month:'2-digit', year:'numeric'});
+    if (ds !== day){ h += `<div class="day">${ds}</div>`; day = ds; }
+    const was = e.modus === 'erarbeitung' ? `Schritt ${esc(e.aufgabe)}${e.gesamt ? '/' + e.gesamt : ''}: ${esc(e.titel)}`
+      : e.modus === 'uebungen' ? `Stufe ${e.stufe} · Aufgabe ${esc(e.aufgabe)}${e.gesamt ? '/' + e.gesamt : ''} (${esc(e.titel)})`
+      : `Stufe ${e.stufe} · Szenario ${esc(e.aufgabe)}`;
+    h += `<div class="ev"><span class="t">${d.toLocaleTimeString('de-DE', {hour:'2-digit', minute:'2-digit'})}</span><span>${SEITE[e.seite] || e.seite} · ${MODUS[e.modus] || e.modus}</span><span>${was}${e.erstmals ? '' : ' <span class="pill">wiederholt</span>'}</span></div>`;
+  }
+  $('#detailBody').innerHTML = h;
+}
+
+$('#csvBtn').addEventListener('click', () => {
+  if (!lastReport){ msg('#repMsg', 'Zuerst „Anzeigen“ wählen.'); return; }
+  const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const f = d => d ? d.toLocaleString('de-DE') : '';
+  const lines = [['Zugang', 'Name', 'Erarbeitung erledigt', 'Erarbeitung gesamt', 'Schritte im Zeitraum', 'Übungen gelöst', 'Endlos gelöst', 'Aktive Tage', 'Erste Lösung', 'Letzte Lösung'].map(q).join(';')];
+  for (const r of summarize()) lines.push([r.k, r.name, r.erDone ?? '', r.erTotal ?? '', r.erarbIm, r.ueb, r.endlos, r.tage, f(r.erste), f(r.letzte)].map(q).join(';'));
+  const blob = new Blob(['﻿' + lines.join('\r\n')], {type: 'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  const kl = KLASSEN.find(x => x.id === $('#fKlasse').value);
+  a.href = URL.createObjectURL(blob); a.download = `auswertung_${kl ? kl.name : 'klasse'}_${new Date().toISOString().slice(0, 10)}.csv`; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+});
+
+/* ---------- Theme & Start ---------- */
+$('#themeBtn').addEventListener('click', () => {
+  const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+  document.documentElement.dataset.theme = t; try { localStorage.setItem('wenn-theme', t); } catch (e) {}
+});
+async function init(){
+  if (!/^https?:$/.test(location.protocol)){ $('#loginText').textContent = 'Die Verwaltung funktioniert nur, wenn die Seite über den PocketBase-Server geöffnet wird.'; $('#loginBtn').classList.add('hidden'); return; }
+  if (!sitzung()){ showLoggedIn(false); return; }
+  showLoggedIn(true); setRange('7');
+  try {
+    await loadUebersicht();
+    if (KLASSEN.length){ showTab('uebersicht'); loadReport(); } else showTab('klassen');
+  } catch (x){ msg('#repMsg', esc(x.message)); }
+}
+init();
+</script>
+</body>
+</html>
