@@ -218,3 +218,42 @@ PYKURS = {
 Verglichen wird ohne Groß-/Kleinschreibung, Satzzeichen und doppelte Leerzeichen,
 ä/ö/ü/ß zählen wie ae/oe/ue/ss. Texte in input("…") gehören nicht zur Ausgabe.
 ```
+
+### datenbanken/abfragen.js – Datenbanken: SQL-Abfragen mit Entwurfsansicht und Editor (dazu abfragen.css)
+
+```text
+abfragen.js – SQL-Abfragen üben: Entwurf wie in Access (Stufe 1–2), SQL-Editor (Stufe 3–5)
+
+Läuft komplett im Browser (SQLite über sql.js), auch per file://. Nutzt Kopfzeile, Stufen,
+Modi und Dock aus ../excel/basis.js. Einbinden am Ende von <body>, in dieser Reihenfolge:
+  <link> ../python/lib/codemirror.css, lib/show-hint.min.css, ../excel/basis.css, abfragen.css
+  <script> filme.js (Daten), lib/sql-asm.js, ../python/lib/codemirror.min.js, lib/show-hint.min.js,
+           ../excel/basis.js, dann window.SQLKURS = {…}, dann abfragen.js
+Markup der Seite: wie abfragen.html (Kopfzeile, #tasktext, #work, #fb, #ergebnis, #dock, Knöpfe).
+
+SQLKURS = {
+  id:      'sql'                 Tool-id aus katalog.js (Speicherstand: id + '-…')
+  tabelle: DB_FILME              {name, felder:[{n, typ, art, d}], zeilen:[[…]]}
+  stufen:  [null, {name, ui}]    ui: 'block' Felder anklicken, Bedingung als Baustein
+                                     'text'  Felder anklicken, Bedingung eintippen
+                                     'sql'   SQL-Editor; vorlage: 'erklaert' | 'geruest' | 'leer'
+  aufgaben:[{frage, felder:['titel', …] oder ['*'], where?:"jahr < 1970", sort?:'jahr DESC', tipp?}]
+  endlos:  [(r, Z) => Aufgabe]   r = Zufall, Z = {pick1, ri, liste(sql) → erste Spalte aller Zeilen}
+           Ergebnis mit 1 bis 80 Zeilen wird genommen, sonst neu gewürfelt.
+}
+Geprüft wird über das Ergebnis: gleiche Spalten (Reihenfolge egal), gleiche Zeilen,
+bei sort gleiche Reihenfolge der Sortierspalte. Fehler werden vor dem Ausführen
+selbst gesucht und auf Deutsch erklärt; SQLite-Meldungen nur als Rückfall übersetzt.
+Tasten: Strg+Enter führt aus, Strg+Shift+Enter prüft; Autovervollständigung beim Tippen.
+```
+
+### datenbanken/filme.js – Datenbanken: Tabelle filme als Daten
+
+```text
+filme.js – Tabelle „filme“: 484 Filme und Serien, die Herr Maier auf IMDb bewertet hat
+
+Daten für Datenbank-Übungen. abfragen.js baut daraus die SQLite-Tabelle im Browser.
+  DB_FILME = {name, felder:[{n, typ, art, d}], zeilen:[[…], …]}
+  n = Spaltenname, typ = SQL-Datentyp, art = Anzeige für Schüler, d = Beschreibung
+Erzeugt mit werkzeuge/filme-aus-csv.py aus dem IMDb-Export, nicht von Hand ändern.
+```

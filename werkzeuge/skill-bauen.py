@@ -15,6 +15,8 @@ BIBLIOTHEKEN = [
     ("excel/bausteine.js", "Excel: Formeln aus Bausteinen (wie WENN, UND/ODER; dazu bausteine.css)"),
     ("excel/tabelle.js", "Excel: Tabellen-Übungen mit Rechenkern (wie Funktionen, Bezüge; dazu tabelle.css)"),
     ("python/lib/pykurs.js", "Geführte Python-Übungen"),
+    ("datenbanken/abfragen.js", "Datenbanken: SQL-Abfragen mit Entwurfsansicht und Editor (dazu abfragen.css)"),
+    ("datenbanken/filme.js", "Datenbanken: Tabelle filme als Daten"),
 ]
 
 

@@ -1,0 +1,85 @@
+/* abfragen.css – Aussehen der SQL-Übungen (zu abfragen.js, nach ../excel/basis.css laden) */
+:root{
+  --ed-bg:#ffffff;--gutter:#eceff4;--gutter-text:#7b88a1;--sel:#d8dee9;
+  --kw:#8a5f84;--str:#5e8a45;--num:#b0631f;--com:#7b88a1;--col:#4f73a3;--tab:#3b7f8c;--op:#4c566a;
+  --tabkopf:#a3434c;--erkl:#8c96a8
+}
+[data-theme=dark]{
+  --ed-bg:#2e3440;--gutter:#2a2f3a;--gutter-text:#616e88;--sel:#434c5e;
+  --kw:#b48ead;--str:#a3be8c;--num:#d08770;--com:#7b88a1;--col:#88c0d0;--tab:#8fbcbb;--op:#81a1c1;
+  --tabkopf:#bf616a;--erkl:#7b88a1
+}
+main{max-width:1080px;margin:0 auto;padding:18px 16px}
+.tasktext{margin:0;font-size:17px}
+.tasktext .zeige{display:inline-block;margin-top:4px}
+.tipp{margin-top:8px;font-size:15px;color:var(--muted)}
+.worktitle{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700;margin-bottom:8px}
+.worktitle .wthint{text-transform:none;letter-spacing:0;font-weight:500}
+.wthint{color:var(--muted);font-size:13px}
+.card.solved #worktitle{color:var(--solved-text)}
+.card.solved #worktitle::after{content:" ✓ richtig gelöst";text-transform:none;letter-spacing:0}
+
+/* Farben für SQL (Editor, Vorschau, Entwurf) */
+.cm-s-default .cm-keyword,.cm-keyword{color:var(--kw);font-weight:700}
+.cm-s-default .cm-string,.cm-string{color:var(--str)}
+.cm-s-default .cm-number,.cm-number{color:var(--num)}
+.cm-s-default .cm-comment{color:var(--com);font-style:italic}
+.cm-s-default .cm-variable-2,.cm-variable-2{color:var(--col);font-weight:600}
+.cm-s-default .cm-builtin,.cm-builtin{color:var(--tab);font-weight:600}
+.cm-s-default .cm-operator,.cm-operator{color:var(--op)}
+.cm-fehler{text-decoration:wavy underline var(--err);text-decoration-skip-ink:none;background:color-mix(in srgb,var(--err) 14%,transparent)}
+
+/* Entwurfsansicht wie in Access: oben die Tabelle, daneben die Teile der Abfrage */
+.entwurf{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start}
+.tabfenster{display:flex;flex-direction:column;min-width:210px;background:var(--ed-bg);border:1px solid var(--border);border-radius:8px;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,.08)}
+.tabkopf{background:var(--tabkopf);color:#fff;font:700 14px var(--mono);padding:5px 10px}
+.feld{display:flex;align-items:center;gap:6px;text-align:left;font:15px var(--mono);color:var(--text);background:none;border:0;border-bottom:1px solid var(--panel2);padding:4px 10px;cursor:pointer}
+.feld:hover{background:var(--panel2)}
+.feld.on{background:color-mix(in srgb,var(--col) 20%,var(--ed-bg));font-weight:700}
+.feld .typ{margin-left:auto;padding-left:12px;font:12px system-ui,sans-serif;color:var(--muted)}
+.feld .key{font-size:12px}
+.klauseln{flex:1 1 420px;display:flex;flex-direction:column;gap:8px}
+.kl{display:flex;align-items:center;gap:12px;background:var(--panel2);border-radius:10px;padding:8px 12px;min-height:52px}
+.kl .kw{font:700 15px var(--mono);min-width:86px}
+.kinh{flex:1;display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-family:var(--mono)}
+.tabn{font-size:16px}
+.sp{display:inline-flex;align-items:center;gap:4px;border-color:var(--col);font-size:15px}
+.sp button{border:0;background:none;color:var(--muted);font-size:16px;cursor:pointer;padding:0 2px;line-height:1}
+.sp button:hover{color:var(--err)}
+.komma{font:700 16px var(--mono);color:var(--muted);margin-left:-4px}
+.wb{display:inline-flex;align-items:center;gap:6px}
+.wb .opsel{font-size:15px}
+.sortsel{font:15px var(--mono);background:var(--ed-bg);color:var(--text);border:1px solid var(--border);border-radius:7px;padding:4px 6px}
+.sqlvbox{display:flex;gap:12px;align-items:flex-start;margin-top:12px}
+.sqlvl{font:700 12px system-ui,sans-serif;color:var(--muted);letter-spacing:.06em;padding-top:9px}
+pre.sqlv{flex:1;margin:0;font:15px/1.5 var(--mono);background:var(--ed-bg);border:1px dashed var(--border);border-radius:9px;padding:8px 12px;white-space:pre-wrap}
+.fb pre.sqlv{margin-top:6px;border-style:solid}
+
+/* Editor */
+.edwrap{border:1px solid var(--border);border-radius:9px;overflow:hidden;background:var(--ed-bg)}
+.edwrap .CodeMirror{height:auto;min-height:130px;font:16px/1.6 var(--mono);background:var(--ed-bg);color:var(--text)}
+.edwrap.eins{flex:1;min-width:240px}
+.edwrap.eins .CodeMirror{min-height:0;padding:3px 6px}
+.edwrap.eins .CodeMirror-scroll{overflow:hidden!important;margin-bottom:0;padding-bottom:0}
+.edwrap.eins .CodeMirror-hscrollbar,.edwrap.eins .CodeMirror-vscrollbar{display:none!important}
+.edwrap .CodeMirror-gutters{background:var(--gutter);border-right:1px solid var(--border)}
+.edwrap .CodeMirror-linenumber{color:var(--gutter-text)}
+.edwrap .CodeMirror-cursor{border-left:2px solid var(--text)}
+.edwrap .CodeMirror-selected,.edwrap .CodeMirror-focused .CodeMirror-selected{background:var(--sel)}
+.erkl{color:var(--erkl);font-style:italic;pointer-events:none}
+.edhint{font-size:13px;color:var(--muted);margin-top:6px}
+.CodeMirror-hints{background:var(--panel);border:1px solid var(--border);border-radius:8px;box-shadow:0 4px 14px rgba(0,0,0,.18);font:15px var(--mono);z-index:50;padding:3px}
+.CodeMirror-hint{color:var(--text);display:flex;gap:14px;justify-content:space-between;border-radius:5px;padding:2px 8px}
+li.CodeMirror-hint-active{background:var(--accent);color:var(--on-color)}
+.CodeMirror-hint .ha{font:12px system-ui,sans-serif;opacity:.75;align-self:center}
+
+/* Ergebnis (Datenblattansicht) */
+#ergebnis .dsw{max-height:440px;overflow:auto;border:1px solid var(--border);border-radius:8px}
+.ds{border-collapse:collapse;font-size:14px;width:100%}
+.ds th{position:sticky;top:0;background:var(--panel2);text-align:left;font:700 13px var(--mono);padding:5px 10px;border-bottom:1px solid var(--border);white-space:nowrap}
+.ds td{padding:4px 10px;border-bottom:1px solid var(--panel2);vertical-align:top}
+.ds td.z{text-align:right;font-family:var(--mono);white-space:nowrap}
+.ds tr:nth-child(even) td{background:color-mix(in srgb,var(--panel2) 45%,transparent)}
+.leer{color:var(--muted);font-style:italic;font-size:12px}
+.dsinfo{color:var(--muted);font-size:13px;margin-top:6px}
+@media (max-width:640px){ .kl{flex-direction:column;align-items:flex-start} .tabfenster{width:100%} }

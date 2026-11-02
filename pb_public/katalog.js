@@ -36,7 +36,11 @@ window.KATALOG = {
         {id: 'pyif', datei: 'bedingungen.html', titel: 'Bedingte Anweisung', text: 'if, elif und else: 10 Aufgaben mit Erklärung und automatischer Prüfung.'}
       ]
     },
-    {id: 'datenbanken', titel: 'Datenbanken', farbe: '#bf616a', farbeHell: '#a3434c', farbeSchrift: '#e0959b', text: 'Tabellen, Beziehungen und SQL-Abfragen.',       tools: []},
+    {id: 'datenbanken', titel: 'Datenbanken', farbe: '#bf616a', farbeHell: '#a3434c', farbeSchrift: '#e0959b', text: 'Tabellen, Beziehungen und SQL-Abfragen.',
+      tools: [
+        {id: 'sql', datei: 'abfragen.html', titel: 'SQL-Abfragen', text: 'SELECT, FROM, WHERE und ORDER BY an einer Filmdatenbank – vom Entwurf wie in Access bis zur eigenen SQL-Abfrage.'}
+      ]
+    },
     {id: 'schaltungen', titel: 'Logische Schaltungen', text: 'Gatter, Wahrheitstabellen und Schaltnetze.',  tools: []}
   ]
 };

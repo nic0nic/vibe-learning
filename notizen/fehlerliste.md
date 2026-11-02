@@ -19,7 +19,22 @@ Gesammelt im Thread „Aufbau der Seite“. Umgesetzt wird erst, wenn die Lehrkr
     - Zellbezüge, späte Übung: dieselbe Abweichung, aber zum Übertragen, also Funktion mit festem Bereich in der Formel, z. B. =B5-MITTELWERT($B$5:$B$10). Bisher steht der Mittelwert dort immer schon in einer eigenen Zelle (=B5-$B$12).
     Betrifft excel/funktionen.html und excel/bezuege.html.
 
+17. **SQL mit UND/ODER: Übung „Datenight“** (gewünscht 02.11.)
+    Aufgaben aus `notizen/datenight.md` (Herr Maier sucht für jeden Wochentag einen Film fürs Date) als zweite SQL-Seite mit derselben Tabelle `filme` und `abfragen.js`. Dafür muss der Entwurf (Stufe 1–2) mehrere Bedingungen mit AND/OR erlauben. Achtung: Die Aufgaben „noch nicht gesehen“ (keine eigene Bewertung) gehen mit dem IMDb-Export nicht, dort hat jeder Eintrag eine Bewertung.
+
+18. **Vorschlag: gemeinsame Teile in einen Ordner für alle Bereiche** (vorgeschlagen 02.11.)
+    datenbanken/abfragen.html bindet `../excel/basis.js`/`basis.css` (Stufen, Modi, Dock) und `../python/lib/codemirror.*` ein. Sauberer wäre z. B. `pb_public/lib/` für alles, was mehrere Bereiche nutzen. Betrifft alle Excel-, Python- und Datenbank-Seiten.
+
 ## Erledigt
+
+### Version vom 02.11.
+
+16. **SQL-Abfragen an einer Filmdatenbank** (gewünscht 02.11.)
+    - Tabelle `filme` aus dem IMDb-Export der Lehrkraft (484 Einträge, `werkzeuge/filme-aus-csv.py`), SQLite im Browser (sql.js), läuft auch per Doppelklick.
+    - Einfache Abfragen ohne UND/ODER: SELECT, FROM, WHERE (=, <>, <, >, LIKE, IS NULL), ORDER BY. 22 Übungen und Endlos-Modus.
+    - Stufen wie bei Excel: 1 Entwurf wie in Access, Bedingung als Baustein · 2 Bedingung eintippen · 3 SQL mit Gerüst und grauer Erklärung · 4 Gerüst ohne Erklärung · 5 leer.
+    - Syntaxhervorhebung und Autovervollständigung in jeder SQL-Eingabe, Fehlermeldungen auf Deutsch.
+    Betrifft datenbanken/abfragen.html, abfragen.js, abfragen.css, filme.js, katalog.js.
 
 ### Version vom 20.10., 23:00
 
