@@ -2,18 +2,18 @@
 """Erzeugt aus jeder Übung eine eigenständige HTML-Datei (alles eingebettet).
 
 Aufruf im Ordner vibe-learning:  python3 werkzeuge/einzeldateien.py
-Ergebnis: einzeln/<bereich>-<datei>.html, z. B. einzeln/excel-wenn.html
+Ergebnis: standalone/<bereich>/<datei>.html, gleiche Ordner wie auf der Webseite, z. B. standalone/excel/wenn.html
 
 Eingebettet wird jede lokale Datei aus <script src="…"> und <link rel="stylesheet" href="…">.
 Vorne kommt window.PF_EINZELDATEI = true dazu: nav.js zeigt dann kein Menü,
 sync.js keine Anmeldung, der Fortschritt bleibt im Browser.
-Die Dateien in einzeln/ nie von Hand ändern, sondern dieses Skript neu laufen lassen.
+Die Dateien in standalone/ nie von Hand ändern, sondern dieses Skript neu laufen lassen.
 """
 import pathlib, re, shutil, sys
 
 WURZEL = pathlib.Path(__file__).resolve().parent.parent
 PUBLIC = WURZEL / "pb_public"
-ZIEL = WURZEL / "einzeln"
+ZIEL = WURZEL / "standalone"
 BEREICHE = ("excel", "python", "datenbanken", "schaltungen")
 
 # Ein Durchgang für beide, damit Text in schon eingebetteten Dateien (z. B. Beispiele
@@ -57,7 +57,8 @@ def main():
             text = seite.read_text(encoding="utf-8")
             if 'http-equiv="refresh"' in text:          # Weiterleitung, keine Übung
                 continue
-            ziel = ZIEL / f"{bereich}-{seite.name}"
+            ziel = ZIEL / bereich / seite.name
+            ziel.parent.mkdir(exist_ok=True)
             ziel.write_text(einbetten(seite), encoding="utf-8")
             print(f"{ziel.relative_to(WURZEL)}  ({ziel.stat().st_size // 1024} KB)")
 

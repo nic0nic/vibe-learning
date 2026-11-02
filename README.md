@@ -4,7 +4,7 @@
 
 ## Einzelne Übung nutzen (ohne Server)
 
-Im Ordner [`einzeln/`](einzeln/) liegt jede Übung als eine HTML-Datei. Datei öffnen, oben rechts auf *Download raw file* klicken und per Doppelklick im Browser starten. Der Fortschritt bleibt im Browser, es gibt keine Anmeldung.
+Im Ordner [`standalone/`](standalone/) liegt jede Übung als eine HTML-Datei, in Unterordnern wie auf der Webseite (`excel/`, `python/`, `datenbanken/`). Datei öffnen, oben rechts auf *Download raw file* klicken und per Doppelklick im Browser starten. Der Fortschritt bleibt im Browser, es gibt keine Anmeldung.
 
 ## Ganze Plattform mit Anmeldung (PocketBase)
 
@@ -13,8 +13,8 @@ Mit PocketBase melden sich Schüler mit Zugangscode an, und Lehrkräfte sehen de
 ## Aufbau
 
 - `pb_public/` Webseiten, `pb_hooks/` Server-Logik, `pb_migrations/` Datenbanktabellen
-- `einzeln/` erzeugte Einzeldateien (nie von Hand ändern)
-- `werkzeuge/` Skripte zum Erzeugen von `einzeln/` und dem Claude-Code-Skill
+- `standalone/` erzeugte Einzeldateien (nie von Hand ändern)
+- `werkzeuge/` Skripte zum Erzeugen von `standalone/` und dem Claude-Code-Skill
 - `notizen/` offene Änderungen und Hintergrund, `material/` Unterrichtsmaterial
 - Regeln für neuen Code: [PRINZIPIEN.md](PRINZIPIEN.md)
 

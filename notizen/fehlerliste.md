@@ -29,6 +29,9 @@ Gesammelt im Thread „Aufbau der Seite“. Umgesetzt wird erst, wenn die Lehrkr
 
 ### Version vom 02.11.
 
+20. **Einzeldateien: Ordner `standalone/`, sortiert wie die Webseite** (gewünscht 02.11.)
+    Statt `einzeln/excel-wenn.html` jetzt `standalone/excel/wenn.html`. Angepasst: werkzeuge/einzeldateien.py, README, ANLEITUNG, PRINZIPIEN, CLAUDE.md.
+
 19. **Film-Datenbank: freie Abfragen ohne Aufgaben** (gewünscht 02.11.)
     Eigene Seite mit den fünf Stufen der SQL-Übung, Ergebnis als Tabelle, kein Prüfen. Beim Stufenwechsel wird die Abfrage in den SQL-Editor übernommen; leere WHERE/ORDER-BY-Zeilen des Gerüsts werden ignoriert. Auch GROUP BY, LIMIT, Funktionen wie COUNT gehen.
     Betrifft datenbanken/filmdatenbank.html, abfragen.js (Modus ohne aufgaben), abfragen.css, katalog.js.

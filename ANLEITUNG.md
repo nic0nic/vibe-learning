@@ -324,7 +324,7 @@ PocketBase ist noch in Version 0.x. Größere Sprünge (z. B. 0.40 → 0.41) kö
 
 **Neue Version einspielen** (z. B. aus einer neuen ZIP): vorher ein Backup machen (siehe unten), dann `pb_hooks`, `pb_migrations` und `pb_public` ersetzen und PocketBase **neu starten** (`sudo systemctl restart vibe-learning` bzw. Strg+C und neu starten). Neue Tabellen legt PocketBase beim Start selbst an, bestehende Klassen, Codes und Fortschritte bleiben erhalten.
 
-**Übungen ohne Server weitergeben:** Im Ordner `einzeln/` liegt jede Übung als eine einzige HTML-Datei, z. B. `excel-wenn.html`. Sie läuft per Doppelklick, ohne Menü und ohne Anmeldung; der Fortschritt bleibt im Browser. Die Dateien werden mit `python3 werkzeuge/einzeldateien.py` erzeugt und nie von Hand geändert (siehe PRINZIPIEN.md).
+**Übungen ohne Server weitergeben:** Im Ordner `standalone/` liegt jede Übung als eine einzige HTML-Datei, sortiert wie auf der Webseite, z. B. `standalone/excel/wenn.html`. Sie läuft per Doppelklick, ohne Menü und ohne Anmeldung; der Fortschritt bleibt im Browser. Die Dateien werden mit `python3 werkzeuge/einzeldateien.py` erzeugt und nie von Hand geändert (siehe PRINZIPIEN.md).
 
 **Umstieg vom alten Ordnernamen `excel-trainer`:** Der Ordner heißt jetzt `vibe-learning`. Bei einer Installation im Benutzerordner PocketBase beenden, `mv ~/excel-trainer ~/vibe-learning`, dann wie oben `pb_hooks`, `pb_migrations` und `pb_public` ersetzen und neu starten; `pb_data` wandert mit und bleibt erhalten. Läuft der Dienst unter `/srv/excel-trainer`, kann alles so bleiben, wie es ist: Name von Ordner, Dienst und Systembenutzer spielt für die Seite keine Rolle. In diesem Fall in den Befehlen dieser Anleitung `vibe-learning` durch `excel-trainer` ersetzen.
 

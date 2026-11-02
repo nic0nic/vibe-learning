@@ -9,12 +9,12 @@ Ziel: Das Projekt bleibt auf Dauer klein, damit Änderungen und neue Seiten weni
 3. **Jede Bibliothek beginnt mit einer kurzen Beschreibung** ihrer Funktionen und wie man sie aufruft. Wer eine neue Seite baut, liest diese Beschreibung und eine Beispielseite, nicht den Code der Bibliothek. Die Beschreibung steht nur dort; ein Skill für neue Seiten wird daraus erzeugt, nicht von Hand gepflegt.
 4. **In eine Bibliothek kommt nur, was mindestens zwei Seiten gleich brauchen.** Sonderfälle einer Übung bleiben in der Übung, keine Schalter für Einzelfälle in der Bibliothek.
 5. **Kein Build-Schritt für den Betrieb.** Es bleiben einfache Dateien, die PocketBase direkt ausliefert.
-6. **Einzeldateien werden per Skript erzeugt, nie von Hand gepflegt.** Das Skript bettet die eingebundenen JS- und CSS-Dateien in die HTML ein, blendet das Menü aus und startet direkt im Gastmodus (Fortschritt nur im Browser). Es läuft beim Bauen der ZIP mit und legt die Ergebnisse in `einzeln/` ab.
+6. **Einzeldateien werden per Skript erzeugt, nie von Hand gepflegt.** Das Skript bettet die eingebundenen JS- und CSS-Dateien in die HTML ein, blendet das Menü aus und startet direkt im Gastmodus (Fortschritt nur im Browser). Es läuft beim Bauen der ZIP mit und legt die Ergebnisse in `standalone/` ab, in denselben Ordnern wie auf der Webseite.
 
 ## Werkzeuge
 
 Im Ordner `werkzeuge/`, Aufruf jeweils im Hauptordner des Repos:
 
-- `python3 werkzeuge/einzeldateien.py` erzeugt `einzeln/` neu (eine HTML-Datei pro Übung, alles eingebettet).
+- `python3 werkzeuge/einzeldateien.py` erzeugt `standalone/` neu (eine HTML-Datei pro Übung, alles eingebettet, Ordner wie auf der Webseite).
 - `python3 werkzeuge/skill-bauen.py` erzeugt `.claude/skills/vibe-learning-uebung/SKILL.md` (der Skill für Claude Code) aus `werkzeuge/skill-vorlage.md` und den Kopfkommentaren der Bibliotheken. Neue Bibliothek: dort in der Liste eintragen.
 - Nach Änderungen an Übungen oder Bibliotheken beide Skripte laufen lassen und das Ergebnis mit committen.
