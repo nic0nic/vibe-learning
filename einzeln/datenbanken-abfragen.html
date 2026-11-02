@@ -1212,7 +1212,10 @@ li.CodeMirror-hint-active{background:var(--accent);color:var(--on-color)}
 .ds tr:nth-child(even) td{background:color-mix(in srgb,var(--panel2) 45%,transparent)}
 .leer{color:var(--muted);font-style:italic;font-size:12px}
 .dsinfo{color:var(--muted);font-size:13px;margin-top:6px}
-@media (max-width:640px){ .kl{flex-direction:column;align-items:flex-start} .tabfenster{width:100%} }
+/* Aufgabenwahl im Dock (wie bausteine.css; basis.css hat nur die Knöpfe) */
+.picker{position:absolute;bottom:62px;left:0;background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:14px;box-shadow:0 8px 28px rgba(0,0,0,.25);width:min(320px,calc(100vw - 44px))}
+.pg{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+@media (max-width:640px){ .kl{flex-direction:column;align-items:flex-start} .tabfenster{width:100%} .picker{bottom:auto;top:auto;position:relative;margin-bottom:8px} }
 
 </style>
 </head>
