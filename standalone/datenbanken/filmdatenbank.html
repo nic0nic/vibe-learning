@@ -1144,6 +1144,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
   --tabkopf:#bf616a;--erkl:#7b88a1
 }
 main{max-width:1080px;margin:0 auto;padding:18px 16px}
+body.breit main{max-width:1900px;padding:18px 24px}   /* Access-Entwurf: ganze Bildschirmbreite */
 .tasktext{margin:0;font-size:17px}
 .tasktext .zeige{display:inline-block;margin-top:4px}
 .tasktext ul.bed{margin:6px 0 2px;padding-left:24px}
@@ -1249,10 +1250,12 @@ li.CodeMirror-hint-active{background:var(--accent);color:var(--on-color)}
 .tabfenster.klein{min-width:170px}
 .afeld{display:flex;gap:6px;align-items:center;text-align:left;font:14px var(--mono);color:var(--text);background:none;border:0;border-bottom:1px solid var(--panel2);padding:3px 10px;cursor:pointer}
 .afeld:hover{background:var(--panel2)}
-.agridw{flex:1 1 520px;overflow-x:auto;border:1px solid var(--border);border-radius:8px;background:var(--ed-bg)}
-.agrid{border-collapse:collapse;font:14px var(--mono)}
+.agridbox{flex:1 1 520px;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:8px}
+.agridw{width:100%;overflow-x:auto;border:1px solid var(--border);border-radius:8px;background:var(--ed-bg)}
+.agrid{border-collapse:collapse;font:14px var(--mono);width:100%}
+.agrid th{width:1%}
 .agrid th{background:var(--panel2);text-align:right;font:600 13px system-ui,sans-serif;color:var(--muted);padding:4px 8px;white-space:nowrap;border-bottom:1px solid var(--border)}
-.agrid td{border-left:1px solid var(--border);border-bottom:1px solid var(--panel2);padding:3px 4px;min-width:150px;height:36px;vertical-align:middle}
+.agrid td{border-left:1px solid var(--border);border-bottom:1px solid var(--panel2);padding:3px 4px;min-width:120px;height:36px;vertical-align:middle}
 .agrid tr.krit td{height:46px}
 .agrid select{width:100%;font:14px var(--mono);background:var(--ed-bg);color:var(--text);border:1px solid var(--border);border-radius:5px;padding:2px}
 .agrid .atab{color:var(--muted);padding-left:8px}
@@ -3411,7 +3414,7 @@ function accessHTML(){
   const sortOpt = v => [['', ''], ['ASC', 'Aufsteigend'], ['DESC', 'Absteigend']].map(([k, t]) => `<option value="${k}"${v === k ? ' selected' : ''}>${t}</option>`).join('');
   let h = `<div class="accwrap"><div class="tabfenster klein"><div class="tabkopf">${esc(TAB)}</div><button class="afeld" data-feld="*">*</button>` +
     T.felder.map(f => `<button class="afeld" data-feld="${esc(f.n)}" title="${esc(f.d)}">${/PRIMARY/.test(f.typ) ? '<span class="key">🔑</span>' : ''}${esc(f.n)}</button>`).join('') + '</div>' +
-    '<div class="agridw"><table class="agrid"><tr><th>Feld:</th>' +
+    '<div class="agridbox"><div class="agridw"><table class="agrid"><tr><th>Feld:</th>' +
     A.cols.map((col, i) => `<td><select class="af" data-c="${i}" aria-label="Feld in Spalte ${i + 1}"><option value=""></option><option value="*"${col.f === '*' ? ' selected' : ''}>${esc(TAB)}.*</option>${T.felder.map(f => `<option${col.f === f.n ? ' selected' : ''}>${esc(f.n)}</option>`).join('')}</select></td>`).join('') +
     '</tr><tr><th>Tabelle:</th>' + A.cols.map(col => `<td class="atab">${col.f ? esc(TAB) : ''}</td>`).join('') +
     '</tr><tr><th>Sortierung:</th>' + A.cols.map((col, i) => `<td><select class="as" data-c="${i}" aria-label="Sortierung Spalte ${i + 1}"${col.f ? '' : ' disabled'}>${sortOpt(col.sort)}</select></td>`).join('') +
@@ -3423,7 +3426,7 @@ function accessHTML(){
       return `<td><div class="acell" data-drop="acell" data-k="${k}">${A.zellen[k] ? accBlock(A.zellen[k]) : ''}</div></td>`;
     }).join('') + '</tr>';
   });
-  h += `</table></div><button class="btn klein" id="addCol" title="weitere Spalte">+ Spalte</button></div>`;
+  h += `</table></div><button class="btn klein" id="addCol" title="weitere Spalte">+ Spalte</button></div></div>`;
   if (L.krit !== 'text') h += `<div class="pool" data-drop="apool"><div class="pool-title">Kriterien – in die richtige Zelle ziehen${L.krit === 'falsch' ? ' (nicht alle werden gebraucht)' : ''}</div><div class="pool-items">${A.pool.filter(id => !frei.has(id)).map(accBlock).join('') || '<span class="ph">alle eingesetzt</span>'}</div></div>`;
   else h += `<div class="edhint">Beispiele: ${['"Film"', '>=9', 'Wie "*Mystery*"', 'Zwischen 1960 Und 1969', 'Ist Null', '<=4 Oder >=9'].map(c).join(' · ')}</div>`;
   return h;
@@ -3678,6 +3681,7 @@ function render(){
   const L = LEVELS[level], a = CUR;
   renderHeader();
   document.querySelectorAll('[data-ansicht]').forEach(b => b.classList.toggle('on', b.dataset.ansicht === ansicht));
+  document.body.classList.toggle('breit', L.ui === 'access');
   $('#lvlname').textContent = `Stufe ${level}: ${L.name}`;
   if (FREI){ $('#taskmeta').textContent = ''; $('#tasktext').innerHTML = (K.intro || '') + felderHTML(); }
   else {

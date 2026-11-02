@@ -596,7 +596,7 @@ function accessHTML(){
   const sortOpt = v => [['', ''], ['ASC', 'Aufsteigend'], ['DESC', 'Absteigend']].map(([k, t]) => `<option value="${k}"${v === k ? ' selected' : ''}>${t}</option>`).join('');
   let h = `<div class="accwrap"><div class="tabfenster klein"><div class="tabkopf">${esc(TAB)}</div><button class="afeld" data-feld="*">*</button>` +
     T.felder.map(f => `<button class="afeld" data-feld="${esc(f.n)}" title="${esc(f.d)}">${/PRIMARY/.test(f.typ) ? '<span class="key">🔑</span>' : ''}${esc(f.n)}</button>`).join('') + '</div>' +
-    '<div class="agridw"><table class="agrid"><tr><th>Feld:</th>' +
+    '<div class="agridbox"><div class="agridw"><table class="agrid"><tr><th>Feld:</th>' +
     A.cols.map((col, i) => `<td><select class="af" data-c="${i}" aria-label="Feld in Spalte ${i + 1}"><option value=""></option><option value="*"${col.f === '*' ? ' selected' : ''}>${esc(TAB)}.*</option>${T.felder.map(f => `<option${col.f === f.n ? ' selected' : ''}>${esc(f.n)}</option>`).join('')}</select></td>`).join('') +
     '</tr><tr><th>Tabelle:</th>' + A.cols.map(col => `<td class="atab">${col.f ? esc(TAB) : ''}</td>`).join('') +
     '</tr><tr><th>Sortierung:</th>' + A.cols.map((col, i) => `<td><select class="as" data-c="${i}" aria-label="Sortierung Spalte ${i + 1}"${col.f ? '' : ' disabled'}>${sortOpt(col.sort)}</select></td>`).join('') +
@@ -608,7 +608,7 @@ function accessHTML(){
       return `<td><div class="acell" data-drop="acell" data-k="${k}">${A.zellen[k] ? accBlock(A.zellen[k]) : ''}</div></td>`;
     }).join('') + '</tr>';
   });
-  h += `</table></div><button class="btn klein" id="addCol" title="weitere Spalte">+ Spalte</button></div>`;
+  h += `</table></div><button class="btn klein" id="addCol" title="weitere Spalte">+ Spalte</button></div></div>`;
   if (L.krit !== 'text') h += `<div class="pool" data-drop="apool"><div class="pool-title">Kriterien – in die richtige Zelle ziehen${L.krit === 'falsch' ? ' (nicht alle werden gebraucht)' : ''}</div><div class="pool-items">${A.pool.filter(id => !frei.has(id)).map(accBlock).join('') || '<span class="ph">alle eingesetzt</span>'}</div></div>`;
   else h += `<div class="edhint">Beispiele: ${['"Film"', '>=9', 'Wie "*Mystery*"', 'Zwischen 1960 Und 1969', 'Ist Null', '<=4 Oder >=9'].map(c).join(' · ')}</div>`;
   return h;
@@ -863,6 +863,7 @@ function render(){
   const L = LEVELS[level], a = CUR;
   renderHeader();
   document.querySelectorAll('[data-ansicht]').forEach(b => b.classList.toggle('on', b.dataset.ansicht === ansicht));
+  document.body.classList.toggle('breit', L.ui === 'access');
   $('#lvlname').textContent = `Stufe ${level}: ${L.name}`;
   if (FREI){ $('#taskmeta').textContent = ''; $('#tasktext').innerHTML = (K.intro || '') + felderHTML(); }
   else {
