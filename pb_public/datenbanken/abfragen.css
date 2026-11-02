@@ -13,6 +13,10 @@ main{max-width:1080px;margin:0 auto;padding:18px 16px}
 .tasktext{margin:0;font-size:17px}
 .tasktext .zeige{display:inline-block;margin-top:4px}
 .tipp{margin-top:8px;font-size:15px;color:var(--muted)}
+details.felder{margin-top:10px;font-size:15px}
+details.felder summary{cursor:pointer;color:var(--muted)}
+details.felder .ds{margin-top:6px;width:auto}
+details.felder .ds td:first-child{font-family:var(--mono)}
 .worktitle{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700;margin-bottom:8px}
 .worktitle .wthint{text-transform:none;letter-spacing:0;font-weight:500}
 .wthint{color:var(--muted);font-size:13px}

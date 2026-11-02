@@ -16,20 +16,25 @@
  *   aufgaben:[{frage, felder:['titel', …] oder ['*'], where?:"jahr < 1970", sort?:'jahr DESC', tipp?}]
  *   endlos:  [(r, Z) => Aufgabe]   r = Zufall, Z = {pick1, ri, liste(sql) → erste Spalte aller Zeilen}
  *            Ergebnis mit 1 bis 80 Zeilen wird genommen, sonst neu gewürfelt.
+ *   intro:   HTML über der Abfrage, nur ohne aufgaben
  * }
+ * Ohne aufgaben: freie Abfragen (wie filmdatenbank.html). Kein Prüfen, keine Modi, kein Dock;
+ * die Knöpfe #checkBtn, #nextBtn, #skipBtn, #prevBtn braucht basis.js trotzdem (hidden).
+ * Beim Stufenwechsel wird die bisherige Abfrage in den SQL-Editor übernommen,
+ * leere WHERE- oder ORDER-BY-Zeilen des Gerüsts werden beim Ausführen ignoriert.
  * Geprüft wird über das Ergebnis: gleiche Spalten (Reihenfolge egal), gleiche Zeilen,
  * bei sort gleiche Reihenfolge der Sortierspalte. Fehler werden vor dem Ausführen
  * selbst gesucht und auf Deutsch erklärt; SQLite-Meldungen nur als Rückfall übersetzt.
  * Tasten: Strg+Enter führt aus, Strg+Shift+Enter prüft; Autovervollständigung beim Tippen.
  */
 /* Zustand, den basis.js als globale Namen erwartet */
-var KEY = SQLKURS.id + '-', LEVELS = SQLKURS.stufen, STD = SQLKURS.aufgaben;
+var KEY = SQLKURS.id + '-', LEVELS = SQLKURS.stufen, STD = SQLKURS.aufgaben || [];
 var mode, level, pfadIdx, solved, streak = 0, best = 0, endCounted = false, pickerOpen = false;
 (function(){
-const K = window.SQLKURS, T = K.tabelle, TAB = T.name;
+const K = window.SQLKURS, T = K.tabelle, TAB = T.name, FREI = !K.aufgaben;
 const FELD = {}; T.felder.forEach(f => FELD[f.n.toLowerCase()] = f);
 const SPALTEN = T.felder.map(f => f.n);
-const KW = ['SELECT', 'FROM', 'WHERE', 'ORDER', 'BY', 'ASC', 'DESC', 'LIKE', 'IS', 'NOT', 'NULL', 'AND', 'OR', 'AS', 'DISTINCT', 'LIMIT', 'IN', 'BETWEEN'];
+const KW = ['SELECT', 'FROM', 'WHERE', 'ORDER', 'BY', 'ASC', 'DESC', 'LIKE', 'IS', 'NOT', 'NULL', 'AND', 'OR', 'AS', 'DISTINCT', 'LIMIT', 'OFFSET', 'IN', 'BETWEEN', 'GROUP', 'HAVING'];
 const KWS = new Set(KW);
 const OPS = ['=', '<>', '<', '<=', '>', '>=', 'LIKE', 'IS NULL', 'IS NOT NULL'];
 const istText = n => { const f = FELD[n]; return f && f.art !== 'Zahl' && f.art !== 'Kommazahl'; };
@@ -164,7 +169,7 @@ function pruefeSyntax(src){
     if (a.t === 'word' && b.t === 'word' && FELD[(a.v + '_' + b.v).toLowerCase()]) return F(`Spaltennamen haben keine Leerzeichen: ${c((a.v + '_' + b.v).toLowerCase())}.`, a, b);
   }
   // FROM-Teil
-  const fromEnd = pW >= 0 ? pW : pO >= 0 ? pO : q.length;
+  const fromEnd = [pW, pO, pos('GROUP'), pos('LIMIT')].filter(p => p > pF).reduce((a, b) => Math.min(a, b), q.length);
   const fr = q.slice(pF + 1, fromEnd);
   if (!fr.length) return F(`Nach ${c('FROM')} fehlt der Name der Tabelle: ${c(TAB)}.`, q[pF]);
   if (fr[0].t !== 'word' || fr[0].v.toLowerCase() !== TAB.toLowerCase())
@@ -346,11 +351,17 @@ function aufgabeText(a){
   return h + '</span>';
 }
 function loadTask(){ if (mode === 'pfad') CUR = STD[pfadIdx]; setup(); }
-function setup(){
-  S = {sel:[], wf:'', wop:'=', wv:'', where:'', sf:'', sdir:'ASC', fb:null, success:false, erg:null, ergInfo:''};
+function setup(start){
+  S = {sel:[], wf:'', wop:'=', wv:'', where:'', sf:'', sdir:'ASC', fb:null, success:false, erg:null, ergInfo:'', start};
   render();
 }
-function setLevel(n){ level = n; store('level', n); setup(); }
+// freie Abfragen: bisherige Abfrage in den SQL-Editor mitnehmen (nur das Gerüst zählt nicht)
+function mitnehmen(){
+  if (!S) return;
+  const q = aktSQL();
+  return q.sql && q.sql.replace(/\b(SELECT|FROM|WHERE|ORDER BY)\b/gi, '').trim() ? q.sql : undefined;
+}
+function setLevel(n){ const mit = FREI ? mitnehmen() : undefined; level = n; store('level', n); setup(mit); }
 function setMode(m){
   if (m === mode) return;
   mode = m; store('mode', m); pickerOpen = false;
@@ -393,7 +404,12 @@ function entwurfSQL(){
   if (S.sf) s += '\nORDER BY ' + S.sf + ' ' + S.sdir;
   return {sql:s, off};
 }
-function aktSQL(){ return LEVELS[level].ui === 'sql' ? {sql:ed.getValue(), off:0} : entwurfSQL(); }
+function aktSQL(){
+  if (LEVELS[level].ui !== 'sql') return entwurfSQL();
+  let sql = ed.getValue();
+  if (FREI) sql = sql.replace(/^[ \t]*(WHERE|ORDER BY)[ \t]*$/gim, '');
+  return {sql, off:0};
+}
 
 /* ---------- Ausführen und Prüfen ---------- */
 function zeigeFehler(e, q){
@@ -454,6 +470,7 @@ function vergleiche(q, ist, soll, a){
   return null;
 }
 function check(){
+  if (FREI){ ausfuehren(); return; }
   const r = ausfuehren(); if (!r) return;
   const soll = abfrage(sqlVon(CUR));
   const fehler = vergleiche(r.q, r.res, soll, CUR);
@@ -475,7 +492,7 @@ function renderFeedback(){
   $('#workcard').classList.toggle('solved', !!S.success);
   $('#fb').innerHTML = S.fb ? `<div class="fb ${S.fb.type}">${S.fb.html}</div>` : '';
 }
-function renderNav(){ navPfad(); renderDock(); }
+function renderNav(){ if (!FREI){ navPfad(); renderDock(); } }
 function renderDock(){ $('#dock').innerHTML = dockHTML(); }
 const fmt = v => v === null ? '<span class="leer">leer</span>' : esc(v);
 function tabelleHTML(r, max){
@@ -500,6 +517,10 @@ function feldListe(){
     `<button class="feld${sel.has('*') ? ' on' : ''}" data-feld="*" title="alle Felder">*</button>` +
     T.felder.map(f => `<button class="feld${sel.has(f.n) ? ' on' : ''}" data-feld="${esc(f.n)}" title="${esc(f.d)}">${/PRIMARY/.test(f.typ) ? '<span class="key" aria-label="Primärschlüssel">🔑</span>' : ''}${esc(f.n)}<span class="typ">${esc(f.art)}</span></button>`).join('') + '</div>';
 }
+function felderHTML(){
+  return `<details class="felder"><summary>Felder der Tabelle ${c(TAB)}</summary><table class="ds">` +
+    T.felder.map(f => `<tr><td><span class="cm-variable-2">${esc(f.n)}</span></td><td>${esc(f.art)}</td><td>${esc(f.d)}</td></tr>`).join('') + '</table></details>';
+}
 function feldOptionen(wert, leer){ return `<option value="">${leer}</option>` + T.felder.map(f => `<option value="${esc(f.n)}"${wert === f.n ? ' selected' : ''}>${esc(f.n)}</option>`).join(''); }
 function selChips(){
   return S.sel.length ? S.sel.map(f => `<span class="chip sp"><span class="cm-variable-2">${esc(f)}</span><button data-weg="${esc(f)}" aria-label="${esc(f)} entfernen">×</button></span>`).join('<span class="komma">,</span>')
@@ -520,15 +541,19 @@ function render(){
   const L = LEVELS[level], a = CUR;
   renderHeader();
   $('#lvlname').textContent = `Stufe ${level}: ${L.name}`;
-  $('#taskmeta').textContent = mode === 'pfad' ? `Übungen · Aufgabe ${pfadIdx + 1} von ${STD.length}` : 'Endlos';
-  $('#tasktext').innerHTML = aufgabeText(a) + (a.tipp && level <= 3 ? `<div class="tipp">💡 ${a.tipp}</div>` : '');
+  if (FREI){ $('#taskmeta').textContent = ''; $('#tasktext').innerHTML = (K.intro || '') + felderHTML(); }
+  else {
+    $('#taskmeta').textContent = mode === 'pfad' ? `Übungen · Aufgabe ${pfadIdx + 1} von ${STD.length}` : 'Endlos';
+    $('#tasktext').innerHTML = aufgabeText(a) + (a.tipp && level <= 3 ? `<div class="tipp">💡 ${a.tipp}</div>` : '');
+  }
   const W = $('#work');
   ed = null;
   if (L.ui === 'sql'){
     $('#worktitle').textContent = 'SQL-Ansicht';
     W.innerHTML = '<div class="edwrap" id="edwrap"></div><div class="edhint">Strg + Enter führt aus · Vorschläge erscheinen beim Tippen (Enter oder Tab übernimmt)</div>';
     let start = '';
-    if (L.vorlage !== 'leer') start = ['SELECT ', 'FROM ', ...(a.where ? ['WHERE '] : []), ...(a.sort ? ['ORDER BY '] : [])].join('\n');
+    if (S.start) start = S.start;
+    else if (L.vorlage !== 'leer') start = ['SELECT ', 'FROM ', ...(FREI || a.where ? ['WHERE '] : []), ...(FREI || a.sort ? ['ORDER BY '] : [])].join('\n');
     ed = editor($('#edwrap'), {value:start, lineNumbers:true});
     if (L.vorlage === 'leer') ed.state.platzhalter = 'Schreibe hier deine Abfrage: SELECT …';
     erklaerungen(ed);
@@ -604,7 +629,7 @@ $('#tabBtn').textContent = `Tabelle ${TAB} ansehen`;
 $('#tasktext').textContent = 'Datenbank wird geladen …';
 initSqlJs().then(SQL => {
   baueDB(SQL);
-  if (mode === 'endlos') newEndless(); else CUR = STD[pfadIdx];
+  if (FREI) CUR = null; else if (mode === 'endlos') newEndless(); else CUR = STD[pfadIdx];
   setup();
 }).catch(e => { $('#tasktext').textContent = 'Die Datenbank konnte nicht geladen werden: ' + e.message; });
 })();

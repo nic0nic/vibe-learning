@@ -240,7 +240,12 @@ SQLKURS = {
   aufgaben:[{frage, felder:['titel', …] oder ['*'], where?:"jahr < 1970", sort?:'jahr DESC', tipp?}]
   endlos:  [(r, Z) => Aufgabe]   r = Zufall, Z = {pick1, ri, liste(sql) → erste Spalte aller Zeilen}
            Ergebnis mit 1 bis 80 Zeilen wird genommen, sonst neu gewürfelt.
+  intro:   HTML über der Abfrage, nur ohne aufgaben
 }
+Ohne aufgaben: freie Abfragen (wie filmdatenbank.html). Kein Prüfen, keine Modi, kein Dock;
+die Knöpfe #checkBtn, #nextBtn, #skipBtn, #prevBtn braucht basis.js trotzdem (hidden).
+Beim Stufenwechsel wird die bisherige Abfrage in den SQL-Editor übernommen,
+leere WHERE- oder ORDER-BY-Zeilen des Gerüsts werden beim Ausführen ignoriert.
 Geprüft wird über das Ergebnis: gleiche Spalten (Reihenfolge egal), gleiche Zeilen,
 bei sort gleiche Reihenfolge der Sortierspalte. Fehler werden vor dem Ausführen
 selbst gesucht und auf Deutsch erklärt; SQLite-Meldungen nur als Rückfall übersetzt.

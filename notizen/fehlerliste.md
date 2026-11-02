@@ -29,6 +29,10 @@ Gesammelt im Thread „Aufbau der Seite“. Umgesetzt wird erst, wenn die Lehrkr
 
 ### Version vom 02.11.
 
+19. **Film-Datenbank: freie Abfragen ohne Aufgaben** (gewünscht 02.11.)
+    Eigene Seite mit den fünf Stufen der SQL-Übung, Ergebnis als Tabelle, kein Prüfen. Beim Stufenwechsel wird die Abfrage in den SQL-Editor übernommen; leere WHERE/ORDER-BY-Zeilen des Gerüsts werden ignoriert. Auch GROUP BY, LIMIT, Funktionen wie COUNT gehen.
+    Betrifft datenbanken/filmdatenbank.html, abfragen.js (Modus ohne aufgaben), abfragen.css, katalog.js.
+
 16. **SQL-Abfragen an einer Filmdatenbank** (gewünscht 02.11.)
     - Tabelle `filme` aus dem IMDb-Export der Lehrkraft (484 Einträge, `werkzeuge/filme-aus-csv.py`), SQLite im Browser (sql.js), läuft auch per Doppelklick.
     - Einfache Abfragen ohne UND/ODER: SELECT, FROM, WHERE (=, <>, <, >, LIKE, IS NULL), ORDER BY. 22 Übungen und Endlos-Modus.
