@@ -1,6 +1,6 @@
 # vibe learning
 
-Übungen für den IT-Unterricht (Excel, Python, später Datenbanken und Logische Schaltungen). Mit KI erstellt.
+Übungen für den IT-Unterricht (Excel, Python, Datenbanken, Tippen und Tools). Mit KI erstellt.
 
 ## Einzelne Übung nutzen (ohne Server)
 

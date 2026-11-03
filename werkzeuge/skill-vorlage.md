@@ -1,6 +1,6 @@
 ---
 name: vibe-learning-uebung
-description: Neue Übungsseite für die Plattform „vibe learning“ (Excel, Python, Datenbanken, Logische Schaltungen) bauen, passend zu Bibliotheken, Katalog und Speicherung.
+description: Neue Übungsseite für die Plattform „vibe learning“ (Excel, Python, Datenbanken, Tippen, Tools) bauen, passend zu Bibliotheken, Katalog und Speicherung.
 ---
 
 # Neue Übung für vibe learning

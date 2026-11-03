@@ -32,5 +32,9 @@ label.klein{font-size:13px;color:var(--muted);display:inline-flex;align-items:ce
 .fehlerbox{margin:0 16px 12px;padding:8px 12px;border:1px solid var(--err);color:var(--err);border-radius:10px;font-size:14px}
 .fehlerbox:empty{display:none}
 .alt{opacity:.35}
+.zahnrad{padding:7px 9px;font-size:16px;line-height:1}
+.st-pop{position:absolute;z-index:80;background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:12px;box-shadow:0 14px 30px rgba(0,0,0,.2);padding:12px;display:flex;flex-direction:column;gap:8px;width:240px;font-size:14px}
+.st-pop label{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.st-pop input[type=color]{width:44px;height:30px;border:1px solid var(--border);border-radius:6px;background:none;padding:2px;cursor:pointer}
 .hinweis{font-size:13px;color:var(--muted)}
 @media print{.bar,.pf-nav,.seite{display:none}}

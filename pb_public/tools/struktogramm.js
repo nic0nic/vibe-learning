@@ -19,7 +19,10 @@
  *     breite 0 = automatisch (mindestens 400 px, breiter, bis das längste Wort in jede Spalte passt)
  *     treffer [{el, liste, i, x, y, w, h, H}]  h = anklickbare Fläche, H = ganze Höhe; innere Elemente zuletzt
  *     zonen   [{liste, i, x, y, w}]         Einfügestellen (Ziehen und Ablegen); leere Liste: leer, y0, h = Kasten
- * Strukto.exportiere(diagramm, 'svg' | 'html' | 'jpg')   Datei herunterladen, immer weiß mit schwarzen Linien
+ * Strukto.exportiere(diagramm, 'svg' | 'html' | 'jpg')   Datei herunterladen in den Exportfarben
+ *     (Standard weiß mit schwarzen Linien, gegen Dunkelmodus von Browser und Erweiterungen gesperrt)
+ * Strukto.zahnrad(knopf)      Knopf öffnet die Einstellung der Exportfarben (Hintergrund, Linien und Schrift),
+ *                             gespeichert pro Gerät unter struktofarben
  * Strukto.TYPEN               [{typ, name}] in der Reihenfolge der Werkzeugleiste
  * Strukto.neu(typ)            neues Element mit Beispieltext
  * Strukto.listen(el)          alle Unterlisten eines Elements
@@ -49,6 +52,14 @@
     fuss: 'solange Bedingung', aufruf: 'Unterprogramm()', abbruch: 'Abbruch', block: 'Programm'};
 
   const EXPORT = {papier: '#ffffff', kopf: '#ffffff', linie: '#000000', schrift: '#000000', leise: '#000000'};
+  const FARBKEY = 'struktofarben';   // ohne Tool-Präfix: gilt pro Gerät für beide Seiten, wird nicht abgeglichen
+  const HEX = /^#[0-9a-f]{6}$/i;
+  function exportFarben(){
+    let f = {};
+    try { f = JSON.parse(localStorage.getItem(FARBKEY)) || {}; } catch (e) {}
+    const papier = HEX.test(f.papier) ? f.papier : EXPORT.papier, linie = HEX.test(f.linie) ? f.linie : EXPORT.linie;
+    return {papier, kopf: papier, linie, schrift: linie, leise: linie};
+  }
 
   function farbenAusCss(el){
     const s = getComputedStyle(el || document.documentElement);
@@ -276,7 +287,7 @@
     if (titel) out.push(`<text x="0" y="20" font-weight="bold" font-size="16" fill="${F.schrift}">${xml(d.name)}</text>`);
     liste(d.kinder, 0, titel, W, H);
     const B = W + 2, HH = H + titel + 2;
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${B}" height="${HH}" viewBox="-1 -1 ${B} ${HH}" font-family='${FONT}' font-size="${FS}" stroke-width="1.5">`
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${B}" height="${HH}" viewBox="-1 -1 ${B} ${HH}" font-family='${FONT}' font-size="${FS}" stroke-width="1.5"${opt.fest ? ` style="color-scheme:only light;background:${F.papier}"` : ''}>`
       + `<rect x="-1" y="-1" width="${B}" height="${HH}" fill="${F.papier}"/>` + out.join('') + '</svg>';
     return {svg, breite: B, hoehe: HH, treffer, zonen, inhalt: {y: titel, h: H}};
   }
@@ -292,13 +303,15 @@
     setTimeout(() => URL.revokeObjectURL(a.href), 4000);
   }
   function exportiere(d, art){
-    const z = zeichne(d, EXPORT, {});
+    const F = exportFarben();
+    const z = zeichne(d, F, {fest: true});
     const svg = '<?xml version="1.0" encoding="UTF-8"?>\n' + z.svg;
     const name = dateiname(d);
     if (art === 'svg') return laden(new Blob([svg], {type: 'image/svg+xml'}), name + '.svg');
     if (art === 'html'){
-      const html = `<!doctype html>\n<html lang="de">\n<head>\n<meta charset="utf-8">\n<title>${xml(d.name || 'Struktogramm')}</title>\n`
-        + '<style>body{margin:24px;background:#fff}</style>\n</head>\n<body>\n' + z.svg + '\n</body>\n</html>\n';
+      const html = `<!doctype html>\n<html lang="de" style="color-scheme:only light;background:${F.papier}">\n<head>\n<meta charset="utf-8">\n`
+        + `<meta name="color-scheme" content="only light">\n<meta name="darkreader-lock">\n<title>${xml(d.name || 'Struktogramm')}</title>\n`
+        + `<style>html,body{background:${F.papier}}body{margin:24px}</style>\n</head>\n<body>\n` + z.svg + '\n</body>\n</html>\n';
       return laden(new Blob([html], {type: 'text/html'}), name + '.html');
     }
     // JPG: SVG in doppelter Auflösung auf weißen Hintergrund zeichnen
@@ -308,7 +321,7 @@
         const c = document.createElement('canvas');
         c.width = z.breite * s; c.height = z.hoehe * s;
         const g = c.getContext('2d');
-        g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height);
+        g.fillStyle = F.papier; g.fillRect(0, 0, c.width, c.height);
         g.drawImage(img, 0, 0, c.width, c.height);
         c.toBlob(b => { if (b){ laden(b, name + '.jpg'); ok(); } else fehler(new Error('JPG fehlgeschlagen')); }, 'image/jpeg', 0.95);
       };
@@ -317,5 +330,40 @@
     });
   }
 
-  window.Strukto = {zeichne, exportiere, farbenAusCss, EXPORT, TYPEN, BREITEN, neu, listen, pruefe, umbrechen};
+  /* ---------- Exportfarben einstellen ---------- */
+  function zahnrad(knopf){
+    let pop = null;
+    function zu(){ if (pop){ pop.remove(); pop = null; knopf.setAttribute('aria-expanded', 'false'); } }
+    function auf(){
+      const f = exportFarben();
+      pop = document.createElement('div');
+      pop.className = 'st-pop'; pop.setAttribute('role', 'dialog'); pop.setAttribute('aria-label', 'Exportfarben');
+      pop.innerHTML = `<b>Exportfarben</b>
+        <label>Hintergrund <input type="color" data-f="papier" value="${f.papier}"></label>
+        <label>Linien und Schrift <input type="color" data-f="linie" value="${f.linie}"></label>
+        <button class="btn" type="button" data-std>Weiß mit Schwarz</button>
+        <span class="hinweis">Gilt für SVG, HTML und JPG auf diesem Gerät.</span>`;
+      document.body.appendChild(pop);
+      const r = knopf.getBoundingClientRect();
+      pop.style.top = (r.bottom + scrollY + 6) + 'px';
+      pop.style.left = Math.max(8, Math.min(r.right + scrollX - pop.offsetWidth, innerWidth - pop.offsetWidth - 8)) + 'px';
+      const merke = () => {
+        const v = {};
+        pop.querySelectorAll('[data-f]').forEach(i => { v[i.dataset.f] = i.value; });
+        try { localStorage.setItem(FARBKEY, JSON.stringify(v)); } catch (e) {}
+      };
+      pop.querySelectorAll('[data-f]').forEach(i => i.addEventListener('input', merke));
+      pop.querySelector('[data-std]').addEventListener('click', () => {
+        pop.querySelector('[data-f=papier]').value = EXPORT.papier; pop.querySelector('[data-f=linie]').value = EXPORT.linie;
+        merke();
+      });
+      knopf.setAttribute('aria-expanded', 'true');
+    }
+    knopf.setAttribute('aria-expanded', 'false');
+    knopf.addEventListener('click', e => { e.stopPropagation(); pop ? zu() : auf(); });
+    document.addEventListener('pointerdown', e => { if (pop && !pop.contains(e.target) && e.target !== knopf) zu(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') zu(); });
+  }
+
+  window.Strukto = {zeichne, exportiere, zahnrad, exportFarben, farbenAusCss, EXPORT, TYPEN, BREITEN, neu, listen, pruefe, umbrechen};
 })();

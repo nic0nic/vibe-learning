@@ -51,6 +51,7 @@ document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: da
       <button class="btn haupt" data-export="svg" type="button">SVG</button>
       <button class="btn haupt" data-export="html" type="button">HTML</button>
       <button class="btn haupt" data-export="jpg" type="button">JPG</button>
+      <button class="btn zahnrad" id="zahnrad" type="button" title="Exportfarben einstellen" aria-label="Exportfarben einstellen">⚙</button>
     </span>
   </div>
   <div class="haelften">
@@ -64,7 +65,7 @@ document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: da
       <div class="fehlerbox" id="fehler"></div>
     </div>
   </div>
-  <p class="hinweis">Erkannt werden if/elif/else, while, for, match/case, def, class, try/except und with. break, continue, return und raise werden als Aussprung gezeichnet, Docstrings weggelassen. Exportiert wird immer weiß mit schwarzen Linien.</p>
+  <p class="hinweis">Erkannt werden if/elif/else, while, for, match/case, def, class, try/except und with. break, continue, return und raise werden als Aussprung gezeichnet, Docstrings weggelassen. Exportiert wird weiß mit schwarzen Linien (änderbar über ⚙).</p>
 </div>
 <script>
 'use strict';
@@ -293,6 +294,7 @@ $('#datei').addEventListener('change', async e => {
   ed.setValue(await f.text());
   if (!$('#name').value.trim()){ $('#name').value = f.name.replace(/\.[^.]*$/, ''); ls.set('name', $('#name').value); aktualisieren(); }
 });
+Strukto.zahnrad($('#zahnrad'));
 document.querySelectorAll('[data-export]').forEach(b => b.addEventListener('click', () => {
   if (!diagramm) return;
   Promise.resolve(Strukto.exportiere(diagramm, b.dataset.export)).catch(err => alert(err.message));

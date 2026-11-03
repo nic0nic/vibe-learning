@@ -1,6 +1,6 @@
 # vibe learning mit PocketBase hosten (Manjaro Linux)
 
-Diese Anleitung zeigt, wie du die Übungsplattform „vibe learning“ mit PocketBase auf einem Manjaro-Rechner betreibst. Die Übungen sind nach Bereichen des Lehrplans geordnet (Excel, Python, Datenbanken, Logische Schaltungen …); oben auf jeder Seite ist eine Menüleiste, deren Bereiche beim Darüberfahren mit der Maus ihre Übungen zeigen. Schüler melden sich mit einem Zugangscode an. Ihr Fortschritt wird auf dem Server gespeichert, und du siehst im Lehrerbereich, wer wann wie viele Aufgaben gelöst hat.
+Diese Anleitung zeigt, wie du die Übungsplattform „vibe learning“ mit PocketBase auf einem Manjaro-Rechner betreibst. Die Übungen sind nach Bereichen des Lehrplans geordnet (Excel, Python, Datenbanken, Tippen …); oben auf jeder Seite ist eine Menüleiste, deren Bereiche beim Darüberfahren mit der Maus ihre Übungen zeigen. Schüler melden sich mit einem Zugangscode an. Ihr Fortschritt wird auf dem Server gespeichert, und du siehst im Lehrerbereich, wer wann wie viele Aufgaben gelöst hat.
 
 Getestet mit **PocketBase 0.40.5**. Nötig ist mindestens Version **0.23**, weil ältere Versionen eine andere Schnittstelle für Erweiterungen haben.
 
@@ -53,7 +53,6 @@ vibe-learning/
 │   │   ├── aufgabe.html           „Aufgabe“: Text der Lehrkraft abschreiben (nur mit aktiver Aufgabe sichtbar)
 │   │   └── pockettype.html …      Tipptrainer pockettype, gebaut im eigenen Repo (GPL-3.0),
 │   │                              siehe LICENSE.txt und QUELLE.txt dort; nie von Hand ändern
-│   ├── schaltungen/           noch leer
 │   └── tools/                 Tools (ohne Aufgaben, nicht in der Auswertung)
 │       ├── struktogramm.html      Struktogramm-Editor (Ziehen und Ablegen, Export SVG/HTML/JPG)
 │       ├── python-struktogramm.html  Python-Code → Struktogramm, Übergabe an den Editor

@@ -1,0 +1,1 @@
+import{s as e}from"./vendor.CWyhu3ef.js";export default e();

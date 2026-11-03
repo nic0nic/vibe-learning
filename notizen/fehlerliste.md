@@ -27,6 +27,13 @@ Gesammelt im Thread „Aufbau der Seite“. Umgesetzt wird erst, wenn die Lehrkr
 
 ### Version vom 03.11.
 
+28. **Menü, Farben, Exportfarben** (gewünscht 03.11.)
+    - Untermenü: Tools mit `gruppe` (katalog.js) stehen in nav.js in einem Untermenü, das beim Darüberfahren aufklappt (z. B. Tools → Struktogramm → Editor / Python).
+    - Tools grau (#4c566a / #b4bdcc), Tippen blau wie Textverarbeitung (#2b579a / #8db3ee), auch in pockettype selbst. Tippen soll später auch Textverarbeitung aufnehmen.
+    - Logische Schaltungen vorerst entfernt (leere Bereichsseite, aus dem Katalog).
+    - Struktogramm-Export: ⚙ für Hintergrund- und Linienfarbe (Standard weiß/schwarz, pro Gerät), Export gegen Dunkelmodus von Browser/Erweiterungen gesperrt.
+    Betrifft katalog.js, nav.js, tools/struktogramm.*, pockettype (themes.ts).
+
 27. **Tools → Struktogramm: Editor und Python-Renderer** (gewünscht 03.11.)
     - Neuer Bereich „Tools“ (katalog.js `auswertung: false`, nicht im Lehrerbereich) mit Untergruppe „Struktogramm“ (katalog.js `gruppe`, nav.js zeigt Zwischenüberschriften).
     - `tools/struktogramm.html`: Editor nach dem Vorbild von strukto.io, eigene Umsetzung ohne Build-Schritt. Elemente ziehen oder anklicken, verschieben, Text im Feld rechts, Fallauswahl mit beliebig vielen Fällen, Rückgängig, als .json speichern/öffnen. Stand im Browser und über sync.js auf dem Server.

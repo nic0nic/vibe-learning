@@ -31,8 +31,8 @@
  *                     (z. B. Tipp-Aufgabe, siehe /api/trainer/sichtbar in pb_hooks/tippen.pb.js)
  *           stufen  = Stufen der Übungen für die Auswertung (lehrer.html): Anzahl oder Liste
  *                     mit Kurznamen, wenn die Nummern allein missverständlich wären
- *           gruppe  = optional: Zwischenüberschrift im Menü und auf der Bereichsseite
- *                     (Tools derselben Gruppe stehen direkt hintereinander)
+ *           gruppe  = optional: Untermenü im Menü (aufklappen beim Darüberfahren) und
+ *                     Zwischenüberschrift auf der Bereichsseite (Tools derselben Gruppe direkt hintereinander)
  * Bereich mit auswertung: false (z. B. Tools ohne Aufgaben) erscheint nicht im Lehrerbereich.
  *
  * In der HTML-Datei eines Tools steht dieselbe id: <html lang="de" data-trainer="…">
@@ -64,15 +64,14 @@ window.KATALOG = {
         {id: 'sqluo', stufen: ['Access 1', 'Access 2', 'Access 3', 'SQL 1', 'SQL 2', 'SQL 3', 'SQL 4', 'SQL 5'], datei: 'datenight.html', titel: 'Datenight: UND / ODER', text: 'Drei Wochen Dates mit immer verrückteren Filmwünschen: Kriterien mit UND und ODER – im Access-Entwurf oder mit Blöcken und SQL.'}
       ]
     },
-    {id: 'tippen', titel: 'Tippen', farbe: '#d08770', farbeHell: '#9c5530', text: 'Schnell und sicher tippen mit zehn Fingern.',
+    {id: 'tippen', titel: 'Tippen', farbe: '#8db3ee', farbeHell: '#2b579a', text: 'Schnell und sicher tippen mit zehn Fingern.',
       tools: [
         {id: 'tippen', datei: 'pockettype.html', titel: 'pockettype', text: 'Tipptrainer: Wörter und Anschläge pro Minute, Genauigkeit, Bestwerte und Verlauf. Eigenes Projekt auf Basis von Monkeytype (GPL-3.0).'},
         {id: 'lektionen', datei: 'lektionen.html', titel: 'Lektion üben', text: 'Die 17 Lektionen aus TIPP10 in fester Reihenfolge: von der Grundreihe asdf jklö bis zu Ziffern und Sonderzeichen.'},
         {id: 'tippaufgabe', bedingt: true, datei: 'aufgabe.html', titel: 'Aufgabe', text: 'Den Text abschreiben, den deine Lehrkraft aufgegeben hat – so oft du willst.'}
       ]
     },
-    {id: 'schaltungen', titel: 'Logische Schaltungen', text: 'Gatter, Wahrheitstabellen und Schaltnetze.',  tools: []},
-    {id: 'tools', titel: 'Tools', farbe: '#8fbcbb', farbeHell: '#3b7f7c', auswertung: false, text: 'Werkzeuge für den Unterricht, ohne Aufgaben.',
+    {id: 'tools', titel: 'Tools', farbe: '#b4bdcc', farbeHell: '#4c566a', auswertung: false, text: 'Werkzeuge für den Unterricht, ohne Aufgaben.',
       tools: [
         {id: 'strukto', gruppe: 'Struktogramm', datei: 'struktogramm.html', titel: 'Struktogramm-Editor', text: 'Struktogramme mit der Maus zusammensetzen und als SVG, HTML oder JPG exportieren.'},
         {id: 'pystrukto', gruppe: 'Struktogramm', datei: 'python-struktogramm.html', titel: 'Python → Struktogramm', text: 'Python-Code eingeben, das Struktogramm entsteht sofort daneben – zum Export oder zum Weiterbearbeiten im Editor.'}
@@ -91,7 +90,8 @@ window.KATALOG = {
  * und die Übersichtsseite eines Bereichs (#pf-bereich).
  *
  * Fehlt katalog.js oder nav.js, läuft das Tool trotzdem – nur ohne Menüleiste.
- * Tools mit gruppe (katalog.js) bekommen im Menü und auf der Bereichsseite eine Zwischenüberschrift.
+ * Tools mit gruppe (katalog.js) stehen im Menü in einem Untermenü (klappt beim Darüberfahren auf)
+ * und auf der Bereichsseite unter einer Zwischenüberschrift.
  * Tools mit bedingt: true (katalog.js) sind zunächst ausgeblendet; sync.js blendet sie ein,
  * wenn der Server sie für den angemeldeten Schüler freigibt (Klasse pf-sichtbar).
  * In Einzeldateien (werkzeuge/einzeldateien.py, window.PF_EINZELDATEI) zeigt die
@@ -133,7 +133,12 @@ html[data-theme=dark] .pf-item{--bc:#88c0d0}
 .pf-drop a[aria-current]{color:var(--bc);font-weight:600}
 .pf-drop small{display:block;color:var(--muted,#5b6578);font-size:13px}
 .pf-drop .pf-all{font-size:13px;color:var(--muted,#5b6578);border-top:1px solid var(--border,#cdd3de);border-radius:0 0 8px 8px;margin-top:4px}
-.pf-drop .pf-gruppe{padding:8px 10px 2px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted,#5b6578)}
+.pf-sub{position:relative}
+.pf-sub>a{display:flex!important;align-items:center;justify-content:space-between;gap:12px}
+.pf-sub>a::after{content:"";width:6px;height:6px;border:solid currentColor;border-width:0 2px 2px 0;transform:rotate(-45deg);opacity:.5;flex:none}
+.pf-drop2{display:none;position:absolute;left:100%;top:-7px;min-width:250px;background:var(--panel,#f6f8fb);border:1px solid var(--border,#cdd3de);border-radius:12px;box-shadow:0 14px 30px rgba(0,0,0,.18);padding:6px;list-style:none;margin:0}
+.pf-sub.links>.pf-drop2{left:auto;right:100%}
+.pf-sub:hover>.pf-drop2,.pf-sub:focus-within>.pf-drop2,.pf-sub.open>.pf-drop2{display:block}
 .pf-drop .pf-leer{padding:8px 10px;color:var(--muted,#5b6578);font-style:italic}
 .pf-right{margin-left:auto;display:flex;align-items:center;gap:10px}
 .pf-btn{background:var(--panel2,#eceff4);border:1px solid var(--border,#cdd3de);color:inherit;border-radius:10px;width:38px;height:38px;display:grid;place-items:center;cursor:pointer;font-size:17px;padding:0}
@@ -147,6 +152,8 @@ html[data-theme=dark] .pf-item{--bc:#88c0d0}
   .pf-item>a{padding:10px 0 4px;border:0}
   .pf-item>a::after{display:none}
   .pf-drop{display:block;position:static;min-width:0;border:0;box-shadow:none;padding:0 0 4px 10px}
+  .pf-drop2{display:block;position:static;min-width:0;border:0;box-shadow:none;padding:0 0 0 12px}
+  .pf-sub>a::after{display:none}
 }
 .pf-fade,.pf-fade *{transition:background-color .35s,color .35s,border-color .35s,fill .35s!important}
 .pf-gesperrt{opacity:.5;cursor:default!important}
@@ -169,6 +176,17 @@ html[data-theme=dark] .pf-item{--bc:#88c0d0}
   const SONNE = '☀', MOND = '☾';
   function theme(){ return root.dataset.theme === 'dark' ? 'dark' : 'light'; }
 
+  // Tools derselben gruppe (katalog.js) hintereinander → [{name, tools}], ohne gruppe: name ''
+  function gruppen(b){
+    const out = [];
+    b.tools.forEach(t => {
+      const g = out[out.length - 1];
+      if (g && g.name === (t.gruppe || '')) g.tools.push(t); else out.push({name: t.gruppe || '', tools: [t]});
+    });
+    return out;
+  }
+  const toolLi = (b, t) => `<li${t.bedingt ? ` class="pf-bedingt" data-tool="${esc(t.id)}"` : ''}><a href="${toolUrl(b, t)}"${t.id === TOOL ? ' aria-current="page"' : ''}>${esc(t.titel)}</a></li>`;
+
   function buildNav(){
     const s = document.createElement('style'); s.textContent = CSS + akzentCss(); document.head.appendChild(s);
     const nav = document.createElement('nav');
@@ -182,8 +200,9 @@ html[data-theme=dark] .pf-item{--bc:#88c0d0}
         <li class="pf-item" data-b="${esc(b.id)}">
           <a href="${bereichUrl(b)}"${b.id === BEREICH ? ' aria-current="true"' : ''}>${esc(b.titel)}</a>
           <ul class="pf-drop">${b.tools.length
-            ? b.tools.map((t, i) => (t.gruppe && t.gruppe !== (b.tools[i - 1] || {}).gruppe ? `<li class="pf-gruppe">${esc(t.gruppe)}</li>` : '')
-              + `<li${t.bedingt ? ` class="pf-bedingt" data-tool="${esc(t.id)}"` : ''}><a href="${toolUrl(b, t)}"${t.id === TOOL ? ' aria-current="page"' : ''}>${esc(t.titel)}</a></li>`).join('')
+            ? gruppen(b).map(g => g.name
+              ? `<li class="pf-sub"><a href="${bereichUrl(b)}"${g.tools.some(t => t.id === TOOL) ? ' aria-current="true"' : ''} aria-haspopup="true">${esc(g.name)}</a><ul class="pf-drop2">${g.tools.map(t => toolLi(b, t)).join('')}</ul></li>`
+              : g.tools.map(t => toolLi(b, t)).join('')).join('')
               + `<li><a class="pf-all" href="${bereichUrl(b)}">Alle Übungen zu ${esc(b.titel)}</a></li>`
             : '<li class="pf-leer">Hier entstehen bald Übungen.</li>'}
           </ul>
@@ -212,7 +231,21 @@ html[data-theme=dark] .pf-item{--bc:#88c0d0}
       e.preventDefault();
       items.forEach(x => x.classList.toggle('open', x === li));
     }));
-    document.addEventListener('click', e => { if (!nav.contains(e.target)){ items.forEach(x => x.classList.remove('open')); nav.classList.remove('open'); } });
+    // Untermenüs (gruppe): nach links aufklappen, wenn rechts kein Platz ist; ohne Maus erst antippen
+    nav.querySelectorAll('.pf-sub').forEach(sub => {
+      sub.addEventListener('mouseenter', () => {
+        const r = sub.getBoundingClientRect();
+        sub.classList.toggle('links', r.right + 260 > innerWidth);
+      });
+      if (matchMedia('(hover: none)').matches) sub.firstElementChild.addEventListener('click', e => {
+        if (matchMedia('(max-width:760px)').matches || sub.classList.contains('open')) return;
+        e.preventDefault();
+        const r = sub.getBoundingClientRect();
+        sub.classList.toggle('links', r.right + 260 > innerWidth);
+        sub.classList.add('open');
+      });
+    });
+    document.addEventListener('click', e => { if (!nav.contains(e.target)){ nav.querySelectorAll('.pf-sub.open').forEach(x => x.classList.remove('open')); items.forEach(x => x.classList.remove('open')); nav.classList.remove('open'); } });
     document.addEventListener('keydown', e => { if (e.key === 'Escape'){ items.forEach(x => x.classList.remove('open')); nav.classList.remove('open'); } });
   }
 
@@ -221,12 +254,7 @@ html[data-theme=dark] .pf-item{--bc:#88c0d0}
   function kacheln(b){
     if (!b.tools.length) return '<p class="pf-hinweis">Hier entstehen bald Übungen.</p>';
     const kachel = t => `<a class="pf-tile${t.bedingt ? ' pf-bedingt' : ''}"${t.bedingt ? ` data-tool="${esc(t.id)}"` : ''} href="${toolUrl(b, t)}"><b>${esc(t.titel)}</b><span>${esc(t.text)}</span></a>`;
-    const gruppen = [];
-    b.tools.forEach(t => {
-      const g = gruppen[gruppen.length - 1];
-      if (g && g.name === (t.gruppe || '')) g.tools.push(t); else gruppen.push({name: t.gruppe || '', tools: [t]});
-    });
-    return gruppen.map(g => (g.name ? `<h3 class="pf-gruppe">${esc(g.name)}</h3>` : '') + `<div class="pf-grid">${g.tools.map(kachel).join('')}</div>`).join('');
+    return gruppen(b).map(g => (g.name ? `<h3 class="pf-gruppe">${esc(g.name)}</h3>` : '') + `<div class="pf-grid">${g.tools.map(kachel).join('')}</div>`).join('');
   }
   function buildPages(){
     const start = document.getElementById('pf-start');
@@ -669,6 +697,10 @@ label.klein{font-size:13px;color:var(--muted);display:inline-flex;align-items:ce
 .fehlerbox{margin:0 16px 12px;padding:8px 12px;border:1px solid var(--err);color:var(--err);border-radius:10px;font-size:14px}
 .fehlerbox:empty{display:none}
 .alt{opacity:.35}
+.zahnrad{padding:7px 9px;font-size:16px;line-height:1}
+.st-pop{position:absolute;z-index:80;background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:12px;box-shadow:0 14px 30px rgba(0,0,0,.2);padding:12px;display:flex;flex-direction:column;gap:8px;width:240px;font-size:14px}
+.st-pop label{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.st-pop input[type=color]{width:44px;height:30px;border:1px solid var(--border);border-radius:6px;background:none;padding:2px;cursor:pointer}
 .hinweis{font-size:13px;color:var(--muted)}
 @media print{.bar,.pf-nav,.seite{display:none}}
 
@@ -695,7 +727,10 @@ label.klein{font-size:13px;color:var(--muted);display:inline-flex;align-items:ce
  *     breite 0 = automatisch (mindestens 400 px, breiter, bis das längste Wort in jede Spalte passt)
  *     treffer [{el, liste, i, x, y, w, h, H}]  h = anklickbare Fläche, H = ganze Höhe; innere Elemente zuletzt
  *     zonen   [{liste, i, x, y, w}]         Einfügestellen (Ziehen und Ablegen); leere Liste: leer, y0, h = Kasten
- * Strukto.exportiere(diagramm, 'svg' | 'html' | 'jpg')   Datei herunterladen, immer weiß mit schwarzen Linien
+ * Strukto.exportiere(diagramm, 'svg' | 'html' | 'jpg')   Datei herunterladen in den Exportfarben
+ *     (Standard weiß mit schwarzen Linien, gegen Dunkelmodus von Browser und Erweiterungen gesperrt)
+ * Strukto.zahnrad(knopf)      Knopf öffnet die Einstellung der Exportfarben (Hintergrund, Linien und Schrift),
+ *                             gespeichert pro Gerät unter struktofarben
  * Strukto.TYPEN               [{typ, name}] in der Reihenfolge der Werkzeugleiste
  * Strukto.neu(typ)            neues Element mit Beispieltext
  * Strukto.listen(el)          alle Unterlisten eines Elements
@@ -725,6 +760,14 @@ label.klein{font-size:13px;color:var(--muted);display:inline-flex;align-items:ce
     fuss: 'solange Bedingung', aufruf: 'Unterprogramm()', abbruch: 'Abbruch', block: 'Programm'};
 
   const EXPORT = {papier: '#ffffff', kopf: '#ffffff', linie: '#000000', schrift: '#000000', leise: '#000000'};
+  const FARBKEY = 'struktofarben';   // ohne Tool-Präfix: gilt pro Gerät für beide Seiten, wird nicht abgeglichen
+  const HEX = /^#[0-9a-f]{6}$/i;
+  function exportFarben(){
+    let f = {};
+    try { f = JSON.parse(localStorage.getItem(FARBKEY)) || {}; } catch (e) {}
+    const papier = HEX.test(f.papier) ? f.papier : EXPORT.papier, linie = HEX.test(f.linie) ? f.linie : EXPORT.linie;
+    return {papier, kopf: papier, linie, schrift: linie, leise: linie};
+  }
 
   function farbenAusCss(el){
     const s = getComputedStyle(el || document.documentElement);
@@ -952,7 +995,7 @@ label.klein{font-size:13px;color:var(--muted);display:inline-flex;align-items:ce
     if (titel) out.push(`<text x="0" y="20" font-weight="bold" font-size="16" fill="${F.schrift}">${xml(d.name)}</text>`);
     liste(d.kinder, 0, titel, W, H);
     const B = W + 2, HH = H + titel + 2;
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${B}" height="${HH}" viewBox="-1 -1 ${B} ${HH}" font-family='${FONT}' font-size="${FS}" stroke-width="1.5">`
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${B}" height="${HH}" viewBox="-1 -1 ${B} ${HH}" font-family='${FONT}' font-size="${FS}" stroke-width="1.5"${opt.fest ? ` style="color-scheme:only light;background:${F.papier}"` : ''}>`
       + `<rect x="-1" y="-1" width="${B}" height="${HH}" fill="${F.papier}"/>` + out.join('') + '</svg>';
     return {svg, breite: B, hoehe: HH, treffer, zonen, inhalt: {y: titel, h: H}};
   }
@@ -968,13 +1011,15 @@ label.klein{font-size:13px;color:var(--muted);display:inline-flex;align-items:ce
     setTimeout(() => URL.revokeObjectURL(a.href), 4000);
   }
   function exportiere(d, art){
-    const z = zeichne(d, EXPORT, {});
+    const F = exportFarben();
+    const z = zeichne(d, F, {fest: true});
     const svg = '<?xml version="1.0" encoding="UTF-8"?>\n' + z.svg;
     const name = dateiname(d);
     if (art === 'svg') return laden(new Blob([svg], {type: 'image/svg+xml'}), name + '.svg');
     if (art === 'html'){
-      const html = `<!doctype html>\n<html lang="de">\n<head>\n<meta charset="utf-8">\n<title>${xml(d.name || 'Struktogramm')}</title>\n`
-        + '<style>body{margin:24px;background:#fff}</style>\n</head>\n<body>\n' + z.svg + '\n</body>\n</html>\n';
+      const html = `<!doctype html>\n<html lang="de" style="color-scheme:only light;background:${F.papier}">\n<head>\n<meta charset="utf-8">\n`
+        + `<meta name="color-scheme" content="only light">\n<meta name="darkreader-lock">\n<title>${xml(d.name || 'Struktogramm')}</title>\n`
+        + `<style>html,body{background:${F.papier}}body{margin:24px}</style>\n</head>\n<body>\n` + z.svg + '\n</body>\n</html>\n';
       return laden(new Blob([html], {type: 'text/html'}), name + '.html');
     }
     // JPG: SVG in doppelter Auflösung auf weißen Hintergrund zeichnen
@@ -984,7 +1029,7 @@ label.klein{font-size:13px;color:var(--muted);display:inline-flex;align-items:ce
         const c = document.createElement('canvas');
         c.width = z.breite * s; c.height = z.hoehe * s;
         const g = c.getContext('2d');
-        g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height);
+        g.fillStyle = F.papier; g.fillRect(0, 0, c.width, c.height);
         g.drawImage(img, 0, 0, c.width, c.height);
         c.toBlob(b => { if (b){ laden(b, name + '.jpg'); ok(); } else fehler(new Error('JPG fehlgeschlagen')); }, 'image/jpeg', 0.95);
       };
@@ -993,7 +1038,42 @@ label.klein{font-size:13px;color:var(--muted);display:inline-flex;align-items:ce
     });
   }
 
-  window.Strukto = {zeichne, exportiere, farbenAusCss, EXPORT, TYPEN, BREITEN, neu, listen, pruefe, umbrechen};
+  /* ---------- Exportfarben einstellen ---------- */
+  function zahnrad(knopf){
+    let pop = null;
+    function zu(){ if (pop){ pop.remove(); pop = null; knopf.setAttribute('aria-expanded', 'false'); } }
+    function auf(){
+      const f = exportFarben();
+      pop = document.createElement('div');
+      pop.className = 'st-pop'; pop.setAttribute('role', 'dialog'); pop.setAttribute('aria-label', 'Exportfarben');
+      pop.innerHTML = `<b>Exportfarben</b>
+        <label>Hintergrund <input type="color" data-f="papier" value="${f.papier}"></label>
+        <label>Linien und Schrift <input type="color" data-f="linie" value="${f.linie}"></label>
+        <button class="btn" type="button" data-std>Weiß mit Schwarz</button>
+        <span class="hinweis">Gilt für SVG, HTML und JPG auf diesem Gerät.</span>`;
+      document.body.appendChild(pop);
+      const r = knopf.getBoundingClientRect();
+      pop.style.top = (r.bottom + scrollY + 6) + 'px';
+      pop.style.left = Math.max(8, Math.min(r.right + scrollX - pop.offsetWidth, innerWidth - pop.offsetWidth - 8)) + 'px';
+      const merke = () => {
+        const v = {};
+        pop.querySelectorAll('[data-f]').forEach(i => { v[i.dataset.f] = i.value; });
+        try { localStorage.setItem(FARBKEY, JSON.stringify(v)); } catch (e) {}
+      };
+      pop.querySelectorAll('[data-f]').forEach(i => i.addEventListener('input', merke));
+      pop.querySelector('[data-std]').addEventListener('click', () => {
+        pop.querySelector('[data-f=papier]').value = EXPORT.papier; pop.querySelector('[data-f=linie]').value = EXPORT.linie;
+        merke();
+      });
+      knopf.setAttribute('aria-expanded', 'true');
+    }
+    knopf.setAttribute('aria-expanded', 'false');
+    knopf.addEventListener('click', e => { e.stopPropagation(); pop ? zu() : auf(); });
+    document.addEventListener('pointerdown', e => { if (pop && !pop.contains(e.target) && e.target !== knopf) zu(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') zu(); });
+  }
+
+  window.Strukto = {zeichne, exportiere, zahnrad, exportFarben, farbenAusCss, EXPORT, TYPEN, BREITEN, neu, listen, pruefe, umbrechen};
 })();
 
 </script>
@@ -1037,6 +1117,7 @@ label.klein{font-size:13px;color:var(--muted);display:inline-flex;align-items:ce
       <button class="btn haupt" data-export="svg" type="button">SVG</button>
       <button class="btn haupt" data-export="html" type="button">HTML</button>
       <button class="btn haupt" data-export="jpg" type="button">JPG</button>
+      <button class="btn zahnrad" id="zahnrad" type="button" title="Exportfarben einstellen" aria-label="Exportfarben einstellen">⚙</button>
     </span>
   </div>
   <div class="meldung" id="meldung"></div>
@@ -1336,6 +1417,7 @@ $('#datei').addEventListener('change', async e => {
   aendern(() => { doc = neu; auswahl = null; });
   kopfFelder(); panel(); melde(`„${f.name}“ geöffnet. Mit ↶ kommst du zum vorherigen Struktogramm zurück.`);
 });
+Strukto.zahnrad($('#zahnrad'));
 document.querySelectorAll('[data-export]').forEach(b => b.addEventListener('click', () => {
   Promise.resolve(Strukto.exportiere(doc, b.dataset.export)).catch(err => alert(err.message));
 }));

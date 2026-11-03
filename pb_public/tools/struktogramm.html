@@ -59,6 +59,7 @@ document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: da
       <button class="btn haupt" data-export="svg" type="button">SVG</button>
       <button class="btn haupt" data-export="html" type="button">HTML</button>
       <button class="btn haupt" data-export="jpg" type="button">JPG</button>
+      <button class="btn zahnrad" id="zahnrad" type="button" title="Exportfarben einstellen" aria-label="Exportfarben einstellen">⚙</button>
     </span>
   </div>
   <div class="meldung" id="meldung"></div>
@@ -358,6 +359,7 @@ $('#datei').addEventListener('change', async e => {
   aendern(() => { doc = neu; auswahl = null; });
   kopfFelder(); panel(); melde(`„${f.name}“ geöffnet. Mit ↶ kommst du zum vorherigen Struktogramm zurück.`);
 });
+Strukto.zahnrad($('#zahnrad'));
 document.querySelectorAll('[data-export]').forEach(b => b.addEventListener('click', () => {
   Promise.resolve(Strukto.exportiere(doc, b.dataset.export)).catch(err => alert(err.message));
 }));

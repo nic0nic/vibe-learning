@@ -1,6 +1,6 @@
 ---
 name: vibe-learning-uebung
-description: Neue Übungsseite für die Plattform „vibe learning“ (Excel, Python, Datenbanken, Logische Schaltungen) bauen, passend zu Bibliotheken, Katalog und Speicherung.
+description: Neue Übungsseite für die Plattform „vibe learning“ (Excel, Python, Datenbanken, Tippen, Tools) bauen, passend zu Bibliotheken, Katalog und Speicherung.
 ---
 
 # Neue Übung für vibe learning
@@ -78,8 +78,8 @@ Tool:     id      = Kürzel für Speicherstand und Auswertung (nie mehr ändern,
                     (z. B. Tipp-Aufgabe, siehe /api/trainer/sichtbar in pb_hooks/tippen.pb.js)
           stufen  = Stufen der Übungen für die Auswertung (lehrer.html): Anzahl oder Liste
                     mit Kurznamen, wenn die Nummern allein missverständlich wären
-          gruppe  = optional: Zwischenüberschrift im Menü und auf der Bereichsseite
-                    (Tools derselben Gruppe stehen direkt hintereinander)
+          gruppe  = optional: Untermenü im Menü (aufklappen beim Darüberfahren) und
+                    Zwischenüberschrift auf der Bereichsseite (Tools derselben Gruppe direkt hintereinander)
 Bereich mit auswertung: false (z. B. Tools ohne Aufgaben) erscheint nicht im Lehrerbereich.
 
 In der HTML-Datei eines Tools steht dieselbe id: <html lang="de" data-trainer="…">
@@ -307,7 +307,10 @@ Strukto.zeichne(diagramm, farben, opt) → {svg, breite, hoehe, treffer, zonen, 
     breite 0 = automatisch (mindestens 400 px, breiter, bis das längste Wort in jede Spalte passt)
     treffer [{el, liste, i, x, y, w, h, H}]  h = anklickbare Fläche, H = ganze Höhe; innere Elemente zuletzt
     zonen   [{liste, i, x, y, w}]         Einfügestellen (Ziehen und Ablegen); leere Liste: leer, y0, h = Kasten
-Strukto.exportiere(diagramm, 'svg' | 'html' | 'jpg')   Datei herunterladen, immer weiß mit schwarzen Linien
+Strukto.exportiere(diagramm, 'svg' | 'html' | 'jpg')   Datei herunterladen in den Exportfarben
+    (Standard weiß mit schwarzen Linien, gegen Dunkelmodus von Browser und Erweiterungen gesperrt)
+Strukto.zahnrad(knopf)      Knopf öffnet die Einstellung der Exportfarben (Hintergrund, Linien und Schrift),
+                            gespeichert pro Gerät unter struktofarben
 Strukto.TYPEN               [{typ, name}] in der Reihenfolge der Werkzeugleiste
 Strukto.neu(typ)            neues Element mit Beispieltext
 Strukto.listen(el)          alle Unterlisten eines Elements

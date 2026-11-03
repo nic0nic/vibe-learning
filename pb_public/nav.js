@@ -6,7 +6,8 @@
  * und die Übersichtsseite eines Bereichs (#pf-bereich).
  *
  * Fehlt katalog.js oder nav.js, läuft das Tool trotzdem – nur ohne Menüleiste.
- * Tools mit gruppe (katalog.js) bekommen im Menü und auf der Bereichsseite eine Zwischenüberschrift.
+ * Tools mit gruppe (katalog.js) stehen im Menü in einem Untermenü (klappt beim Darüberfahren auf)
+ * und auf der Bereichsseite unter einer Zwischenüberschrift.
  * Tools mit bedingt: true (katalog.js) sind zunächst ausgeblendet; sync.js blendet sie ein,
  * wenn der Server sie für den angemeldeten Schüler freigibt (Klasse pf-sichtbar).
  * In Einzeldateien (werkzeuge/einzeldateien.py, window.PF_EINZELDATEI) zeigt die
@@ -48,7 +49,12 @@ html[data-theme=dark] .pf-item{--bc:#88c0d0}
 .pf-drop a[aria-current]{color:var(--bc);font-weight:600}
 .pf-drop small{display:block;color:var(--muted,#5b6578);font-size:13px}
 .pf-drop .pf-all{font-size:13px;color:var(--muted,#5b6578);border-top:1px solid var(--border,#cdd3de);border-radius:0 0 8px 8px;margin-top:4px}
-.pf-drop .pf-gruppe{padding:8px 10px 2px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted,#5b6578)}
+.pf-sub{position:relative}
+.pf-sub>a{display:flex!important;align-items:center;justify-content:space-between;gap:12px}
+.pf-sub>a::after{content:"";width:6px;height:6px;border:solid currentColor;border-width:0 2px 2px 0;transform:rotate(-45deg);opacity:.5;flex:none}
+.pf-drop2{display:none;position:absolute;left:100%;top:-7px;min-width:250px;background:var(--panel,#f6f8fb);border:1px solid var(--border,#cdd3de);border-radius:12px;box-shadow:0 14px 30px rgba(0,0,0,.18);padding:6px;list-style:none;margin:0}
+.pf-sub.links>.pf-drop2{left:auto;right:100%}
+.pf-sub:hover>.pf-drop2,.pf-sub:focus-within>.pf-drop2,.pf-sub.open>.pf-drop2{display:block}
 .pf-drop .pf-leer{padding:8px 10px;color:var(--muted,#5b6578);font-style:italic}
 .pf-right{margin-left:auto;display:flex;align-items:center;gap:10px}
 .pf-btn{background:var(--panel2,#eceff4);border:1px solid var(--border,#cdd3de);color:inherit;border-radius:10px;width:38px;height:38px;display:grid;place-items:center;cursor:pointer;font-size:17px;padding:0}
@@ -62,6 +68,8 @@ html[data-theme=dark] .pf-item{--bc:#88c0d0}
   .pf-item>a{padding:10px 0 4px;border:0}
   .pf-item>a::after{display:none}
   .pf-drop{display:block;position:static;min-width:0;border:0;box-shadow:none;padding:0 0 4px 10px}
+  .pf-drop2{display:block;position:static;min-width:0;border:0;box-shadow:none;padding:0 0 0 12px}
+  .pf-sub>a::after{display:none}
 }
 .pf-fade,.pf-fade *{transition:background-color .35s,color .35s,border-color .35s,fill .35s!important}
 .pf-gesperrt{opacity:.5;cursor:default!important}
@@ -84,6 +92,17 @@ html[data-theme=dark] .pf-item{--bc:#88c0d0}
   const SONNE = '☀', MOND = '☾';
   function theme(){ return root.dataset.theme === 'dark' ? 'dark' : 'light'; }
 
+  // Tools derselben gruppe (katalog.js) hintereinander → [{name, tools}], ohne gruppe: name ''
+  function gruppen(b){
+    const out = [];
+    b.tools.forEach(t => {
+      const g = out[out.length - 1];
+      if (g && g.name === (t.gruppe || '')) g.tools.push(t); else out.push({name: t.gruppe || '', tools: [t]});
+    });
+    return out;
+  }
+  const toolLi = (b, t) => `<li${t.bedingt ? ` class="pf-bedingt" data-tool="${esc(t.id)}"` : ''}><a href="${toolUrl(b, t)}"${t.id === TOOL ? ' aria-current="page"' : ''}>${esc(t.titel)}</a></li>`;
+
   function buildNav(){
     const s = document.createElement('style'); s.textContent = CSS + akzentCss(); document.head.appendChild(s);
     const nav = document.createElement('nav');
@@ -97,8 +116,9 @@ html[data-theme=dark] .pf-item{--bc:#88c0d0}
         <li class="pf-item" data-b="${esc(b.id)}">
           <a href="${bereichUrl(b)}"${b.id === BEREICH ? ' aria-current="true"' : ''}>${esc(b.titel)}</a>
           <ul class="pf-drop">${b.tools.length
-            ? b.tools.map((t, i) => (t.gruppe && t.gruppe !== (b.tools[i - 1] || {}).gruppe ? `<li class="pf-gruppe">${esc(t.gruppe)}</li>` : '')
-              + `<li${t.bedingt ? ` class="pf-bedingt" data-tool="${esc(t.id)}"` : ''}><a href="${toolUrl(b, t)}"${t.id === TOOL ? ' aria-current="page"' : ''}>${esc(t.titel)}</a></li>`).join('')
+            ? gruppen(b).map(g => g.name
+              ? `<li class="pf-sub"><a href="${bereichUrl(b)}"${g.tools.some(t => t.id === TOOL) ? ' aria-current="true"' : ''} aria-haspopup="true">${esc(g.name)}</a><ul class="pf-drop2">${g.tools.map(t => toolLi(b, t)).join('')}</ul></li>`
+              : g.tools.map(t => toolLi(b, t)).join('')).join('')
               + `<li><a class="pf-all" href="${bereichUrl(b)}">Alle Übungen zu ${esc(b.titel)}</a></li>`
             : '<li class="pf-leer">Hier entstehen bald Übungen.</li>'}
           </ul>
@@ -127,7 +147,21 @@ html[data-theme=dark] .pf-item{--bc:#88c0d0}
       e.preventDefault();
       items.forEach(x => x.classList.toggle('open', x === li));
     }));
-    document.addEventListener('click', e => { if (!nav.contains(e.target)){ items.forEach(x => x.classList.remove('open')); nav.classList.remove('open'); } });
+    // Untermenüs (gruppe): nach links aufklappen, wenn rechts kein Platz ist; ohne Maus erst antippen
+    nav.querySelectorAll('.pf-sub').forEach(sub => {
+      sub.addEventListener('mouseenter', () => {
+        const r = sub.getBoundingClientRect();
+        sub.classList.toggle('links', r.right + 260 > innerWidth);
+      });
+      if (matchMedia('(hover: none)').matches) sub.firstElementChild.addEventListener('click', e => {
+        if (matchMedia('(max-width:760px)').matches || sub.classList.contains('open')) return;
+        e.preventDefault();
+        const r = sub.getBoundingClientRect();
+        sub.classList.toggle('links', r.right + 260 > innerWidth);
+        sub.classList.add('open');
+      });
+    });
+    document.addEventListener('click', e => { if (!nav.contains(e.target)){ nav.querySelectorAll('.pf-sub.open').forEach(x => x.classList.remove('open')); items.forEach(x => x.classList.remove('open')); nav.classList.remove('open'); } });
     document.addEventListener('keydown', e => { if (e.key === 'Escape'){ items.forEach(x => x.classList.remove('open')); nav.classList.remove('open'); } });
   }
 
@@ -136,12 +170,7 @@ html[data-theme=dark] .pf-item{--bc:#88c0d0}
   function kacheln(b){
     if (!b.tools.length) return '<p class="pf-hinweis">Hier entstehen bald Übungen.</p>';
     const kachel = t => `<a class="pf-tile${t.bedingt ? ' pf-bedingt' : ''}"${t.bedingt ? ` data-tool="${esc(t.id)}"` : ''} href="${toolUrl(b, t)}"><b>${esc(t.titel)}</b><span>${esc(t.text)}</span></a>`;
-    const gruppen = [];
-    b.tools.forEach(t => {
-      const g = gruppen[gruppen.length - 1];
-      if (g && g.name === (t.gruppe || '')) g.tools.push(t); else gruppen.push({name: t.gruppe || '', tools: [t]});
-    });
-    return gruppen.map(g => (g.name ? `<h3 class="pf-gruppe">${esc(g.name)}</h3>` : '') + `<div class="pf-grid">${g.tools.map(kachel).join('')}</div>`).join('');
+    return gruppen(b).map(g => (g.name ? `<h3 class="pf-gruppe">${esc(g.name)}</h3>` : '') + `<div class="pf-grid">${g.tools.map(kachel).join('')}</div>`).join('');
   }
   function buildPages(){
     const start = document.getElementById('pf-start');

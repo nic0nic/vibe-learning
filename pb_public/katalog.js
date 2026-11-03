@@ -17,8 +17,8 @@
  *                     (z. B. Tipp-Aufgabe, siehe /api/trainer/sichtbar in pb_hooks/tippen.pb.js)
  *           stufen  = Stufen der Übungen für die Auswertung (lehrer.html): Anzahl oder Liste
  *                     mit Kurznamen, wenn die Nummern allein missverständlich wären
- *           gruppe  = optional: Zwischenüberschrift im Menü und auf der Bereichsseite
- *                     (Tools derselben Gruppe stehen direkt hintereinander)
+ *           gruppe  = optional: Untermenü im Menü (aufklappen beim Darüberfahren) und
+ *                     Zwischenüberschrift auf der Bereichsseite (Tools derselben Gruppe direkt hintereinander)
  * Bereich mit auswertung: false (z. B. Tools ohne Aufgaben) erscheint nicht im Lehrerbereich.
  *
  * In der HTML-Datei eines Tools steht dieselbe id: <html lang="de" data-trainer="…">
@@ -50,15 +50,14 @@ window.KATALOG = {
         {id: 'sqluo', stufen: ['Access 1', 'Access 2', 'Access 3', 'SQL 1', 'SQL 2', 'SQL 3', 'SQL 4', 'SQL 5'], datei: 'datenight.html', titel: 'Datenight: UND / ODER', text: 'Drei Wochen Dates mit immer verrückteren Filmwünschen: Kriterien mit UND und ODER – im Access-Entwurf oder mit Blöcken und SQL.'}
       ]
     },
-    {id: 'tippen', titel: 'Tippen', farbe: '#d08770', farbeHell: '#9c5530', text: 'Schnell und sicher tippen mit zehn Fingern.',
+    {id: 'tippen', titel: 'Tippen', farbe: '#8db3ee', farbeHell: '#2b579a', text: 'Schnell und sicher tippen mit zehn Fingern.',
       tools: [
         {id: 'tippen', datei: 'pockettype.html', titel: 'pockettype', text: 'Tipptrainer: Wörter und Anschläge pro Minute, Genauigkeit, Bestwerte und Verlauf. Eigenes Projekt auf Basis von Monkeytype (GPL-3.0).'},
         {id: 'lektionen', datei: 'lektionen.html', titel: 'Lektion üben', text: 'Die 17 Lektionen aus TIPP10 in fester Reihenfolge: von der Grundreihe asdf jklö bis zu Ziffern und Sonderzeichen.'},
         {id: 'tippaufgabe', bedingt: true, datei: 'aufgabe.html', titel: 'Aufgabe', text: 'Den Text abschreiben, den deine Lehrkraft aufgegeben hat – so oft du willst.'}
       ]
     },
-    {id: 'schaltungen', titel: 'Logische Schaltungen', text: 'Gatter, Wahrheitstabellen und Schaltnetze.',  tools: []},
-    {id: 'tools', titel: 'Tools', farbe: '#8fbcbb', farbeHell: '#3b7f7c', auswertung: false, text: 'Werkzeuge für den Unterricht, ohne Aufgaben.',
+    {id: 'tools', titel: 'Tools', farbe: '#b4bdcc', farbeHell: '#4c566a', auswertung: false, text: 'Werkzeuge für den Unterricht, ohne Aufgaben.',
       tools: [
         {id: 'strukto', gruppe: 'Struktogramm', datei: 'struktogramm.html', titel: 'Struktogramm-Editor', text: 'Struktogramme mit der Maus zusammensetzen und als SVG, HTML oder JPG exportieren.'},
         {id: 'pystrukto', gruppe: 'Struktogramm', datei: 'python-struktogramm.html', titel: 'Python → Struktogramm', text: 'Python-Code eingeben, das Struktogramm entsteht sofort daneben – zum Export oder zum Weiterbearbeiten im Editor.'}
