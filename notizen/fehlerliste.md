@@ -22,6 +22,10 @@ Gesammelt im Thread „Aufbau der Seite“. Umgesetzt wird erst, wenn die Lehrkr
 18. **Vorschlag: gemeinsame Teile in einen Ordner für alle Bereiche** (vorgeschlagen 02.11.)
     datenbanken/abfragen.html bindet `../excel/basis.js`/`basis.css` (Stufen, Modi, Dock) und `../python/lib/codemirror.*` ein. Sauberer wäre z. B. `pb_public/lib/` für alles, was mehrere Bereiche nutzen. Betrifft alle Excel-, Python- und Datenbank-Seiten.
 
+22. **Tipptrainer pockettype** (gewünscht 03.11.)
+    Eigenes Repo auf Basis von Monkeytype (GPL-3.0), ohne Monkeytype-Backend; Ergebnisse, Bestwerte und Auswertung über PocketBase. Wenig Einstellungen, festes Nord-Farbschema hell/dunkel, Rangliste später. Gebaute Dateien nach `pb_public/tippen/`, Ausnahme von der Doppelklick-Regel (siehe CLAUDE.md).
+    Betrifft neues Repo pockettype, später katalog.js, lehrer.html, pb_hooks/.
+
 ## Erledigt
 
 ### Version vom 03.11.

@@ -2,6 +2,8 @@
 
 Übungsplattform für den IT-Unterricht (Realschule). Statische Seiten in `pb_public/`, PocketBase (≥ 0.23, getestet 0.40.5) als Backend. Jede Seite muss auch ohne Server per Doppelklick laufen.
 
+Ausnahme: **pockettype** (Tipptrainer, eigenes Repo, GPL-3.0, basiert auf Monkeytype). Die fertig gebauten Dateien kommen nach `pb_public/tippen/` und werden hier nie von Hand geändert. pockettype läuft nur mit Server, es gibt keine Einzeldatei in `standalone/`. Ein Build-Schritt ist nur im pockettype-Repo nötig, nicht im Betrieb.
+
 ## Arbeitsweise
 
 - Antworten knapp und auf Deutsch. Vorschläge der Lehrkraft und eigene Vorschläge kritisch hinterfragen; wenn ein anderer Weg besser ist, das sagen.
