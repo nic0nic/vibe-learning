@@ -62,7 +62,7 @@ tr.sel td{outline:2px solid var(--accent);outline-offset:-2px}
 .msg{padding:10px 14px;border-radius:10px;margin-top:10px}
 .msg.err{background:var(--badbg);color:var(--bad)} .msg.ok{background:var(--okbg);color:var(--ok)}
 .day{margin:12px 0 4px;font-weight:700}
-.ev{display:grid;grid-template-columns:62px 110px 1fr;gap:8px;padding:4px 0;border-bottom:1px dashed var(--border);font-size:14px}
+.ev{display:grid;grid-template-columns:62px minmax(110px,max-content) 1fr;gap:8px;padding:4px 0;border-bottom:1px dashed var(--border);font-size:14px}
 .ev .t{font-family:var(--mono);color:var(--muted)}
 .hidden{display:none!important}
 .login{max-width:380px;margin:60px auto}
@@ -215,7 +215,7 @@ const SEITE = {};
 });
 const MODUS = {erarbeitung:'Erarbeitung', uebungen:'Übungen', endlos:'Endlos'};
 const PLATTFORM = window.KATALOG ? KATALOG.name : 'vibe learning';
-let ME = null, KLASSEN = [], LEHRER = [], SCH = [], klasseId = '', lastReport = null, selected = null;
+let ME = null, KLASSEN = [], LEHRER = [], SCH = [], klasseId = '', lastReport = null, lastTipp = null, selected = null;
 const PW = {};   // in dieser Sitzung vergebene Passwörter (zum Drucken), nie gespeichert
 
 const kennung = s => s.code || s.benutzername;
@@ -337,6 +337,7 @@ async function loadSchueler(){
 }
 function renderSchueler(){
   const nm = names();
+  const ziele = KLASSEN.filter(k => k.id !== klasseId).sort(sortK);   // eigene Klassen, beim Admin alle
   $('#sTable').innerHTML = `<tr><th>#</th><th>Zugang</th><th>Art</th><th>Name (nur lokal)</th><th>Neues Passwort</th><th>Status</th><th></th></tr>` +
     SCH.map((s, i) => `<tr><td class="num">${i + 1}</td><td class="code">${esc(kennung(s))}</td><td>${s.code ? 'Code' : 'Konto'}</td>
       <td><input class="nm" data-k="${esc(kennung(s))}" value="${esc(nm[kennung(s)] || '')}" placeholder="Name eintragen"></td>
@@ -345,6 +346,7 @@ function renderSchueler(){
       <td><div class="acts">
         <button class="btn small" data-sperren="${s.id}">${s.gesperrt ? 'Entsperren' : 'Sperren'}</button>
         ${s.benutzername ? `<button class="btn small" data-pw="${s.id}">Passwort neu</button>` : ''}
+        ${ziele.length ? `<select class="small" data-verschieben="${s.id}" aria-label="In andere Klasse verschieben"><option value="">verschieben nach …</option>${ziele.map(k => `<option value="${k.id}">${esc(k.name)}${ME.admin ? ' (' + esc(lehrerName(k.lehrer)) + ')' : ''}</option>`).join('')}</select>` : ''}
         <button class="btn small danger" data-sloeschen="${s.id}">Löschen</button></div></td></tr>`).join('');
   const url = location.origin + '/';
   $('#codesPrint').innerHTML = SCH.filter(s => !s.gesperrt).map(s => {
@@ -370,6 +372,17 @@ $('#sTable').addEventListener('click', async e => {
     }
     await loadUebersicht(); await loadSchueler();
   } catch (x){ msg('#sMsg', esc(x.message)); }
+});
+// Schüler mit Fortschritt und Tipp-Ergebnissen in eine andere Klasse verschieben
+$('#sTable').addEventListener('change', async e => {
+  const sel = e.target.closest('[data-verschieben]'); if (!sel || !sel.value) return;
+  const s = SCH.find(x => x.id === sel.dataset.verschieben), k = KLASSEN.find(x => x.id === sel.value);
+  if (!s || !k || !confirm(`${kennung(s)} mit allem Fortschritt in die Klasse ${k.name} verschieben?`)){ sel.value = ''; return; }
+  try {
+    await api('/schueler/' + s.id, {method: 'PATCH', body: {klasse: k.id}});
+    msg('#sMsg', `${esc(kennung(s))} ist jetzt in Klasse ${esc(k.name)}.`, 'ok');
+    await loadUebersicht(); renderKlassen(); await loadSchueler();
+  } catch (x){ msg('#sMsg', esc(x.message)); sel.value = ''; }
 });
 $('#cBtn').addEventListener('click', async () => {
   try {
@@ -503,7 +516,8 @@ async function loadReport(){
   const von = $('#fVon').value ? new Date($('#fVon').value).toISOString() : '';
   const bis = $('#fBis').value ? new Date($('#fBis').value).toISOString() : '';
   try {
-    lastReport = await api(`/report?klasse=${encodeURIComponent(k)}&von=${encodeURIComponent(von)}&bis=${encodeURIComponent(bis)}`);
+    const q = `klasse=${encodeURIComponent(k)}&von=${encodeURIComponent(von)}&bis=${encodeURIComponent(bis)}`;
+    [lastReport, lastTipp] = await Promise.all([api('/report?' + q), api('/tippen/report?' + q).catch(() => ({ergebnisse: []}))]);
     renderReport();
   } catch (x){ msg('#repMsg', esc(x.message)); }
 }
@@ -525,12 +539,39 @@ function summarize(){
     if (fs && fs.daten && fs.daten['uo-learn']){ try { erDone = (JSON.parse(fs.daten['uo-learn']).done || []).length; } catch (e) {} }
     const lastEr = lastReport.ereignisse.filter(e => e.modus === 'erarbeitung' && e.gesamt).pop();
     if (lastEr) erTotal = lastEr.gesamt;
-    const zeiten = mine.map(e => pbDate(e.created)).sort((a, b) => a - b);
+    // Tipptrainer pockettype: Tests statt Ereignisse (zählen bei „alle“ mit)
+    const tipp = (seite === '' || seite === 'tippen') ? lastTipp.ergebnisse.filter(t => t.schueler === s.id) : [];
+    const zeiten = mine.map(e => pbDate(e.created)).concat(tipp.map(t => new Date(t.zeitpunkt))).sort((a, b) => a - b);
     const tage = new Set(zeiten.map(d => d.toDateString())).size;
-    const lastAll = lastReport.fortschritt.filter(f => f.schueler === s.id).map(f => pbDate(f.updated)).sort((a, b) => b - a)[0];
-    return {s, k: kennung(s), name: nm[kennung(s)] || '', mine, ueb: ueb.size, endlos, erarbIm, erDone, erTotal, n: mine.length, tage,
+    const lastTippZeit = tipp.length ? new Date(tipp[tipp.length - 1].zeitpunkt) : null;
+    const lastAll = lastReport.fortschritt.filter(f => f.schueler === s.id).map(f => pbDate(f.updated)).concat(lastTippZeit || []).sort((a, b) => b - a)[0];
+    return {s, k: kennung(s), name: nm[kennung(s)] || '', mine, tipp, ts: tippWerte(tipp), ueb: ueb.size, endlos, erarbIm, erDone, erTotal, n: mine.length + tipp.length, tage,
             erste: zeiten[0], letzte: zeiten[zeiten.length - 1], lastAll};
   });
+}
+
+// Kennzahlen aus den Tipptests eines Schülers
+const apm = t => t.dauer > 0 ? Math.round(t.anschlaege / t.dauer * 60) : 0;
+function tippWerte(tipp){
+  if (!tipp.length) return null;
+  const mittel = f => Math.round(tipp.reduce((x, t) => x + f(t), 0) / tipp.length);
+  return {n: tipp.length, bestWpm: Math.max(...tipp.map(t => Math.round(t.wpm))), bestApm: Math.max(...tipp.map(apm)),
+          wpm: mittel(t => t.wpm), apm: mittel(apm), acc: mittel(t => t.genauigkeit)};
+}
+const TIPP_MODUS = {time: 'Zeit', words: 'Wörter', zen: 'Zen', custom: 'eigener Text', quote: 'Zitat'};
+const tippTest = t => t.modus === 'time' ? `Zeit ${t.modus2} s` : t.modus === 'words' ? `${t.modus2} Wörter` : (TIPP_MODUS[t.modus] || t.modus);
+const SPRACHE = {german: 'Deutsch', english: 'Englisch', french: 'Französisch', portuguese: 'Portugiesisch'};
+const sprache = s => { const [b, ...r] = String(s || '').split('_'); return (SPRACHE[b] || b) + (r.length ? ' ' + r.join(' ') : ''); };
+
+function renderTippReport(rows, fmt){
+  $('#repTable').innerHTML = `<tr><th>Zugang</th><th>Name (nur lokal)</th><th>Tests</th><th>Bestwert Wörter/min</th><th>Bestwert Anschläge/min</th><th>Ø Wörter/min</th><th>Ø Anschläge/min</th><th>Ø Genauigkeit</th><th>Aktive Tage</th><th>Erster – letzter Test im Zeitraum</th></tr>` +
+    rows.map(r => `<tr class="clk${r.n ? '' : ' none'}${selected === r.s.id ? ' sel' : ''}" data-id="${r.s.id}">
+      <td class="code">${esc(r.k)}${r.s.gesperrt ? ' <span class="pill bad">gesperrt</span>' : ''}</td>
+      <td><input class="nm" data-k="${esc(r.k)}" value="${esc(r.name)}" placeholder="Name eintragen"></td>
+      ${r.ts ? `<td class="num">${r.ts.n}</td><td class="num">${r.ts.bestWpm}</td><td class="num">${r.ts.bestApm}</td><td class="num">${r.ts.wpm}</td><td class="num">${r.ts.apm}</td><td class="num">${r.ts.acc} %</td>`
+        : '<td class="num">–</td><td class="num">–</td><td class="num">–</td><td class="num">–</td><td class="num">–</td><td class="num">–</td>'}
+      <td class="num">${r.tage || '–'}</td>
+      <td>${r.n ? fmt(r.erste) + ' – ' + fmt(r.letzte) : '<span class="pill bad">keine Tests</span>'}</td></tr>`).join('');
 }
 
 function renderReport(){
@@ -540,7 +581,9 @@ function renderReport(){
   const kl = KLASSEN.find(x => x.id === $('#fKlasse').value);
   $('#repTitle').textContent = `Klasse ${kl ? kl.name : ''}: ${aktivN} von ${rows.length} im Zeitraum aktiv`;
   const fmt = d => d ? d.toLocaleString('de-DE', {weekday:'short', day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'}) : '–';
-  $('#repTable').innerHTML = `<tr><th>Zugang</th><th>Name (nur lokal)</th>${showEr ? '<th>Erarbeitung UND/ODER</th><th>Schritte im Zeitraum</th>' : ''}<th>Übungen gelöst</th><th>Endlos gelöst</th><th>Aktive Tage</th><th>Erste – letzte Lösung im Zeitraum</th><th>Zuletzt gespeichert</th></tr>` +
+  if ($('#fSeite').value === 'tippen'){ renderTippReport(rows, fmt); if (selected) renderDetail(selected); return; }
+  const showTipp = rows.some(r => r.tipp.length);
+  $('#repTable').innerHTML = `<tr><th>Zugang</th><th>Name (nur lokal)</th>${showEr ? '<th>Erarbeitung UND/ODER</th><th>Schritte im Zeitraum</th>' : ''}<th>Übungen gelöst</th><th>Endlos gelöst</th>${showTipp ? '<th>Tipptests</th>' : ''}<th>Aktive Tage</th><th>Erste – letzte Lösung im Zeitraum</th><th>Zuletzt gespeichert</th></tr>` +
     rows.map(r => {
       const pct = r.erDone != null && r.erTotal ? Math.round(100 * r.erDone / r.erTotal) : 0;
       const erCell = r.erDone == null || r.erDone <= 1 ? '<span class="pill">nicht begonnen</span>'
@@ -549,7 +592,7 @@ function renderReport(){
         <td class="code">${esc(r.k)}${r.s.gesperrt ? ' <span class="pill bad">gesperrt</span>' : ''}</td>
         <td><input class="nm" data-k="${esc(r.k)}" value="${esc(r.name)}" placeholder="Name eintragen"></td>
         ${showEr ? `<td>${erCell}</td><td class="num">${r.erarbIm || '–'}</td>` : ''}
-        <td class="num">${r.ueb || '–'}</td><td class="num">${r.endlos || '–'}</td><td class="num">${r.tage || '–'}</td>
+        <td class="num">${r.ueb || '–'}</td><td class="num">${r.endlos || '–'}</td>${showTipp ? `<td class="num">${r.tipp.length || '–'}</td>` : ''}<td class="num">${r.tage || '–'}</td>
         <td>${r.n ? fmt(r.erste) + ' – ' + fmt(r.letzte) : '<span class="pill bad">keine Aktivität</span>'}</td>
         <td>${fmt(r.lastAll)}</td></tr>`;
     }).join('');
@@ -566,16 +609,22 @@ $('#repTable').addEventListener('click', e => {
 function renderDetail(id){
   const r = summarize().find(x => x.s.id === id); if (!r) return;
   $('#detailCard').classList.remove('hidden');
-  $('#detailTitle').textContent = `${r.k}${r.name ? ' · ' + r.name : ''}: ${r.n} Lösungen im Zeitraum`;
+  const was = $('#fSeite').value === 'tippen' ? 'Tipptests' : r.tipp.length ? 'Lösungen und Tipptests' : 'Lösungen';
+  $('#detailTitle').textContent = `${r.k}${r.name ? ' · ' + r.name : ''}: ${r.n} ${was} im Zeitraum`;
   if (!r.n){ $('#detailBody').innerHTML = '<p class="muted">Im gewählten Zeitraum wurde nichts gelöst.</p>'; return; }
-  let h = '', day = '';
-  for (const e of r.mine){
-    const d = pbDate(e.created), ds = d.toLocaleDateString('de-DE', {weekday:'long', day:'2-digit', month:'2-digit', year:'numeric'});
-    if (ds !== day){ h += `<div class="day">${ds}</div>`; day = ds; }
+  // Ereignisse der Übungen und Tipptests zeitlich gemischt
+  const zeilen = r.mine.map(e => {
     const was = e.modus === 'erarbeitung' ? `Schritt ${esc(e.aufgabe)}${e.gesamt ? '/' + e.gesamt : ''}: ${esc(e.titel)}`
       : e.modus === 'uebungen' ? `Stufe ${e.stufe} · Aufgabe ${esc(e.aufgabe)}${e.gesamt ? '/' + e.gesamt : ''} (${esc(e.titel)})`
       : `Stufe ${e.stufe} · Szenario ${esc(e.aufgabe)}`;
-    h += `<div class="ev"><span class="t">${d.toLocaleTimeString('de-DE', {hour:'2-digit', minute:'2-digit'})}</span><span>${SEITE[e.seite] || e.seite} · ${MODUS[e.modus] || e.modus}</span><span>${was}${e.erstmals ? '' : ' <span class="pill">wiederholt</span>'}</span></div>`;
+    return {d: pbDate(e.created), wo: `${SEITE[e.seite] || e.seite} · ${MODUS[e.modus] || e.modus}`, was: was + (e.erstmals ? '' : ' <span class="pill">wiederholt</span>')};
+  }).concat(r.tipp.map(t => ({d: new Date(t.zeitpunkt), wo: `pockettype · ${tippTest(t)} · ${esc(sprache(t.sprache))}${t.satzzeichen ? ' · Satzzeichen' : ''}${t.zahlen ? ' · Zahlen' : ''}`,
+    was: `${Math.round(t.wpm)} Wörter/min · ${apm(t)} Anschläge/min · ${Math.round(t.genauigkeit)} % Genauigkeit${t.bestwert ? ' <span class="pill ok">Bestwert</span>' : ''}`}))).sort((a, b) => a.d - b.d);
+  let h = '', day = '';
+  for (const z of zeilen){
+    const ds = z.d.toLocaleDateString('de-DE', {weekday:'long', day:'2-digit', month:'2-digit', year:'numeric'});
+    if (ds !== day){ h += `<div class="day">${ds}</div>`; day = ds; }
+    h += `<div class="ev"><span class="t">${z.d.toLocaleTimeString('de-DE', {hour:'2-digit', minute:'2-digit'})}</span><span>${z.wo}</span><span>${z.was}</span></div>`;
   }
   $('#detailBody').innerHTML = h;
 }
@@ -584,8 +633,13 @@ $('#csvBtn').addEventListener('click', () => {
   if (!lastReport){ msg('#repMsg', 'Zuerst „Anzeigen“ wählen.'); return; }
   const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
   const f = d => d ? d.toLocaleString('de-DE') : '';
-  const lines = [['Zugang', 'Name', 'Erarbeitung erledigt', 'Erarbeitung gesamt', 'Schritte im Zeitraum', 'Übungen gelöst', 'Endlos gelöst', 'Aktive Tage', 'Erste Lösung', 'Letzte Lösung'].map(q).join(';')];
-  for (const r of summarize()) lines.push([r.k, r.name, r.erDone ?? '', r.erTotal ?? '', r.erarbIm, r.ueb, r.endlos, r.tage, f(r.erste), f(r.letzte)].map(q).join(';'));
+  const tippen = $('#fSeite').value === 'tippen';
+  const lines = [(tippen
+    ? ['Zugang', 'Name', 'Tests', 'Bestwert Wörter/min', 'Bestwert Anschläge/min', 'Ø Wörter/min', 'Ø Anschläge/min', 'Ø Genauigkeit', 'Aktive Tage', 'Erster Test', 'Letzter Test']
+    : ['Zugang', 'Name', 'Erarbeitung erledigt', 'Erarbeitung gesamt', 'Schritte im Zeitraum', 'Übungen gelöst', 'Endlos gelöst', 'Tipptests', 'Aktive Tage', 'Erste Lösung', 'Letzte Lösung']).map(q).join(';')];
+  for (const r of summarize()) lines.push((tippen
+    ? [r.k, r.name, r.tipp.length, r.ts?.bestWpm ?? '', r.ts?.bestApm ?? '', r.ts?.wpm ?? '', r.ts?.apm ?? '', r.ts?.acc ?? '', r.tage, f(r.erste), f(r.letzte)]
+    : [r.k, r.name, r.erDone ?? '', r.erTotal ?? '', r.erarbIm, r.ueb, r.endlos, r.tipp.length, r.tage, f(r.erste), f(r.letzte)]).map(q).join(';'));
   const blob = new Blob(['﻿' + lines.join('\r\n')], {type: 'text/csv;charset=utf-8'});
   const a = document.createElement('a');
   const kl = KLASSEN.find(x => x.id === $('#fKlasse').value);

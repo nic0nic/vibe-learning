@@ -8,6 +8,10 @@
 //   POST /api/trainer/tippen/meta       {meta, stand}         -> {stand}
 //        409 mit {meta, stand}, wenn der Server einen neueren Stand hat
 //
+// Lehrkraft (Kopfzeile "X-Lehrer-Token") und Admin ("Authorization"):
+//   GET  /api/trainer/tippen/report?klasse=<id>&von=&bis=      -> {ergebnisse:[{schueler, zeitpunkt, …}]}
+//        Werte ohne das vollständige Ergebnis, von/bis als ISO-Datum
+//
 // Ergebnisse löscht nur die Lehrkraft (mit dem Schüler oder der Klasse).
 
 routerAdd("GET", "/api/trainer/tippen", (e) => {
@@ -90,4 +94,25 @@ routerAdd("POST", "/api/trainer/tippen/meta", (e) => {
   r.set("stand", stand);
   $app.save(r);
   return e.json(200, { stand });
+});
+
+routerAdd("GET", "/api/trainer/tippen/report", (e) => {
+  const u = require(`${__hooks}/trainer_utils.js`);
+  const a = u.lehrkraft(e);
+  if (!a) return e.json(401, { message: "Bitte anmelden." });
+  const q = e.request.url.query();
+  const k = u.eigeneKlasse(a, q.get("klasse"));
+  if (!k) return e.json(404, { message: "Klasse nicht gefunden." });
+  let filter = "schueler.klasse_ref = {:k}";
+  const params = { k: k.id };
+  const von = Date.parse(q.get("von")), bis = Date.parse(q.get("bis"));
+  if (!isNaN(von)) { filter += " && zeitpunkt >= {:von}"; params.von = von; }
+  if (!isNaN(bis)) { filter += " && zeitpunkt <= {:bis}"; params.bis = bis; }
+  const felder = ["zeitpunkt", "modus", "modus2", "sprache", "wpm", "roh", "genauigkeit", "gleichmaessigkeit", "anschlaege", "dauer"];
+  const ergebnisse = $app.findRecordsByFilter("tipp_ergebnisse", filter, "zeitpunkt", 20000, 0, params).map((r) => {
+    const z = { schueler: r.getString("schueler"), satzzeichen: r.getBool("satzzeichen"), zahlen: r.getBool("zahlen"), bestwert: r.getBool("bestwert") };
+    for (const f of felder) z[f] = r.get(f);
+    return z;
+  });
+  return e.json(200, { ergebnisse });
 });

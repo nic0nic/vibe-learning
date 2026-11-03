@@ -21,7 +21,7 @@
 //   POST   /api/trainer/codes          {klasse, anzahl}          -> neue Codes
 //   POST   /api/trainer/konten         {klasse, konten:[{name, pass}]} -> neue Konten
 //   POST   /api/trainer/schueler/{id}/passwort {passwort?}       -> neues Passwort
-//   PATCH  /api/trainer/schueler/{id}  {gesperrt}
+//   PATCH  /api/trainer/schueler/{id}  {gesperrt?, klasse?}        -> sperren/entsperren, in eine andere eigene Klasse verschieben
 //   DELETE /api/trainer/schueler/{id}
 //   GET    /api/trainer/report?klasse=<id>&von=&bis=             -> Fortschritt + Ereignisse
 // Nur Admin:
@@ -289,7 +289,15 @@ routerAdd("PATCH", "/api/trainer/schueler/{id}", (e) => {
   if (!a) return e.json(401, { message: "Bitte anmelden." });
   const s = u.eigenerSchueler(a, e.request.pathValue("id"));
   if (!s) return e.json(404, { message: "Schüler nicht gefunden." });
-  s.set("gesperrt", !!(e.requestInfo().body || {}).gesperrt);
+  const body = e.requestInfo().body || {};
+  if ("gesperrt" in body) s.set("gesperrt", !!body.gesperrt);
+  if ("klasse" in body) {
+    // Umziehen: Fortschritt und Ergebnisse bleiben am Schüler
+    const k = u.eigeneKlasse(a, body.klasse);
+    if (!k) return e.json(404, { message: "Zielklasse nicht gefunden." });
+    s.set("klasse", k.getString("name"));
+    s.set("klasse_ref", k.id);
+  }
   $app.save(s);
   return e.json(200, { ok: true });
 });

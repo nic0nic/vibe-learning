@@ -43,6 +43,11 @@ window.KATALOG = {
         {id: 'sqluo', datei: 'datenight.html', titel: 'Datenight: UND / ODER', text: 'Drei Wochen Dates mit immer verrückteren Filmwünschen: Kriterien mit UND und ODER – im Access-Entwurf oder mit Blöcken und SQL.'}
       ]
     },
+    {id: 'tippen', titel: 'Tastaturschreiben', farbe: '#d08770', farbeHell: '#9c5530', text: 'Schnell und sicher tippen mit zehn Fingern.',
+      tools: [
+        {id: 'tippen', datei: 'pockettype.html', titel: 'pockettype', text: 'Tipptrainer: Wörter und Anschläge pro Minute, Genauigkeit, Bestwerte und Verlauf. Eigenes Projekt auf Basis von Monkeytype (GPL-3.0).'}
+      ]
+    },
     {id: 'schaltungen', titel: 'Logische Schaltungen', text: 'Gatter, Wahrheitstabellen und Schaltnetze.',  tools: []}
   ]
 };

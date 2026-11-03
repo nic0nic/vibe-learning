@@ -45,6 +45,10 @@ vibe-learning/
 │   │   ├── abfragen.js/.css       Technik der Abfrage-Übungen, Aufbau oben in abfragen.js
 │   │   ├── filme.js               Daten der Filmdatenbank
 │   │   └── lib/                   sql.js (SQLite im Browser) und Autovervollständigung (CodeMirror)
+│   ├── tippen/                Tastaturschreiben
+│   │   ├── index.html             Übersicht des Bereichs
+│   │   └── pockettype.html …      Tipptrainer pockettype, gebaut im eigenen Repo (GPL-3.0),
+│   │                              siehe LICENSE.txt und QUELLE.txt dort; nie von Hand ändern
 │   └── schaltungen/           noch leer
 └── ANLEITUNG.md
 ```
@@ -337,6 +341,8 @@ PocketBase ist noch in Version 0.x. Größere Sprünge (z. B. 0.40 → 0.41) kö
 **Übungen ohne Server weitergeben:** Im Ordner `standalone/` liegt jede Übung als eine einzige HTML-Datei, sortiert wie auf der Webseite, z. B. `standalone/excel/wenn.html`. Sie läuft per Doppelklick, ohne Menü und ohne Anmeldung; der Fortschritt bleibt im Browser. Die Dateien werden mit `python3 werkzeuge/einzeldateien.py` erzeugt und nie von Hand geändert (siehe PRINZIPIEN.md).
 
 **Umstieg vom alten Ordnernamen `excel-trainer`:** Der Ordner heißt jetzt `vibe-learning`. Bei einer Installation im Benutzerordner PocketBase beenden, `mv ~/excel-trainer ~/vibe-learning`, dann wie oben `pb_hooks`, `pb_migrations` und `pb_public` ersetzen und neu starten; `pb_data` wandert mit und bleibt erhalten. Läuft der Dienst unter `/srv/excel-trainer`, kann alles so bleiben, wie es ist: Name von Ordner, Dienst und Systembenutzer spielt für die Seite keine Rolle. In diesem Fall in den Befehlen dieser Anleitung `vibe-learning` durch `excel-trainer` ersetzen.
+
+**Tipptrainer pockettype aktualisieren:** pockettype ist ein eigenes Projekt (github.com/nic0nic/pockettype, auf Basis von Monkeytype, GPL-3.0). Im pockettype-Ordner `scripts/pockettype/nach-vibe-learning.sh ../vibe-learning` ausführen (braucht Node 24 und pnpm). Das Skript baut pockettype und ersetzt alles in `pb_public/tippen/` außer der Bereichsseite `index.html`. Danach wie unten `pb_public` auf den Server kopieren. Die Ergebnisse der Schüler liegen in den Tabellen `tipp_ergebnisse` und `tipp_stand` und werden mit dem Schüler bzw. der Klasse gelöscht; in der Verwaltung unter „Auswertung“ bei „Seite“ *pockettype* wählen.
 
 **Webseiten aktualisieren** (z. B. neue Version eines Trainers): einfach die Datei in `/srv/vibe-learning/pb_public/` ersetzen. Ein Neustart ist nicht nötig.
 

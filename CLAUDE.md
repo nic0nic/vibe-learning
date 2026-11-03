@@ -2,7 +2,7 @@
 
 Übungsplattform für den IT-Unterricht (Realschule). Statische Seiten in `pb_public/`, PocketBase (≥ 0.23, getestet 0.40.5) als Backend. Jede Seite muss auch ohne Server per Doppelklick laufen.
 
-Ausnahme: **pockettype** (Tipptrainer, eigenes Repo, GPL-3.0, basiert auf Monkeytype). Die fertig gebauten Dateien kommen nach `pb_public/tippen/` und werden hier nie von Hand geändert. pockettype läuft nur mit Server, es gibt keine Einzeldatei in `standalone/`. Ein Build-Schritt ist nur im pockettype-Repo nötig, nicht im Betrieb.
+Ausnahme: **pockettype** (Tipptrainer, eigenes Repo github.com/nic0nic/pockettype, GPL-3.0, basiert auf Monkeytype). Die fertig gebauten Dateien liegen in `pb_public/tippen/` (Seite `pockettype.html`) und werden hier nie von Hand geändert, nur `tippen/index.html` (Bereichsseite) gehört zu vibe learning. Neu bauen im pockettype-Repo mit `scripts/pockettype/nach-vibe-learning.sh ../vibe-learning`. pockettype läuft nur mit Server, es gibt keine Einzeldatei in `standalone/`. Server-Teil: `pb_hooks/tippen.pb.js`.
 
 ## Arbeitsweise
 
