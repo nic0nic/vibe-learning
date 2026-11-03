@@ -21,6 +21,8 @@
  *                     sonst geht der gespeicherte Fortschritt verloren)
  *           datei   = HTML-Datei im Ordner des Bereichs
  *           titel, text = Anzeige im Menü und auf den Übersichtsseiten
+ *           bedingt = true: nur sichtbar, wenn der Server es für den angemeldeten Schüler freigibt
+ *                     (z. B. Tipp-Aufgabe, siehe /api/trainer/sichtbar in pb_hooks/tippen.pb.js)
  *           stufen  = Stufen der Übungen für die Auswertung (lehrer.html): Anzahl oder Liste
  *                     mit Kurznamen, wenn die Nummern allein missverständlich wären
  *
@@ -56,7 +58,8 @@ window.KATALOG = {
     {id: 'tippen', titel: 'Tippen', farbe: '#d08770', farbeHell: '#9c5530', text: 'Schnell und sicher tippen mit zehn Fingern.',
       tools: [
         {id: 'tippen', datei: 'pockettype.html', titel: 'pockettype', text: 'Tipptrainer: Wörter und Anschläge pro Minute, Genauigkeit, Bestwerte und Verlauf. Eigenes Projekt auf Basis von Monkeytype (GPL-3.0).'},
-        {id: 'lektionen', datei: 'lektionen.html', titel: 'Lektion üben', text: 'Die 17 Lektionen aus TIPP10 in fester Reihenfolge: von der Grundreihe asdf jklö bis zu Ziffern und Sonderzeichen.'}
+        {id: 'lektionen', datei: 'lektionen.html', titel: 'Lektion üben', text: 'Die 17 Lektionen aus TIPP10 in fester Reihenfolge: von der Grundreihe asdf jklö bis zu Ziffern und Sonderzeichen.'},
+        {id: 'tippaufgabe', bedingt: true, datei: 'aufgabe.html', titel: 'Aufgabe', text: 'Den Text abschreiben, den deine Lehrkraft aufgegeben hat – so oft du willst.'}
       ]
     },
     {id: 'schaltungen', titel: 'Logische Schaltungen', text: 'Gatter, Wahrheitstabellen und Schaltnetze.',  tools: []}
@@ -73,6 +76,8 @@ window.KATALOG = {
  * und die Übersichtsseite eines Bereichs (#pf-bereich).
  *
  * Fehlt katalog.js oder nav.js, läuft das Tool trotzdem – nur ohne Menüleiste.
+ * Tools mit bedingt: true (katalog.js) sind zunächst ausgeblendet; sync.js blendet sie ein,
+ * wenn der Server sie für den angemeldeten Schüler freigibt (Klasse pf-sichtbar).
  * In Einzeldateien (werkzeuge/einzeldateien.py, window.PF_EINZELDATEI) zeigt die
  * Leiste nur Name und Hell/Dunkel-Knopf, weil es keine anderen Seiten gibt.
  */
@@ -117,6 +122,7 @@ html[data-theme=dark] .pf-item{--bc:#88c0d0}
 .pf-btn{background:var(--panel2,#eceff4);border:1px solid var(--border,#cdd3de);color:inherit;border-radius:10px;width:38px;height:38px;display:grid;place-items:center;cursor:pointer;font-size:17px;padding:0}
 .pf-burger{display:none}
 .pf-einzeln .pf-menu{display:none!important}
+.pf-bedingt:not(.pf-sichtbar){display:none!important}
 @media (max-width:760px){
   .pf-burger{display:grid}
   .pf-menu{display:none;position:absolute;top:100%;left:0;right:0;flex-direction:column;background:var(--panel,#f6f8fb);border-bottom:1px solid var(--border,#cdd3de);box-shadow:0 14px 30px rgba(0,0,0,.18);padding:6px 16px 12px;max-height:80vh;overflow:auto}
@@ -159,7 +165,7 @@ html[data-theme=dark] .pf-item{--bc:#88c0d0}
         <li class="pf-item" data-b="${esc(b.id)}">
           <a href="${bereichUrl(b)}"${b.id === BEREICH ? ' aria-current="true"' : ''}>${esc(b.titel)}</a>
           <ul class="pf-drop">${b.tools.length
-            ? b.tools.map(t => `<li><a href="${toolUrl(b, t)}"${t.id === TOOL ? ' aria-current="page"' : ''}>${esc(t.titel)}</a></li>`).join('')
+            ? b.tools.map(t => `<li${t.bedingt ? ` class="pf-bedingt" data-tool="${esc(t.id)}"` : ''}><a href="${toolUrl(b, t)}"${t.id === TOOL ? ' aria-current="page"' : ''}>${esc(t.titel)}</a></li>`).join('')
               + `<li><a class="pf-all" href="${bereichUrl(b)}">Alle Übungen zu ${esc(b.titel)}</a></li>`
             : '<li class="pf-leer">Hier entstehen bald Übungen.</li>'}
           </ul>
@@ -195,7 +201,7 @@ html[data-theme=dark] .pf-item{--bc:#88c0d0}
   /* ---------- Übersichtsseiten ---------- */
   function kacheln(b){
     if (!b.tools.length) return '<p class="pf-hinweis">Hier entstehen bald Übungen.</p>';
-    return `<div class="pf-grid">${b.tools.map(t => `<a class="pf-tile" href="${toolUrl(b, t)}"><b>${esc(t.titel)}</b><span>${esc(t.text)}</span></a>`).join('')}</div>`;
+    return `<div class="pf-grid">${b.tools.map(t => `<a class="pf-tile${t.bedingt ? ' pf-bedingt' : ''}"${t.bedingt ? ` data-tool="${esc(t.id)}"` : ''} href="${toolUrl(b, t)}"><b>${esc(t.titel)}</b><span>${esc(t.text)}</span></a>`).join('')}</div>`;
   }
   function buildPages(){
     const start = document.getElementById('pf-start');
@@ -241,6 +247,9 @@ html[data-theme=dark] .pf-item{--bc:#88c0d0}
  * der Link zur Verwaltung (lehrer.html).
  * Wird die HTML-Datei direkt geöffnet (oder läuft kein PocketBase dahinter),
  * passiert nichts davon – die Seite speichert dann wie bisher nur im Browser.
+ *
+ * Bedingte Menüpunkte (katalog.js: bedingt) blendet das Skript nach der Anmeldung ein,
+ * wenn der Server sie für diesen Schüler freigibt (/api/trainer/sichtbar).
  *
  * Die Seite ruft auf:
  *   TrainerSync.changed()      nach jeder Änderung am gespeicherten Stand
@@ -551,14 +560,24 @@ html[data-theme=dark] .pf-item{--bc:#88c0d0}
     if (pushPending) await push();
     await flush();
     if (queue().length && !confirm('Einige gelöste Aufgaben konnten noch nicht übertragen werden (keine Verbindung). Trotzdem abmelden?')) return;
-    wipeLocal(); ss.del(SS.gast);
+    wipeLocal(); ss.del(SS.gast); ss.del('ts-sichtbar');
     location.reload();
   }
   function abgelaufen(){
     aktiv = false;
-    wipeLocal();
+    wipeLocal(); ss.del('ts-sichtbar');
     showMenu();
     showLogin('Deine Anmeldung ist nicht mehr gültig. Bitte melde dich neu an.');
+  }
+
+  /* ---------- Bedingte Menüpunkte (z. B. Tipp-Aufgabe nur mit aufgegebener Aufgabe) ---------- */
+  function zeigeTools(ids){
+    // Tool-ids bestehen nur aus a–z, 0–9 und - (katalog.js); andere werden ignoriert
+    ids.filter(id => /^[a-z0-9-]+$/.test(id)).forEach(id => document.querySelectorAll(`[data-tool="${id}"]`).forEach(el => el.classList.add('pf-sichtbar')));
+  }
+  async function sichtbar(){
+    try { zeigeTools(JSON.parse(ss.get('ts-sichtbar') || '[]')); } catch (e) {}   // Stand der letzten Seite, ohne Flackern
+    try { const r = await api('/sichtbar'); ss.set('ts-sichtbar', JSON.stringify(r.tools || [])); zeigeTools(r.tools || []); } catch (e) {}
   }
 
   /* ---------- Start ---------- */
@@ -575,6 +594,7 @@ html[data-theme=dark] .pf-item{--bc:#88c0d0}
       if (!lehrerSitzung() && !ss.get(SS.gast)) showLogin();
       return;
     }
+    sichtbar();
     try { await pull(); flush(); }
     catch (err){ if (err.status === 401) abgelaufen(); else setStatus('offline'); }
   }

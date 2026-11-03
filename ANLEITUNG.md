@@ -18,7 +18,8 @@ vibe-learning/
 │   ├── 1760860000_trainer_init.js
 │   ├── 1760990000_konten_lehrkraefte.js
 │   ├── 1793700000_tippen.js   Tabellen tipp_ergebnisse und tipp_stand
-│   └── 1793710000_tippen_lektion.js  Feld lektion (Lektion üben)
+│   ├── 1793710000_tippen_lektion.js  Feld lektion (Lektion üben)
+│   └── 1793720000_tippen_aufgaben.js Tabelle tipp_aufgaben, Felder aufgabe/vollstaendig
 ├── pb_public/             die Webseiten
 │   ├── index.html             Startseite: alle Bereiche mit ihren Übungen
 │   ├── katalog.js             Liste aller Bereiche und Tools (hier neue Tools eintragen)
@@ -49,6 +50,7 @@ vibe-learning/
 │   ├── tippen/                Tippen
 │   │   ├── index.html             Übersicht des Bereichs
 │   │   ├── lektionen.html         „Lektion üben“ (TIPP10-Lektionen, Daten in lektionen/, GPL-2.0)
+│   │   ├── aufgabe.html           „Aufgabe“: Text der Lehrkraft abschreiben (nur mit aktiver Aufgabe sichtbar)
 │   │   └── pockettype.html …      Tipptrainer pockettype, gebaut im eigenen Repo (GPL-3.0),
 │   │                              siehe LICENSE.txt und QUELLE.txt dort; nie von Hand ändern
 │   └── schaltungen/           noch leer
@@ -344,7 +346,7 @@ PocketBase ist noch in Version 0.x. Größere Sprünge (z. B. 0.40 → 0.41) kö
 
 **Umstieg vom alten Ordnernamen `excel-trainer`:** Der Ordner heißt jetzt `vibe-learning`. Bei einer Installation im Benutzerordner PocketBase beenden, `mv ~/excel-trainer ~/vibe-learning`, dann wie oben `pb_hooks`, `pb_migrations` und `pb_public` ersetzen und neu starten; `pb_data` wandert mit und bleibt erhalten. Läuft der Dienst unter `/srv/excel-trainer`, kann alles so bleiben, wie es ist: Name von Ordner, Dienst und Systembenutzer spielt für die Seite keine Rolle. In diesem Fall in den Befehlen dieser Anleitung `vibe-learning` durch `excel-trainer` ersetzen.
 
-**Tipptrainer pockettype aktualisieren:** pockettype ist ein eigenes Projekt (github.com/nic0nic/pockettype, auf Basis von Monkeytype, GPL-3.0). Im pockettype-Ordner `scripts/pockettype/nach-vibe-learning.sh ../vibe-learning` ausführen (braucht Node 24 und pnpm). Das Skript baut pockettype und ersetzt alles in `pb_public/tippen/` außer der Bereichsseite `index.html`. Danach wie unten `pb_public` auf den Server kopieren. Die Ergebnisse der Schüler liegen in den Tabellen `tipp_ergebnisse` und `tipp_stand` und werden mit dem Schüler bzw. der Klasse gelöscht; in der Verwaltung unter „Auswertung“ bei „Seite“ *pockettype* wählen.
+**Tipptrainer pockettype aktualisieren:** pockettype ist ein eigenes Projekt (github.com/nic0nic/pockettype, auf Basis von Monkeytype, GPL-3.0). Im pockettype-Ordner `scripts/pockettype/nach-vibe-learning.sh ../vibe-learning` ausführen (braucht Node 24 und pnpm). Das Skript baut pockettype und ersetzt alles in `pb_public/tippen/` außer der Bereichsseite `index.html`. Danach wie unten `pb_public` auf den Server kopieren. Die Ergebnisse der Schüler liegen in den Tabellen `tipp_ergebnisse` und `tipp_stand` und werden mit dem Schüler bzw. der Klasse gelöscht; in der Verwaltung unter „Auswertung“ den Bereich *Tippen* wählen. Dort unter Übung *Aufgabe* gibt die Lehrkraft der Klasse einen Text zum Abschreiben auf und sieht, wer ihn wie oft, wie schnell und wie genau abgeschrieben hat.
 
 **Webseiten aktualisieren** (z. B. neue Version eines Trainers): einfach die Datei in `/srv/vibe-learning/pb_public/` ersetzen. Ein Neustart ist nicht nötig.
 

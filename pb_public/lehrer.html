@@ -133,6 +133,21 @@ td.st0{color:var(--muted)} td.st1{background:var(--warnbg);color:var(--warn);fon
       <div id="repMsg"></div>
     </section>
 
+    <section class="card noprint hidden" id="aufgabenCard">
+      <h2>Aufgaben zum Abschreiben</h2>
+      <p class="small muted">Eine aktive Aufgabe erscheint bei den Schülern der Klasse unter Tippen → Aufgabe. Der Text wird komplett abgeschrieben, beliebig oft. „Beenden“ blendet die Aufgabe für die Schüler aus, die Ergebnisse bleiben.</p>
+      <div class="tscroll"><table id="aTable"></table></div>
+      <details id="aNeu" style="margin-top:12px"><summary><b>Neue Aufgabe für diese Klasse</b></summary>
+        <div class="row" style="margin-top:8px">
+          <label style="flex:1;min-width:220px">Titel <input id="aTitel" maxlength="120" placeholder="z. B. Brief an die Eltern"></label>
+          <label>Abgabe bis (freiwillig) <input type="date" id="aBis"></label>
+        </div>
+        <label style="margin-top:8px">Text <textarea id="aText" placeholder="Text zum Abschreiben. Ein Zeilenumbruch wird beim Abschreiben mit Enter getippt."></textarea></label>
+        <div class="row" style="margin-top:8px"><button class="btn primary" id="aBtn">Aufgabe aufgeben</button><span class="small muted" id="aZaehler"></span></div>
+      </details>
+      <div id="aMsg"></div>
+    </section>
+
     <section class="card">
       <h2 id="repTitle">Übersicht</h2>
       <p class="small muted" id="repHint"></p>
@@ -226,6 +241,7 @@ const SEITE = {}, TOOL = {}, BEREICHE = [];
 const MODUS = {erarbeitung:'Erarbeitung', uebungen:'Übungen', endlos:'Endlos'};
 const PLATTFORM = window.KATALOG ? KATALOG.name : 'vibe learning';
 let ME = null, KLASSEN = [], LEHRER = [], SCH = [], klasseId = '', lastReport = null, lastTipp = null, selected = null;
+let AUFGABEN = [], aufgabeId = '';   // Tipp-Aufgaben der gewählten Klasse
 const PW = {};   // in dieser Sitzung vergebene Passwörter (zum Drucken), nie gespeichert
 
 const kennung = s => s.code || s.benutzername;
@@ -531,7 +547,10 @@ async function loadReport(){
   msg('#repMsg', '');
   try {
     const q = 'klasse=' + encodeURIComponent(k);
-    [lastReport, lastTipp] = await Promise.all([api('/report?' + q), api('/tippen/report?' + q).catch(() => ({ergebnisse: []}))]);
+    let au;
+    [lastReport, lastTipp, au] = await Promise.all([api('/report?' + q), api('/tippen/report?' + q).catch(() => ({ergebnisse: []})), api('/tippen/aufgaben?' + q).catch(() => ({aufgaben: []}))]);
+    AUFGABEN = au.aufgaben;
+    if (!AUFGABEN.some(a => a.id === aufgabeId)) aufgabeId = AUFGABEN[0] ? AUFGABEN[0].id : '';
     renderReport();
   } catch (x){ msg('#repMsg', esc(x.message)); }
 }
@@ -555,7 +574,7 @@ const fmtZeit = d => d ? d.toLocaleString('de-DE', {weekday:'short', day:'2-digi
 const dauer = s => { s = Math.round(s); const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60); return h ? `${h} h ${pad(m)} min` : m ? `${m} min ${pad(s % 60)} s` : `${s} s`; };
 const apm = t => t.dauer > 0 ? Math.round(t.anschlaege / t.dauer * 60) : 0;
 const TIPP_MODUS = {time: 'Zeit', words: 'Wörter', zen: 'Zen', custom: 'eigener Text', quote: 'Zitat'};
-const tippTest = t => t.lektion > 0 ? `Lektion ${t.lektion}` : t.modus === 'time' ? `Zeit ${t.modus2} s` : t.modus === 'words' ? `${t.modus2} Wörter` : (TIPP_MODUS[t.modus] || t.modus);
+const tippTest = t => t.aufgabe ? `Aufgabe${t.vollstaendig ? '' : ' (abgebrochen)'}` : t.lektion > 0 ? `Lektion ${t.lektion}` : t.modus === 'time' ? `Zeit ${t.modus2} s` : t.modus === 'words' ? `${t.modus2} Wörter` : (TIPP_MODUS[t.modus] || t.modus);
 const SPRACHE = {german: 'Deutsch', english: 'Englisch', french: 'Französisch', portuguese: 'Portugiesisch'};
 const sprache = s => { const [b, ...r] = String(s || '').split('_'); return (SPRACHE[b] || b) + (r.length ? ' ' + r.join(' ') : ''); };
 
@@ -563,6 +582,7 @@ const sprache = s => { const [b, ...r] = String(s || '').split('_'); return (SPR
 function auswahl(){
   const b = $('#fBereich').value, u = $('#fUebung').value;
   if (!b) return {art: 'alle', tools: Object.keys(TOOL)};
+  if (b === 'tippen' && u === 'tippaufgabe') return {art: 'aufgabe', tools: ['tippen']};
   if (b === 'tippen') return {art: 'tippen', tools: ['tippen'], uebung: u};   // u: '' alle, 'tippen' freie Tests, 'lektionen'
   return {art: 'stand', tools: u ? [u] : BEREICHE.find(x => x.id === b).tools.map(t => t.id)};
 }
@@ -653,7 +673,7 @@ function ansichtStand(rows, tools){
 /* Ansicht Tippen: Bestenliste im Zeitraum */
 // Lektionsnummern kurz: 1–5, 7
 const bereichListe = ns => { const s = [...new Set(ns)].sort((a, b) => a - b), out = []; for (let i = 0; i < s.length; i++){ let j = i; while (s[j + 1] === s[j] + 1) j++; out.push(j > i + 1 ? `${s[i]}–${s[j]}` : j === i + 1 ? `${s[i]}, ${s[j]}` : `${s[i]}`); i = j; } return out.join(', '); };
-const nurUebung = (t, u) => !u || (u === 'lektionen' ? t.lektion > 0 : !t.lektion);
+const nurUebung = (t, u) => !u || (u === 'lektionen' ? t.lektion > 0 : u === 'tippaufgabe' ? t.aufgabe === aufgabeId : !t.lektion && !t.aufgabe);
 function ansichtTippen(rows, uebung){
   rows.forEach(r => {
     r.tippZ = r.tippZ.filter(t => nurUebung(t, uebung));
@@ -689,11 +709,84 @@ function ansichtTippen(rows, uebung){
   };
 }
 
+/* Ansicht Tippen → Aufgabe: Statistik zu einer Aufgabe (gesamter Zeitraum) */
+const woerterZahl = text => String(text || '').split(/\s+/).filter(Boolean).length;
+const bisEnde = a => a && a.bis ? new Date(a.bis + 'T23:59:59') : null;
+function ansichtAufgabe(rows){
+  const A = AUFGABEN.find(x => x.id === aufgabeId), frist = bisEnde(A);
+  rows.forEach(r => {
+    const alle = r.tipp.filter(t => t.aufgabe === aufgabeId), t = alle.filter(x => x.vollstaendig);
+    r.n = t.length; r.abgebrochen = alle.length - t.length;
+    r.bestWpm = t.length ? Math.max(...t.map(x => Math.round(x.wpm))) : 0;
+    r.wpm = t.length ? Math.round(t.reduce((s, x) => s + x.wpm, 0) / t.length) : 0;
+    r.bestApm = t.length ? Math.max(...t.map(apm)) : 0;
+    r.bestAcc = t.length ? Math.max(...t.map(x => Math.round(x.genauigkeit))) : 0;
+    r.acc = t.length ? Math.round(t.reduce((s, x) => s + x.genauigkeit, 0) / t.length) : 0;
+    r.schnellste = t.length ? Math.min(...t.map(x => x.dauer)) : 0;
+    r.erste = t.length ? t[0].d : null;
+    r.letzte = alle.length ? alle[alle.length - 1].d : null;
+    r.rechtzeitig = !frist ? null : r.erste ? r.erste <= frist : false;
+  });
+  const fertig = rows.filter(r => r.n).length;
+  const fmtTag = d => d ? d.toLocaleString('de-DE', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'}) : '–';
+  return {
+    titel: () => A ? `Aufgabe „${A.titel}“: ${fertig} fertig` : 'Noch keine Aufgabe',
+    hinweis: A ? `${woerterZahl(A.text)} Wörter${A.bis ? ', Abgabe bis ' + new Date(A.bis).toLocaleDateString('de-DE') : ''}. Gezählt werden vollständig abgeschriebene Durchgänge über den gesamten Zeitraum (der Zeitraum oben gilt hier nicht). Rot: noch kein vollständiger Durchgang. Zeile anklicken für alle Versuche.` : 'Lege oben eine Aufgabe an.',
+    spalten: [SP_ZUGANG, SP_NAME,
+      {key: 'fertig', label: 'Fertig', num: true, get: r => r.n ? 1 : 0, cell: r => `<td class="st ${r.n ? 'st2' : 'st0'}">${r.n ? '✓' : '–'}</td>`, csv: r => r.n ? 'ja' : 'nein'},
+      zahl('n', 'Durchgänge', r => r.n),
+      zahl('bestWpm', 'Bestwert Wörter/min', r => r.bestWpm),
+      zahl('wpm', 'Ø Wörter/min', r => r.wpm),
+      zahl('bestApm', 'Bestwert Anschläge/min', r => r.bestApm),
+      zahl('bestAcc', 'Beste Genauigkeit', r => r.bestAcc, v => v + ' %'),
+      zahl('acc', 'Ø Genauigkeit', r => r.acc, v => v + ' %'),
+      {key: 'schnellste', label: 'Schnellste Zeit', num: true, get: r => r.schnellste || Infinity, cell: r => `<td class="num">${r.schnellste ? dauer(r.schnellste) : '–'}</td>`, csv: r => r.schnellste ? Math.round(r.schnellste) : ''},
+      ...(frist ? [{key: 'recht', label: 'Rechtzeitig', num: true, get: r => r.rechtzeitig ? 1 : 0, cell: r => `<td class="st ${r.rechtzeitig ? 'st2' : r.n ? 'st1' : 'st0'}">${r.rechtzeitig ? '✓' : r.n ? 'zu spät' : '–'}</td>`, csv: r => r.rechtzeitig ? 'ja' : 'nein'}] : []),
+      {key: 'erste', label: 'Erster Durchgang', num: true, get: r => r.erste ? +r.erste : Infinity, cell: r => `<td>${fmtTag(r.erste)}</td>`, csv: r => r.erste ? r.erste.toLocaleString('de-DE') : ''},
+      zahl('abgebrochen', 'Abgebrochen', r => r.abgebrochen)],
+    sort: {key: 'fertig', dir: -1}
+  };
+}
+
+function renderAufgaben(){
+  const m = lastReport ? lastReport.schueler.length : 0;
+  const fertig = id => new Set(lastTipp.ergebnisse.filter(t => t.aufgabe === id && t.vollstaendig).map(t => t.schueler)).size;
+  $('#aTable').innerHTML = AUFGABEN.length ? `<tr><th>Aufgabe</th><th class="num">Wörter</th><th>Aufgegeben</th><th>Abgabe bis</th><th>Status</th><th class="num">Fertig</th><th></th></tr>` +
+    AUFGABEN.map(a => `<tr class="clk${a.id === aufgabeId ? ' sel' : ''}" data-aufgabe="${a.id}">
+      <td><b>${esc(a.titel)}</b></td><td class="num">${woerterZahl(a.text)}</td>
+      <td>${pbDate(a.created).toLocaleDateString('de-DE')}</td><td>${a.bis ? new Date(a.bis).toLocaleDateString('de-DE') : '–'}</td>
+      <td>${a.aktiv ? '<span class="pill ok">aktiv</span>' : '<span class="pill">beendet</span>'}</td>
+      <td class="num">${fertig(a.id)} / ${m}</td>
+      <td><div class="acts"><button class="btn small" data-a-aktiv="${a.id}">${a.aktiv ? 'Beenden' : 'Wieder öffnen'}</button><button class="btn small danger" data-a-loeschen="${a.id}">Löschen</button></div></td></tr>`).join('')
+    : '<tr><td class="muted">Diese Klasse hat noch keine Aufgabe.</td></tr>';
+  if (!AUFGABEN.length) $('#aNeu').open = true;
+}
+$('#aTable').addEventListener('click', async e => {
+  const akt = e.target.closest('[data-a-aktiv]'), del = e.target.closest('[data-a-loeschen]');
+  try {
+    if (akt){ const a = AUFGABEN.find(x => x.id === akt.dataset.aAktiv); await api('/tippen/aufgaben/' + a.id, {method: 'PATCH', body: {aktiv: !a.aktiv}}); msg('#aMsg', a.aktiv ? `„${esc(a.titel)}“ beendet – die Schüler sehen sie nicht mehr.` : `„${esc(a.titel)}“ ist wieder offen.`, 'ok'); await loadReport(); return; }
+    if (del){ const a = AUFGABEN.find(x => x.id === del.dataset.aLoeschen); if (!confirm(`Aufgabe „${a.titel}“ löschen? Die Ergebnisse der Schüler bleiben gespeichert, sind dann aber keiner Aufgabe mehr zugeordnet.`)) return; await api('/tippen/aufgaben/' + a.id, {method: 'DELETE'}); msg('#aMsg', 'Aufgabe gelöscht.', 'ok'); await loadReport(); return; }
+  } catch (x){ msg('#aMsg', esc(x.message)); return; }
+  const tr = e.target.closest('tr[data-aufgabe]'); if (!tr) return;
+  aufgabeId = tr.dataset.aufgabe; selected = null; SORT = null; renderReport();
+});
+$('#aText').addEventListener('input', () => { const n = woerterZahl($('#aText').value); $('#aZaehler').textContent = n ? `${n} Wörter, ${$('#aText').value.length} Zeichen` : ''; });
+$('#aBtn').addEventListener('click', async () => {
+  try {
+    const a = await api('/tippen/aufgaben', {method: 'POST', body: {klasse: $('#fKlasse').value, titel: $('#aTitel').value, text: $('#aText').value, bis: $('#aBis').value}});
+    $('#aTitel').value = ''; $('#aText').value = ''; $('#aBis').value = ''; $('#aZaehler').textContent = ''; $('#aNeu').open = false;
+    aufgabeId = a.id; msg('#aMsg', `Aufgabe „${esc(a.titel)}“ aufgegeben. Die Schüler finden sie unter Tippen → Aufgabe.`, 'ok');
+    await loadReport();
+  } catch (x){ msg('#aMsg', esc(x.message)); }
+});
+
 let SORT = null, ANSICHT = null, ZEILEN = [];
 function renderReport(){
   if (!lastReport) return;
   const a = auswahl(), rows = basis();
-  ANSICHT = a.art === 'alle' ? ansichtAlle(rows) : a.art === 'tippen' ? ansichtTippen(rows, a.uebung) : ansichtStand(rows, a.tools);
+  $('#aufgabenCard').classList.toggle('hidden', a.art !== 'aufgabe');
+  if (a.art === 'aufgabe') renderAufgaben();
+  ANSICHT = a.art === 'alle' ? ansichtAlle(rows) : a.art === 'tippen' ? ansichtTippen(rows, a.uebung) : a.art === 'aufgabe' ? ansichtAufgabe(rows) : ansichtStand(rows, a.tools);
   const sort = SORT || ANSICHT.sort, sp = ANSICHT.spalten.find(c => c.key === sort.key) || ANSICHT.spalten[0];
   const wert = r => sp.get(r) ?? '';
   rows.sort((x, y) => {
@@ -737,7 +830,7 @@ function renderDetail(id){
   const r = ZEILEN.find(x => x.s.id === id); if (!r) return;
   const a = auswahl();
   const ev = a.art === 'tippen' ? [] : r.evZ.filter(e => a.tools.includes(e.seite));
-  const tipp = a.art === 'stand' ? [] : r.tippZ.filter(t => nurUebung(t, a.uebung));
+  const tipp = a.art === 'stand' ? [] : a.art === 'aufgabe' ? r.tipp.filter(t => t.aufgabe === aufgabeId) : r.tippZ.filter(t => nurUebung(t, a.uebung));
   $('#detailCard').classList.remove('hidden');
   const was = a.art === 'tippen' ? 'Tests' : 'Einträge';
   $('#detailTitle').textContent = `${r.k}${r.name ? ' · ' + r.name : ''}: ${ev.length + tipp.length} ${was} im Zeitraum`;

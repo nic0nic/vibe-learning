@@ -6,6 +6,8 @@
  * und die Übersichtsseite eines Bereichs (#pf-bereich).
  *
  * Fehlt katalog.js oder nav.js, läuft das Tool trotzdem – nur ohne Menüleiste.
+ * Tools mit bedingt: true (katalog.js) sind zunächst ausgeblendet; sync.js blendet sie ein,
+ * wenn der Server sie für den angemeldeten Schüler freigibt (Klasse pf-sichtbar).
  * In Einzeldateien (werkzeuge/einzeldateien.py, window.PF_EINZELDATEI) zeigt die
  * Leiste nur Name und Hell/Dunkel-Knopf, weil es keine anderen Seiten gibt.
  */
@@ -50,6 +52,7 @@ html[data-theme=dark] .pf-item{--bc:#88c0d0}
 .pf-btn{background:var(--panel2,#eceff4);border:1px solid var(--border,#cdd3de);color:inherit;border-radius:10px;width:38px;height:38px;display:grid;place-items:center;cursor:pointer;font-size:17px;padding:0}
 .pf-burger{display:none}
 .pf-einzeln .pf-menu{display:none!important}
+.pf-bedingt:not(.pf-sichtbar){display:none!important}
 @media (max-width:760px){
   .pf-burger{display:grid}
   .pf-menu{display:none;position:absolute;top:100%;left:0;right:0;flex-direction:column;background:var(--panel,#f6f8fb);border-bottom:1px solid var(--border,#cdd3de);box-shadow:0 14px 30px rgba(0,0,0,.18);padding:6px 16px 12px;max-height:80vh;overflow:auto}
@@ -92,7 +95,7 @@ html[data-theme=dark] .pf-item{--bc:#88c0d0}
         <li class="pf-item" data-b="${esc(b.id)}">
           <a href="${bereichUrl(b)}"${b.id === BEREICH ? ' aria-current="true"' : ''}>${esc(b.titel)}</a>
           <ul class="pf-drop">${b.tools.length
-            ? b.tools.map(t => `<li><a href="${toolUrl(b, t)}"${t.id === TOOL ? ' aria-current="page"' : ''}>${esc(t.titel)}</a></li>`).join('')
+            ? b.tools.map(t => `<li${t.bedingt ? ` class="pf-bedingt" data-tool="${esc(t.id)}"` : ''}><a href="${toolUrl(b, t)}"${t.id === TOOL ? ' aria-current="page"' : ''}>${esc(t.titel)}</a></li>`).join('')
               + `<li><a class="pf-all" href="${bereichUrl(b)}">Alle Übungen zu ${esc(b.titel)}</a></li>`
             : '<li class="pf-leer">Hier entstehen bald Übungen.</li>'}
           </ul>
@@ -128,7 +131,7 @@ html[data-theme=dark] .pf-item{--bc:#88c0d0}
   /* ---------- Übersichtsseiten ---------- */
   function kacheln(b){
     if (!b.tools.length) return '<p class="pf-hinweis">Hier entstehen bald Übungen.</p>';
-    return `<div class="pf-grid">${b.tools.map(t => `<a class="pf-tile" href="${toolUrl(b, t)}"><b>${esc(t.titel)}</b><span>${esc(t.text)}</span></a>`).join('')}</div>`;
+    return `<div class="pf-grid">${b.tools.map(t => `<a class="pf-tile${t.bedingt ? ' pf-bedingt' : ''}"${t.bedingt ? ` data-tool="${esc(t.id)}"` : ''} href="${toolUrl(b, t)}"><b>${esc(t.titel)}</b><span>${esc(t.text)}</span></a>`).join('')}</div>`;
   }
   function buildPages(){
     const start = document.getElementById('pf-start');

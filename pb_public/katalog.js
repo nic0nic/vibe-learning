@@ -13,6 +13,8 @@
  *                     sonst geht der gespeicherte Fortschritt verloren)
  *           datei   = HTML-Datei im Ordner des Bereichs
  *           titel, text = Anzeige im Menü und auf den Übersichtsseiten
+ *           bedingt = true: nur sichtbar, wenn der Server es für den angemeldeten Schüler freigibt
+ *                     (z. B. Tipp-Aufgabe, siehe /api/trainer/sichtbar in pb_hooks/tippen.pb.js)
  *           stufen  = Stufen der Übungen für die Auswertung (lehrer.html): Anzahl oder Liste
  *                     mit Kurznamen, wenn die Nummern allein missverständlich wären
  *
@@ -48,7 +50,8 @@ window.KATALOG = {
     {id: 'tippen', titel: 'Tippen', farbe: '#d08770', farbeHell: '#9c5530', text: 'Schnell und sicher tippen mit zehn Fingern.',
       tools: [
         {id: 'tippen', datei: 'pockettype.html', titel: 'pockettype', text: 'Tipptrainer: Wörter und Anschläge pro Minute, Genauigkeit, Bestwerte und Verlauf. Eigenes Projekt auf Basis von Monkeytype (GPL-3.0).'},
-        {id: 'lektionen', datei: 'lektionen.html', titel: 'Lektion üben', text: 'Die 17 Lektionen aus TIPP10 in fester Reihenfolge: von der Grundreihe asdf jklö bis zu Ziffern und Sonderzeichen.'}
+        {id: 'lektionen', datei: 'lektionen.html', titel: 'Lektion üben', text: 'Die 17 Lektionen aus TIPP10 in fester Reihenfolge: von der Grundreihe asdf jklö bis zu Ziffern und Sonderzeichen.'},
+        {id: 'tippaufgabe', bedingt: true, datei: 'aufgabe.html', titel: 'Aufgabe', text: 'Den Text abschreiben, den deine Lehrkraft aufgegeben hat – so oft du willst.'}
       ]
     },
     {id: 'schaltungen', titel: 'Logische Schaltungen', text: 'Gatter, Wahrheitstabellen und Schaltnetze.',  tools: []}

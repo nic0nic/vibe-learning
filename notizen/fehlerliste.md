@@ -27,6 +27,13 @@ Gesammelt im Thread „Aufbau der Seite“. Umgesetzt wird erst, wenn die Lehrkr
 
 ### Version vom 03.11.
 
+25. **Tippen: Aufgabe zum Abschreiben** (gewünscht 03.11.)
+    - Verwaltung → Auswertung → Tippen → Übung „Aufgabe“: Aufgaben der Klasse anlegen (Titel, Text, Abgabe bis), beenden/wieder öffnen, löschen. Statistik je Schüler: fertig, Durchgänge, Bestwert und Ø Wörter/min, Bestwert Anschläge/min, Genauigkeit, schnellste Zeit, rechtzeitig, erster Durchgang, abgebrochen.
+    - Menüpunkt „Aufgabe“ unter Tippen nur, wenn die Klasse eine aktive Aufgabe hat: katalog.js `bedingt: true`, nav.js blendet aus, sync.js fragt /api/trainer/sichtbar.
+    - pockettype `aufgabe.html`: Text einmal komplett, beliebig oft; Zeilenumbruch = Enter; mehrere Aufgaben über den Hinweis über dem Text wechseln.
+    - Fehler behoben: neue Felder im Ergebnis mit `undefined` haben das Speichern verhindert.
+    Betrifft pockettype, katalog.js, nav.js, sync.js, lehrer.html, pb_hooks/tippen.pb.js, pb_migrations/1793720000_tippen_aufgaben.js.
+
 24. **Tippen: Lektion üben (TIPP10)** (gewünscht 03.11.)
     - Lektionen 1–17 (Deutsch, QWERTZ) aus dem Quellcode von TIPP10 2.1.0, Inhalt und Reihenfolge wie dort (ohne „intelligente“ Auswahl): Wortlektionen 1–6 mit Zeilenumbruch nach 35 Zeichen, Satzlektionen ab 7 mit Enter nach jedem Satz; danach wieder von vorn. Dauer 1/2/5/10 min oder ganze Lektion (Standard 5 min wie TIPP10).
     - Neue Seite `tippen/lektionen.html` („Lektion üben“ im Menü), gleiche Oberfläche, Titel „pockettype Lektionen“; Lektion wählen über den Hinweis über dem Text wie die Sprache.

@@ -1,0 +1,1 @@
+import{a as e,c as t,i as n,l as r,s as i}from"./desktop.Cpp7Jl9K.js";export{n as initializeDesktopStorage,e as loadDesktopData,i as replaceDesktopData,t as saveDesktopData,r as updateDesktopResultTags};

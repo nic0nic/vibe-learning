@@ -11,6 +11,9 @@
  * Wird die HTML-Datei direkt geöffnet (oder läuft kein PocketBase dahinter),
  * passiert nichts davon – die Seite speichert dann wie bisher nur im Browser.
  *
+ * Bedingte Menüpunkte (katalog.js: bedingt) blendet das Skript nach der Anmeldung ein,
+ * wenn der Server sie für diesen Schüler freigibt (/api/trainer/sichtbar).
+ *
  * Die Seite ruft auf:
  *   TrainerSync.changed()      nach jeder Änderung am gespeicherten Stand
  *   TrainerSync.event({...})   wenn eine Aufgabe richtig gelöst wurde
@@ -320,14 +323,24 @@
     if (pushPending) await push();
     await flush();
     if (queue().length && !confirm('Einige gelöste Aufgaben konnten noch nicht übertragen werden (keine Verbindung). Trotzdem abmelden?')) return;
-    wipeLocal(); ss.del(SS.gast);
+    wipeLocal(); ss.del(SS.gast); ss.del('ts-sichtbar');
     location.reload();
   }
   function abgelaufen(){
     aktiv = false;
-    wipeLocal();
+    wipeLocal(); ss.del('ts-sichtbar');
     showMenu();
     showLogin('Deine Anmeldung ist nicht mehr gültig. Bitte melde dich neu an.');
+  }
+
+  /* ---------- Bedingte Menüpunkte (z. B. Tipp-Aufgabe nur mit aufgegebener Aufgabe) ---------- */
+  function zeigeTools(ids){
+    // Tool-ids bestehen nur aus a–z, 0–9 und - (katalog.js); andere werden ignoriert
+    ids.filter(id => /^[a-z0-9-]+$/.test(id)).forEach(id => document.querySelectorAll(`[data-tool="${id}"]`).forEach(el => el.classList.add('pf-sichtbar')));
+  }
+  async function sichtbar(){
+    try { zeigeTools(JSON.parse(ss.get('ts-sichtbar') || '[]')); } catch (e) {}   // Stand der letzten Seite, ohne Flackern
+    try { const r = await api('/sichtbar'); ss.set('ts-sichtbar', JSON.stringify(r.tools || [])); zeigeTools(r.tools || []); } catch (e) {}
   }
 
   /* ---------- Start ---------- */
@@ -344,6 +357,7 @@
       if (!lehrerSitzung() && !ss.get(SS.gast)) showLogin();
       return;
     }
+    sichtbar();
     try { await pull(); flush(); }
     catch (err){ if (err.status === 401) abgelaufen(); else setStatus('offline'); }
   }
