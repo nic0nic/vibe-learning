@@ -26,6 +26,10 @@ Gesammelt im Thread „Aufbau der Seite“. Umgesetzt wird erst, wenn die Lehrkr
 
 ### Version vom 03.11.
 
+21. **Alte Weiterleitungen entfernt, ANLEITUNG aktualisiert** (gewünscht 03.11.)
+    `wenn-trainer.html`, `und-oder-trainer.html` und `funktionen-trainer.html` gelöscht (nur noch Weiterleitungen nach `excel/`, nichts verlinkte sie mehr). Ordnerübersicht in ANLEITUNG.md um `excel/bezuege.html` und den Bereich Datenbanken ergänzt.
+    Betrifft pb_public/, ANLEITUNG.md.
+
 17. **Datenight: SQL mit UND/ODER** (gewünscht 02.11., erweitert 03.11.)
     - Drei Wochen Dates: jeden Tag dieselbe Person wie in `notizen/datenight.md`, Woche 1 sind die Originalwünsche, Woche 2 und 3 werden schwieriger und absurder. Auswahl der Tage in einem Kalender. Dazu Endlos.
     - Zwei Ansichten neben Übungen | Endlos: **Access** (Feld, Tabelle, Sortierung, Anzeigen, Kriterien/oder; gleiche Zeile = UND, verschiedene Zeilen = ODER; Stufe 1 nur nötige Kriterien als Bausteine mit Feldname, 2 mit falschen Bausteinen, 3 eintippen in deutscher Access-Schreibweise) und **Blöcke/SQL** (Stufe 1 UND/ODER-Blöcke spitz wie in Scratch verschachteln, 2–5 wie in der SQL-Übung). Stand je Ansicht getrennt.

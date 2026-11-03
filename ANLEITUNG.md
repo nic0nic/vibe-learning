@@ -26,16 +26,23 @@ vibe-learning/
 │   │   ├── index.html             Übersicht des Bereichs
 │   │   ├── funktionen.html        SUMME, MITTELWERT, MIN, MAX, ANZAHL, ANZAHL2
 │   │   ├── wenn.html
-│   │   └── und-oder.html
+│   │   ├── und-oder.html
+│   │   └── bezuege.html           relative und absolute Zellbezüge ($)
 │   ├── python/
 │   │   ├── index.html             Übersicht des Bereichs
 │   │   ├── editor.html            Python-Editor mit Terminal (läuft im Browser)
 │   │   ├── bedingungen.html       geführte Übung if/elif/else; Aufgaben und Tests stehen in der Datei
 │   │   └── lib/                   Skulpt (Python), CodeMirror (Editor) und pykurs.js (Technik der
 │   │                              geführten Übungen, Aufbau einer Aufgabe dort oben beschrieben)
-│   ├── datenbanken/           noch leer
-│   ├── schaltungen/           noch leer
-│   └── wenn-trainer.html …    Weiterleitungen von den alten Adressen
+│   ├── datenbanken/
+│   │   ├── index.html             Übersicht des Bereichs
+│   │   ├── filmdatenbank.html     freie Abfragen an die Filmdatenbank
+│   │   ├── abfragen.html          SQL-Abfragen in Stufen (Entwurf wie in Access bis SQL)
+│   │   ├── datenight.html         Kriterien mit UND/ODER (Access-Entwurf oder Blöcke/SQL)
+│   │   ├── abfragen.js/.css       Technik der Abfrage-Übungen, Aufbau oben in abfragen.js
+│   │   ├── filme.js               Daten der Filmdatenbank
+│   │   └── lib/                   sql.js (SQLite im Browser) und Autovervollständigung (CodeMirror)
+│   └── schaltungen/           noch leer
 └── ANLEITUNG.md
 ```
 
