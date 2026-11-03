@@ -1,4 +1,4 @@
-pockettype – gebaut aus https://github.com/nic0nic/pockettype (Commit 4f3cb8082)
+pockettype – gebaut aus https://github.com/nic0nic/pockettype (Commit 64e206149)
 basiert auf Monkeytype (https://github.com/monkeytypegame/monkeytype) und monkeytype-desktop
 Lizenz: GPL-3.0, siehe LICENSE.txt. Nicht von Hand ändern, sondern im pockettype-Repo
 scripts/pockettype/nach-vibe-learning.sh ausführen.
