@@ -74,8 +74,13 @@ Tool:     id      = Kürzel für Speicherstand und Auswertung (nie mehr ändern,
                     sonst geht der gespeicherte Fortschritt verloren)
           datei   = HTML-Datei im Ordner des Bereichs
           titel, text = Anzeige im Menü und auf den Übersichtsseiten
+          bedingt = true: nur sichtbar, wenn der Server es für den angemeldeten Schüler freigibt
+                    (z. B. Tipp-Aufgabe, siehe /api/trainer/sichtbar in pb_hooks/tippen.pb.js)
           stufen  = Stufen der Übungen für die Auswertung (lehrer.html): Anzahl oder Liste
                     mit Kurznamen, wenn die Nummern allein missverständlich wären
+          gruppe  = optional: Zwischenüberschrift im Menü und auf der Bereichsseite
+                    (Tools derselben Gruppe stehen direkt hintereinander)
+Bereich mit auswertung: false (z. B. Tools ohne Aufgaben) erscheint nicht im Lehrerbereich.
 
 In der HTML-Datei eines Tools steht dieselbe id: <html lang="de" data-trainer="…">
 ```
@@ -95,6 +100,9 @@ Lehrkraft/Admin: Anmeldung gilt bis zum Schließen des Browsers, im Menü steht
 der Link zur Verwaltung (lehrer.html).
 Wird die HTML-Datei direkt geöffnet (oder läuft kein PocketBase dahinter),
 passiert nichts davon – die Seite speichert dann wie bisher nur im Browser.
+
+Bedingte Menüpunkte (katalog.js: bedingt) blendet das Skript nach der Anmeldung ein,
+wenn der Server sie für diesen Schüler freigibt (/api/trainer/sichtbar).
 
 Die Seite ruft auf:
   TrainerSync.changed()      nach jeder Änderung am gespeicherten Stand
@@ -273,4 +281,36 @@ Daten für Datenbank-Übungen. abfragen.js baut daraus die SQLite-Tabelle im Bro
   DB_FILME = {name, felder:[{n, typ, art, d}], zeilen:[[…], …]}
   n = Spaltenname, typ = SQL-Datentyp, art = Anzeige für Schüler, d = Beschreibung
 Erzeugt mit werkzeuge/filme-aus-csv.py aus dem IMDb-Export, nicht von Hand ändern.
+```
+
+### tools/struktogramm.js – Tools: Struktogramme zeichnen und exportieren (dazu struktogramm.css)
+
+```text
+struktogramm.js – Struktogramme (Nassi-Shneiderman, DIN 66261) zeichnen und exportieren
+
+Gemeinsam für struktogramm.html (Editor) und python-struktogramm.html (Python → Struktogramm).
+Alles unter window.Strukto, kein Build-Schritt, läuft auch per file://.
+
+Diagramm  {name, breite, kinder: [Element]}
+Element   {typ: 'anweisung', text}                    einfache Anweisung
+          {typ: 'aufruf', text}                       Aufruf eines Unterprogramms (doppelte Seitenlinien)
+          {typ: 'abbruch', text}                      Aussprung (break, return)
+          {typ: 'wenn', text, ja: [], nein: []}       Verzweigung
+          {typ: 'fall', text, faelle: [{text, kinder: []}]}   Fallauswahl (letzter Fall z. B. „sonst“)
+          {typ: 'kopf', text, kinder: []}             kopfgesteuerte Schleife und Zählschleife
+          {typ: 'fuss', text, kinder: []}             fußgesteuerte Schleife
+          {typ: 'block', text, kinder: []}            Programm, Funktion oder Block mit Rahmen
+
+Strukto.zeichne(diagramm, farben, opt) → {svg, breite, hoehe, treffer, zonen, inhalt: {y, h}}
+    farben  Strukto.EXPORT (weiß, schwarze Linien) oder Strukto.farbenAusCss() (Seitenfarben)
+    opt     {leer: 'Text für leere Listen', titel: false (Name nicht zeichnen)}
+    breite 0 = automatisch (mindestens 400 px, breiter, bis das längste Wort in jede Spalte passt)
+    treffer [{el, liste, i, x, y, w, h, H}]  h = anklickbare Fläche, H = ganze Höhe; innere Elemente zuletzt
+    zonen   [{liste, i, x, y, w}]         Einfügestellen (Ziehen und Ablegen); leere Liste: leer, y0, h = Kasten
+Strukto.exportiere(diagramm, 'svg' | 'html' | 'jpg')   Datei herunterladen, immer weiß mit schwarzen Linien
+Strukto.TYPEN               [{typ, name}] in der Reihenfolge der Werkzeugleiste
+Strukto.neu(typ)            neues Element mit Beispieltext
+Strukto.listen(el)          alle Unterlisten eines Elements
+Strukto.pruefe(daten)       Diagramm aus fremdem JSON (Datei öffnen, Speicher) bereinigen, sonst null
+Strukto.BREITEN             wählbare Breiten in Pixeln (0 = automatisch)
 ```

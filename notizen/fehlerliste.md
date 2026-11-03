@@ -27,6 +27,13 @@ Gesammelt im Thread „Aufbau der Seite“. Umgesetzt wird erst, wenn die Lehrkr
 
 ### Version vom 03.11.
 
+27. **Tools → Struktogramm: Editor und Python-Renderer** (gewünscht 03.11.)
+    - Neuer Bereich „Tools“ (katalog.js `auswertung: false`, nicht im Lehrerbereich) mit Untergruppe „Struktogramm“ (katalog.js `gruppe`, nav.js zeigt Zwischenüberschriften).
+    - `tools/struktogramm.html`: Editor nach dem Vorbild von strukto.io, eigene Umsetzung ohne Build-Schritt. Elemente ziehen oder anklicken, verschieben, Text im Feld rechts, Fallauswahl mit beliebig vielen Fällen, Rückgängig, als .json speichern/öffnen. Stand im Browser und über sync.js auf dem Server.
+    - `tools/python-struktogramm.html`: Python-Code (wie render.py) → Struktogramm, live; Fehler mit Zeilennummer; „Im Editor bearbeiten“.
+    - Export SVG, HTML, JPG immer weiß mit schwarzen Linien; am Bildschirm Nord-Farben hell/dunkel. Breite automatisch (kein Wort wird getrennt) oder fest.
+    Betrifft tools/, katalog.js, nav.js, seite.css, lehrer.html, werkzeuge/.
+
 26. **Tipp-Aufgabe: Fortschritt speichern, kein versehentlicher Neustart** (gewünscht 03.11.)
     - Fortschritt nach jedem Wort (localStorage `tippaufgabe-stand`, über sync.js auf dem Server); weiter beim nächsten Wort nach Verlassen, Neuladen oder an einem anderen Rechner. Die Teile ergeben zusammen einen Durchgang.
     - Neustart während des Durchgangs gesperrt (Hinweis), Tab ohne Wirkung, Neustart-Hinweis ausgeblendet. Nach dem vollständigen Text nur „Verbesserungsversuch starten“.

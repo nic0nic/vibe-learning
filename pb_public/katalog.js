@@ -17,6 +17,9 @@
  *                     (z. B. Tipp-Aufgabe, siehe /api/trainer/sichtbar in pb_hooks/tippen.pb.js)
  *           stufen  = Stufen der Übungen für die Auswertung (lehrer.html): Anzahl oder Liste
  *                     mit Kurznamen, wenn die Nummern allein missverständlich wären
+ *           gruppe  = optional: Zwischenüberschrift im Menü und auf der Bereichsseite
+ *                     (Tools derselben Gruppe stehen direkt hintereinander)
+ * Bereich mit auswertung: false (z. B. Tools ohne Aufgaben) erscheint nicht im Lehrerbereich.
  *
  * In der HTML-Datei eines Tools steht dieselbe id: <html lang="de" data-trainer="…">
  */
@@ -54,6 +57,12 @@ window.KATALOG = {
         {id: 'tippaufgabe', bedingt: true, datei: 'aufgabe.html', titel: 'Aufgabe', text: 'Den Text abschreiben, den deine Lehrkraft aufgegeben hat – so oft du willst.'}
       ]
     },
-    {id: 'schaltungen', titel: 'Logische Schaltungen', text: 'Gatter, Wahrheitstabellen und Schaltnetze.',  tools: []}
+    {id: 'schaltungen', titel: 'Logische Schaltungen', text: 'Gatter, Wahrheitstabellen und Schaltnetze.',  tools: []},
+    {id: 'tools', titel: 'Tools', farbe: '#8fbcbb', farbeHell: '#3b7f7c', auswertung: false, text: 'Werkzeuge für den Unterricht, ohne Aufgaben.',
+      tools: [
+        {id: 'strukto', gruppe: 'Struktogramm', datei: 'struktogramm.html', titel: 'Struktogramm-Editor', text: 'Struktogramme mit der Maus zusammensetzen und als SVG, HTML oder JPG exportieren.'},
+        {id: 'pystrukto', gruppe: 'Struktogramm', datei: 'python-struktogramm.html', titel: 'Python → Struktogramm', text: 'Python-Code eingeben, das Struktogramm entsteht sofort daneben – zum Export oder zum Weiterbearbeiten im Editor.'}
+      ]
+    }
   ]
 };

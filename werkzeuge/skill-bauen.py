@@ -17,6 +17,7 @@ BIBLIOTHEKEN = [
     ("python/lib/pykurs.js", "Geführte Python-Übungen"),
     ("datenbanken/abfragen.js", "Datenbanken: SQL-Abfragen mit Entwurfsansicht und Editor (dazu abfragen.css)"),
     ("datenbanken/filme.js", "Datenbanken: Tabelle filme als Daten"),
+    ("tools/struktogramm.js", "Tools: Struktogramme zeichnen und exportieren (dazu struktogramm.css)"),
 ]
 
 

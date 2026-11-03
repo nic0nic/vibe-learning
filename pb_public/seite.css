@@ -11,6 +11,7 @@ h2{font:800 21px var(--mono);margin:0 0 2px} h2 a{color:inherit;text-decoration:
 .pf-sec{margin-bottom:30px}
 .pf-text{color:var(--muted);margin:0 0 10px}
 .pf-grid{display:grid;gap:12px}
+h3.pf-gruppe{font:700 13px system-ui,sans-serif;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:18px 0 8px} h3.pf-gruppe:first-child{margin-top:0}
 a.pf-tile{display:block;text-decoration:none;color:inherit;background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px 20px;transition:transform .1s,border-color .1s}
 a.pf-tile:hover{transform:translateY(-2px);border-color:var(--accent)}
 a.pf-tile b{font:800 19px var(--mono)} a.pf-tile span{display:block;color:var(--muted);margin-top:4px}

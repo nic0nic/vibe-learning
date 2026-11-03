@@ -53,7 +53,11 @@ vibe-learning/
 │   │   ├── aufgabe.html           „Aufgabe“: Text der Lehrkraft abschreiben (nur mit aktiver Aufgabe sichtbar)
 │   │   └── pockettype.html …      Tipptrainer pockettype, gebaut im eigenen Repo (GPL-3.0),
 │   │                              siehe LICENSE.txt und QUELLE.txt dort; nie von Hand ändern
-│   └── schaltungen/           noch leer
+│   ├── schaltungen/           noch leer
+│   └── tools/                 Tools (ohne Aufgaben, nicht in der Auswertung)
+│       ├── struktogramm.html      Struktogramm-Editor (Ziehen und Ablegen, Export SVG/HTML/JPG)
+│       ├── python-struktogramm.html  Python-Code → Struktogramm, Übergabe an den Editor
+│       └── struktogramm.js/.css   Zeichnen und Export, Aufbau oben in struktogramm.js
 └── ANLEITUNG.md
 ```
 

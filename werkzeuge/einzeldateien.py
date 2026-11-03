@@ -14,7 +14,7 @@ import pathlib, re, shutil, sys
 WURZEL = pathlib.Path(__file__).resolve().parent.parent
 PUBLIC = WURZEL / "pb_public"
 ZIEL = WURZEL / "standalone"
-BEREICHE = ("excel", "python", "datenbanken", "schaltungen")
+BEREICHE = ("excel", "python", "datenbanken", "schaltungen", "tools")
 
 # Ein Durchgang für beide, damit Text in schon eingebetteten Dateien (z. B. Beispiele
 # in Kommentaren) nicht noch einmal ersetzt wird.
