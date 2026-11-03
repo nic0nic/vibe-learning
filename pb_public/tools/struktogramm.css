@@ -1,8 +1,8 @@
 /* struktogramm.css – Aussehen von struktogramm.html und python-struktogramm.html (Nord-Farben, hell und dunkel) */
-:root{--bg:#e5e9f0;--panel:#f6f8fb;--panel2:#eceff4;--text:#2e3440;--muted:#5b6578;--border:#cdd3de;--accent:#5e81ac;--err:#a8434d;--mono:ui-monospace,Consolas,"Liberation Mono",monospace;
+:root{--bg:#e5e9f0;--panel:#f6f8fb;--panel2:#eceff4;--text:#2e3440;--muted:#5b6578;--border:#cdd3de;--accent:#5e81ac;--marke:#c05a1c;--err:#a8434d;--mono:ui-monospace,Consolas,"Liberation Mono",monospace;
   --ed-bg:#f6f8fb;--gutter:#e5e9f0;--gutter-text:#7b88a1;--active:#e9ecf2;--sel:#d8dee9;
   --kw:#8a5f84;--str:#5e8a45;--num:#b0631f;--com:#7b88a1;--def:#4f73a3;--builtin:#3b7f8c;--op:#4c566a}
-[data-theme=dark]{--bg:#2e3440;--panel:#3b4252;--panel2:#434c5e;--text:#eceff4;--muted:#a9b3c4;--border:#4c566a;--accent:#88c0d0;--err:#d4848b;
+[data-theme=dark]{--bg:#2e3440;--panel:#3b4252;--panel2:#434c5e;--text:#eceff4;--muted:#a9b3c4;--border:#4c566a;--accent:#88c0d0;--marke:#e0915f;--err:#d4848b;
   --ed-bg:#2e3440;--gutter:#2a2f3a;--gutter-text:#616e88;--active:#353b49;--sel:#434c5e;
   --kw:#b48ead;--str:#a3be8c;--num:#d08770;--com:#7b88a1;--def:#88c0d0;--builtin:#8fbcbb;--op:#81a1c1}
 *{box-sizing:border-box}

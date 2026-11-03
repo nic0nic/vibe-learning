@@ -27,6 +27,12 @@ Gesammelt im Thread „Aufbau der Seite“. Umgesetzt wird erst, wenn die Lehrkr
 
 ### Version vom 03.11.
 
+29. **Struktogramm-Editor: Einfügemarke und Tastatur** (gewünscht 03.11.)
+    - Beim Ziehen pulsierende orange Marke an der künftigen Stelle (leeres Feld: gestrichelter Kasten), das verschobene Bauteil gestrichelt; Marken in eigener Farbe `--marke`.
+    - Tastatur: ↑ ↓ abwechselnd Lücken und Bauteile (in Verzweigung/Fallauswahl links), ← → Spalte wechseln; in einer Lücke A V F K U R X B fügen ein; Enter bearbeitet den Text, nochmal Enter zurück; Entf löscht, danach ist die Lücke ausgewählt.
+    - Fußgesteuerte Schleife hat U (F ist die Fallauswahl).
+    Betrifft tools/struktogramm.html, struktogramm.css.
+
 28. **Menü, Farben, Exportfarben** (gewünscht 03.11.)
     - Untermenü: Tools mit `gruppe` (katalog.js) stehen in nav.js in einem Untermenü, das beim Darüberfahren aufklappt (z. B. Tools → Struktogramm → Editor / Python).
     - Tools grau (#4c566a / #b4bdcc), Tippen blau wie Textverarbeitung (#2b579a / #8db3ee), auch in pockettype selbst. Tippen soll später auch Textverarbeitung aufnehmen.

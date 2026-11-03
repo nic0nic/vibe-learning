@@ -10,6 +10,8 @@
   dann kommen sie hinter das markierte Element), anklicken zum Bearbeiten.
   Zeichnen und Export: struktogramm.js. Gespeichert wird im Browser (strukto-diagramm),
   über PocketBase pro Schüler. python-struktogramm.html übergibt Diagramme über sessionStorage.
+  Tastatur: Pfeiltasten wechseln zwischen Bauteilen und Lücken, Buchstaben fügen in Lücken ein
+  (TASTE_LEISTE), Enter bearbeitet den Text und kehrt zurück.
 -->
 <script>/* ../katalog.js */
 /* Inhaltsverzeichnis der Übungsplattform
@@ -664,10 +666,10 @@ document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: da
 </script>
 <style>/* struktogramm.css */
 /* struktogramm.css – Aussehen von struktogramm.html und python-struktogramm.html (Nord-Farben, hell und dunkel) */
-:root{--bg:#e5e9f0;--panel:#f6f8fb;--panel2:#eceff4;--text:#2e3440;--muted:#5b6578;--border:#cdd3de;--accent:#5e81ac;--err:#a8434d;--mono:ui-monospace,Consolas,"Liberation Mono",monospace;
+:root{--bg:#e5e9f0;--panel:#f6f8fb;--panel2:#eceff4;--text:#2e3440;--muted:#5b6578;--border:#cdd3de;--accent:#5e81ac;--marke:#c05a1c;--err:#a8434d;--mono:ui-monospace,Consolas,"Liberation Mono",monospace;
   --ed-bg:#f6f8fb;--gutter:#e5e9f0;--gutter-text:#7b88a1;--active:#e9ecf2;--sel:#d8dee9;
   --kw:#8a5f84;--str:#5e8a45;--num:#b0631f;--com:#7b88a1;--def:#4f73a3;--builtin:#3b7f8c;--op:#4c566a}
-[data-theme=dark]{--bg:#2e3440;--panel:#3b4252;--panel2:#434c5e;--text:#eceff4;--muted:#a9b3c4;--border:#4c566a;--accent:#88c0d0;--err:#d4848b;
+[data-theme=dark]{--bg:#2e3440;--panel:#3b4252;--panel2:#434c5e;--text:#eceff4;--muted:#a9b3c4;--border:#4c566a;--accent:#88c0d0;--marke:#e0915f;--err:#d4848b;
   --ed-bg:#2e3440;--gutter:#2a2f3a;--gutter-text:#616e88;--active:#353b49;--sel:#434c5e;
   --kw:#b48ead;--str:#a3be8c;--num:#d08770;--com:#7b88a1;--def:#88c0d0;--builtin:#8fbcbb;--op:#81a1c1}
 *{box-sizing:border-box}
@@ -1078,7 +1080,7 @@ label.klein{font-size:13px;color:var(--muted);display:inline-flex;align-items:ce
 
 </script>
 <style>
-.arbeit{display:grid;grid-template-columns:200px minmax(0,1fr) 260px;gap:12px;align-items:start}
+.arbeit{display:grid;grid-template-columns:224px minmax(0,1fr) 260px;gap:12px;align-items:start}
 @media (max-width:1000px){.arbeit{grid-template-columns:1fr}.leiste{flex-direction:row!important;flex-wrap:wrap}}
 .leiste{display:flex;flex-direction:column;gap:6px;position:sticky;top:12px}
 .teil{display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:7px 10px;cursor:grab;font:600 14px system-ui,sans-serif;color:var(--text);text-align:left;touch-action:none;user-select:none}
@@ -1088,6 +1090,16 @@ label.klein{font-size:13px;color:var(--muted);display:inline-flex;align-items:ce
 .leinwand{background:var(--panel);border:1px solid var(--border);border-radius:12px;min-height:60vh}
 .leinwand svg{user-select:none}
 .leinwand.zieht{cursor:grabbing}
+.leinwand:focus{outline:none}
+.leinwand:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.leinwand svg{overflow:visible}
+.zieht #ueber>:not(.ziel):not(.quelle){display:none}
+#ueber .puls{animation:puls 1.1s ease-in-out infinite}
+@keyframes puls{50%{opacity:.5}}
+.teil kbd,.panel kbd{font:600 11px var(--mono);border:1px solid var(--border);border-bottom-width:2px;border-radius:4px;padding:0 5px;color:var(--muted);background:var(--panel2)}
+.teil span{flex:1}
+.teil kbd{flex:none}
+.geist.nein{opacity:.55}
 .panel{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px;position:sticky;top:12px;display:flex;flex-direction:column;gap:10px}
 .panel h3{margin:0;font:800 15px var(--mono)}
 .panel p{margin:0}
@@ -1095,7 +1107,7 @@ label.klein{font-size:13px;color:var(--muted);display:inline-flex;align-items:ce
 .panel .zeile{display:flex;gap:6px;flex-wrap:wrap}
 .panel .fall{display:flex;gap:6px}
 .panel .fall input{flex:1;min-width:0}
-.geist{position:fixed;z-index:100;pointer-events:none;background:var(--accent);color:#fff;padding:5px 10px;border-radius:8px;font:600 13px system-ui,sans-serif;box-shadow:0 6px 16px rgba(0,0,0,.25);transform:translate(10px,10px)}
+.geist{position:fixed;z-index:100;pointer-events:none;background:var(--marke);color:#fff;padding:5px 10px;border-radius:8px;font:600 13px system-ui,sans-serif;box-shadow:0 6px 16px rgba(0,0,0,.25);transform:translate(10px,10px)}
 [data-theme=dark] .geist{color:#2e3440}
 .meldung{font-size:13px;color:var(--muted);min-height:18px;margin:-4px 0 8px}
 </style>
@@ -1123,7 +1135,7 @@ label.klein{font-size:13px;color:var(--muted);display:inline-flex;align-items:ce
   <div class="meldung" id="meldung"></div>
   <div class="arbeit">
     <div class="leiste" id="leiste" aria-label="Elemente"></div>
-    <div class="leinwand" id="bild"></div>
+    <div class="leinwand" id="bild" tabindex="0" aria-label="Struktogramm, mit Pfeiltasten bedienbar"></div>
     <div class="panel" id="panel"></div>
   </div>
 </div>
@@ -1134,11 +1146,12 @@ const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&': '&amp
 const SPEICHER = 'strukto-diagramm';
 const NAME = Object.fromEntries(Strukto.TYPEN.map(t => [t.typ, t.name]));
 const SVGNS = 'http://www.w3.org/2000/svg';
+const TASTE_LEISTE = {anweisung: 'A', wenn: 'V', fall: 'F', kopf: 'K', fuss: 'U', aufruf: 'R', abbruch: 'X', block: 'B'};
 
 /* ---------- Zustand ---------- */
 let doc = {name: '', breite: 0, kinder: []};
 try { doc = Strukto.pruefe(JSON.parse(localStorage.getItem(SPEICHER))) || doc; } catch (e) {}
-let auswahl = null;            // {el} oder {leer: liste}
+let auswahl = null;            // {el} = Bauteil oder {liste, i} = Lücke
 let bild = null;               // letztes Ergebnis von Strukto.zeichne
 const rueck = [], vor = [];
 let gruppe = null;             // aufeinanderfolgende Tipp-Änderungen = ein Rückgängig-Schritt
@@ -1177,11 +1190,14 @@ function mini(typ){
   }[typ];
   return `<svg viewBox="0 0 30 22" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">${p}</svg>`;
 }
-$('#leiste').innerHTML = Strukto.TYPEN.map(t => `<button class="teil" type="button" data-typ="${t.typ}" title="Ziehen oder anklicken">${mini(t.typ)}${esc(t.name)}</button>`).join('');
+$('#leiste').innerHTML = Strukto.TYPEN.map(t => `<button class="teil" type="button" data-typ="${t.typ}" title="Ziehen oder anklicken">${mini(t.typ)}<span>${esc(t.name)}</span><kbd>${TASTE_LEISTE[t.typ]}</kbd></button>`).join('');
 $('#breite').innerHTML = Strukto.BREITEN.map(b => `<option value="${b}">${b ? b + ' px' : 'automatisch'}</option>`).join('');
 function kopfFelder(){ $('#name').value = doc.name; $('#breite').value = String(doc.breite); }
 
 /* ---------- Zeichnen ---------- */
+// auswahl: {el} = Bauteil, {liste, i} = Lücke vor liste[i] (bei leerer Liste das leere Feld)
+const istLuecke = a => !!(a && a.liste);
+function zoneVon(liste, i){ return bild.zonen.find(z => z.liste === liste && z.i === i); }
 function zeichnen(){
   bild = Strukto.zeichne(doc, Strukto.farbenAusCss(), {leer: doc.kinder.length ? '∅' : 'Element hierher ziehen'});
   const box = $('#bild');
@@ -1190,21 +1206,33 @@ function zeichnen(){
   const g = document.createElementNS(SVGNS, 'g');
   g.id = 'ueber'; svg.appendChild(g);
   const t = auswahlTreffer();
-  if (t) markiere(g, t.x, t.y, t.w, t.H);
-  else if (auswahl && auswahl.leer){
-    const z = bild.zonen.find(z => z.leer && z.liste === auswahl.leer);
-    if (z) markiere(g, z.x, z.y0, z.w, z.h); else auswahl = null;
+  if (t) markiere(g, 'auswahl', t.x, t.y, t.w, t.H);
+  else if (istLuecke(auswahl)){
+    const z = zoneVon(auswahl.liste, auswahl.i);
+    if (z) luecke(g, z); else auswahl = null;
   } else auswahl = null;
   document.querySelectorAll('[data-export]').forEach(b => { b.disabled = !doc.kinder.length; });
   $('#rueck').disabled = !rueck.length; $('#vor').disabled = !vor.length;
 }
-function markiere(g, x, y, w, h, linie){
-  const a = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#5e81ac';
-  const e = document.createElementNS(SVGNS, 'rect');
-  Object.entries({x, y, width: w, height: linie ? 0 : h, fill: a, 'fill-opacity': linie ? 0 : 0.14, stroke: a, 'stroke-width': linie ? 4 : 3}).forEach(([k, v]) => e.setAttribute(k, v));
-  g.appendChild(e);
-  return e;
+function farbe(n, d){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim() || d; }
+// Markierungen über dem Struktogramm: auswahl (Bauteil), luecke (Einfügestelle), leer (leeres Feld), quelle (wird verschoben)
+function markiere(g, art, x, y, w, h){
+  const a = farbe('--marke', '#c05a1c');   // eigene Farbe, damit Marken auch im grauen Bereich auffallen
+  const grp = document.createElementNS(SVGNS, 'g');
+  grp.setAttribute('pointer-events', 'none');
+  const r = attrs => { const e = document.createElementNS(SVGNS, 'rect'); Object.entries(attrs).forEach(([k, v]) => e.setAttribute(k, v)); grp.appendChild(e); };
+  if (art === 'auswahl') r({x, y, width: w, height: h, fill: a, 'fill-opacity': 0.14, stroke: a, 'stroke-width': 3});
+  else if (art === 'leer') r({x: x + 2, y: y + 2, width: Math.max(0, w - 4), height: Math.max(0, h - 4), fill: a, 'fill-opacity': 0.25, stroke: a, 'stroke-width': 3, 'stroke-dasharray': '7 4'});
+  else if (art === 'luecke'){
+    r({x: x - 2, y: y - 8, width: w + 4, height: 16, rx: 8, fill: a, 'fill-opacity': 0.25});
+    r({x: x + 2, y: y - 3, width: Math.max(0, w - 4), height: 6, rx: 3, fill: a});
+  }
+  else if (art === 'quelle') r({x, y, width: w, height: h, fill: farbe('--panel', '#fff'), 'fill-opacity': 0.7, stroke: a, 'stroke-width': 2, 'stroke-dasharray': '6 4'});
+  if (art === 'luecke' || art === 'leer') grp.classList.add('puls');
+  g.appendChild(grp);
+  return grp;
 }
+const luecke = (g, z) => z.leer ? markiere(g, 'leer', z.x, z.y0, z.w, z.h) : markiere(g, 'luecke', z.x, z.y, z.w, 0);
 function auswahlTreffer(){ return auswahl && auswahl.el ? bild.treffer.find(t => t.el === auswahl.el) : null; }
 
 function punkt(e){
@@ -1214,7 +1242,7 @@ function punkt(e){
 }
 function trifft(p){
   const leer = bild.zonen.find(z => z.leer && p.x >= z.x && p.x <= z.x + z.w && p.y >= z.y0 && p.y <= z.y0 + z.h);
-  if (leer) return {leer: leer.liste};
+  if (leer) return {liste: leer.liste, i: 0};
   let best = null;
   bild.treffer.forEach(t => { if (p.x >= t.x && p.x <= t.x + t.w && p.y >= t.y && p.y <= t.y + t.h) best = t; });
   return best ? {el: best.el} : null;
@@ -1226,15 +1254,15 @@ function unterlisten(el, set){
   Strukto.listen(el).forEach(l => { set.add(l); l.forEach(k => unterlisten(k, set)); });
   return set;
 }
-function einfuegen(el, liste, i){
+function einfuegen(el, liste, i, fokus){
   aendern(() => { liste.splice(i, 0, el); auswahl = {el}; });
-  panel(true);
+  panel(fokus !== false);
 }
 function neuEinfuegen(typ){
   const el = Strukto.neu(typ);
   const t = auswahlTreffer();
   if (t) einfuegen(el, t.liste, t.i + 1);
-  else if (auswahl && auswahl.leer) einfuegen(el, auswahl.leer, 0);
+  else if (istLuecke(auswahl)) einfuegen(el, auswahl.liste, auswahl.i);
   else einfuegen(el, doc.kinder, doc.kinder.length);
 }
 function verschieben(el, liste, i){
@@ -1248,20 +1276,94 @@ function verschieben(el, liste, i){
   });
   panel();
 }
+// Löschen: danach ist die Lücke an derselben Stelle ausgewählt
 function loeschen(){
   const t = auswahlTreffer();
   if (!t) return;
-  aendern(() => { t.liste.splice(t.i, 1); auswahl = t.liste[t.i] ? {el: t.liste[t.i]} : t.liste[t.i - 1] ? {el: t.liste[t.i - 1]} : t.liste.length ? null : {leer: t.liste}; });
+  aendern(() => { t.liste.splice(t.i, 1); auswahl = {liste: t.liste, i: t.i}; });
   panel();
 }
 
+/* ---------- Tastatur: Weg durch das Struktogramm ---------- */
+// ↑ ↓ laufen abwechselnd über Lücken und Bauteile, in Verzweigungen und Fallauswahl durch die linke Spalte;
+// ← → wechseln die Spalte. Fußgesteuerte Schleife: erst der Rumpf, dann die Bedingung unten.
+function struktur(){
+  const L = new Map(), E = new Map();
+  (function lauf(liste, owner, spalte, eltern, idx){
+    L.set(liste, {owner, spalte, eltern, idx});
+    liste.forEach((el, i) => { E.set(el, {liste, i}); Strukto.listen(el).forEach((k, s) => lauf(k, el, s, liste, i)); });
+  })(doc.kinder, null, 0, null, 0);
+  return {L, E};
+}
+const lk = (liste, i) => ({liste, i});
+const innen = el => el.typ !== 'fuss' && Strukto.listen(el).length > 0;
+const obenRein = el => el.typ === 'fuss' ? lk(el.kinder, 0) : {el};
+function untenRein(el){
+  if (!innen(el)) return {el};
+  const l = Strukto.listen(el)[0];
+  return lk(l, l.length);
+}
+function runter(pos, S){
+  if (pos.el){
+    if (innen(pos.el)) return lk(Strukto.listen(pos.el)[0], 0);
+    const e = S.E.get(pos.el);
+    return lk(e.liste, e.i + 1);
+  }
+  if (pos.i < pos.liste.length) return obenRein(pos.liste[pos.i]);
+  const o = S.L.get(pos.liste);
+  if (!o.owner) return pos;
+  return o.owner.typ === 'fuss' ? {el: o.owner} : lk(o.eltern, o.idx + 1);
+}
+function hoch(pos, S){
+  if (pos.el){
+    if (pos.el.typ === 'fuss') return lk(pos.el.kinder, pos.el.kinder.length);
+    const e = S.E.get(pos.el);
+    return lk(e.liste, e.i);
+  }
+  if (pos.i > 0) return untenRein(pos.liste[pos.i - 1]);
+  const o = S.L.get(pos.liste);
+  if (!o.owner) return pos;
+  return o.owner.typ === 'fuss' ? lk(o.eltern, o.idx) : {el: o.owner};
+}
+function seitlich(pos, S, r){
+  let liste, idx, istEl;
+  if (pos.el){ const e = S.E.get(pos.el); liste = e.liste; idx = e.i; istEl = true; }
+  else { liste = pos.liste; idx = pos.i; istEl = false; }
+  for (;;){
+    const o = S.L.get(liste);
+    if (!o || !o.owner) return pos;
+    const ziel = (o.owner.typ === 'wenn' || o.owner.typ === 'fall') && Strukto.listen(o.owner)[o.spalte + r];
+    if (ziel){
+      if (istEl && ziel.length) return {el: ziel[Math.min(idx, ziel.length - 1)]};
+      return lk(ziel, Math.min(idx, ziel.length));
+    }
+    liste = o.eltern; idx = o.idx; istEl = true;
+  }
+}
+function waehle(pos){
+  auswahl = pos; zeichnen(); panel();
+  const m = $('#ueber') && $('#ueber').lastElementChild;
+  if (m && m.scrollIntoView) m.scrollIntoView({block: 'nearest', inline: 'nearest'});
+}
+function bearbeiten(){
+  const ta = $('#text'), t = auswahlTreffer();
+  if (!ta || !t) return;
+  ta.focus();
+  if (ta.value === Strukto.neu(t.el.typ).text) ta.select(); else ta.setSelectionRange(ta.value.length, ta.value.length);
+}
+function zumBild(){ gruppe = null; $('#bild').focus({preventScroll: true}); }
+const TASTEN = Object.fromEntries(Object.entries(TASTE_LEISTE).map(([typ, k]) => [k.toLowerCase(), typ]));
+
 /* ---------- Eigenschaften ---------- */
+const HILFE = `<p class="hinweis"><b>Tastatur:</b> ↑ ↓ wechselt zwischen Bauteilen und Lücken, ← → zwischen den Spalten einer Verzweigung oder Fallauswahl.</p>
+  <p class="hinweis">In einer Lücke: <kbd>A</kbd> Anweisung, <kbd>V</kbd> Verzweigung, <kbd>F</kbd> Fallauswahl, <kbd>K</kbd> kopfgesteuerte, <kbd>U</kbd> fußgesteuerte Schleife, <kbd>R</kbd> Aufruf, <kbd>X</kbd> Aussprung, <kbd>B</kbd> Block.</p>
+  <p class="hinweis"><kbd>Enter</kbd> Text bearbeiten, noch einmal <kbd>Enter</kbd> zurück (Zeilenumbruch: Umschalt+Enter). <kbd>Entf</kbd> löscht, Strg+Z macht rückgängig.</p>`;
 function panel(fokus){
   const p = $('#panel'), t = auswahlTreffer();
   if (!t){
-    p.innerHTML = `<h3>Bearbeiten</h3><p class="hinweis">Ein Element anklicken, um seinen Text zu ändern.</p>
-      <p class="hinweis">Neue Elemente aus der Leiste ins Struktogramm ziehen. Ein Klick auf ein Element der Leiste fügt es hinter dem markierten Element ein, bei einem markierten leeren Feld dort hinein.</p>
-      <p class="hinweis">Markierte Elemente lassen sich mit der Maus an eine andere Stelle ziehen. Entf löscht, Strg+Z macht rückgängig.</p>`;
+    p.innerHTML = istLuecke(auswahl)
+      ? `<h3>Lücke</h3><p class="hinweis">Hier wird eingefügt: Buchstabe drücken oder ein Element der Leiste anklicken.</p>${HILFE}`
+      : `<h3>Bearbeiten</h3><p class="hinweis">Ein Element anklicken, um seinen Text zu ändern. Neue Elemente aus der Leiste ins Struktogramm ziehen oder anklicken (kommt hinter das markierte Element). Markierte Elemente lassen sich mit der Maus verschieben.</p>${HILFE}`;
     return;
   }
   const el = t.el;
@@ -1277,13 +1379,17 @@ function panel(fokus){
       <button class="btn" id="runter" type="button" title="nach unten"${t.i === t.liste.length - 1 ? ' disabled' : ''}>↓</button>
       <button class="btn" id="kopie" type="button">Duplizieren</button>
       <button class="btn" id="weg" type="button">Löschen</button>
-    </div>`;
+    </div>
+    <p class="hinweis"><kbd>Enter</kbd> bearbeiten / zurück, <kbd>Entf</kbd> löschen, Pfeiltasten wechseln.</p>`;
   const ta = $('#text');
   ta.addEventListener('input', () => aendern(() => { el.text = ta.value; }, 'text'));
   ta.addEventListener('focus', () => { gruppe = null; });
+  const zurueckTaste = e => { if ((e.key === 'Enter' && !e.shiftKey) || e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); zumBild(); } };
+  ta.addEventListener('keydown', zurueckTaste);
   if (fokus){ ta.focus(); ta.select(); }
   p.querySelectorAll('[data-fall]').forEach(inp => {
     inp.addEventListener('focus', () => { gruppe = null; });
+    inp.addEventListener('keydown', zurueckTaste);
     inp.addEventListener('input', () => aendern(() => { el.faelle[+inp.dataset.fall].text = inp.value; }, 'fall' + inp.dataset.fall));
   });
   p.querySelectorAll('[data-weg]').forEach(b => b.addEventListener('click', () => {
@@ -1314,7 +1420,7 @@ function zielZone(p){
   });
   if (bestD < 40) return best;
   // unterhalb des Struktogramms: ans Ende
-  if (p.y > bild.inhalt.y + bild.inhalt.h && p.x >= 0 && p.x <= bild.breite) return bild.zonen.find(z => z.liste === doc.kinder && z.i === doc.kinder.length) || null;
+  if (p.y > bild.inhalt.y + bild.inhalt.h && p.x >= 0 && p.x <= bild.breite) return zoneVon(doc.kinder, doc.kinder.length) || null;
   return null;
 }
 function zugStart(e, daten){
@@ -1325,6 +1431,7 @@ function zugStart(e, daten){
 }
 function zugBewegen(e){
   if (!zug) return;
+  const g = $('#ueber');
   if (!zug.aktiv){
     if (Math.hypot(e.clientX - zug.x0, e.clientY - zug.y0) < 6) return;
     zug.aktiv = true;
@@ -1333,19 +1440,18 @@ function zugBewegen(e){
     zug.geist.textContent = NAME[zug.typ || zug.el.typ];
     document.body.appendChild(zug.geist);
     $('#bild').classList.add('zieht');
+    const t = zug.el && bild.treffer.find(x => x.el === zug.el);
+    if (t) markiere(g, 'quelle', t.x, t.y, t.w, t.H).classList.add('quelle');
   }
   e.preventDefault();
   zug.geist.style.left = e.clientX + 'px'; zug.geist.style.top = e.clientY + 'px';
-  const g = $('#ueber'), alt = g.querySelector('.ziel');
+  const alt = g.querySelector('.ziel');
   if (alt) alt.remove();
   zug.ziel = zielZone(punkt(e));
-  if (zug.ziel){
-    const z = zug.ziel;
-    const m = z.leer ? markiere(g, z.x, z.y0, z.w, z.h) : markiere(g, z.x, z.y, z.w, 0, true);
-    m.classList.add('ziel');
-  }
+  zug.geist.classList.toggle('nein', !zug.ziel);
+  if (zug.ziel) luecke(g, zug.ziel).classList.add('ziel');
 }
-function zugEnde(e){
+function zugEnde(){
   const z = zug;
   zugAbbruch();
   if (!z) return;
@@ -1364,8 +1470,7 @@ function zugAbbruch(){
   window.removeEventListener('pointercancel', zugAbbruch);
   if (zug && zug.geist) zug.geist.remove();
   $('#bild').classList.remove('zieht');
-  const alt = document.querySelector('#ueber .ziel');
-  if (alt) alt.remove();
+  document.querySelectorAll('#ueber .ziel, #ueber .quelle').forEach(x => x.remove());
   zug = null;
 }
 
@@ -1377,17 +1482,18 @@ $('#leiste').addEventListener('pointerdown', e => {
 });
 $('#leiste').addEventListener('keydown', e => {
   const b = e.target.closest('.teil');
-  if (b && (e.key === 'Enter' || e.key === ' ')){ e.preventDefault(); neuEinfuegen(b.dataset.typ); }
+  if (b && (e.key === 'Enter' || e.key === ' ')){ e.preventDefault(); e.stopPropagation(); neuEinfuegen(b.dataset.typ); }
 });
 $('#bild').addEventListener('pointerdown', e => {
   if (e.button || !$('#bild svg')) return;
+  $('#bild').focus({preventScroll: true});
   const tr = trifft(punkt(e));
   if (!tr){ auswahl = null; zeichnen(); panel(); return; }
   // Elemente nur mit der Maus verschieben; am Handy bleibt Wischen zum Blättern (↑ ↓ im Bearbeiten-Feld)
   if (tr.el && e.pointerType === 'mouse'){ e.preventDefault(); zugStart(e, {el: tr.el, treffer: tr}); return; }
   auswahl = tr; zeichnen(); panel();
 });
-$('#bild').addEventListener('dblclick', () => { const ta = $('#text'); if (ta){ ta.focus(); ta.select(); } });
+$('#bild').addEventListener('dblclick', bearbeiten);
 
 /* ---------- Leiste oben ---------- */
 $('#name').addEventListener('focus', () => { gruppe = null; });
@@ -1423,13 +1529,33 @@ document.querySelectorAll('[data-export]').forEach(b => b.addEventListener('clic
 }));
 
 document.addEventListener('keydown', e => {
-  const tippt = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName) || document.activeElement.isContentEditable;
+  const ae = document.activeElement;
+  const tippt = /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName) || ae.isContentEditable;
   const strg = e.ctrlKey || e.metaKey;
-  if (tippt || document.querySelector('.ts-ov')) return;
-  if (strg && e.key.toLowerCase() === 'z'){ e.preventDefault(); e.shiftKey ? zurueck(vor, rueck) : zurueck(rueck, vor); }
-  else if (strg && e.key.toLowerCase() === 'y'){ e.preventDefault(); zurueck(vor, rueck); }
-  else if ((e.key === 'Delete' || e.key === 'Backspace') && auswahlTreffer()){ e.preventDefault(); loeschen(); }
-  else if (e.key === 'Escape' && auswahl){ auswahl = null; zeichnen(); panel(); }
+  if (tippt || document.querySelector('.ts-ov') || e.altKey) return;
+  if (strg && e.key.toLowerCase() === 'z'){ e.preventDefault(); e.shiftKey ? zurueck(vor, rueck) : zurueck(rueck, vor); return; }
+  if (strg && e.key.toLowerCase() === 'y'){ e.preventDefault(); zurueck(vor, rueck); return; }
+  if (strg) return;
+  const pfeil = {ArrowDown: 'runter', ArrowUp: 'hoch', ArrowLeft: -1, ArrowRight: 1}[e.key];
+  if (pfeil !== undefined){
+    e.preventDefault();
+    const S = struktur();
+    let pos;
+    if (!auswahl) pos = e.key === 'ArrowUp' ? lk(doc.kinder, doc.kinder.length) : doc.kinder.length ? obenRein(doc.kinder[0]) : lk(doc.kinder, 0);
+    else pos = pfeil === 'runter' ? runter(auswahl, S) : pfeil === 'hoch' ? hoch(auswahl, S) : seitlich(auswahl, S, pfeil);
+    waehle(pos);
+    return;
+  }
+  const amBild = ae === document.body || ae === $('#bild');
+  if (e.key === 'Enter' && amBild && auswahlTreffer()){ e.preventDefault(); bearbeiten(); return; }
+  if (istLuecke(auswahl) && TASTEN[e.key.toLowerCase()]){
+    e.preventDefault();
+    einfuegen(Strukto.neu(TASTEN[e.key.toLowerCase()]), auswahl.liste, auswahl.i, false);
+    zumBild();
+    return;
+  }
+  if ((e.key === 'Delete' || e.key === 'Backspace') && auswahlTreffer()){ e.preventDefault(); loeschen(); return; }
+  if (e.key === 'Escape' && auswahl){ auswahl = null; zeichnen(); panel(); }
 });
 
 /* ---------- Start ---------- */
