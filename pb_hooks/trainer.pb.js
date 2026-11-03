@@ -330,7 +330,7 @@ routerAdd("GET", "/api/trainer/report", (e) => {
   const von = u.pbDatum(q.get("von")), bis = u.pbDatum(q.get("bis"));
   if (von) { filter += " && created >= {:von}"; params.von = von; }
   if (bis) { filter += " && created <= {:bis}"; params.bis = bis; }
-  const ereignisse = $app.findRecordsByFilter("ereignisse", filter, "created", 20000, 0, params);
+  const ereignisse = $app.findRecordsByFilter("ereignisse", filter, "created", 50000, 0, params);
   return e.json(200, { schueler: schueler, fortschritt: fortschritt, ereignisse: ereignisse });
 });
 

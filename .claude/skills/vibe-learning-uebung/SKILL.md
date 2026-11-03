@@ -74,6 +74,8 @@ Tool:     id      = Kürzel für Speicherstand und Auswertung (nie mehr ändern,
                     sonst geht der gespeicherte Fortschritt verloren)
           datei   = HTML-Datei im Ordner des Bereichs
           titel, text = Anzeige im Menü und auf den Übersichtsseiten
+          stufen  = Stufen der Übungen für die Auswertung (lehrer.html): Anzahl oder Liste
+                    mit Kurznamen, wenn die Nummern allein missverständlich wären
 
 In der HTML-Datei eines Tools steht dieselbe id: <html lang="de" data-trainer="…">
 ```
@@ -242,7 +244,9 @@ SQLKURS = {
                                               krit: 'bloecke' nur die nötigen Kriterien (mit Feldname),
                                               'falsch' dazu falsche, 'text' selbst eintippen (Access-Schreibweise)
   ansichten: {access:{name, stufen}, sql:{name, stufen}}   statt stufen: Umschalter in der Kopfzeile
-           (Knöpfe mit data-ansicht="…"); Stufe, Fortschritt und Modus je Ansicht getrennt (id-ansicht-…)
+           (Knöpfe mit data-ansicht="…"); Stufe, Fortschritt und Modus je Ansicht getrennt (id-ansicht-…).
+           An den Server wird die Stufe durchgezählt gemeldet (Access 1–3, dann SQL 4–8),
+           passend zu stufen in katalog.js
   kalender:{tage:['Montag', …]}  Aufgabenwahl als Kalender (Wochen × Tage) statt Nummern
   aufgaben:[{frage, felder:['titel', …] oder ['*'], where?:"jahr < 1970", sort?:'jahr DESC', tipp?,
             auch?:["…"] gleichwertige Bedingungen, die ebenfalls als richtig zählen}]

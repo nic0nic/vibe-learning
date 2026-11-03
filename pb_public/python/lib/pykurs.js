@@ -461,7 +461,7 @@ table.k-tab{border-collapse:collapse;font-size:14px;margin:0 0 10px}
       setStatus('gelöst', 'ok');
       const erstmals = !geloest.includes(akt + 1);
       if (erstmals){ geloest.push(akt + 1); geloest.sort((x, y) => x - y); ls.set('geloest', JSON.stringify(geloest)); }
-      if (window.TrainerSync) TrainerSync.event({modus: 'uebungen', stufe: a.stufe, aufgabe: String(akt + 1), titel: a.titel, gesamt: A.length, erstmals});
+      if (window.TrainerSync) TrainerSync.event({modus: 'uebungen', stufe: a.stufe, aufgabe: String(akt + 1), titel: a.titel, gesamt: A.filter(x => x.stufe === a.stufe).length, erstmals}); // gesamt = Aufgaben dieser Stufe
       renderPills(); renderLeft();
       if (geloest.length === A.length && erstmals) outHtml(`<div class="res ok"><b>🎉 Du hast alle ${A.length} Aufgaben gelöst!</b></div>`);
       else if (akt < A.length - 1) outHtml(`<div class="res ok"><button class="btn prim" id="weiterBtn">Weiter zu Aufgabe ${akt + 2} →</button></div>`);

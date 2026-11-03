@@ -45,7 +45,7 @@ vibe-learning/
 │   │   ├── abfragen.js/.css       Technik der Abfrage-Übungen, Aufbau oben in abfragen.js
 │   │   ├── filme.js               Daten der Filmdatenbank
 │   │   └── lib/                   sql.js (SQLite im Browser) und Autovervollständigung (CodeMirror)
-│   ├── tippen/                Tastaturschreiben
+│   ├── tippen/                Tippen
 │   │   ├── index.html             Übersicht des Bereichs
 │   │   └── pockettype.html …      Tipptrainer pockettype, gebaut im eigenen Repo (GPL-3.0),
 │   │                              siehe LICENSE.txt und QUELLE.txt dort; nie von Hand ändern

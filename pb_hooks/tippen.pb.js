@@ -109,7 +109,7 @@ routerAdd("GET", "/api/trainer/tippen/report", (e) => {
   if (!isNaN(von)) { filter += " && zeitpunkt >= {:von}"; params.von = von; }
   if (!isNaN(bis)) { filter += " && zeitpunkt <= {:bis}"; params.bis = bis; }
   const felder = ["zeitpunkt", "modus", "modus2", "sprache", "wpm", "roh", "genauigkeit", "gleichmaessigkeit", "anschlaege", "dauer"];
-  const ergebnisse = $app.findRecordsByFilter("tipp_ergebnisse", filter, "zeitpunkt", 20000, 0, params).map((r) => {
+  const ergebnisse = $app.findRecordsByFilter("tipp_ergebnisse", filter, "zeitpunkt", 50000, 0, params).map((r) => {
     const z = { schueler: r.getString("schueler"), satzzeichen: r.getBool("satzzeichen"), zahlen: r.getBool("zahlen"), bestwert: r.getBool("bestwert") };
     for (const f of felder) z[f] = r.get(f);
     return z;

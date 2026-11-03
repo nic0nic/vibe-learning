@@ -27,11 +27,18 @@ Gesammelt im Thread „Aufbau der Seite“. Umgesetzt wird erst, wenn die Lehrkr
 
 ### Version vom 03.11.
 
+23. **Auswertung nach Bereichen, Bestenliste Tippen, Stand je Stufe** (gewünscht 03.11.)
+    - Auswertung mit Auswahl Bereich (und Übung): „alle“ = Aktivität im Zeitraum je Bereich; Excel/Python/Datenbanken = Stand je Übung und Stufe über den gesamten Zeitraum (✓ = alle Aufgaben der Stufe, Erarbeitung, Endlos) plus Lösungen im Zeitraum; Tippen = Bestenliste im Zeitraum (Tests, Zeit getippt, Anschläge gesamt, Bestwerte, Durchschnitt, Genauigkeit). Alle Spalten sortierbar, CSV je Ansicht.
+    - Server liefert alle Ereignisse der Klasse (bis 50 000), gefiltert wird in lehrer.html.
+    - katalog.js: `stufen` je Übung; Bereich „Tastaturschreiben“ heißt jetzt „Tippen“.
+    - pykurs.js meldet `gesamt` = Aufgaben der Stufe; abfragen.js zählt bei Ansichten die Stufen durch (Datenight: Access 1–3, SQL 4–8).
+    Betrifft lehrer.html, katalog.js, pb_hooks/, python/lib/pykurs.js, datenbanken/abfragen.js.
+
 22. **Tipptrainer pockettype** (gewünscht 03.11.)
     Eigenes Repo auf Basis von Monkeytype (GPL-3.0), ohne Monkeytype-Backend; Ergebnisse, Bestwerte und Auswertung über PocketBase. Wenig Einstellungen, festes Nord-Farbschema hell/dunkel, Rangliste später. Gebaute Dateien nach `pb_public/tippen/`, Ausnahme von der Doppelklick-Regel (siehe CLAUDE.md).
     Betrifft neues Repo pockettype, später katalog.js, lehrer.html, pb_hooks/.
     - 03.11. Schritt 3 erledigt: Tabellen `tipp_ergebnisse`/`tipp_stand` (pb_migrations/1793700000_tippen.js), Schnittstellen in pb_hooks/tippen.pb.js. Gast-Ergebnisse werden beim Anmelden übernommen, wenn das Konto leer ist. Keine Löschfrist: Ergebnisse hängen am Schüler und gehen mit ihm oder der Klasse.
-    - 03.11. Schritt 4 erledigt: pockettype in `pb_public/tippen/pockettype.html` mit Menüleiste und Anmeldung, Bereich „Tastaturschreiben“ in katalog.js, Auswertung in lehrer.html (Seite *pockettype*: Tests, Bestwerte, Ø Wörter/Anschläge pro Minute, Genauigkeit; Details pro Test; CSV), Schüler in eine andere Klasse verschieben (Fortschritt und Ergebnisse ziehen mit).
+    - 03.11. Schritt 4 erledigt: pockettype in `pb_public/tippen/pockettype.html` mit Menüleiste und Anmeldung, Bereich „Tippen“ in katalog.js, Auswertung in lehrer.html (Seite *pockettype*: Tests, Bestwerte, Ø Wörter/Anschläge pro Minute, Genauigkeit; Details pro Test; CSV), Schüler in eine andere Klasse verschieben (Fortschritt und Ergebnisse ziehen mit).
 
 21. **Alte Weiterleitungen entfernt, ANLEITUNG aktualisiert** (gewünscht 03.11.)
     `wenn-trainer.html`, `und-oder-trainer.html` und `funktionen-trainer.html` gelöscht (nur noch Weiterleitungen nach `excel/`, nichts verlinkte sie mehr). Ordnerübersicht in ANLEITUNG.md um `excel/bezuege.html` und den Bereich Datenbanken ergänzt.

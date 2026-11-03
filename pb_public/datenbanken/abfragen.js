@@ -18,7 +18,9 @@
  *                                               krit: 'bloecke' nur die nötigen Kriterien (mit Feldname),
  *                                               'falsch' dazu falsche, 'text' selbst eintippen (Access-Schreibweise)
  *   ansichten: {access:{name, stufen}, sql:{name, stufen}}   statt stufen: Umschalter in der Kopfzeile
- *            (Knöpfe mit data-ansicht="…"); Stufe, Fortschritt und Modus je Ansicht getrennt (id-ansicht-…)
+ *            (Knöpfe mit data-ansicht="…"); Stufe, Fortschritt und Modus je Ansicht getrennt (id-ansicht-…).
+ *            An den Server wird die Stufe durchgezählt gemeldet (Access 1–3, dann SQL 4–8),
+ *            passend zu stufen in katalog.js
  *   kalender:{tage:['Montag', …]}  Aufgabenwahl als Kalender (Wochen × Tage) statt Nummern
  *   aufgaben:[{frage, felder:['titel', …] oder ['*'], where?:"jahr < 1970", sort?:'jahr DESC', tipp?,
  *             auch?:["…"] gleichwertige Bedingungen, die ebenfalls als richtig zählen}]
@@ -799,7 +801,9 @@ function check(){
   if (fehler){ S.success = false; S.fb = {type:'err', html:fehler}; renderFeedback(); return; }
   S.success = true;
   const erstmals = countSolved();
-  if (window.TrainerSync) TrainerSync.event({modus:mode === 'pfad' ? 'uebungen' : 'endlos', stufe:level,
+  // mit Ansichten: Stufen aller Ansichten durchgezählt, damit die Auswertung sie unterscheiden kann
+  const versatz = ANS ? ANS.slice(0, ANS.indexOf(ansicht)).reduce((n, a) => n + K.ansichten[a].stufen.length - 1, 0) : 0;
+  if (window.TrainerSync) TrainerSync.event({modus:mode === 'pfad' ? 'uebungen' : 'endlos', stufe:versatz + level,
     aufgabe:mode === 'pfad' ? String(pfadIdx + 1) : 'endlos', titel:CUR.frage, gesamt:mode === 'pfad' ? STD.length : 0, erstmals});
   let h = '<b>Richtig! 🎉</b> Deine Abfrage liefert genau die gesuchten Datensätze.';
   if (LEVELS[level].ui !== 'sql') h += `<br>In SQL heißt deine Abfrage:<pre class="sqlv cm-s-default">${farbe(r.q.sql)}</pre>`;

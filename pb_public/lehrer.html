@@ -85,6 +85,12 @@ td.pw{font-family:var(--mono);font-weight:700}
 .grp:first-child{margin-top:0}
 .hint{font-size:13px;color:var(--muted);margin:6px 0 0}
 details > summary{cursor:pointer}
+/* Auswertung: sortierbare Spalten, Stand je Stufe */
+th.sortk{cursor:pointer;user-select:none} th.sortk:hover{color:var(--text)}
+th.kl{font-size:12px;padding:6px 6px;text-align:center}
+th.grpk{text-align:center;border-left:2px solid var(--border);font-size:13px;color:var(--text)}
+td.st{text-align:center;font-variant-numeric:tabular-nums;font-size:13px;padding:6px 4px;min-width:38px}
+td.st0{color:var(--muted)} td.st1{background:var(--warnbg);color:var(--warn);font-weight:700} td.st2{background:var(--okbg);color:var(--ok);font-weight:700}
 </style>
 </head>
 <body>
@@ -112,7 +118,8 @@ details > summary{cursor:pointer}
         <label>Klasse <select id="fKlasse"></select></label>
         <label>von <input type="datetime-local" id="fVon"></label>
         <label>bis <input type="datetime-local" id="fBis"></label>
-        <label>Seite <select id="fSeite"><option value="">alle</option></select></label>
+        <label>Bereich <select id="fBereich"><option value="">alle</option></select></label>
+        <label class="hidden">Übung <select id="fUebung"><option value="">alle</option></select></label>
         <button class="btn primary" id="loadBtn">Anzeigen</button>
         <button class="btn" id="csvBtn">CSV exportieren</button>
       </div>
@@ -128,7 +135,7 @@ details > summary{cursor:pointer}
 
     <section class="card">
       <h2 id="repTitle">Übersicht</h2>
-      <p class="small muted">„Übungen“ zählt verschiedene Aufgaben, die im Zeitraum richtig gelöst wurden (dieselbe Aufgabe auf derselben Stufe zählt einmal). „Erarbeitung“ zeigt den Gesamtstand. Rot: im Zeitraum keine Aktivität. Zeile anklicken für Details.</p>
+      <p class="small muted" id="repHint"></p>
       <div class="tscroll"><table id="repTable"></table></div>
     </section>
 
@@ -205,13 +212,16 @@ details > summary{cursor:pointer}
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-// Namen der Tools und Auswahlliste „Seite“ kommen aus katalog.js
-const SEITE = {};
+// Bereiche, Übungen und ihre Stufen kommen aus katalog.js
+const SEITE = {}, TOOL = {}, BEREICHE = [];
 (window.KATALOG ? KATALOG.bereiche : []).forEach(b => {
   if (!b.tools.length) return;
-  const g = document.createElement('optgroup'); g.label = b.titel;
-  b.tools.forEach(t => { SEITE[t.id] = b.titel + ': ' + t.titel; g.appendChild(new Option(t.titel, t.id)); });
-  document.getElementById('fSeite').appendChild(g);
+  BEREICHE.push(b);
+  b.tools.forEach(t => {
+    SEITE[t.id] = b.titel + ': ' + t.titel;
+    TOOL[t.id] = {bereich: b.id, titel: t.titel, stufen: Array.isArray(t.stufen) ? t.stufen : Array.from({length: t.stufen || 0}, (_, i) => String(i + 1))};
+  });
+  document.getElementById('fBereich').appendChild(new Option(b.titel, b.id));
 });
 const MODUS = {erarbeitung:'Erarbeitung', uebungen:'Übungen', endlos:'Endlos'};
 const PLATTFORM = window.KATALOG ? KATALOG.name : 'vibe learning';
@@ -505,145 +515,255 @@ function setRange(r){
   else if (r !== 'today') start.setDate(start.getDate() - (+r - 1));
   $('#fVon').value = toLocalInput(start); $('#fBis').value = toLocalInput(end);
 }
-$$('[data-range]').forEach(b => b.addEventListener('click', () => { setRange(b.dataset.range); loadReport(); }));
+$$('[data-range]').forEach(b => b.addEventListener('click', () => { setRange(b.dataset.range); if (lastReport) renderReport(); else loadReport(); }));
 const pbDate = s => new Date(String(s).replace(' ', 'T'));
 
-/* ---------- Auswertung ---------- */
+/* ---------- Auswertung ----------
+ * Der Server liefert alle Ereignisse und Tipptests der Klasse, gefiltert wird hier:
+ *   Bereich „alle“   Aktivität im Zeitraum, je Bereich
+ *   Excel, Python …  Stand je Übung und Stufe (gesamter Zeitraum) und Lösungen im Zeitraum
+ *   Tippen           Bestenliste im Zeitraum
+ * Jede Ansicht liefert Spalten {key, label, get(r), cell(r), num, csv}; Klick auf den Kopf sortiert.
+ */
 async function loadReport(){
   const k = $('#fKlasse').value;
   if (!k){ msg('#repMsg', 'Lege zuerst unter „Klassen und Zugänge“ eine Klasse an.'); return; }
   msg('#repMsg', '');
-  const von = $('#fVon').value ? new Date($('#fVon').value).toISOString() : '';
-  const bis = $('#fBis').value ? new Date($('#fBis').value).toISOString() : '';
   try {
-    const q = `klasse=${encodeURIComponent(k)}&von=${encodeURIComponent(von)}&bis=${encodeURIComponent(bis)}`;
+    const q = 'klasse=' + encodeURIComponent(k);
     [lastReport, lastTipp] = await Promise.all([api('/report?' + q), api('/tippen/report?' + q).catch(() => ({ergebnisse: []}))]);
     renderReport();
   } catch (x){ msg('#repMsg', esc(x.message)); }
 }
 $('#loadBtn').addEventListener('click', loadReport);
-$('#fKlasse').addEventListener('change', loadReport);
-$('#fSeite').addEventListener('change', () => lastReport && renderReport());
+$('#fKlasse').addEventListener('change', () => { selected = null; loadReport(); });
+$('#fBereich').addEventListener('change', () => { fillUebung(); SORT = null; selected = null; if (lastReport) renderReport(); });
+$('#fUebung').addEventListener('change', () => { SORT = null; if (lastReport) renderReport(); });
+['#fVon', '#fBis'].forEach(s => $(s).addEventListener('change', () => lastReport && renderReport()));
 
-function summarize(){
-  const seite = $('#fSeite').value, nm = names();
-  const evs = lastReport.ereignisse.filter(e => !seite || e.seite === seite);
-  return lastReport.schueler.map(s => {
-    const mine = evs.filter(e => e.schueler === s.id);
-    const ueb = new Set(mine.filter(e => e.modus === 'uebungen').map(e => `${e.seite}|${e.stufe}|${e.aufgabe}`));
-    const endlos = mine.filter(e => e.modus === 'endlos').length;
-    const erarbIm = new Set(mine.filter(e => e.modus === 'erarbeitung').map(e => e.aufgabe)).size;
-    // Erarbeitung gesamt aus dem gespeicherten Fortschritt
-    let erDone = null, erTotal = null;
-    const fs = lastReport.fortschritt.find(f => f.schueler === s.id && f.seite === 'uo');
-    if (fs && fs.daten && fs.daten['uo-learn']){ try { erDone = (JSON.parse(fs.daten['uo-learn']).done || []).length; } catch (e) {} }
-    const lastEr = lastReport.ereignisse.filter(e => e.modus === 'erarbeitung' && e.gesamt).pop();
-    if (lastEr) erTotal = lastEr.gesamt;
-    // Tipptrainer pockettype: Tests statt Ereignisse (zählen bei „alle“ mit)
-    const tipp = (seite === '' || seite === 'tippen') ? lastTipp.ergebnisse.filter(t => t.schueler === s.id) : [];
-    const zeiten = mine.map(e => pbDate(e.created)).concat(tipp.map(t => new Date(t.zeitpunkt))).sort((a, b) => a - b);
-    const tage = new Set(zeiten.map(d => d.toDateString())).size;
-    const lastTippZeit = tipp.length ? new Date(tipp[tipp.length - 1].zeitpunkt) : null;
-    const lastAll = lastReport.fortschritt.filter(f => f.schueler === s.id).map(f => pbDate(f.updated)).concat(lastTippZeit || []).sort((a, b) => b - a)[0];
-    return {s, k: kennung(s), name: nm[kennung(s)] || '', mine, tipp, ts: tippWerte(tipp), ueb: ueb.size, endlos, erarbIm, erDone, erTotal, n: mine.length + tipp.length, tage,
-            erste: zeiten[0], letzte: zeiten[zeiten.length - 1], lastAll};
-  });
+function fillUebung(){
+  const b = BEREICHE.find(x => x.id === $('#fBereich').value);
+  $('#fUebung').innerHTML = '<option value="">alle</option>' + (b ? b.tools.map(t => `<option value="${esc(t.id)}">${esc(t.titel)}</option>`).join('') : '');
+  $('#fUebung').closest('label').classList.toggle('hidden', !b || b.tools.length < 2);
 }
 
-// Kennzahlen aus den Tipptests eines Schülers
+function imZeitraum(){
+  const von = $('#fVon').value ? new Date($('#fVon').value) : null, bis = $('#fBis').value ? new Date($('#fBis').value) : null;
+  return d => (!von || d >= von) && (!bis || d <= bis);
+}
+const fmtZeit = d => d ? d.toLocaleString('de-DE', {weekday:'short', day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'}) : '–';
+const dauer = s => { s = Math.round(s); const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60); return h ? `${h} h ${pad(m)} min` : m ? `${m} min ${pad(s % 60)} s` : `${s} s`; };
 const apm = t => t.dauer > 0 ? Math.round(t.anschlaege / t.dauer * 60) : 0;
-function tippWerte(tipp){
-  if (!tipp.length) return null;
-  const mittel = f => Math.round(tipp.reduce((x, t) => x + f(t), 0) / tipp.length);
-  return {n: tipp.length, bestWpm: Math.max(...tipp.map(t => Math.round(t.wpm))), bestApm: Math.max(...tipp.map(apm)),
-          wpm: mittel(t => t.wpm), apm: mittel(apm), acc: mittel(t => t.genauigkeit)};
-}
 const TIPP_MODUS = {time: 'Zeit', words: 'Wörter', zen: 'Zen', custom: 'eigener Text', quote: 'Zitat'};
 const tippTest = t => t.modus === 'time' ? `Zeit ${t.modus2} s` : t.modus === 'words' ? `${t.modus2} Wörter` : (TIPP_MODUS[t.modus] || t.modus);
 const SPRACHE = {german: 'Deutsch', english: 'Englisch', french: 'Französisch', portuguese: 'Portugiesisch'};
 const sprache = s => { const [b, ...r] = String(s || '').split('_'); return (SPRACHE[b] || b) + (r.length ? ' ' + r.join(' ') : ''); };
 
-function renderTippReport(rows, fmt){
-  $('#repTable').innerHTML = `<tr><th>Zugang</th><th>Name (nur lokal)</th><th>Tests</th><th>Bestwert Wörter/min</th><th>Bestwert Anschläge/min</th><th>Ø Wörter/min</th><th>Ø Anschläge/min</th><th>Ø Genauigkeit</th><th>Aktive Tage</th><th>Erster – letzter Test im Zeitraum</th></tr>` +
-    rows.map(r => `<tr class="clk${r.n ? '' : ' none'}${selected === r.s.id ? ' sel' : ''}" data-id="${r.s.id}">
-      <td class="code">${esc(r.k)}${r.s.gesperrt ? ' <span class="pill bad">gesperrt</span>' : ''}</td>
-      <td><input class="nm" data-k="${esc(r.k)}" value="${esc(r.name)}" placeholder="Name eintragen"></td>
-      ${r.ts ? `<td class="num">${r.ts.n}</td><td class="num">${r.ts.bestWpm}</td><td class="num">${r.ts.bestApm}</td><td class="num">${r.ts.wpm}</td><td class="num">${r.ts.apm}</td><td class="num">${r.ts.acc} %</td>`
-        : '<td class="num">–</td><td class="num">–</td><td class="num">–</td><td class="num">–</td><td class="num">–</td><td class="num">–</td>'}
-      <td class="num">${r.tage || '–'}</td>
-      <td>${r.n ? fmt(r.erste) + ' – ' + fmt(r.letzte) : '<span class="pill bad">keine Tests</span>'}</td></tr>`).join('');
+// Welche Übungen gehören zur gewählten Auswahl
+function auswahl(){
+  const b = $('#fBereich').value, u = $('#fUebung').value;
+  if (!b) return {art: 'alle', tools: Object.keys(TOOL)};
+  if (b === 'tippen') return {art: 'tippen', tools: ['tippen']};
+  return {art: 'stand', tools: u ? [u] : BEREICHE.find(x => x.id === b).tools.map(t => t.id)};
 }
 
+// Grunddaten je Schüler: alle Ereignisse/Tipptests und die im Zeitraum
+function basis(){
+  const drin = imZeitraum(), nm = names();
+  return lastReport.schueler.map(s => {
+    const ev = lastReport.ereignisse.filter(e => e.schueler === s.id).map(e => Object.assign({d: pbDate(e.created)}, e));
+    const tipp = lastTipp.ergebnisse.filter(t => t.schueler === s.id).map(t => Object.assign({d: new Date(t.zeitpunkt)}, t));
+    return {s, k: kennung(s), name: nm[kennung(s)] || '', ev, tipp, evZ: ev.filter(e => drin(e.d)), tippZ: tipp.filter(t => drin(t.d))};
+  });
+}
+const zelleName = r => `<input class="nm" data-k="${esc(r.k)}" value="${esc(r.name)}" placeholder="Name eintragen">`;
+const SP_ZUGANG = {key: 'k', label: 'Zugang', get: r => r.k, cell: r => `<td class="code">${esc(r.k)}${r.s.gesperrt ? ' <span class="pill bad">gesperrt</span>' : ''}</td>`, csv: r => r.k};
+const SP_NAME = {key: 'name', label: 'Name (nur lokal)', get: r => r.name.toLowerCase(), cell: r => `<td>${zelleName(r)}</td>`, csv: r => r.name};
+const zahl = (key, label, get, fmt) => ({key, label, num: true, get, cell: r => `<td class="num">${get(r) ? (fmt ? fmt(get(r), r) : get(r)) : '–'}</td>`, csv: r => get(r) || ''});
+
+/* Ansicht „alle“: Aktivität im Zeitraum je Bereich */
+function ansichtAlle(rows){
+  const bereiche = BEREICHE.filter(b => b.id !== 'tippen');
+  rows.forEach(r => {
+    r.je = {}; bereiche.forEach(b => { r.je[b.id] = r.evZ.filter(e => TOOL[e.seite]?.bereich === b.id).length; });
+    const zeiten = r.evZ.map(e => e.d).concat(r.tippZ.map(t => t.d));
+    r.n = zeiten.length; r.tage = new Set(zeiten.map(d => d.toDateString())).size;
+    r.letzte = r.ev.map(e => e.d).concat(r.tipp.map(t => t.d)).sort((a, b) => b - a)[0];
+  });
+  return {
+    titel: n => `${n} im Zeitraum aktiv`,
+    hinweis: 'Gelöste Aufgaben und Erarbeitungsschritte im Zeitraum je Bereich, beim Tippen die Zahl der Tests. Bereich wählen für den Stand je Übung und Stufe. Rot: im Zeitraum keine Aktivität. Zeile anklicken für Details.',
+    spalten: [SP_ZUGANG, SP_NAME,
+      ...bereiche.map(b => zahl('b-' + b.id, b.titel, r => r.je[b.id])),
+      ...(TOOL.tippen ? [zahl('tipp', 'Tippen: Tests', r => r.tippZ.length)] : []),
+      zahl('tage', 'Aktive Tage', r => r.tage),
+      {key: 'letzte', label: 'Zuletzt aktiv', num: true, get: r => r.letzte ? +r.letzte : 0, cell: r => `<td>${fmtZeit(r.letzte)}</td>`, csv: r => r.letzte ? r.letzte.toLocaleString('de-DE') : ''}],
+    sort: {key: 'k', dir: 1}
+  };
+}
+
+/* Ansicht Bereich: Stand je Übung und Stufe (gesamter Zeitraum) */
+function ansichtStand(rows, tools){
+  const alle = lastReport.ereignisse;
+  const info = tools.map(id => {
+    const evT = alle.filter(e => e.seite === id);
+    const gesamt = {};   // Aufgaben je Stufe (größte gemeldete Zahl)
+    evT.filter(e => e.modus === 'uebungen').forEach(e => { gesamt[e.stufe] = Math.max(gesamt[e.stufe] || 0, e.gesamt || 0); });
+    const erarb = evT.filter(e => e.modus === 'erarbeitung');
+    const stufen = TOOL[id].stufen.length ? TOOL[id].stufen : Object.keys(gesamt).sort((a, b) => a - b);
+    return {id, stufen, gesamt, erarbGesamt: erarb.length ? Math.max(...erarb.map(e => e.gesamt || 0)) : 0, endlos: evT.some(e => e.modus === 'endlos')};
+  });
+  rows.forEach(r => {
+    r.st = {}; r.summe = 0;
+    info.forEach(t => {
+      const evT = r.ev.filter(e => e.seite === t.id);
+      const je = {};
+      t.stufen.forEach((_, i) => { je[i + 1] = new Set(evT.filter(e => e.modus === 'uebungen' && e.stufe === i + 1).map(e => e.aufgabe)).size; });
+      const erarb = new Set(evT.filter(e => e.modus === 'erarbeitung').map(e => e.aufgabe)).size;
+      r.st[t.id] = {je, erarb, endlos: evT.filter(e => e.modus === 'endlos').length};
+      r.summe += Object.values(je).reduce((a, b) => a + b, 0) + erarb;
+    });
+    r.n = r.evZ.filter(e => tools.includes(e.seite)).length;
+    r.leer = !r.summe;
+    r.tage = new Set(r.evZ.filter(e => tools.includes(e.seite)).map(e => e.d.toDateString())).size;
+  });
+  const zelle = (x, g, titel) => {
+    const cls = !x ? 'st0' : g && x >= g ? 'st2' : 'st1';
+    return `<td class="st ${cls}" title="${esc(titel)}">${!x ? '–' : g && x >= g ? '✓' : x + (g ? '/' + g : '')}</td>`;
+  };
+  const spalten = [SP_ZUGANG, SP_NAME];
+  const gruppen = [{label: '', span: 2}];
+  info.forEach(t => {
+    let span = 0;
+    if (t.erarbGesamt){ span++; spalten.push({key: `${t.id}-er`, label: 'Erarb.', klein: true, num: true, get: r => r.st[t.id].erarb, cell: r => zelle(r.st[t.id].erarb, t.erarbGesamt, `Erarbeitung: ${r.st[t.id].erarb} von ${t.erarbGesamt} Schritten`), csv: r => `${r.st[t.id].erarb}/${t.erarbGesamt}`}); }
+    t.stufen.forEach((lab, i) => { span++; const n = i + 1, g = t.gesamt[n] || 0;
+      spalten.push({key: `${t.id}-${n}`, label: lab, klein: true, num: true, get: r => r.st[t.id].je[n], cell: r => zelle(r.st[t.id].je[n], g, `Stufe ${lab}: ${r.st[t.id].je[n]}${g ? ' von ' + g : ''} Aufgaben`), csv: r => r.st[t.id].je[n] + (g ? '/' + g : '')}); });
+    if (t.endlos){ span++; spalten.push(zahl(`${t.id}-end`, 'Endlos', r => r.st[t.id].endlos)); spalten[spalten.length - 1].klein = true; }
+    if (span) gruppen.push({label: TOOL[t.id].titel, span});   // Übungen ohne Stufen (z. B. freie Abfragen) fallen weg
+  });
+  spalten.push(zahl('n', 'Gelöst im Zeitraum', r => r.n), zahl('tage', 'Aktive Tage', r => r.tage));
+  gruppen.push({label: '', span: 2});
+  return {
+    titel: n => `${n} im Zeitraum aktiv`,
+    hinweis: 'Stand über den gesamten Zeitraum: verschiedene gelöste Aufgaben je Stufe (✓ = alle Aufgaben der Stufe), bei „Erarb.“ die erledigten Schritte. Die Zahl der Aufgaben je Stufe stammt aus den Meldungen der Übungen. „Gelöst im Zeitraum“ und „Aktive Tage“ gelten für den gewählten Zeitraum. Zeile anklicken für Details.',
+    gruppen, spalten, sort: {key: 'k', dir: 1}, aktiv: r => !r.leer
+  };
+}
+
+/* Ansicht Tippen: Bestenliste im Zeitraum */
+function ansichtTippen(rows){
+  rows.forEach(r => {
+    const t = r.tippZ;
+    r.n = t.length;
+    r.zeit = t.reduce((a, x) => a + (x.dauer || 0), 0);
+    r.anschlaege = t.reduce((a, x) => a + (x.anschlaege || 0), 0);
+    r.bestWpm = t.length ? Math.max(...t.map(x => Math.round(x.wpm))) : 0;
+    r.bestApm = t.length ? Math.max(...t.map(apm)) : 0;
+    r.wpm = t.length ? Math.round(t.reduce((a, x) => a + x.wpm, 0) / t.length) : 0;
+    r.acc = t.length ? Math.round(t.reduce((a, x) => a + x.genauigkeit, 0) / t.length) : 0;
+    r.tage = new Set(t.map(x => x.d.toDateString())).size;
+    r.letzte = t.length ? t[t.length - 1].d : null;
+  });
+  return {
+    titel: n => `${n} haben im Zeitraum getippt`,
+    hinweis: 'Bestenliste für den gewählten Zeitraum. Spaltenkopf anklicken zum Sortieren, „Platz“ richtet sich nach der gewählten Spalte. Anschläge: Großbuchstaben und Zeichen mit Umschalt/AltGr zählen doppelt, nur richtig getippte Wörter. Zeile anklicken für alle Tests.',
+    platz: true,
+    spalten: [SP_ZUGANG, SP_NAME,
+      zahl('n', 'Tests', r => r.n),
+      zahl('zeit', 'Zeit getippt', r => r.zeit, v => dauer(v)),
+      zahl('anschlaege', 'Anschläge gesamt', r => r.anschlaege, v => v.toLocaleString('de-DE')),
+      zahl('bestWpm', 'Bestwert Wörter/min', r => r.bestWpm),
+      zahl('bestApm', 'Bestwert Anschläge/min', r => r.bestApm),
+      zahl('wpm', 'Ø Wörter/min', r => r.wpm),
+      zahl('acc', 'Ø Genauigkeit', r => r.acc, v => v + ' %'),
+      zahl('tage', 'Aktive Tage', r => r.tage),
+      {key: 'letzte', label: 'Letzter Test', num: true, get: r => r.letzte ? +r.letzte : 0, cell: r => `<td>${fmtZeit(r.letzte)}</td>`, csv: r => r.letzte ? r.letzte.toLocaleString('de-DE') : ''}],
+    sort: {key: 'bestWpm', dir: -1}
+  };
+}
+
+let SORT = null, ANSICHT = null, ZEILEN = [];
 function renderReport(){
-  const rows = summarize();
-  const showEr = ['', 'uo'].includes($('#fSeite').value);   // Spalte zeigt den Stand der UND/ODER-Erarbeitung
-  const aktivN = rows.filter(r => r.n).length;
+  if (!lastReport) return;
+  const a = auswahl(), rows = basis();
+  ANSICHT = a.art === 'alle' ? ansichtAlle(rows) : a.art === 'tippen' ? ansichtTippen(rows) : ansichtStand(rows, a.tools);
+  const sort = SORT || ANSICHT.sort, sp = ANSICHT.spalten.find(c => c.key === sort.key) || ANSICHT.spalten[0];
+  const wert = r => sp.get(r) ?? '';
+  rows.sort((x, y) => {
+    const a1 = wert(x), b1 = wert(y);
+    const c = typeof a1 === 'number' && typeof b1 === 'number' ? a1 - b1 : String(a1).localeCompare(String(b1), 'de', {numeric: true});
+    return c * sort.dir || x.k.localeCompare(y.k, 'de', {numeric: true});
+  });
+  ZEILEN = rows;
+  const aktiv = ANSICHT.aktiv || (r => r.n > 0);
   const kl = KLASSEN.find(x => x.id === $('#fKlasse').value);
-  $('#repTitle').textContent = `Klasse ${kl ? kl.name : ''}: ${aktivN} von ${rows.length} im Zeitraum aktiv`;
-  const fmt = d => d ? d.toLocaleString('de-DE', {weekday:'short', day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'}) : '–';
-  if ($('#fSeite').value === 'tippen'){ renderTippReport(rows, fmt); if (selected) renderDetail(selected); return; }
-  const showTipp = rows.some(r => r.tipp.length);
-  $('#repTable').innerHTML = `<tr><th>Zugang</th><th>Name (nur lokal)</th>${showEr ? '<th>Erarbeitung UND/ODER</th><th>Schritte im Zeitraum</th>' : ''}<th>Übungen gelöst</th><th>Endlos gelöst</th>${showTipp ? '<th>Tipptests</th>' : ''}<th>Aktive Tage</th><th>Erste – letzte Lösung im Zeitraum</th><th>Zuletzt gespeichert</th></tr>` +
-    rows.map(r => {
-      const pct = r.erDone != null && r.erTotal ? Math.round(100 * r.erDone / r.erTotal) : 0;
-      const erCell = r.erDone == null || r.erDone <= 1 ? '<span class="pill">nicht begonnen</span>'
-        : `<span class="bar"><i style="width:${pct}%"></i></span>${r.erDone}${r.erTotal ? ' / ' + r.erTotal : ''}${r.erTotal && r.erDone >= r.erTotal ? ' <span class="pill ok">fertig</span>' : ''}`;
-      return `<tr class="clk${r.n ? '' : ' none'}${selected === r.s.id ? ' sel' : ''}" data-id="${r.s.id}">
-        <td class="code">${esc(r.k)}${r.s.gesperrt ? ' <span class="pill bad">gesperrt</span>' : ''}</td>
-        <td><input class="nm" data-k="${esc(r.k)}" value="${esc(r.name)}" placeholder="Name eintragen"></td>
-        ${showEr ? `<td>${erCell}</td><td class="num">${r.erarbIm || '–'}</td>` : ''}
-        <td class="num">${r.ueb || '–'}</td><td class="num">${r.endlos || '–'}</td>${showTipp ? `<td class="num">${r.tipp.length || '–'}</td>` : ''}<td class="num">${r.tage || '–'}</td>
-        <td>${r.n ? fmt(r.erste) + ' – ' + fmt(r.letzte) : '<span class="pill bad">keine Aktivität</span>'}</td>
-        <td>${fmt(r.lastAll)}</td></tr>`;
-    }).join('');
-  if (selected) renderDetail(selected);
+  $('#repTitle').textContent = `Klasse ${kl ? kl.name : ''}: ${ANSICHT.titel(rows.filter(r => r.n > 0).length)} (${rows.length} Schüler)`;
+  $('#repHint').textContent = ANSICHT.hinweis;
+  let platz = 0, vorher = null;
+  const kopfGruppen = ANSICHT.gruppen ? `<tr>${ANSICHT.platz ? '<th></th>' : ''}${ANSICHT.gruppen.map(g => `<th colspan="${g.span}" class="grpk">${esc(g.label)}</th>`).join('')}</tr>` : '';
+  $('#repTable').innerHTML = `<thead>${kopfGruppen}<tr>${ANSICHT.platz ? '<th class="num">Platz</th>' : ''}${ANSICHT.spalten.map(c => {
+      const an = c.key === sort.key ? (sort.dir > 0 ? ' ▲' : ' ▼') : '';
+      return `<th class="sortk${c.num ? ' num' : ''}${c.klein ? ' kl' : ''}" data-sort="${esc(c.key)}" title="Sortieren">${esc(c.label)}${an}</th>`;
+    }).join('')}</tr></thead><tbody>` +
+    rows.map((r, i) => {
+      let p = '';
+      if (ANSICHT.platz){ const w = sp.num ? wert(r) : 0; if (r.n && w){ if (w !== vorher) platz = i + 1; vorher = w; p = `<td class="num"><b>${platz}.</b></td>`; } else p = '<td class="num">–</td>'; }
+      return `<tr class="clk${aktiv(r) ? '' : ' none'}${selected === r.s.id ? ' sel' : ''}" data-id="${r.s.id}">${p}${ANSICHT.spalten.map(c => c.cell(r)).join('')}</tr>`;
+    }).join('') + '</tbody>';
+  if (selected) renderDetail(selected); else $('#detailCard').classList.add('hidden');
 }
 
 $('#repTable').addEventListener('click', e => {
   if (e.target.closest('input')) return;
+  const th = e.target.closest('th[data-sort]');
+  if (th){
+    const cur = SORT || ANSICHT.sort, sp = ANSICHT.spalten.find(c => c.key === th.dataset.sort);
+    SORT = {key: th.dataset.sort, dir: cur.key === th.dataset.sort ? -cur.dir : (sp && sp.num ? -1 : 1)};
+    renderReport(); return;
+  }
   const tr = e.target.closest('tr[data-id]'); if (!tr) return;
-  selected = tr.dataset.id; renderReport(); renderDetail(selected);
+  selected = tr.dataset.id; renderReport();
   $('#detailCard').scrollIntoView({behavior: 'smooth', block: 'start'});
 });
 
 function renderDetail(id){
-  const r = summarize().find(x => x.s.id === id); if (!r) return;
+  const r = ZEILEN.find(x => x.s.id === id); if (!r) return;
+  const a = auswahl();
+  const ev = a.art === 'tippen' ? [] : r.evZ.filter(e => a.tools.includes(e.seite));
+  const tipp = a.art === 'stand' ? [] : r.tippZ;
   $('#detailCard').classList.remove('hidden');
-  const was = $('#fSeite').value === 'tippen' ? 'Tipptests' : r.tipp.length ? 'Lösungen und Tipptests' : 'Lösungen';
-  $('#detailTitle').textContent = `${r.k}${r.name ? ' · ' + r.name : ''}: ${r.n} ${was} im Zeitraum`;
-  if (!r.n){ $('#detailBody').innerHTML = '<p class="muted">Im gewählten Zeitraum wurde nichts gelöst.</p>'; return; }
-  // Ereignisse der Übungen und Tipptests zeitlich gemischt
-  const zeilen = r.mine.map(e => {
-    const was = e.modus === 'erarbeitung' ? `Schritt ${esc(e.aufgabe)}${e.gesamt ? '/' + e.gesamt : ''}: ${esc(e.titel)}`
-      : e.modus === 'uebungen' ? `Stufe ${e.stufe} · Aufgabe ${esc(e.aufgabe)}${e.gesamt ? '/' + e.gesamt : ''} (${esc(e.titel)})`
-      : `Stufe ${e.stufe} · Szenario ${esc(e.aufgabe)}`;
-    return {d: pbDate(e.created), wo: `${SEITE[e.seite] || e.seite} · ${MODUS[e.modus] || e.modus}`, was: was + (e.erstmals ? '' : ' <span class="pill">wiederholt</span>')};
-  }).concat(r.tipp.map(t => ({d: new Date(t.zeitpunkt), wo: `pockettype · ${tippTest(t)} · ${esc(sprache(t.sprache))}${t.satzzeichen ? ' · Satzzeichen' : ''}${t.zahlen ? ' · Zahlen' : ''}`,
-    was: `${Math.round(t.wpm)} Wörter/min · ${apm(t)} Anschläge/min · ${Math.round(t.genauigkeit)} % Genauigkeit${t.bestwert ? ' <span class="pill ok">Bestwert</span>' : ''}`}))).sort((a, b) => a.d - b.d);
+  const was = a.art === 'tippen' ? 'Tests' : 'Einträge';
+  $('#detailTitle').textContent = `${r.k}${r.name ? ' · ' + r.name : ''}: ${ev.length + tipp.length} ${was} im Zeitraum`;
+  if (!ev.length && !tipp.length){ $('#detailBody').innerHTML = '<p class="muted">Im gewählten Zeitraum nichts.</p>'; return; }
+  const zeilen = ev.map(e => {
+    const st = TOOL[e.seite] && TOOL[e.seite].stufen[e.stufe - 1] || e.stufe;
+    const txt = e.modus === 'erarbeitung' ? `Schritt ${esc(e.aufgabe)}${e.gesamt ? '/' + e.gesamt : ''}: ${esc(e.titel)}`
+      : e.modus === 'uebungen' ? `Stufe ${esc(st)} · Aufgabe ${esc(e.aufgabe)}${e.gesamt ? '/' + e.gesamt : ''} (${esc(e.titel)})`
+      : `Stufe ${esc(st)} · Szenario ${esc(e.aufgabe)}`;
+    return {d: e.d, wo: `${SEITE[e.seite] || e.seite} · ${MODUS[e.modus] || e.modus}`, txt: txt + (e.erstmals ? '' : ' <span class="pill">wiederholt</span>')};
+  }).concat(tipp.map(t => ({d: t.d, wo: `pockettype · ${tippTest(t)} · ${esc(sprache(t.sprache))}${t.satzzeichen ? ' · Satzzeichen' : ''}${t.zahlen ? ' · Zahlen' : ''}`,
+    txt: `${Math.round(t.wpm)} Wörter/min · ${apm(t)} Anschläge/min · ${Math.round(t.genauigkeit)} % Genauigkeit${t.bestwert ? ' <span class="pill ok">Bestwert</span>' : ''}`}))).sort((x, y) => x.d - y.d);
   let h = '', day = '';
   for (const z of zeilen){
     const ds = z.d.toLocaleDateString('de-DE', {weekday:'long', day:'2-digit', month:'2-digit', year:'numeric'});
     if (ds !== day){ h += `<div class="day">${ds}</div>`; day = ds; }
-    h += `<div class="ev"><span class="t">${z.d.toLocaleTimeString('de-DE', {hour:'2-digit', minute:'2-digit'})}</span><span>${z.wo}</span><span>${z.was}</span></div>`;
+    h += `<div class="ev"><span class="t">${z.d.toLocaleTimeString('de-DE', {hour:'2-digit', minute:'2-digit'})}</span><span>${z.wo}</span><span>${z.txt}</span></div>`;
   }
   $('#detailBody').innerHTML = h;
 }
 
 $('#csvBtn').addEventListener('click', () => {
-  if (!lastReport){ msg('#repMsg', 'Zuerst „Anzeigen“ wählen.'); return; }
+  if (!lastReport || !ANSICHT){ msg('#repMsg', 'Zuerst „Anzeigen“ wählen.'); return; }
   const q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
-  const f = d => d ? d.toLocaleString('de-DE') : '';
-  const tippen = $('#fSeite').value === 'tippen';
-  const lines = [(tippen
-    ? ['Zugang', 'Name', 'Tests', 'Bestwert Wörter/min', 'Bestwert Anschläge/min', 'Ø Wörter/min', 'Ø Anschläge/min', 'Ø Genauigkeit', 'Aktive Tage', 'Erster Test', 'Letzter Test']
-    : ['Zugang', 'Name', 'Erarbeitung erledigt', 'Erarbeitung gesamt', 'Schritte im Zeitraum', 'Übungen gelöst', 'Endlos gelöst', 'Tipptests', 'Aktive Tage', 'Erste Lösung', 'Letzte Lösung']).map(q).join(';')];
-  for (const r of summarize()) lines.push((tippen
-    ? [r.k, r.name, r.tipp.length, r.ts?.bestWpm ?? '', r.ts?.bestApm ?? '', r.ts?.wpm ?? '', r.ts?.apm ?? '', r.ts?.acc ?? '', r.tage, f(r.erste), f(r.letzte)]
-    : [r.k, r.name, r.erDone ?? '', r.erTotal ?? '', r.erarbIm, r.ueb, r.endlos, r.tipp.length, r.tage, f(r.erste), f(r.letzte)]).map(q).join(';'));
+  const gruppe = [];   // bei Stand: Übungsname vor die Stufen-Spalten
+  if (ANSICHT.gruppen) ANSICHT.gruppen.forEach(g => { for (let i = 0; i < g.span; i++) gruppe.push(g.label); });
+  const kopf = ANSICHT.spalten.map((c, i) => (gruppe[i] ? gruppe[i] + ' ' : '') + (c.key.match(/-\d+$/) ? 'Stufe ' : '') + c.label);
+  const lines = [(ANSICHT.platz ? ['Platz'] : []).concat(kopf).map(q).join(';')];
+  ZEILEN.forEach((r, i) => lines.push((ANSICHT.platz ? [i + 1] : []).concat(ANSICHT.spalten.map(c => c.csv(r))).map(q).join(';')));
   const blob = new Blob(['﻿' + lines.join('\r\n')], {type: 'text/csv;charset=utf-8'});
   const a = document.createElement('a');
-  const kl = KLASSEN.find(x => x.id === $('#fKlasse').value);
-  a.href = URL.createObjectURL(blob); a.download = `auswertung_${kl ? kl.name : 'klasse'}_${new Date().toISOString().slice(0, 10)}.csv`; a.click();
+  const kl = KLASSEN.find(x => x.id === $('#fKlasse').value), b = BEREICHE.find(x => x.id === $('#fBereich').value);
+  a.href = URL.createObjectURL(blob); a.download = `auswertung_${kl ? kl.name : 'klasse'}_${b ? b.id : 'alle'}_${new Date().toISOString().slice(0, 10)}.csv`; a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 });
 
