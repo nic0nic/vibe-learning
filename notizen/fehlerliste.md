@@ -25,6 +25,8 @@ Gesammelt im Thread „Aufbau der Seite“. Umgesetzt wird erst, wenn die Lehrkr
 22. **Tipptrainer pockettype** (gewünscht 03.11.)
     Eigenes Repo auf Basis von Monkeytype (GPL-3.0), ohne Monkeytype-Backend; Ergebnisse, Bestwerte und Auswertung über PocketBase. Wenig Einstellungen, festes Nord-Farbschema hell/dunkel, Rangliste später. Gebaute Dateien nach `pb_public/tippen/`, Ausnahme von der Doppelklick-Regel (siehe CLAUDE.md).
     Betrifft neues Repo pockettype, später katalog.js, lehrer.html, pb_hooks/.
+    - 03.11. Schritt 3 erledigt: Tabellen `tipp_ergebnisse`/`tipp_stand` (pb_migrations/1793700000_tippen.js), Schnittstellen in pb_hooks/tippen.pb.js. Gast-Ergebnisse werden beim Anmelden übernommen, wenn das Konto leer ist. Keine Löschfrist: Ergebnisse hängen am Schüler und gehen mit ihm oder der Klasse.
+    - Offen: pockettype nach `pb_public/tippen/` (Pfade, Menüleiste, sync.js, katalog.js), Auswertung in lehrer.html, Schüler in eine andere Klasse umziehen.
 
 ## Erledigt
 

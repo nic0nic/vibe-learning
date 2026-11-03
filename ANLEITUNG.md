@@ -12,9 +12,12 @@ Getestet mit **PocketBase 0.40.5**. Nötig ist mindestens Version **0.23**, weil
 vibe-learning/
 ├── pb_hooks/              Server-Logik (Anmeldung, Speichern, Auswertung, Verwaltung)
 │   ├── trainer.pb.js
-│   └── trainer_utils.js
+│   ├── trainer_utils.js
+│   └── tippen.pb.js           Ergebnisse des Tipptrainers pockettype
 ├── pb_migrations/         legt beim ersten Start automatisch die Tabellen an
-│   └── 1760860000_trainer_init.js
+│   ├── 1760860000_trainer_init.js
+│   ├── 1760990000_konten_lehrkraefte.js
+│   └── 1793700000_tippen.js   Tabellen tipp_ergebnisse und tipp_stand
 ├── pb_public/             die Webseiten
 │   ├── index.html             Startseite: alle Bereiche mit ihren Übungen
 │   ├── katalog.js             Liste aller Bereiche und Tools (hier neue Tools eintragen)
