@@ -27,6 +27,13 @@ Gesammelt im Thread „Aufbau der Seite“. Umgesetzt wird erst, wenn die Lehrkr
 
 ### Version vom 03.11.
 
+24. **Tippen: Lektion üben (TIPP10)** (gewünscht 03.11.)
+    - Lektionen 1–17 (Deutsch, QWERTZ) aus dem Quellcode von TIPP10 2.1.0, Inhalt und Reihenfolge wie dort (ohne „intelligente“ Auswahl): Wortlektionen 1–6 mit Zeilenumbruch nach 35 Zeichen, Satzlektionen ab 7 mit Enter nach jedem Satz; danach wieder von vorn. Dauer 1/2/5/10 min oder ganze Lektion (Standard 5 min wie TIPP10).
+    - Neue Seite `tippen/lektionen.html` („Lektion üben“ im Menü), gleiche Oberfläche, Titel „pockettype Lektionen“; Lektion wählen über den Hinweis über dem Text wie die Sprache.
+    - Ergebnis merkt die Lektion (Feld `lektion`); Auswertung Tippen mit Auswahl pockettype/Lektion üben und Spalte „Lektionen“.
+    - Lizenz: TIPP10 ist GPL-2.0 (ohne „oder später“), die Lektionen liegen deshalb als eigene Datendatei mit eigener Lizenz in `tippen/lektionen/`.
+    Betrifft pockettype, katalog.js, lehrer.html, pb_hooks/tippen.pb.js, pb_migrations/1793710000_tippen_lektion.js.
+
 23. **Auswertung nach Bereichen, Bestenliste Tippen, Stand je Stufe** (gewünscht 03.11.)
     - Auswertung mit Auswahl Bereich (und Übung): „alle“ = Aktivität im Zeitraum je Bereich; Excel/Python/Datenbanken = Stand je Übung und Stufe über den gesamten Zeitraum (✓ = alle Aufgaben der Stufe, Erarbeitung, Endlos) plus Lösungen im Zeitraum; Tippen = Bestenliste im Zeitraum (Tests, Zeit getippt, Anschläge gesamt, Bestwerte, Durchschnitt, Genauigkeit). Alle Spalten sortierbar, CSV je Ansicht.
     - Server liefert alle Ereignisse der Klasse (bis 50 000), gefiltert wird in lehrer.html.

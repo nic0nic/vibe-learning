@@ -555,7 +555,7 @@ const fmtZeit = d => d ? d.toLocaleString('de-DE', {weekday:'short', day:'2-digi
 const dauer = s => { s = Math.round(s); const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60); return h ? `${h} h ${pad(m)} min` : m ? `${m} min ${pad(s % 60)} s` : `${s} s`; };
 const apm = t => t.dauer > 0 ? Math.round(t.anschlaege / t.dauer * 60) : 0;
 const TIPP_MODUS = {time: 'Zeit', words: 'Wörter', zen: 'Zen', custom: 'eigener Text', quote: 'Zitat'};
-const tippTest = t => t.modus === 'time' ? `Zeit ${t.modus2} s` : t.modus === 'words' ? `${t.modus2} Wörter` : (TIPP_MODUS[t.modus] || t.modus);
+const tippTest = t => t.lektion > 0 ? `Lektion ${t.lektion}` : t.modus === 'time' ? `Zeit ${t.modus2} s` : t.modus === 'words' ? `${t.modus2} Wörter` : (TIPP_MODUS[t.modus] || t.modus);
 const SPRACHE = {german: 'Deutsch', english: 'Englisch', french: 'Französisch', portuguese: 'Portugiesisch'};
 const sprache = s => { const [b, ...r] = String(s || '').split('_'); return (SPRACHE[b] || b) + (r.length ? ' ' + r.join(' ') : ''); };
 
@@ -563,7 +563,7 @@ const sprache = s => { const [b, ...r] = String(s || '').split('_'); return (SPR
 function auswahl(){
   const b = $('#fBereich').value, u = $('#fUebung').value;
   if (!b) return {art: 'alle', tools: Object.keys(TOOL)};
-  if (b === 'tippen') return {art: 'tippen', tools: ['tippen']};
+  if (b === 'tippen') return {art: 'tippen', tools: ['tippen'], uebung: u};   // u: '' alle, 'tippen' freie Tests, 'lektionen'
   return {art: 'stand', tools: u ? [u] : BEREICHE.find(x => x.id === b).tools.map(t => t.id)};
 }
 
@@ -651,9 +651,14 @@ function ansichtStand(rows, tools){
 }
 
 /* Ansicht Tippen: Bestenliste im Zeitraum */
-function ansichtTippen(rows){
+// Lektionsnummern kurz: 1–5, 7
+const bereichListe = ns => { const s = [...new Set(ns)].sort((a, b) => a - b), out = []; for (let i = 0; i < s.length; i++){ let j = i; while (s[j + 1] === s[j] + 1) j++; out.push(j > i + 1 ? `${s[i]}–${s[j]}` : j === i + 1 ? `${s[i]}, ${s[j]}` : `${s[i]}`); i = j; } return out.join(', '); };
+const nurUebung = (t, u) => !u || (u === 'lektionen' ? t.lektion > 0 : !t.lektion);
+function ansichtTippen(rows, uebung){
   rows.forEach(r => {
+    r.tippZ = r.tippZ.filter(t => nurUebung(t, uebung));
     const t = r.tippZ;
+    r.lektionen = t.filter(x => x.lektion > 0).map(x => x.lektion);
     r.n = t.length;
     r.zeit = t.reduce((a, x) => a + (x.dauer || 0), 0);
     r.anschlaege = t.reduce((a, x) => a + (x.anschlaege || 0), 0);
@@ -676,6 +681,8 @@ function ansichtTippen(rows){
       zahl('bestApm', 'Bestwert Anschläge/min', r => r.bestApm),
       zahl('wpm', 'Ø Wörter/min', r => r.wpm),
       zahl('acc', 'Ø Genauigkeit', r => r.acc, v => v + ' %'),
+      ...(uebung === 'tippen' ? [] : [{key: 'lekt', label: 'Lektionen', num: true, get: r => r.lektionen.length ? Math.max(...r.lektionen) : 0,
+        cell: r => `<td class="num" title="geübte Lektionen">${r.lektionen.length ? bereichListe(r.lektionen) : '–'}</td>`, csv: r => bereichListe(r.lektionen)}]),
       zahl('tage', 'Aktive Tage', r => r.tage),
       {key: 'letzte', label: 'Letzter Test', num: true, get: r => r.letzte ? +r.letzte : 0, cell: r => `<td>${fmtZeit(r.letzte)}</td>`, csv: r => r.letzte ? r.letzte.toLocaleString('de-DE') : ''}],
     sort: {key: 'bestWpm', dir: -1}
@@ -686,7 +693,7 @@ let SORT = null, ANSICHT = null, ZEILEN = [];
 function renderReport(){
   if (!lastReport) return;
   const a = auswahl(), rows = basis();
-  ANSICHT = a.art === 'alle' ? ansichtAlle(rows) : a.art === 'tippen' ? ansichtTippen(rows) : ansichtStand(rows, a.tools);
+  ANSICHT = a.art === 'alle' ? ansichtAlle(rows) : a.art === 'tippen' ? ansichtTippen(rows, a.uebung) : ansichtStand(rows, a.tools);
   const sort = SORT || ANSICHT.sort, sp = ANSICHT.spalten.find(c => c.key === sort.key) || ANSICHT.spalten[0];
   const wert = r => sp.get(r) ?? '';
   rows.sort((x, y) => {
@@ -730,7 +737,7 @@ function renderDetail(id){
   const r = ZEILEN.find(x => x.s.id === id); if (!r) return;
   const a = auswahl();
   const ev = a.art === 'tippen' ? [] : r.evZ.filter(e => a.tools.includes(e.seite));
-  const tipp = a.art === 'stand' ? [] : r.tippZ;
+  const tipp = a.art === 'stand' ? [] : r.tippZ.filter(t => nurUebung(t, a.uebung));
   $('#detailCard').classList.remove('hidden');
   const was = a.art === 'tippen' ? 'Tests' : 'Einträge';
   $('#detailTitle').textContent = `${r.k}${r.name ? ' · ' + r.name : ''}: ${ev.length + tipp.length} ${was} im Zeitraum`;

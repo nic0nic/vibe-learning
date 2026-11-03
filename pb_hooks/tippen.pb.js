@@ -65,6 +65,7 @@ routerAdd("POST", "/api/trainer/tippen/ergebnisse", (e) => {
       r.set("satzzeichen", !!d.punctuation);
       r.set("zahlen", !!d.numbers);
       r.set("bestwert", !!d.isPb);
+      r.set("lektion", zahl(d.lektion, 0, 99));
       r.set("daten", d);
       txApp.save(r);
       n++;
@@ -108,7 +109,7 @@ routerAdd("GET", "/api/trainer/tippen/report", (e) => {
   const von = Date.parse(q.get("von")), bis = Date.parse(q.get("bis"));
   if (!isNaN(von)) { filter += " && zeitpunkt >= {:von}"; params.von = von; }
   if (!isNaN(bis)) { filter += " && zeitpunkt <= {:bis}"; params.bis = bis; }
-  const felder = ["zeitpunkt", "modus", "modus2", "sprache", "wpm", "roh", "genauigkeit", "gleichmaessigkeit", "anschlaege", "dauer"];
+  const felder = ["zeitpunkt", "modus", "modus2", "sprache", "wpm", "roh", "genauigkeit", "gleichmaessigkeit", "anschlaege", "dauer", "lektion"];
   const ergebnisse = $app.findRecordsByFilter("tipp_ergebnisse", filter, "zeitpunkt", 50000, 0, params).map((r) => {
     const z = { schueler: r.getString("schueler"), satzzeichen: r.getBool("satzzeichen"), zahlen: r.getBool("zahlen"), bestwert: r.getBool("bestwert") };
     for (const f of felder) z[f] = r.get(f);

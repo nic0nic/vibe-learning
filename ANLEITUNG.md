@@ -17,7 +17,8 @@ vibe-learning/
 ├── pb_migrations/         legt beim ersten Start automatisch die Tabellen an
 │   ├── 1760860000_trainer_init.js
 │   ├── 1760990000_konten_lehrkraefte.js
-│   └── 1793700000_tippen.js   Tabellen tipp_ergebnisse und tipp_stand
+│   ├── 1793700000_tippen.js   Tabellen tipp_ergebnisse und tipp_stand
+│   └── 1793710000_tippen_lektion.js  Feld lektion (Lektion üben)
 ├── pb_public/             die Webseiten
 │   ├── index.html             Startseite: alle Bereiche mit ihren Übungen
 │   ├── katalog.js             Liste aller Bereiche und Tools (hier neue Tools eintragen)
@@ -47,6 +48,7 @@ vibe-learning/
 │   │   └── lib/                   sql.js (SQLite im Browser) und Autovervollständigung (CodeMirror)
 │   ├── tippen/                Tippen
 │   │   ├── index.html             Übersicht des Bereichs
+│   │   ├── lektionen.html         „Lektion üben“ (TIPP10-Lektionen, Daten in lektionen/, GPL-2.0)
 │   │   └── pockettype.html …      Tipptrainer pockettype, gebaut im eigenen Repo (GPL-3.0),
 │   │                              siehe LICENSE.txt und QUELLE.txt dort; nie von Hand ändern
 │   └── schaltungen/           noch leer
