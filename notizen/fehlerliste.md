@@ -27,6 +27,11 @@ Gesammelt im Thread „Aufbau der Seite“. Umgesetzt wird erst, wenn die Lehrkr
 
 ### Version vom 03.11.
 
+26. **Tipp-Aufgabe: Fortschritt speichern, kein versehentlicher Neustart** (gewünscht 03.11.)
+    - Fortschritt nach jedem Wort (localStorage `tippaufgabe-stand`, über sync.js auf dem Server); weiter beim nächsten Wort nach Verlassen, Neuladen oder an einem anderen Rechner. Die Teile ergeben zusammen einen Durchgang.
+    - Neustart während des Durchgangs gesperrt (Hinweis), Tab ohne Wirkung, Neustart-Hinweis ausgeblendet. Nach dem vollständigen Text nur „Verbesserungsversuch starten“.
+    Betrifft pockettype (aufgabe.ts, test-logic.ts, test-result.html).
+
 25. **Tippen: Aufgabe zum Abschreiben** (gewünscht 03.11.)
     - Verwaltung → Auswertung → Tippen → Übung „Aufgabe“: Aufgaben der Klasse anlegen (Titel, Text, Abgabe bis), beenden/wieder öffnen, löschen. Statistik je Schüler: fertig, Durchgänge, Bestwert und Ø Wörter/min, Bestwert Anschläge/min, Genauigkeit, schnellste Zeit, rechtzeitig, erster Durchgang, abgebrochen.
     - Menüpunkt „Aufgabe“ unter Tippen nur, wenn die Klasse eine aktive Aufgabe hat: katalog.js `bedingt: true`, nav.js blendet aus, sync.js fragt /api/trainer/sichtbar.
