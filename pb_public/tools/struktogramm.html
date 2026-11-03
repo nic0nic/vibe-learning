@@ -10,7 +10,7 @@
   Zeichnen und Export: struktogramm.js. Gespeichert wird im Browser (strukto-diagramm),
   über PocketBase pro Schüler. python-struktogramm.html übergibt Diagramme über sessionStorage.
   Tastatur: Pfeiltasten wechseln zwischen Bauteilen und Lücken, Buchstaben fügen in Lücken ein
-  (TASTE_LEISTE), Enter bearbeitet den Text und kehrt zurück.
+  (TASTE_LEISTE), Enter bearbeitet den Text und kehrt zurück, D dupliziert, Entf löscht.
 -->
 <script src="../katalog.js"></script>
 <script src="../nav.js"></script>
@@ -42,6 +42,9 @@ document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: da
 .teil span{flex:1}
 .teil kbd{flex:none}
 .geist.nein{opacity:.55}
+.st-schreibt #ueber .auswahl rect{stroke-dasharray:8 5}
+.st-schreibt .panel textarea:focus,.st-schreibt .panel input:focus{outline:3px solid var(--marke);outline-offset:1px}
+.zustand .ja{display:none} .st-schreibt .zustand .ja{display:inline} .st-schreibt .zustand .nicht{display:none}
 .panel{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px;position:sticky;top:12px;display:flex;flex-direction:column;gap:10px}
 .panel h3{margin:0;font:800 15px var(--mono)}
 .panel p{margin:0}
@@ -170,6 +173,7 @@ function markiere(g, art, x, y, w, h){
     r({x: x + 2, y: y - 3, width: Math.max(0, w - 4), height: 6, rx: 3, fill: a});
   }
   else if (art === 'quelle') r({x, y, width: w, height: h, fill: farbe('--panel', '#fff'), 'fill-opacity': 0.7, stroke: a, 'stroke-width': 2, 'stroke-dasharray': '6 4'});
+  grp.classList.add(art);
   if (art === 'luecke' || art === 'leer') grp.classList.add('puls');
   g.appendChild(grp);
   return grp;
@@ -217,6 +221,10 @@ function verschieben(el, liste, i){
     auswahl = {el};
   });
   panel();
+}
+function duplizieren(fokus){
+  const t = auswahlTreffer();
+  if (t) einfuegen(Strukto.pruefe({kinder: [t.el]}).kinder[0], t.liste, t.i + 1, fokus);
 }
 // Löschen: danach ist die Lücke an derselben Stelle ausgewählt
 function loeschen(){
@@ -294,12 +302,21 @@ function bearbeiten(){
   if (ta.value === Strukto.neu(t.el.typ).text) ta.select(); else ta.setSelectionRange(ta.value.length, ta.value.length);
 }
 function zumBild(){ gruppe = null; $('#bild').focus({preventScroll: true}); }
+// Schreibt jemand im Textfeld rechts, ist das Bauteil im Struktogramm gestrichelt und das Feld hervorgehoben
+const istFeld = el => !!(el && el.closest && el.closest('#panel') && el.matches('textarea, input'));
+document.addEventListener('focusin', e => { if (istFeld(e.target)) document.documentElement.classList.add('st-schreibt'); });
+document.addEventListener('focusout', e => { if (istFeld(e.target)) document.documentElement.classList.remove('st-schreibt'); });
+document.addEventListener('keydown', e => {
+  if (!istFeld(document.activeElement) || !((e.key === 'Enter' && !e.shiftKey) || e.key === 'Escape')) return;
+  e.preventDefault(); e.stopImmediatePropagation();
+  zumBild();
+}, true);
 const TASTEN = Object.fromEntries(Object.entries(TASTE_LEISTE).map(([typ, k]) => [k.toLowerCase(), typ]));
 
 /* ---------- Eigenschaften ---------- */
 const HILFE = `<p class="hinweis"><b>Tastatur:</b> ↑ ↓ wechselt zwischen Bauteilen und Lücken, ← → zwischen den Spalten einer Verzweigung oder Fallauswahl.</p>
   <p class="hinweis">In einer Lücke: <kbd>A</kbd> Anweisung, <kbd>V</kbd> Verzweigung, <kbd>F</kbd> Fallauswahl, <kbd>K</kbd> kopfgesteuerte, <kbd>U</kbd> fußgesteuerte Schleife, <kbd>R</kbd> Aufruf, <kbd>X</kbd> Aussprung, <kbd>B</kbd> Block.</p>
-  <p class="hinweis"><kbd>Enter</kbd> Text bearbeiten, noch einmal <kbd>Enter</kbd> zurück (Zeilenumbruch: Umschalt+Enter). <kbd>Entf</kbd> löscht, Strg+Z macht rückgängig.</p>`;
+  <p class="hinweis"><kbd>Enter</kbd> Text bearbeiten, noch einmal <kbd>Enter</kbd> zurück (Zeilenumbruch: Umschalt+Enter). <kbd>D</kbd> dupliziert, <kbd>Entf</kbd> löscht, Strg+Z macht rückgängig.</p>`;
 function panel(fokus){
   const p = $('#panel'), t = auswahlTreffer();
   if (!t){
@@ -319,19 +336,16 @@ function panel(fokus){
     <div class="zeile">
       <button class="btn" id="hoch" type="button" title="nach oben"${t.i === 0 ? ' disabled' : ''}>↑</button>
       <button class="btn" id="runter" type="button" title="nach unten"${t.i === t.liste.length - 1 ? ' disabled' : ''}>↓</button>
-      <button class="btn" id="kopie" type="button">Duplizieren</button>
+      <button class="btn" id="kopie" type="button" title="Duplizieren (D)">Duplizieren</button>
       <button class="btn" id="weg" type="button">Löschen</button>
     </div>
-    <p class="hinweis"><kbd>Enter</kbd> bearbeiten / zurück, <kbd>Entf</kbd> löschen, Pfeiltasten wechseln.</p>`;
+    <p class="hinweis zustand"><span class="nicht"><kbd>Enter</kbd> Text bearbeiten, <kbd>D</kbd> duplizieren, <kbd>Entf</kbd> löschen, Pfeiltasten wechseln.</span><span class="ja">Du schreibst gerade. <kbd>Enter</kbd> fertig (Zeilenumbruch: Umschalt+Enter).</span></p>`;
   const ta = $('#text');
   ta.addEventListener('input', () => aendern(() => { el.text = ta.value; }, 'text'));
   ta.addEventListener('focus', () => { gruppe = null; });
-  const zurueckTaste = e => { if ((e.key === 'Enter' && !e.shiftKey) || e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); zumBild(); } };
-  ta.addEventListener('keydown', zurueckTaste);
   if (fokus){ ta.focus(); ta.select(); }
   p.querySelectorAll('[data-fall]').forEach(inp => {
     inp.addEventListener('focus', () => { gruppe = null; });
-    inp.addEventListener('keydown', zurueckTaste);
     inp.addEventListener('input', () => aendern(() => { el.faelle[+inp.dataset.fall].text = inp.value; }, 'fall' + inp.dataset.fall));
   });
   p.querySelectorAll('[data-weg]').forEach(b => b.addEventListener('click', () => {
@@ -344,7 +358,7 @@ function panel(fokus){
   an('tauschen', () => { aendern(() => { [el.ja, el.nein] = [el.nein, el.ja]; }); });
   an('hoch', () => { aendern(() => { t.liste.splice(t.i, 1); t.liste.splice(t.i - 1, 0, el); }); panel(); });
   an('runter', () => { aendern(() => { t.liste.splice(t.i, 1); t.liste.splice(t.i + 1, 0, el); }); panel(); });
-  an('kopie', () => { einfuegen(Strukto.pruefe({kinder: [el]}).kinder[0], t.liste, t.i + 1); });
+  an('kopie', () => duplizieren(true));
   an('weg', loeschen);
 }
 
@@ -399,7 +413,7 @@ function zugEnde(){
   if (!z) return;
   if (!z.aktiv){
     if (z.typ) neuEinfuegen(z.typ);
-    else { auswahl = z.treffer; zeichnen(); panel(); }
+    else klickAuf(z.treffer);
     return;
   }
   if (!z.ziel) return;
@@ -433,9 +447,15 @@ $('#bild').addEventListener('pointerdown', e => {
   if (!tr){ auswahl = null; zeichnen(); panel(); return; }
   // Elemente nur mit der Maus verschieben; am Handy bleibt Wischen zum Blättern (↑ ↓ im Bearbeiten-Feld)
   if (tr.el && e.pointerType === 'mouse'){ e.preventDefault(); zugStart(e, {el: tr.el, treffer: tr}); return; }
-  auswahl = tr; zeichnen(); panel();
+  klickAuf(tr);
 });
-$('#bild').addEventListener('dblclick', bearbeiten);
+let letzterKlick = {el: null, t: 0};
+function klickAuf(tr){
+  const doppelt = tr.el && letzterKlick.el === tr.el && Date.now() - letzterKlick.t < 450;
+  letzterKlick = {el: tr.el, t: Date.now()};
+  auswahl = tr; zeichnen(); panel();
+  if (doppelt) bearbeiten();
+}
 
 /* ---------- Leiste oben ---------- */
 $('#name').addEventListener('focus', () => { gruppe = null; });
@@ -497,6 +517,7 @@ document.addEventListener('keydown', e => {
     return;
   }
   if ((e.key === 'Delete' || e.key === 'Backspace') && auswahlTreffer()){ e.preventDefault(); loeschen(); return; }
+  if (e.key.toLowerCase() === 'd' && auswahlTreffer()){ e.preventDefault(); duplizieren(false); zumBild(); return; }
   if (e.key === 'Escape' && auswahl){ auswahl = null; zeichnen(); panel(); }
 });
 

@@ -31,6 +31,7 @@ Gesammelt im Thread „Aufbau der Seite“. Umgesetzt wird erst, wenn die Lehrkr
     - Beim Ziehen pulsierende orange Marke an der künftigen Stelle (leeres Feld: gestrichelter Kasten), das verschobene Bauteil gestrichelt; Marken in eigener Farbe `--marke`.
     - Tastatur: ↑ ↓ abwechselnd Lücken und Bauteile (in Verzweigung/Fallauswahl links), ← → Spalte wechseln; in einer Lücke A V F K U R X B fügen ein; Enter bearbeitet den Text, nochmal Enter zurück; Entf löscht, danach ist die Lücke ausgewählt.
     - Fußgesteuerte Schleife hat U (F ist die Fallauswahl).
+    - Nachbesserung: Schreibzustand sichtbar (Bauteil gestrichelt, Textfeld orange umrandet, Hinweis „Du schreibst gerade“), Enter/Esc in den Textfeldern zentral abgefangen, Doppelklick öffnet das Textfeld, D dupliziert.
     Betrifft tools/struktogramm.html, struktogramm.css.
 
 28. **Menü, Farben, Exportfarben** (gewünscht 03.11.)
