@@ -4,6 +4,11 @@ Gesammelt im Thread „Aufbau der Seite“. Umgesetzt wird erst, wenn die Lehrkr
 
 ## Offen
 
+30. **Versuch: Berichte im Browser** (gewünscht 04.11., nur auf Branch `versuch-berichte`)
+    - `datenbanken/bericht.html`: Bericht aus einer Abfrage an `filme`, Entwurf mit pdfme (MIT, `lib/pdfme.min.js`, gebaut mit `werkzeuge/pdfme/bauen.sh`), Seitenansicht als PDF.
+    - Arten: Liste (Tabelle, Seitenumbruch automatisch) und eine Seite je Datensatz (Textfelder mit Feldname = Spalte).
+    - Offen für die Entscheidung: keine Gruppierung, pdfme.min.js 7,5 MB (2,5 MB gepackt), PDF mit 888 Zeilen dauert etwa 13 s, Einzeldateien bewusst noch nicht neu erzeugt.
+
 13. **Funktionen: Erarbeitung MITTELWERT neu ordnen** (gewünscht 22.10., Thread „Funktionen-Trainer“)
     - Zuerst nur die MITTELWERT-Funktion bilden.
     - Danach erst den Teil „leere Zellen zählen nicht mit“.
