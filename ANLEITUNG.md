@@ -1,6 +1,6 @@
 # vibe learning mit PocketBase hosten (Manjaro Linux)
 
-Diese Anleitung zeigt, wie du die Übungsplattform „vibe learning“ mit PocketBase auf einem Manjaro-Rechner betreibst. Die Übungen sind nach Bereichen des Lehrplans geordnet (Excel, Python, Datenbanken, Tippen …); oben auf jeder Seite ist eine Menüleiste, deren Bereiche beim Darüberfahren mit der Maus ihre Übungen zeigen. Schüler melden sich mit einem Zugangscode an. Ihr Fortschritt wird auf dem Server gespeichert, und du siehst im Lehrerbereich, wer wann wie viele Aufgaben gelöst hat.
+Diese Anleitung zeigt, wie du die Übungsplattform „vibe learning“ mit PocketBase auf einem Manjaro-Rechner betreibst. Die Übungen sind nach Fächern (IT, BWR) und darin nach Bereichen des Lehrplans geordnet (z. B. Excel, Python, Datenbanken, Tippen); oben auf jeder Seite ist eine Menüleiste mit dem Fach-Menü vorne, deren Bereiche beim Darüberfahren mit der Maus ihre Übungen zeigen. Schüler melden sich mit einem Zugangscode an. Ihr Fortschritt wird auf dem Server gespeichert, und du siehst im Lehrerbereich, wer wann wie viele Aufgaben gelöst hat.
 
 Getestet mit **PocketBase 0.40.5**. Nötig ist mindestens Version **0.23**, weil ältere Versionen eine andere Schnittstelle für Erweiterungen haben.
 
@@ -354,6 +354,8 @@ PocketBase ist noch in Version 0.x. Größere Sprünge (z. B. 0.40 → 0.41) kö
 
 **Neue Version einspielen** (z. B. aus einer neuen ZIP): vorher ein Backup machen (siehe unten), dann `pb_hooks`, `pb_migrations` und `pb_public` ersetzen und PocketBase **neu starten** (`sudo systemctl restart vibe-learning` bzw. Strg+C und neu starten). Neue Tabellen legt PocketBase beim Start selbst an, bestehende Klassen, Codes und Fortschritte bleiben erhalten.
 
+**Einmalig beim Umstieg auf die Fächer-Ordner (04.11.):** Die IT-Seiten liegen jetzt in `pb_public/IT/`. Nach dem Kopieren die alten Ordner `excel`, `python`, `datenbanken`, `tippen` und `tools` direkt in `pb_public` löschen, z. B. `sudo rm -r /srv/vibe-learning/pb_public/{excel,python,datenbanken,tippen,tools}`. Sie werden nicht mehr gebraucht: Alte Adressen leitet `pb_hooks/weiterleitung.pb.js` auf `/IT/…` weiter.
+
 **Übungen ohne Server weitergeben:** Im Ordner `standalone/` liegt jede Übung als eine einzige HTML-Datei, sortiert wie auf der Webseite, z. B. `standalone/IT/excel/wenn.html`. Sie läuft per Doppelklick, ohne Menü und ohne Anmeldung; der Fortschritt bleibt im Browser. Die Dateien werden mit `python3 werkzeuge/einzeldateien.py` erzeugt und nie von Hand geändert (siehe PRINZIPIEN.md).
 
 **Umstieg vom alten Ordnernamen `excel-trainer`:** Der Ordner heißt jetzt `vibe-learning`. Bei einer Installation im Benutzerordner PocketBase beenden, `mv ~/excel-trainer ~/vibe-learning`, dann wie oben `pb_hooks`, `pb_migrations` und `pb_public` ersetzen und neu starten; `pb_data` wandert mit und bleibt erhalten. Läuft der Dienst unter `/srv/excel-trainer`, kann alles so bleiben, wie es ist: Name von Ordner, Dienst und Systembenutzer spielt für die Seite keine Rolle. In diesem Fall in den Befehlen dieser Anleitung `vibe-learning` durch `excel-trainer` ersetzen.
@@ -400,7 +402,7 @@ sudo chown -R vibe-learning:vibe-learning /srv/vibe-learning/pb_public
 | Problem | Ursache / Lösung |
 |---|---|
 | Startseite zeigt „404“ | `--publicDir` fehlt oder zeigt auf den falschen Ordner. |
-| Trainer zeigt keine Anmeldung | Seite wurde nicht über den Server geöffnet (z. B. als Datei), oder `sync.js` fehlt in `pb_public`. Die Trainer liegen in Unterordnern und laden `../sync.js`. |
+| Trainer zeigt keine Anmeldung | Seite wurde nicht über den Server geöffnet (z. B. als Datei), oder `sync.js` fehlt in `pb_public`. Die Trainer liegen in Unterordnern und laden `sync.js` aus dem Hauptordner (`../../sync.js`, bei BWR `../../../sync.js`). |
 | „Diesen Code oder Benutzernamen gibt es nicht“ | Tippfehler (Groß-/Kleinschreibung ist egal), Zugang gesperrt oder gelöscht. |
 | Verwaltung: „Anmeldung abgelaufen“ | Neu anmelden. Nach einer Passwortänderung durch den Admin sind Lehrkräfte überall abgemeldet. |
 | Codes erzeugen meldet „not found“ | Nach dem Austauschen von `pb_hooks` PocketBase einmal von Hand neu starten. |

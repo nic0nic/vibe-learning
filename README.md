@@ -1,10 +1,10 @@
 # vibe learning
 
-Übungen für den IT-Unterricht (Excel, Python, Datenbanken, Tippen und Tools). Mit KI erstellt.
+Übungen für den Unterricht: IT (Excel, Python, Datenbanken, Tippen und Tools) und BWR (Jahrgangsstufe 9). Mit KI erstellt.
 
 ## Einzelne Übung nutzen (ohne Server)
 
-Im Ordner [`standalone/`](standalone/) liegt jede Übung als eine HTML-Datei, in Unterordnern wie auf der Webseite (`excel/`, `python/`, `datenbanken/`). Datei öffnen, oben rechts auf *Download raw file* klicken und per Doppelklick im Browser starten. Der Fortschritt bleibt im Browser, es gibt keine Anmeldung.
+Im Ordner [`standalone/`](standalone/) liegt jede Übung als eine HTML-Datei, in Unterordnern wie auf der Webseite (z. B. `IT/excel/`, `IT/python/`, `IT/datenbanken/`). Datei öffnen, oben rechts auf *Download raw file* klicken und per Doppelklick im Browser starten. Der Fortschritt bleibt im Browser, es gibt keine Anmeldung.
 
 ## Ganze Plattform mit Anmeldung (PocketBase)
 
