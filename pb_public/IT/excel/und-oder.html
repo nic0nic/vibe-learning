@@ -1,0 +1,1337 @@
+<!doctype html>
+<html lang="de" data-trainer="uo">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UND/ODER – vibe learning</title>
+<script src="../../katalog.js"></script>
+<script src="../../nav.js"></script>
+<script src="../../sync.js"></script>
+<script>
+(function(){var t=null;try{t=localStorage.getItem('wenn-theme');}catch(e){}
+document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');})();
+</script>
+<link rel="stylesheet" href="basis.css">
+<link rel="stylesheet" href="bausteine.css">
+<style>
+.block.fn{background:var(--blk-fn);border-radius:14px;padding:6px 12px;gap:6px;box-shadow:inset 0 -3px 0 rgba(0,0,0,.2);flex-wrap:wrap}
+.block.fn .fname,.block.fn .fsep{font-size:19px}
+.block.fn .slot.hex{min-width:150px;min-height:48px}
+.block.fn .slot.hex.dummy{min-width:110px;min-height:38px;opacity:.7}
+.slot.fnslot{min-width:260px;min-height:60px;border:2px dashed var(--slot-border);border-radius:16px;background:var(--slot);padding:3px}
+.slot.fnslot.drop-hover{border-color:var(--accent)}
+.fixv{font:700 20px var(--mono);padding:6px 12px;border-radius:999px;background:var(--panel2);border:1px solid var(--border)}
+.fixv.c-then{background:var(--then);color:var(--on-color);border-color:transparent}
+.fixv.c-else{background:var(--else);color:var(--on-color);border-color:transparent}
+.block.fn.r-cond .slot.hex::after{background:color-mix(in srgb,var(--cond) 55%,#fff)}
+.cases{margin:8px 0}
+.cases summary{cursor:pointer;color:var(--muted);font-size:14px}
+.tt{max-width:100%}
+details.help{margin-top:10px;background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:8px 12px}
+details.help summary{cursor:pointer;font-weight:600;color:var(--muted)}
+details.help p,details.help ul{margin:8px 0}
+.tasktext ul{margin:6px 0;padding-left:22px}
+.grid.sheet td.hd{font-weight:600}
+.grid.sheet td.res{background:var(--panel2)}
+.grid.sheet td.filled{color:var(--then);font-weight:700}
+.opts{display:flex;flex-wrap:wrap;gap:10px}
+.opts.mono .opt{font:600 16px var(--mono)}
+.opt.small{padding:6px 14px;font-size:15px}
+.tscroll{overflow-x:auto}
+.truth{border-collapse:collapse;font-size:15px}
+.truth th,.truth td{border:1px solid var(--border);padding:6px 10px;text-align:center}
+.truth th{background:var(--panel2);font-weight:600}
+.truth th.fillh{background:color-mix(in srgb,var(--accent) 14%,var(--panel2))}
+.truth td.nm{text-align:left;font-weight:600}
+.tv{font:700 13px var(--mono);padding:3px 8px;border-radius:6px}
+.tv.w,.tcell.w{color:var(--then)}
+.tv.f,.tcell.f{color:var(--else)}
+.tcell{font:700 14px var(--mono);min-width:86px;padding:7px 10px;border-radius:8px;border:2px dashed var(--slot-border);background:var(--slot);cursor:pointer}
+.tcell.w,.tcell.f{border-style:solid}
+.tcell.bad{border-color:var(--else);background:color-mix(in srgb,var(--else) 15%,var(--slot))}
+.cls{display:grid;gap:8px}
+.clsrow{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:var(--panel)}
+.clsrow.bad{border-color:var(--else)}
+.clsrow.good{border-color:var(--then)}
+.clst{flex:1 1 320px}
+.clsb{display:flex;gap:6px}
+.condrow{margin-bottom:12px}
+.condrow label{display:block;font-weight:600;margin-bottom:4px}
+.condin{width:100%;font:700 19px var(--mono);padding:10px 12px;border-radius:10px;border:2px solid var(--slot-border);background:var(--slot);color:var(--text);outline:none}
+.condin:focus{border-color:var(--accent)}
+.condin.ok{border-color:var(--then)}
+.condin.err{border-color:var(--else)}
+.condmsg{font-size:14px;margin-top:4px;min-height:1em}
+.condin.ok + .condmsg{color:var(--then)}
+.picker.steps{width:min(380px,calc(100vw - 44px));max-height:70vh;overflow:auto;display:flex;flex-direction:column;gap:4px}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <linearGradient id="fg" x1="0" y1="1" x2="0" y2="0">
+    <stop offset="0" stop-color="#d9230f"/><stop offset=".55" stop-color="#ff7a00"/><stop offset="1" stop-color="#ffd23f"/>
+  </linearGradient></defs></svg>
+
+<header>
+  <div class="hdr-left">
+    <div class="brand"><span>UND</span>/<span>ODER</span></div>
+    <div class="modes" role="group" aria-label="Modus">
+      <button data-mode="lernen">Erarbeitung</button><button data-mode="pfad">Übungen</button><button data-mode="endlos">Endlos</button>
+    </div>
+  </div>
+  <div class="hdr-right">
+    <button class="iconbtn" id="themeBtn" aria-label="Hell/Dunkel umschalten"></button>
+    <div class="flames" id="flames" aria-label="Stufe wählen"></div>
+  </div>
+</header>
+
+<main>
+  <section class="card">
+    <div class="meta">
+      <span class="lvlname" id="lvlname"></span>
+      <span id="taskmeta"></span>
+    </div>
+    <div class="taskrow">
+      <p class="tasktext" id="tasktext"></p>
+      <div id="grid"></div>
+    </div>
+  </section>
+
+  <section class="card" id="workcard">
+    <div class="worktitle"><span id="wtlabel">Deine Formel</span> <span class="wthint" id="wthint"></span></div>
+    <div id="work"></div>
+  </section>
+
+  <div class="pools" id="pools"></div>
+
+  <div class="actions">
+    <button class="btn primary" id="checkBtn">Prüfen</button>
+    <button class="btn" id="resetBtn">Zurücksetzen</button>
+    <span class="spacer"></span>
+    <button class="btn" id="skipBtn" title="Neue Aufgabe – die Serie beginnt wieder bei 0">Andere Aufgabe</button>
+    <button class="btn" id="prevBtn" aria-label="Vorherige Aufgabe">◀</button>
+    <button class="btn" id="nextBtn">Nächste Aufgabe ▶</button>
+  </div>
+  <div id="fb"></div>
+</main>
+
+<div class="dock" id="dock"></div>
+
+
+<script src="basis.js"></script>
+<script src="bausteine.js"></script>
+
+<!-- ===================== Kern: Parser & Auswertung ===================== -->
+<script id="core">
+function tokenize(src){
+  const t = []; let i = 0; const n = src.length;
+  const isL = ch => /[A-Za-zÄÖÜäöüß$_]/.test(ch);
+  while (i < n){
+    const c = src[i];
+    if (c === ' ' || c === '\t' || c === '\n' || c === SEP){ i++; continue; }
+    const start = i;
+    if (c === '"'){
+      i++; let v = ''; let closed = false;
+      while (i < n){
+        if (src[i] === '"'){ if (src[i+1] === '"'){ v += '"'; i += 2; continue; } closed = true; i++; break; }
+        if (src[i] !== SEP) v += src[i];
+        i++;
+      }
+      if (!closed) throw new FErr('Ein Anführungszeichen wurde geöffnet, aber nicht wieder geschlossen.');
+      t.push({type:'str', value:v, start, end:i}); continue;
+    }
+    if (/[0-9]/.test(c)){
+      let j = i; while (j < n && /[0-9]/.test(src[j])) j++;
+      if (src[j] === ',' && /[0-9]/.test(src[j+1] || '')){ j++; while (j < n && /[0-9]/.test(src[j])) j++; }
+      if (src[j] === '.' && /[0-9]/.test(src[j+1] || '')) throw new FErr('Dezimalzahlen schreibt man im deutschen Excel mit Komma, z. B. 4,95.');
+      if (j < n && isL(src[j])){
+        let k = j; while (k < n && /[A-Za-zÄÖÜäöüß0-9]/.test(src[k])) k++;
+        const w = src.slice(i, k);
+        throw new FErr(`„${w}“ ist keine Zahl. Text muss in Anführungszeichen stehen: "${w}"`);
+      }
+      t.push({type:'num', value:parseFloat(src.slice(i, j).replace(',', '.')), start, end:j}); i = j; continue;
+    }
+    if (isL(c)){
+      let j = i; while (j < n && /[A-Za-zÄÖÜäöüß$_0-9]/.test(src[j])) j++;
+      t.push({type:'id', value:src.slice(i, j), start, end:j}); i = j; continue;
+    }
+    const two = src.substr(i, 2);
+    if (two === '=>') throw new FErr('Das Zeichen „=>“ gibt es in Excel nicht. Meinst du „>=“?');
+    if (two === '=<') throw new FErr('Das Zeichen „=<“ gibt es in Excel nicht. Meinst du „<=“?');
+    if (two === '><') throw new FErr('Das Zeichen „><“ gibt es in Excel nicht. „Ungleich“ schreibt man „<>“.');
+    if (two === '!=') throw new FErr('„Ungleich“ schreibt man in Excel „<>“.');
+    if (two === '&&' || two === '||') throw new FErr('In Excel verknüpft man Bedingungen mit UND(…; …) bzw. ODER(…; …).');
+    if (two === '<=' || two === '>=' || two === '<>'){ t.push({type:'op', value:two, start, end:i+2}); i += 2; continue; }
+    if ('<>='.includes(c)){ t.push({type:'op', value:c, start, end:i+1}); i++; continue; }
+    if ('();,'.includes(c)){ t.push({type:c, value:c, start, end:i+1}); i++; continue; }
+    if (c === '€') throw new FErr('Das €-Zeichen gehört nicht in die Formel – schreibe nur die Zahl.');
+    if (c === '%') throw new FErr('Das %-Zeichen gehört hier nicht in die Formel – schreibe nur die Zahl.');
+    throw new FErr(`Das Zeichen „${c}“ ist an dieser Stelle nicht erlaubt.`);
+  }
+  return t;
+}
+
+const FUNCS = {WENN:[3,3], UND:[2,30], ODER:[2,30], NICHT:[1,1]};
+const ENGLISH = {IF:'WENN', AND:'UND', OR:'ODER', NOT:'NICHT'};
+const WENN_PART = ['Die Prüfung (der erste Teil von WENN) fehlt.', 'Der Dann_Wert (der zweite Teil von WENN) fehlt.', 'Der Sonst_Wert (der dritte Teil von WENN) fehlt.'];
+const INFIX = 'UND bzw. ODER stehen in Excel vor den Bedingungen: UND(Bedingung1; Bedingung2).';
+
+/* Allgemeiner Parser: =WENN(…) mit beliebig verschachtelten WENN/UND/ODER/NICHT */
+function parseFormula(raw){
+  const src = normQuotes(raw);
+  const t = tokenize(src); let p = 0;
+  const peek = () => t[p], next = () => t[p++];
+  if (!t.length) throw new FErr('Es wurde noch nichts eingegeben.');
+  if (!(t[0].type === 'op' && t[0].value === '=')) throw new FErr('Eine Formel beginnt in Excel immer mit einem „=“.');
+  p = 1;
+  const f = peek();
+  if (!f) throw new FErr('Nach dem „=“ fehlt die Funktion WENN.');
+  if (!(f.type === 'id' && f.value.toUpperCase() === 'WENN')){
+    if (f.type === 'id' && f.value.toUpperCase() === 'IF') throw new FErr('Im deutschen Excel heißt die Funktion WENN (nicht IF).');
+    throw new FErr('Die Formel muss mit =WENN( beginnen.');
+  }
+  const ast = expr(null);
+  if (p < t.length){
+    if (peek().type === ')') throw new FErr('Hier ist eine schließende Klammer „)“ zu viel.');
+    throw new FErr('Nach der letzten schließenden Klammer darf nichts mehr stehen.');
+  }
+  return ast;
+
+  function isLogicWord(k){ return k && k.type === 'id' && /^(UND|ODER|AND|OR)$/i.test(k.value) && !(t[p+1] && t[p+1].type === '('); }
+  function expr(ctx){
+    if (isLogicWord(peek())) throw new FErr(INFIX);
+    const a = term(ctx);
+    const k = peek();
+    if (k && k.type === 'op'){
+      next();
+      const b = term(ctx);
+      const k2 = peek();
+      if (k2 && k2.type === 'op') throw new FErr('Eine Bedingung hat nur ein Vergleichszeichen. Für „zwischen“ nutzt man UND, z. B. UND(A1>=13; A1<=17).');
+      if (isLogicWord(k2)) throw new FErr(INFIX);
+      return {k:'cmp', op:k.value, a, b, start:a.start, end:b.end};
+    }
+    if (isLogicWord(k)) throw new FErr(INFIX);
+    return a;
+  }
+  function missing(ctx){
+    if (!ctx) return 'Die Formel ist unvollständig.';
+    if (ctx.fn === 'WENN') return WENN_PART[Math.min(ctx.i, 2)];
+    if (ctx.fn === 'UND' || ctx.fn === 'ODER') return `In ${ctx.fn}(…) fehlt eine Bedingung.`;
+    return `In ${ctx.fn}(…) fehlt etwas.`;
+  }
+  function term(ctx){
+    const k = peek();
+    if (!k) throw new FErr('Die Formel ist unvollständig: ' + missing(ctx));
+    if (k.type === ';' || k.type === ')' || k.type === ',') throw new FErr(missing(ctx));
+    if (k.type === 'op') throw new FErr('Vor dem Vergleichszeichen fehlt etwas (z. B. die Zelle).');
+    if (k.type === '('){
+      next(); const e = expr(ctx); const c = next();
+      if (!c || c.type !== ')') throw new FErr('Eine Klammer wurde geöffnet, aber nicht geschlossen.');
+      return e;
+    }
+    next();
+    if (k.type === 'num') return {k:'lit', v:{t:'num', v:k.value}, start:k.start, end:k.end};
+    if (k.type === 'str') return {k:'lit', v:{t:'str', v:k.value}, start:k.start, end:k.end};
+    const u = k.value.toUpperCase();
+    if (peek() && peek().type === '(') return call(u, k);
+    if (FUNCS[u]) throw new FErr(`Nach ${u} folgt eine öffnende Klammer „(“.`);
+    if (u === 'WAHR') return {k:'lit', v:{t:'bool', v:true}, start:k.start, end:k.end};
+    if (u === 'FALSCH') return {k:'lit', v:{t:'bool', v:false}, start:k.start, end:k.end};
+    const m = k.value.match(CELL);
+    if (m && !(peek() && peek().type === 'id' && !isLogicWord(peek()))) return {k:'ref', v:(m[1] + m[2]).toUpperCase(), start:k.start, end:k.end};
+    while (peek() && (peek().type === 'id' || peek().type === 'num') && !isLogicWord(peek())) next();
+    const txt = src.slice(k.start, t[p-1].end).split(SEP).join('');
+    throw new FErr(`„${txt}“ ist Text und muss in Anführungszeichen stehen: "${txt}"`);
+  }
+  function call(name, tok){
+    if (ENGLISH[name]) throw new FErr(`Im deutschen Excel heißt die Funktion ${ENGLISH[name]} (nicht ${name}).`);
+    if (!FUNCS[name]) throw new FErr(`Die Funktion „${tok.value}“ gibt es hier nicht. Erlaubt sind WENN, UND und ODER.`);
+    next(); // (
+    const args = [], spans = [];
+    while (true){
+      const s = peek() ? peek().start : src.length;
+      const e = expr({fn:name, i:args.length});
+      args.push(e); spans.push([s, t[p-1].end]);
+      const k = next();
+      if (!k) throw new FErr(`Es fehlt die schließende Klammer „)“ von ${name}.`);
+      if (k.type === ';') continue;
+      if (k.type === ')') break;
+      if (k.type === ',') throw new FErr('Im deutschen Excel trennt man die Teile einer Funktion mit einem Semikolon „;“.');
+      throw new FErr(`In ${name}(…) fehlt zwischen zwei Teilen ein Semikolon „;“.`);
+    }
+    const [mn, mx] = FUNCS[name];
+    if ((name === 'UND' || name === 'ODER') && args.some(a => a.k === 'lit' && a.v.t === 'str'))
+      throw new FErr(`In ${name}(…) gehören nur Bedingungen. Wurde die Klammer von ${name} vielleicht nicht vor dem Dann_Wert geschlossen?`);
+    if (name === 'WENN' && args.length < 3) throw new FErr('WENN braucht drei Teile: Prüfung; Dann_Wert; Sonst_Wert.');
+    if (name === 'WENN' && args.length > 3) throw new FErr('WENN hat genau drei Teile – hier ist ein Semikolon zu viel.');
+    if (args.length < mn) throw new FErr(`${name} braucht mindestens zwei Bedingungen, getrennt durch „;“.`);
+    if (args.length > mx) throw new FErr(`${name} hat hier zu viele Teile.`);
+    return {k:'call', name, args, spans, start:tok.start, end:t[p-1].end};
+  }
+}
+
+/* Auswertung nach Excel-Regeln */
+const ERR = {t:'err', v:'#WERT!'};
+function toBool(v){ if (v.t === 'bool') return v.v; if (v.t === 'num') return v.v !== 0; return null; }
+function ev(n, env){
+  if (n.k === 'lit') return n.v;
+  if (n.k === 'ref'){ const x = env[n.v]; return x === undefined ? {t:'num', v:0} : x; }
+  if (n.k === 'cmp'){ const a = ev(n.a, env), b = ev(n.b, env); if (a.t === 'err') return a; if (b.t === 'err') return b; return {t:'bool', v:opTest(n.op, cmp(a, b))}; }
+  if (n.name === 'WENN'){ const c = ev(n.args[0], env); if (c.t === 'err') return c; const b = toBool(c); if (b === null) return ERR; return ev(n.args[b ? 1 : 2], env); }
+  const vals = n.args.map(a => ev(a, env));
+  if (vals.some(v => v.t === 'err')) return ERR;
+  const bs = vals.map(toBool); if (bs.includes(null)) return ERR;
+  if (n.name === 'UND') return {t:'bool', v:bs.every(Boolean)};
+  if (n.name === 'ODER') return {t:'bool', v:bs.some(Boolean)};
+  return {t:'bool', v:!bs[0]}; // NICHT
+}
+function usesFn(n, names){ return n.k === 'call' && (names.includes(n.name) || n.args.some(a => usesFn(a, names))) || n.k === 'cmp' && (usesFn(n.a, names) || usesFn(n.b, names)); }
+function fmtNode(n){
+  if (n.k === 'lit') return n.v.t === 'str' ? '"' + n.v.v.replace(/"/g, '""') + '"' : fmtVal(n.v);
+  if (n.k === 'ref') return n.v;
+  if (n.k === 'cmp') return fmtNode(n.a) + n.op + fmtNode(n.b);
+  return n.name + '(' + n.args.map(fmtNode).join(';') + ')';
+}
+
+function checkAgainst(src, task){
+  const ast = parseFormula(src);
+  const ref = parseFormula(task.sol);
+  const rows = task.tests.map(env => ({env, got:ev(ast, env), exp:ev(ref, env)}));
+  const fail = rows.find(r => !same(r.got, r.exp)) || null;
+  return {ast, rows, fail, ok:!fail, logic:usesFn(ast, ['UND', 'ODER'])};
+}
+</script>
+
+<!-- ===================== Szenarien & Aufgabenerzeugung ===================== -->
+<script id="scen">
+const HOW = 'Verwende dazu eine WENN-Funktion zusammen mit UND bzw. ODER.';
+const outs = (a, b) => `Ausgegeben werden soll ${C(a)} bzw. ${C(b)}.`;
+
+/* ---- Grundmengen ---- */
+const RIDES = [{n:'Feuerwirbel', h:1.1, a:6}, {n:'Blitzschlange', h:1.2, a:8}, {n:'Schwarzer Falke', h:1.3, a:10}, {n:'Donnerkeil', h:1.4, a:10}];
+const TARIFE = [{lo:6, hi:14, n:'Kindertarif'}, {lo:12, hi:17, n:'Jugendtarif'}, {lo:14, hi:17, n:'Jugendtarif'}, {lo:18, hi:25, n:'Studententarif'}];
+const KLIMA = [{lo:19, hi:22}, {lo:20, hi:23}, {lo:18, hi:21}];
+
+/* ---- Szenarien ----
+   build(p) liefert: comb, conds[{c (Zellindex), op, b, type, dp, lo, hi, values}], labels, resLabel, then, else, text(cells, out), resD */
+const SCEN = {
+  achterbahn: { name:'Achterbahn',
+    pick: r => ({ride:pick1(r, RIDES).n, v:ri(r, 0, 1)}),
+    build: p => { const k = RIDES.find(x => x.n === p.ride), h = fx(k.h, 2);
+      const V = pickV([
+        {comb:'UND', ops:['>=', '>='], then:'darf mitfahren', else:'darf nicht mitfahren', rule:`Mitfahren darf nur, wer mindestens ${h} m groß und mindestens ${k.a} Jahre alt ist.`},
+        {comb:'ODER', ops:['<', '<'], then:'darf nicht mitfahren', else:'darf mitfahren', rule:`Wer kleiner als ${h} m oder jünger als ${k.a} Jahre ist, darf nicht mitfahren.`}], p);
+      return {...V, conds:[{c:0, op:V.ops[0], b:k.h, type:'dec', dp:2, lo:0.95, hi:1.95}, {c:1, op:V.ops[1], b:k.a, type:'int', lo:4, hi:16}],
+        labels:['Größe (m)', 'Alter'], resLabel:'Achterbahn',
+        text:(c, o) => `In Zelle ${B(c[0])} steht die Körpergröße eines Kindes in Metern, in Zelle ${B(c[1])} sein Alter. Für die Achterbahn <i>${k.n}</i> gilt: ${V.rule} Entscheide in Zelle ${B(o)}, ob das Kind mitfahren darf. ${HOW} ${outs('darf mitfahren', 'darf nicht mitfahren')}`,
+        resD:['mitfahren', 'nicht mitfahren', 'ja', 'nein', 'zu klein', 'zu jung']}; } },
+
+  mofa: { name:'Mofa',
+    pick: r => ({v:ri(r, 0, 1)}),
+    build: p => {
+      const V = pickV([
+        {comb:'UND', c:[['>=', 15], ['=', 'ja']], then:'darf fahren', else:'darf nicht fahren', rule:'Ein Mofa darf fahren, wer mindestens 15 Jahre alt ist und eine Mofa-Prüfbescheinigung besitzt.'},
+        {comb:'ODER', c:[['<', 15], ['=', 'nein']], then:'darf nicht fahren', else:'darf fahren', rule:'Wer jünger als 15 Jahre ist oder keine Mofa-Prüfbescheinigung besitzt, darf kein Mofa fahren.'}], p);
+      return {...V, conds:[{c:0, op:V.c[0][0], b:V.c[0][1], type:'int', lo:12, hi:40}, {c:1, op:V.c[1][0], b:V.c[1][1], type:'text', values:['ja', 'nein']}],
+        labels:['Alter', 'Prüfbescheinigung'], resLabel:'Mofa',
+        text:(c, o) => `In Zelle ${B(c[0])} steht das Alter einer Person, in Zelle ${B(c[1])} steht ${C('ja')} oder ${C('nein')} – je nachdem, ob sie eine Mofa-Prüfbescheinigung besitzt. ${V.rule} Entscheide in Zelle ${B(o)}, ob die Person Mofa fahren darf. ${HOW} ${outs('darf fahren', 'darf nicht fahren')}`,
+        resD:['fahren', 'nicht fahren', 'ja', 'nein', 'erlaubt', 15]}; } },
+
+  kundenkarte: { name:'Kundenkarte',
+    pick: r => ({b:pick1(r, [30, 50, 100]), rate:pick1(r, [5, 10]), v:ri(r, 0, 1)}),
+    build: p => {
+      const V = pickV([
+        {comb:'UND', c:[['=', 'ja'], ['>=', p.b]], then:p.rate, else:0, rule:`${p.rate} % Rabatt gibt es nur mit Kundenkarte und ab einem Einkaufswert von ${p.b} €, sonst 0 %.`},
+        {comb:'ODER', c:[['=', 'nein'], ['<', p.b]], then:0, else:p.rate, rule:`Ohne Kundenkarte oder bei einem Einkaufswert unter ${p.b} € gibt es keinen Rabatt, sonst ${p.rate} %.`}], p);
+      return {...V, conds:[{c:0, op:V.c[0][0], b:V.c[0][1], type:'text', values:['ja', 'nein']}, {c:1, op:V.c[1][0], b:V.c[1][1], type:'dec', dp:2, lo:5, hi:200}],
+        labels:['Kundenkarte', 'Einkauf (€)'], resLabel:'Rabatt (%)',
+        text:(c, o) => `In Zelle ${B(c[0])} steht, ob ein Kunde eine Kundenkarte hat (${C('ja')} oder ${C('nein')}), in Zelle ${B(c[1])} sein Einkaufswert in €. ${V.rule} Gib in Zelle ${B(o)} den Rabatt in Prozent als Zahl aus. ${HOW}`,
+        resD:[p.rate + ' %', String(p.rate), p.rate / 100, '0', 100, p.b]}; } },
+
+  versand_de: { name:'Versand ins Ausland',
+    pick: r => ({b:pick1(r, [29, 39, 50]), fee:pick1(r, [3.95, 4.95, 5.9]), v:ri(r, 0, 1)}),
+    build: p => { const ff = fx(p.fee, 2);
+      const V = pickV([
+        {comb:'UND', c:[['>=', p.b], ['=', 'Deutschland']], then:0, else:p.fee, rule:`Versandkostenfrei sind nur Bestellungen ab ${p.b} €, die nach Deutschland gehen. Alle anderen kosten ${ff} € Versand.`},
+        {comb:'ODER', c:[['<', p.b], ['<>', 'Deutschland']], then:p.fee, else:0, rule:`Liegt der Bestellwert unter ${p.b} € oder geht die Lieferung nicht nach Deutschland, kostet der Versand ${ff} €, sonst ist er kostenlos.`}], p);
+      return {...V, conds:[{c:0, op:V.c[0][0], b:V.c[0][1], type:'dec', dp:2, lo:5, hi:150}, {c:1, op:V.c[1][0], b:V.c[1][1], type:'text', values:['Deutschland', 'Österreich', 'Schweiz']}],
+        labels:['Bestellwert (€)', 'Land'], resLabel:'Versand (€)',
+        text:(c, o) => `In Zelle ${B(c[0])} steht der Bestellwert in €, in Zelle ${B(c[1])} das Lieferland (z. B. ${C('Deutschland')} oder ${C('Österreich')}). ${V.rule} Berechne in Zelle ${B(o)} die Versandkosten in € (als Zahl). ${HOW}`,
+        resD:['0', ff, 'kostenlos', ff + ' €', p.b, Math.round(p.fee)]}; } },
+
+  tarif: { name:'Eintrittstarif',
+    pick: r => ({t:ri(r, 0, TARIFE.length - 1), v:ri(r, 0, 1)}),
+    build: p => { const T = TARIFE[p.t];
+      const V = pickV([
+        {comb:'UND', c:[['>=', T.lo], ['<=', T.hi]], then:T.n, else:'Normaltarif', rule:`Der ${T.n} gilt für alle von ${T.lo} bis einschließlich ${T.hi} Jahren.`},
+        {comb:'ODER', c:[['<', T.lo], ['>', T.hi]], then:'Normaltarif', else:T.n, rule:`Wer jünger als ${T.lo} oder älter als ${T.hi} Jahre ist, zahlt den Normaltarif, alle anderen den ${T.n}.`}], p);
+      return {...V, conds:[{c:0, op:V.c[0][0], b:V.c[0][1], type:'int', lo:1, hi:80}, {c:0, op:V.c[1][0], b:V.c[1][1], type:'int', lo:1, hi:80}],
+        labels:['Alter'], resLabel:'Tarif',
+        text:(c, o) => `Im Kletterpark gibt es verschiedene Tarife. In Zelle ${B(c[0])} steht das Alter einer Person. ${V.rule} Gib in Zelle ${B(o)} den passenden Tarif aus. ${HOW} ${outs(T.n, 'Normaltarif')}`,
+        resD:['ermäßigt', 'Vollpreis', 'Normalpreis', 'Kinder', 'ja', 'nein']}; } },
+
+  raumklima: { name:'Raumklima',
+    pick: r => ({k:ri(r, 0, KLIMA.length - 1), v:ri(r, 0, 1)}),
+    build: p => { const K = KLIMA[p.k];
+      const V = pickV([
+        {comb:'UND', c:[['>=', K.lo], ['<=', K.hi]], then:'angenehm', else:'nicht angenehm', rule:`Angenehm ist eine Temperatur von ${K.lo} °C bis einschließlich ${K.hi} °C.`},
+        {comb:'ODER', c:[['<', K.lo], ['>', K.hi]], then:'nicht angenehm', else:'angenehm', rule:`Unter ${K.lo} °C oder über ${K.hi} °C ist es im Klassenzimmer nicht angenehm.`}], p);
+      return {...V, conds:[{c:0, op:V.c[0][0], b:V.c[0][1], type:'dec', dp:1, lo:15, hi:28}, {c:0, op:V.c[1][0], b:V.c[1][1], type:'dec', dp:1, lo:15, hi:28}],
+        labels:['Temperatur (°C)'], resLabel:'Raumklima',
+        text:(c, o) => `Ein Sensor misst die Temperatur im Klassenzimmer. Der Messwert in °C steht in Zelle ${B(c[0])}. ${V.rule} Gib in Zelle ${B(o)} eine Bewertung aus. ${HOW} ${outs('angenehm', 'nicht angenehm')}`,
+        resD:['zu warm', 'zu kalt', 'gut', 'schlecht', 'normal', 'unangenehm']}; } },
+
+  sportabzeichen: { name:'Sportabzeichen',
+    pick: r => ({s:pick1(r, [8.5, 9, 9.5]), w:pick1(r, [3.2, 3.5, 3.8]), v:ri(r, 0, 1)}),
+    build: p => { const ss = fx(p.s, 1), ww = fx(p.w, 2);
+      const V = pickV([
+        {comb:'UND', c:[['<=', p.s], ['>=', p.w]], then:'geschafft', else:'nicht geschafft', rule:`Geschafft hat es, wer die 50 m in höchstens ${ss} Sekunden läuft und mindestens ${ww} m weit springt.`},
+        {comb:'ODER', c:[['>', p.s], ['<', p.w]], then:'nicht geschafft', else:'geschafft', rule:`Wer für 50 m länger als ${ss} Sekunden braucht oder weniger als ${ww} m weit springt, hat es nicht geschafft.`}], p);
+      return {...V, conds:[{c:0, op:V.c[0][0], b:V.c[0][1], type:'dec', dp:1, lo:6.5, hi:12}, {c:1, op:V.c[1][0], b:V.c[1][1], type:'dec', dp:2, lo:2, hi:5}],
+        labels:['50 m (s)', 'Weitsprung (m)'], resLabel:'Abzeichen',
+        text:(c, o) => `Für ein Sportabzeichen zählen zwei Disziplinen. In Zelle ${B(c[0])} steht die Laufzeit über 50 m in Sekunden, in Zelle ${B(c[1])} die Sprungweite in Metern. ${V.rule} Gib das Ergebnis in Zelle ${B(o)} aus. ${HOW} ${outs('geschafft', 'nicht geschafft')}`,
+        resD:['bestanden', 'durchgefallen', 'Urkunde', 'ja', 'nein', 'geschafft!']}; } },
+
+  bewerbung: { name:'Bewerbung',
+    pick: r => ({b:pick1(r, [2, 3]), v:ri(r, 0, 1)}),
+    build: p => {
+      const V = pickV([
+        {comb:'UND', ops:['<=', '<='], b:p.b, then:'Einladung', else:'Absage', rule:`Eine Einladung zum Vorstellungsgespräch bekommt, wer in Mathematik und in Deutsch jeweils die Note ${p.b} oder besser hat.`},
+        {comb:'ODER', ops:['>', '>'], b:p.b, then:'Absage', else:'Einladung', rule:`Wer in Mathematik oder in Deutsch schlechter als ${p.b} ist, bekommt eine Absage.`}], p);
+      return {...V, conds:[{c:0, op:V.ops[0], b:p.b, type:'int', lo:1, hi:6}, {c:1, op:V.ops[1], b:p.b, type:'int', lo:1, hi:6}],
+        labels:['Mathe', 'Deutsch'], resLabel:'Bewerbung',
+        text:(c, o) => `Ein Betrieb sucht Auszubildende. In Zelle ${B(c[0])} steht die Mathematiknote einer Bewerberin, in Zelle ${B(c[1])} ihre Deutschnote. ${V.rule} Gib in Zelle ${B(o)} die Entscheidung aus. ${HOW} ${outs('Einladung', 'Absage')}`,
+        resD:['Zusage', 'eingeladen', 'abgelehnt', 'ja', 'nein', 'Termin']}; } },
+
+  ermaessigung: { name:'Museumseintritt',
+    pick: r => ({y:pick1(r, [14, 16, 18]), o:pick1(r, [60, 65]), v:ri(r, 0, 1)}),
+    build: p => {
+      const V = pickV([
+        {comb:'ODER', c:[['<', p.y], ['>=', p.o]], then:'ermäßigt', else:'voller Preis', rule:`Ermäßigten Eintritt bekommen alle unter ${p.y} Jahren und alle ab ${p.o} Jahren.`},
+        {comb:'UND', c:[['>=', p.y], ['<', p.o]], then:'voller Preis', else:'ermäßigt', rule:`Den vollen Preis zahlen alle ab ${p.y} Jahren, die jünger als ${p.o} sind. Alle anderen zahlen ermäßigt.`}], p);
+      return {...V, conds:[{c:0, op:V.c[0][0], b:V.c[0][1], type:'int', lo:3, hi:90}, {c:0, op:V.c[1][0], b:V.c[1][1], type:'int', lo:3, hi:90}],
+        labels:['Alter'], resLabel:'Eintritt',
+        text:(c, o) => `In Zelle ${B(c[0])} steht das Alter eines Museumsbesuchers. ${V.rule} Gib in Zelle ${B(o)} den Eintrittspreis aus. ${HOW} ${outs('ermäßigt', 'voller Preis')}`,
+        resD:['Vollpreis', 'Seniorentarif', 'Kinder', 'frei', 'ja', 'nein']}; } },
+
+  premiumversand: { name:'Premiumversand',
+    pick: r => ({b:pick1(r, [25, 39, 50]), fee:pick1(r, [2.99, 3.95, 4.95]), v:ri(r, 0, 1)}),
+    build: p => { const ff = fx(p.fee, 2);
+      const V = pickV([
+        {comb:'ODER', c:[['>=', p.b], ['=', 'Premium']], then:0, else:p.fee, rule:`Der Versand ist kostenlos ab einem Bestellwert von ${p.b} € oder für Premium-Kunden. Sonst kostet er ${ff} €.`},
+        {comb:'UND', c:[['<', p.b], ['<>', 'Premium']], then:p.fee, else:0, rule:`Nur wer unter ${p.b} € bestellt und kein Premium-Kunde ist, zahlt ${ff} € Versand. Alle anderen zahlen nichts.`}], p);
+      return {...V, conds:[{c:0, op:V.c[0][0], b:V.c[0][1], type:'dec', dp:2, lo:5, hi:120}, {c:1, op:V.c[1][0], b:V.c[1][1], type:'text', values:['Premium', 'Basis', 'Standard']}],
+        labels:['Bestellwert (€)', 'Status'], resLabel:'Versand (€)',
+        text:(c, o) => `In Zelle ${B(c[0])} steht der Bestellwert in €, in Zelle ${B(c[1])} der Kundenstatus (${C('Premium')}, ${C('Basis')} oder ${C('Standard')}). ${V.rule} Berechne in Zelle ${B(o)} die Versandkosten in € (als Zahl). ${HOW}`,
+        resD:['0', ff, 'kostenlos', ff + ' €', p.b, 'Premium']}; } },
+
+  museum: { name:'Öffnungstage',
+    pick: r => { const i = ri(r, 0, 5); return {d1:DAYS[i], d2:DAYS[i + 1], v:ri(r, 0, 1)}; },
+    build: p => {
+      const V = pickV([
+        {comb:'ODER', c:[['=', p.d1], ['=', p.d2]], then:'geschlossen', else:'geöffnet', rule:`Das Museum hat am ${p.d1} und am ${p.d2} geschlossen.`},
+        {comb:'UND', c:[['<>', p.d1], ['<>', p.d2]], then:'geöffnet', else:'geschlossen', rule:`Das Museum hat an allen Tagen außer ${p.d1} und ${p.d2} geöffnet.`}], p);
+      return {...V, conds:[{c:0, op:V.c[0][0], b:V.c[0][1], type:'text', values:DAYS}, {c:0, op:V.c[1][0], b:V.c[1][1], type:'text', values:DAYS}],
+        labels:['Wochentag'], resLabel:'Museum',
+        text:(c, o) => `In Zelle ${B(c[0])} steht ein Wochentag. ${V.rule} Gib in Zelle ${B(o)} aus, ob das Museum an diesem Tag offen ist. ${HOW} ${outs('geöffnet', 'geschlossen')}`,
+        resD:['zu', 'offen', 'Ruhetag', 'frei', 'Wochenende', p.d1]}; } },
+
+  unwetter: { name:'Unwetterwarnung',
+    pick: r => ({w:pick1(r, [60, 75, 90]), n:pick1(r, [25, 40, 50]), v:ri(r, 0, 1)}),
+    build: p => {
+      const V = pickV([
+        {comb:'ODER', c:[['>=', p.w], ['>=', p.n]], then:'Warnung', else:'keine Warnung', rule:`Eine Warnung wird ausgegeben, wenn der Wind mindestens ${p.w} km/h erreicht oder mindestens ${p.n} Liter Regen pro m² erwartet werden.`},
+        {comb:'UND', c:[['<', p.w], ['<', p.n]], then:'keine Warnung', else:'Warnung', rule:`Keine Warnung gibt es nur, wenn der Wind unter ${p.w} km/h bleibt und weniger als ${p.n} Liter Regen pro m² erwartet werden.`}], p);
+      return {...V, conds:[{c:0, op:V.c[0][0], b:V.c[0][1], type:'int', lo:0, hi:130}, {c:1, op:V.c[1][0], b:V.c[1][1], type:'int', lo:0, hi:80}],
+        labels:['Wind (km/h)', 'Regen (l/m²)'], resLabel:'Wetterdienst',
+        text:(c, o) => `Der Wetterdienst prüft jeden Tag die Vorhersage. In Zelle ${B(c[0])} steht die Windgeschwindigkeit in km/h, in Zelle ${B(c[1])} die Regenmenge in Litern pro m². ${V.rule} ${HOW} Gib in Zelle ${B(o)} ${C('Warnung')} bzw. ${C('keine Warnung')} aus.`,
+        resD:['Sturm', 'Alarm', 'Unwetter', 'sicher', 'ok', 'Gefahr']}; } },
+
+  vorruecken: { name:'Vorrücken',
+    pick: r => { const a = ri(r, 0, SUBJ.length - 1); return {s1:SUBJ[a], s2:SUBJ[(a + 1) % SUBJ.length], v:ri(r, 0, 2)}; },
+    build: p => { const s1 = p.s1 || 'Mathematik', s2 = p.s2 || 'Deutsch';
+      const V = pickV([
+        {comb:'ODER', ops:['>=', '>='], b:5, then:'gefährdet', else:'in Ordnung', rule:`Hat jemand in ${s1} oder in ${s2} eine 5 oder 6, ist das Vorrücken gefährdet.`},
+        {comb:'ODER', ops:['>', '>'], b:4, then:'gefährdet', else:'in Ordnung', rule:`Ist die Note in ${s1} oder in ${s2} schlechter als 4, ist das Vorrücken gefährdet.`},
+        {comb:'UND', ops:['<=', '<='], b:4, then:'in Ordnung', else:'gefährdet', rule:`Nur wer in ${s1} und in ${s2} mindestens eine 4 hat, rückt sicher vor. Sonst ist das Vorrücken gefährdet.`}], p);
+      return {...V, conds:[{c:0, op:V.ops[0], b:V.b, type:'int', lo:1, hi:6}, {c:1, op:V.ops[1], b:V.b, type:'int', lo:1, hi:6}],
+        labels:[s1, s2], resLabel:'Vorrücken',
+        text:(c, o) => `In Zelle ${B(c[0])} steht die Zeugnisnote in ${s1}, in Zelle ${B(c[1])} die Note in ${s2}. ${V.rule} Gib in Zelle ${B(o)} ${C('gefährdet')} bzw. ${C('in Ordnung')} aus. ${HOW}`,
+        resD:['bestanden', 'durchgefallen', 'gut', 'schlecht', 'Nachprüfung', V.b]}; } },
+
+  verein: { name:'Vereinsbeitrag',
+    pick: r => ({red:pick1(r, [3, 5, 6]), full:pick1(r, [10, 12, 15]), v:ri(r, 0, 1)}),
+    build: p => {
+      const V = pickV([
+        {comb:'ODER', c:[['<', 18], ['=', 'ja']], then:p.red, else:p.full, rule:`Wer jünger als 18 ist oder noch zur Schule geht bzw. eine Ausbildung macht, zahlt ${p.red} € im Monat. Alle anderen zahlen ${p.full} €.`},
+        {comb:'UND', c:[['>=', 18], ['=', 'nein']], then:p.full, else:p.red, rule:`Den vollen Beitrag von ${p.full} € zahlen nur Mitglieder ab 18 Jahren, die nicht Schüler bzw. Azubi sind. Alle anderen zahlen ${p.red} €.`}], p);
+      return {...V, conds:[{c:0, op:V.c[0][0], b:V.c[0][1], type:'int', lo:6, hi:70}, {c:1, op:V.c[1][0], b:V.c[1][1], type:'text', values:['ja', 'nein']}],
+        labels:['Alter', 'Schüler/Azubi'], resLabel:'Beitrag (€)',
+        text:(c, o) => `Ein Sportverein berechnet den Monatsbeitrag. In Zelle ${B(c[0])} steht das Alter eines Mitglieds, in Zelle ${B(c[1])} ${C('ja')} oder ${C('nein')} – je nachdem, ob es Schüler oder Azubi ist. ${V.rule} Gib in Zelle ${B(o)} den Beitrag in € als Zahl aus. ${HOW}`,
+        resD:[p.red + ' €', 'ermäßigt', p.red + p.full, 0, 18, String(p.red)]}; } },
+
+  parkplatz: { name:'Kundenparkplatz',
+    pick: r => ({b:pick1(r, [30, 60]), fee:pick1(r, [2, 3, 4.5]), v:ri(r, 0, 1)}),
+    build: p => { const ff = fx(p.fee, 2);
+      const V = pickV([
+        {comb:'ODER', c:[['<=', p.b], ['=', 'ja']], then:0, else:p.fee, rule:`Kostenlos parkt, wer höchstens ${p.b} Minuten bleibt oder im Geschäft eingekauft hat. Alle anderen zahlen ${ff} €.`},
+        {comb:'UND', c:[['>', p.b], ['=', 'nein']], then:p.fee, else:0, rule:`Wer länger als ${p.b} Minuten parkt und nicht eingekauft hat, zahlt ${ff} €. Alle anderen parken kostenlos.`}], p);
+      return {...V, conds:[{c:0, op:V.c[0][0], b:V.c[0][1], type:'int', lo:5, hi:240}, {c:1, op:V.c[1][0], b:V.c[1][1], type:'text', values:['ja', 'nein']}],
+        labels:['Parkdauer (min)', 'Eingekauft'], resLabel:'Gebühr (€)',
+        text:(c, o) => `Ein Supermarkt hat einen Kundenparkplatz. In Zelle ${B(c[0])} steht die Parkdauer in Minuten, in Zelle ${B(c[1])} steht ${C('ja')} oder ${C('nein')} – je nachdem, ob eingekauft wurde. ${V.rule} Berechne in Zelle ${B(o)} die Parkgebühr in € (als Zahl). ${HOW}`,
+        resD:['0', ff, 'kostenlos', ff + ' €', p.b, p.fee * 2]}; } },
+
+  leihrad: { name:'Leihrad-Check',
+    pick: r => ({b:pick1(r, [500, 800, 1000]), v:ri(r, 0, 1)}),
+    build: p => {
+      const V = pickV([
+        {comb:'ODER', c:[['>=', p.b], ['=', 'abgenutzt']], then:'Werkstatt', else:'einsatzbereit', rule:`Ein Rad muss in die Werkstatt, wenn es seit der letzten Wartung mindestens ${p.b} km gefahren ist oder die Bremsen abgenutzt sind.`},
+        {comb:'UND', c:[['<', p.b], ['=', 'ok']], then:'einsatzbereit', else:'Werkstatt', rule:`Einsatzbereit ist ein Rad nur, wenn es seit der Wartung weniger als ${p.b} km gefahren ist und die Bremsen ok sind. Sonst muss es in die Werkstatt.`}], p);
+      return {...V, conds:[{c:0, op:V.c[0][0], b:V.c[0][1], type:'int', lo:0, hi:2000}, {c:1, op:V.c[1][0], b:V.c[1][1], type:'text', values:['ok', 'abgenutzt']}],
+        labels:['km seit Wartung', 'Bremsen'], resLabel:'Status',
+        text:(c, o) => `Ein Fahrradverleih prüft seine Räder. In Zelle ${B(c[0])} stehen die Kilometer seit der letzten Wartung, in Zelle ${B(c[1])} der Zustand der Bremsen (${C('ok')} oder ${C('abgenutzt')}). ${V.rule} Gib in Zelle ${B(o)} ${C('Werkstatt')} bzw. ${C('einsatzbereit')} aus. ${HOW}`,
+        resD:['reparieren', 'defekt', 'fahrbereit', 'ok', 'Wartung', p.b]}; } }
+};
+
+/* ---- Übungen: 30 feste Aufgaben ---- */
+const STD = [
+  // UND
+  ['achterbahn', {ride:'Blitzschlange', v:0, col:'A', row:5}],
+  ['mofa', {v:0}],
+  ['kundenkarte', {b:50, rate:10, v:0}],
+  ['bewerbung', {b:3, v:0}],
+  ['sportabzeichen', {s:9, w:3.5, v:0}],
+  ['versand_de', {b:39, fee:4.95, v:0}],
+  ['achterbahn', {ride:'Donnerkeil', v:0}],
+  ['kundenkarte', {b:30, rate:5, v:0}],
+  // ODER
+  ['unwetter', {w:75, n:40, v:0}],
+  ['vorruecken', {s1:'Mathematik', s2:'Deutsch', v:0}],
+  ['premiumversand', {b:39, fee:3.95, v:0}],
+  ['verein', {red:5, full:12, v:0}],
+  ['parkplatz', {b:60, fee:3, v:0}],
+  ['leihrad', {b:1000, v:0}],
+  ['vorruecken', {s1:'Englisch', s2:'BwR', v:1}],
+  ['unwetter', {w:60, n:25, v:0}],
+  // gleiche Zelle zweimal (Bereiche)
+  ['tarif', {t:2, v:0}],
+  ['raumklima', {k:0, v:0}],
+  ['ermaessigung', {y:18, o:65, v:0}],
+  ['museum', {d1:'Montag', d2:'Dienstag', v:0}],
+  ['tarif', {t:0, v:0}],
+  ['raumklima', {k:1, v:0}],
+  // verneinte Formulierungen
+  ['achterbahn', {ride:'Feuerwirbel', v:1}],
+  ['mofa', {v:1}],
+  ['versand_de', {b:50, fee:5.9, v:1}],
+  ['tarif', {t:1, v:1}],
+  ['ermaessigung', {y:16, o:60, v:1}],
+  ['premiumversand', {b:25, fee:2.99, v:1}],
+  ['unwetter', {w:90, n:50, v:1}],
+  ['museum', {d1:'Samstag', d2:'Sonntag', v:1}]
+];
+
+/* ---- Aufgabe aus Szenario + Parametern bauen ---- */
+function product(arrs){ return arrs.reduce((acc, a) => acc.flatMap(x => a.map(y => [...x, y])), [[]]); }
+
+function buildTask(id, fixed, seedNum){
+  const sc = SCEN[id] || (typeof LSCEN !== 'undefined' && LSCEN[id]), r = rng(seedNum);
+  const p = {col:pick1(r, ['A', 'B', 'C']), row:ri(r, 2, 25), ...sc.pick(r), ...fixed};
+  const s = sc.build(p);
+  const nc = Math.max(...s.conds.map(c => c.c)) + 1, cc = p.col.charCodeAt(0);
+  const cells = [...Array(nc)].map((_, i) => String.fromCharCode(cc + i) + p.row);
+  const out = s.out || String.fromCharCode(cc + nc) + p.row;
+  const O = v => typeof v === 'number' ? (Number.isInteger(v) ? String(v) : fx(v, 2)) : '"' + v + '"';
+  const CD = s.conds.map(c => {
+    const dp = c.dp || 0, step = Math.pow(10, -dp), f = Math.pow(10, dp);
+    const rd = x => Math.round(x * f) / f;
+    const numLit = v => Number.isInteger(v) ? String(v) : fx(v, dp);
+    const L = v => typeof v === 'number' ? numLit(v) : '"' + v + '"';
+    return {...c, dp, step, rd, numLit, L, cell:cells[c.c]};
+  });
+  const conds = CD.map(c => c.cell + c.op + c.L(c.b));
+  const T = {scen:sc.name, id, cells, out, labels:s.labels, resLabel:s.resLabel, comb:s.comb,
+             conds, condCells:CD.map(c => c.cell), cvals:CD.map(c => c.L(c.b)),
+             dps:cells.map((_, i) => (CD.find(c => c.c === i).dp)),
+             then:O(s.then), else:O(s.else), text:s.text(cells, out)};
+  const mk = cs => T.comb ? `=WENN(${T.comb}(${cs.join(';')});${T.then};${T.else})` : `=WENN(${cs[0]};${T.then};${T.else})`;
+  T.noLogic = !T.comb;
+  T.sol = mk(conds);
+
+  // Testwerte je Zelle, dann alle Kombinationen
+  const perCell = cells.map((_, ci) => {
+    const cs = CD.filter(c => c.c === ci);
+    if (cs[0].type === 'text') return [...new Set(cs.flatMap(c => c.values))].map(v => ({t:'str', v}));
+    const vals = new Set();
+    cs.forEach(c => [c.b - c.step, c.b, c.b + c.step, c.lo, c.hi].forEach(x => vals.add(c.rd(x))));
+    return [...vals].sort((a, b) => a - b).map(v => ({t:'num', v}));
+  });
+  T.tests = product(perCell).map(vs => Object.fromEntries(vs.map((v, i) => [cells[i], v])));
+  T.sample = Object.fromEntries(cells.map((cell, ci) => {
+    const c = CD.find(x => x.c === ci);
+    if (p.sample && p.sample[ci] !== undefined) return [cell, p.sample[ci]];
+    if (c.type === 'text') return [cell, {t:'str', v:pick1(r, c.values)}];
+    return [cell, {t:'num', v:c.rd(c.lo + ri(r, 0, Math.round((c.hi - c.lo) / c.step)) * c.step)}];
+  }));
+
+  if (s.sheet){ // Lernmodus: echtes Tabellenblatt, erste Datenzeile ist die Formelzeile
+    const sh = SHEETS[s.sheet];
+    T.sheet = sh; T.rowEnvs = sh.rows.map((_, i) => sheetEnv(sh, i)); T.sample = T.rowEnvs[0];
+  }
+  // Ablenker: nur, wenn sie an dieser Stelle eingesetzt die Lösung falsch machen
+  const failsSub = (i, c) => { const cs = conds.slice(); cs[i] = c; try { return !checkAgainst(mk(cs), T).ok; } catch (e) { return true; } };
+  const condD = [], cvalD = [];
+  CD.forEach((c, i) => {
+    const other = c.cell.replace(/\d+/, '') + (p.row > 2 ? p.row - 1 : p.row + 1);
+    let cands, vals;
+    if (c.type === 'text'){
+      const oth = [...new Set(c.values)].filter(v => v !== c.b);
+      cands = [...oth.slice(0, 2).map(v => c.cell + c.op + c.L(v)), c.cell + c.op + c.b, c.cell + (c.op === '=' ? '<>' : '=') + c.L(c.b), other + c.op + c.L(c.b)];
+      vals = [c.b, ...oth.map(c.L)];
+    } else {
+      const flip = {'>=':'>', '>':'>=', '<':'<=', '<=':'<'}[c.op], mir = {'>=':'<=', '>':'<', '<':'>', '<=':'>='}[c.op];
+      const bad = {'>=':'=>', '<=':'=<', '>':'=', '<':'='}[c.op];
+      cands = [c.cell + flip + c.L(c.b), c.cell + mir + c.L(c.b), c.cell + c.op + c.L(c.rd(c.b + c.step)), c.cell + c.op + c.L(c.rd(c.b - c.step)),
+               c.cell + bad + c.L(c.b), c.cell + c.op + '"' + c.numLit(c.b) + '"', other + c.op + c.L(c.b)];
+      vals = ['"' + c.numLit(c.b) + '"', ...[1, -1, 2, 10].map(k => c.L(c.rd(c.b + k * c.step)))];
+    }
+    let n = 0;
+    for (const x of shuffle(cands, r)){ if (n < 2 && !conds.includes(x) && !condD.includes(x) && failsSub(i, x)){ condD.push(x); n++; } }
+    n = 0;
+    for (const v of vals){ if (n < 2 && !T.cvals.includes(v) && !cvalD.includes(v) && failsSub(i, c.cell + c.op + v)){ cvalD.push(v); n++; } }
+  });
+  T.condD = condD; T.cvalD = cvalD;
+  const used = new Set([T.then, T.else]), res = [];
+  for (const v of shuffle(s.resD, r)){ const l = O(v); if (!used.has(l)){ used.add(l); res.push(l); } }
+  T.resD = res.slice(0, 6);
+  return T;
+}
+</script>
+
+<!-- ===================== Lernmodus: Domi-No's ===================== -->
+<script id="lesson">
+/* Tabellenblätter aus Dominos.xlsx */
+const SHEETS = {
+  bew:  {start:4, head:['Name', 'Alter', 'Führerschein', 'Kommt in Frage'], cols:'ABCD',
+         rows:[['Lena', 19, 'ja'], ['Max', 18, 'nein'], ['Mia', 17, 'ja'], ['Jonas', 15, 'nein'], ['Sarah', 22, 'ja']]},
+  a1:   {start:2, head:['Kunde', 'Bestellwert (€)', 'Rabatt (%)', 'Ergebnis'], cols:'ABCD',
+         rows:[['Müller', 60, 5], ['Schmidt', 40, 15], ['Becker', 80, 10], ['Wagner', 30, 20]]},
+  a2:   {start:3, head:['Name', 'Alter', 'Führerschein', 'Ergebnis'], cols:'ABCD',
+         rows:[['Anna', 20, 'Ja'], ['Ben', 17, 'Ja'], ['Clara', 25, 'Nein'], ['David', 18, 'Ja']]},
+  oder: {start:4, head:['Nachname', 'Bestelltes Menü', 'Rabatt (%)'], cols:'ABC',
+         rows:[['Müller', 'Menü 1'], ['Schmidt', 'Menü 2'], ['Becker', 'Menü 3'], ['Wagner', 'Menü 1'], ['Fischer', 'Menü 2']]},
+  a3:   {start:3, head:['Name', 'Alter', 'Mitgliedschaft', 'Ergebnis'], cols:'ABCD',
+         rows:[['Anna', 20, 'Nein'], ['Ben', 16, 'Ja'], ['Clara', 17, 'Nein'], ['David', 18, 'Ja']]},
+  a4:   {start:3, head:['Kunde', 'Bestellwert (€)', 'Rabatt (%)', 'Ergebnis'], cols:'ABCD',
+         rows:[['Müller', 40, 5], ['Schmidt', 80, 8], ['Becker', 30, 15], ['Wagner', 60, 3]]}
+};
+function sheetEnv(sh, i){
+  const env = {};
+  sh.rows[i].forEach((v, c) => { env[sh.cols[c] + sh.start] = typeof v === 'number' ? {t:'num', v} : {t:'str', v}; });
+  return env;
+}
+
+/* Aufgaben des Lernmodus – nutzen denselben Aufgabengenerator wie Übungen/Endlos */
+const LSCEN = {
+  fs: { name:'Führerschein', pick:() => ({}), build:() => ({comb:null, sheet:'bew', out:'D4',
+    conds:[{c:0, op:'=', b:'ja', type:'text', values:['ja', 'nein']}], then:'ja', else:'nein',
+    text:() => `Schreibe in Zelle ${B('D4')} eine WENN-Funktion, die entscheidet, ob Lenas Führerschein in ${B('C4')} das Kriterium erfüllt. Ausgegeben werden soll ${C('ja')} bzw. ${C('nein')}.`,
+    resD:['Ja', 'kein Führerschein', 'nicht', 'erfüllt', 'falsch', 'Lena']}) },
+  alter: { name:'Alter', pick:() => ({}), build:() => ({comb:null, sheet:'bew', out:'D4',
+    conds:[{c:0, op:'>=', b:18, type:'int', lo:14, hi:30}], then:'ja', else:'nein',
+    text:() => `Schreibe in Zelle ${B('D4')} eine WENN-Funktion, die entscheidet, ob das Alter in ${B('B4')} das Kriterium „mindestens 18“ erfüllt. Ausgegeben werden soll ${C('ja')} bzw. ${C('nein')}.`,
+    resD:['Ja', 'volljährig', 'nicht', '18', 18, 'zu jung']}) },
+  und: { name:'UND', pick:() => ({}), build:() => ({comb:'UND', sheet:'bew',
+    conds:[{c:0, op:'>=', b:18, type:'int', lo:14, hi:30}, {c:1, op:'=', b:'ja', type:'text', values:['ja', 'nein']}], then:'ja', else:'nein',
+    text:(c, o) => `Schreibe in Zelle ${B(o)} eine WENN-Funktion, die entscheidet, ob das Alter in ${B(c[0])} <b>und</b> der Führerschein in ${B(c[1])} jeweils das Kriterium erfüllen. Ausgegeben werden soll ${C('ja')} bzw. ${C('nein')}.`,
+    resD:['Ja', 'nicht', 'erfüllt', 'volljährig', 18, 'Führerschein']}) },
+  a2: { name:'Aufgabe 2', pick:() => ({}), build:() => ({comb:'UND', sheet:'a2',
+    conds:[{c:0, op:'>=', b:18, type:'int', lo:14, hi:30}, {c:1, op:'=', b:'Ja', type:'text', values:['Ja', 'Nein']}], then:'geeignet', else:'nicht geeignet',
+    text:(c, o) => `Tabellenblatt <i>Aufgabe2</i>: Als Lieferfahrer geeignet ist, wer mindestens 18 Jahre alt ist und einen Führerschein hat. Gib in ${B(o)} ${C('geeignet')} bzw. ${C('nicht geeignet')} aus.`,
+    resD:['ja', 'nein', 'ungeeignet', 'Ja', 18, 'Führerschein']}) },
+  a1: { name:'Aufgabe 1', pick:() => ({}), build:() => ({comb:'UND', sheet:'a1',
+    conds:[{c:0, op:'>=', b:50, type:'int', lo:0, hi:150}, {c:1, op:'<=', b:10, type:'int', lo:0, hi:30}], then:'gewährt', else:'abgelehnt',
+    text:(c, o) => `Tabellenblatt <i>Aufgabe1</i>: Kunden dürfen sich einen Rabatt wünschen. Er wird nur gewährt, wenn der Bestellwert mindestens 50 € beträgt und der gewünschte Rabatt höchstens 10 % ist. Gib in ${B(o)} ${C('gewährt')} bzw. ${C('abgelehnt')} aus.`,
+    resD:['ja', 'nein', 'Rabatt', 10, 50, 'gewährt!']}) },
+  oder: { name:'ODER', pick:() => ({}), build:() => ({comb:'ODER', sheet:'oder',
+    conds:[{c:0, op:'=', b:'Menü 1', type:'text', values:['Menü 1', 'Menü 2', 'Menü 3']}, {c:0, op:'=', b:'Menü 2', type:'text', values:['Menü 1', 'Menü 2', 'Menü 3']}], then:10, else:0,
+    text:(c, o) => `Tabellenblatt <i>ODER</i>: Wer ${C('Menü 1')} oder ${C('Menü 2')} bestellt, erhält 10 % Rabatt, alle anderen 0 %. Gib in ${B(o)} den Rabatt in Prozent als Zahl aus.`,
+    resD:['10 %', '10', '0', 'nein', 0.1, 'Menü 1']}) },
+  a3: { name:'Aufgabe 3', pick:() => ({}), build:() => ({comb:'ODER', sheet:'a3',
+    conds:[{c:0, op:'>=', b:18, type:'int', lo:12, hi:30}, {c:1, op:'=', b:'Ja', type:'text', values:['Ja', 'Nein']}], then:'Zugang', else:'kein Zugang',
+    text:(c, o) => `Tabellenblatt <i>Aufgabe 3</i>: Zum Pizza-Club-Abend kommt, wer mindestens 18 Jahre alt ist oder eine Mitgliedschaft hat. Gib in ${B(o)} ${C('Zugang')} bzw. ${C('kein Zugang')} aus.`,
+    resD:['ja', 'nein', 'Mitglied', 'Ja', 18, 'Zutritt']}) },
+  a4: { name:'Aufgabe 4', pick:() => ({}), build:() => ({comb:'ODER', sheet:'a4',
+    conds:[{c:0, op:'<', b:50, type:'int', lo:0, hi:150}, {c:1, op:'>', b:10, type:'int', lo:0, hi:30}], then:'prüfen', else:'ok',
+    text:(c, o) => `Tabellenblatt <i>Aufgabe 4</i>: Der Chef möchte eine Bestellung selbst prüfen, wenn der Bestellwert unter 50 € liegt oder der Rabatt mehr als 10 % beträgt. Gib in ${B(o)} ${C('prüfen')} bzw. ${C('ok')} aus.`,
+    resD:['ja', 'nein', 'prüfen!', 'okay', 50, 10]}) }
+};
+const LCELL = {fs:['C', 4], alter:['B', 4], und:['B', 4], a2:['B', 3], a1:['B', 2], oder:['B', 4], a3:['B', 3], a4:['B', 3]};
+
+const HELP_WENN = `<details class="help"><summary>Hilfe: Aufbau der WENN-Funktion</summary>
+<p><code>=WENN(Prüfung; Dann_Wert; Sonst_Wert)</code></p>
+<ul><li>Die <b>Prüfung</b> ist eine Bedingung, z. B. <code>B4&gt;=18</code> oder <code>C4="ja"</code>.</li>
+<li>Text schreibst du in Anführungszeichen: <code>"ja"</code>. Zahlen und Zellen ohne.</li>
+<li>Die Teile trennst du mit einem Semikolon <code>;</code>.</li></ul></details>`;
+const HELP_OPS = `<details class="help"><summary>Hilfe: Vergleichszeichen</summary>
+<table class="tt"><tr><th>Zeichen</th><th>Bedeutung</th><th>Beispiel</th></tr>
+<tr><td><code>=</code></td><td>gleich</td><td><code>C4="ja"</code></td></tr>
+<tr><td><code>&lt;&gt;</code></td><td>ungleich</td><td><code>C4&lt;&gt;"ja"</code></td></tr>
+<tr><td><code>&gt;</code></td><td>größer als / mehr als</td><td><code>B4&gt;18</code></td></tr>
+<tr><td><code>&gt;=</code></td><td>größer oder gleich / mindestens / ab</td><td><code>B4&gt;=18</code></td></tr>
+<tr><td><code>&lt;</code></td><td>kleiner als / unter</td><td><code>B4&lt;18</code></td></tr>
+<tr><td><code>&lt;=</code></td><td>kleiner oder gleich / höchstens</td><td><code>B4&lt;=18</code></td></tr></table></details>`;
+const HELP_UND = `<details class="help"><summary>Hilfe: WENN mit UND / ODER</summary>
+<p><code>=WENN(UND(Bedingung1; Bedingung2); Dann_Wert; Sonst_Wert)</code></p>
+<p>Die Klammer von UND bzw. ODER wird <b>vor</b> dem ersten Semikolon von WENN geschlossen.</p></details>`;
+
+const T_BEW_UND = {
+  cols:['Name', 'B4>=18', 'C4="ja"', 'UND(B4>=18; C4="ja")'],
+  rows:SHEETS.bew.rows.map(r => [r[0], r[1] >= 18, r[2] === 'ja', r[1] >= 18 && r[2] === 'ja']), fill:[3]};
+const T_MENU = {
+  cols:['Nachname', 'B4="Menü 1"', 'B4="Menü 2"', 'ODER(B4="Menü 1"; B4="Menü 2")'],
+  rows:SHEETS.oder.rows.map(r => [r[0], r[1] === 'Menü 1', r[1] === 'Menü 2', r[1] === 'Menü 1' || r[1] === 'Menü 2']), fill:[3]};
+const T_ABS = {
+  cols:['Bedingung1', 'Bedingung2', 'UND(Bedingung1; Bedingung2)', 'ODER(Bedingung1; Bedingung2)'],
+  rows:[[true, true, true, true], [true, false, false, true], [false, true, false, true], [false, false, false, false]], fill:[2, 3]};
+
+const STEPS = [
+  {type:'info', title:'Willkommen bei Domi-No’s', sheet:'bew',
+   html:`<p>Du erstellst Excel-Tabellen für die Pizza-Kette <b>Domi-No’s</b>, um bei der Auswahl von Personal zu helfen. Rechts siehst du die aktuelle Bewerberliste.</p>
+   <p>So funktioniert diese Seite: Jeder Schritt erklärt etwas oder stellt dir eine Aufgabe. Erst wenn du sie richtig gelöst hast, geht es mit <b>Weiter</b> zum nächsten Schritt. Du bekommst sofort eine Rückmeldung.</p>
+   <p>Am Ende kannst du verknüpfte Bedingungen mit <code>UND</code> und <code>ODER</code> in einer WENN-Funktion verwenden.</p>`},
+
+  {type:'task', title:'Kriterium: Führerschein', task:'fs', level:8,
+   html:`<p>Dein Chef startet eine Werbekampagne, um neues Personal zu finden. Deine Funktion soll automatisch entscheiden, ob Bewerber die Kriterien erfüllen. Das erste Kriterium: Sie brauchen einen Führerschein.</p>${HELP_WENN}`,
+   after:'Excel hat deine Formel für alle Bewerber „nach unten gezogen“ – sieh dir die Spalte D an.'},
+
+  {type:'task', title:'Kriterium: mindestens 18', task:'alter', level:8,
+   html:`<p>Dein Chef stellt fest, dass sich viele 16-Jährige mit Mofa-Führerschein bewerben, denen er absagen muss. Neue Regel: Bewerber müssen <b>mindestens 18</b> sein.</p>${HELP_OPS}`,
+   after:'Achte auf Max: Er ist genau 18 und erfüllt das Kriterium. Deshalb <code>&gt;=</code> und nicht <code>&gt;</code>.'},
+
+  {type:'cond', title:'Die beiden Bedingungen', sheet:'bew',
+   html:`<p>Schreibe jeweils die <b>Bedingung</b> (die Prüfung) auf, die du für Lena formuliert hast – nur die Bedingung, ohne <code>=WENN(</code>.</p>
+   <details class="help"><summary>Zur Erinnerung: die beiden Kriterien</summary>
+   <ul><li><b>Führerschein:</b> Der Bewerber muss einen Führerschein haben. In Spalte C steht dafür <code>ja</code> oder <code>nein</code>.</li>
+   <li><b>Alter:</b> Der Bewerber muss <b>mindestens 18</b> Jahre alt sein. Das Alter steht in Spalte B.</li></ul>
+   <p>Lena steht in Zeile 4.</p></details>`,
+   fields:[{label:'Führerschein', ref:'C4="ja"'}, {label:'Alter', ref:'B4>=18'}],
+   tests:{B4:[0, 15, 17, 18, 19, 22], C4:['ja', 'nein']}},
+
+  {type:'choice', title:'Ein neues Problem', sheet:'bew', multi:true,
+   html:`<p>Viele Bewerber sind jetzt zwar volljährig, haben aber keinen Führerschein – und umgekehrt. Der Chef will nur noch Bewerber, die <b>mindestens 18 sind und einen Führerschein haben</b>.</p><p><b>Wer kommt in Frage?</b> Wähle alle passenden Bewerber aus.</p>`,
+   options:['Lena', 'Max', 'Mia', 'Jonas', 'Sarah'], correct:[0, 4],
+   why:{1:'Max ist 18, hat aber keinen Führerschein.', 2:'Mia hat einen Führerschein, ist aber erst 17.', 3:'Jonas erfüllt keines der beiden Kriterien.'},
+   after:'Genau! Beide Kriterien müssen gleichzeitig erfüllt sein. Mit einer einzelnen Bedingung kann WENN das nicht prüfen – dafür gibt es <code>UND</code>.'},
+
+  {type:'dragcond', title:'Die Funktion UND', fn:'UND', sheet:'bew',
+   html:`<div class="assign"><b>Kriterium des Chefs:</b> Bewerber müssen <b>mindestens 18</b> sein <b>und</b> einen <b>Führerschein</b> haben. Die Formel steht in Zeile 4 (Lena).</div>
+   <p>Mit <code>UND</code> verknüpfst du mehrere Bedingungen zu <b>einer</b>. Die Bedingungen trennst du mit einem Semikolon:</p>
+   <p class="formula-ex"><code>UND(Bedingung1; Bedingung2)</code></p>
+   <p><code>UND</code> ist nur dann <code>WAHR</code>, wenn <b>alle</b> Bedingungen erfüllt sind.</p>
+   <p><b>Aufgabe:</b> Ziehe die passenden Bedingungen in die UND-Funktion, sodass geprüft wird, ob ein Bewerber <b>mindestens 18</b> ist <b>und</b> einen <b>Führerschein</b> hat.</p>`,
+   options:['B4>=18', 'C4="ja"', 'B4>18', 'C4="nein"', 'B4<=18', 'C4=ja'], ref:'UND(B4>=18;C4="ja")',
+   tests:{B4:[0, 15, 17, 18, 19, 22], C4:['ja', 'nein']},
+   after:'Aus zwei Bedingungen ist eine einzige geworden: <code>UND(B4&gt;=18; C4="ja")</code>.'},
+
+  {type:'truth', title:'UND: WAHR oder FALSCH?', table:T_BEW_UND, sheet:'bew',
+   html:`<div class="assign"><b>Kriterium des Chefs:</b> Bewerber müssen <b>mindestens 18</b> sein <b>und</b> einen <b>Führerschein</b> haben. Die Formel steht in Zeile 4 (Lena).</div>
+   <p>Was ergibt <code>UND(B4&gt;=18; C4="ja")</code> für die einzelnen Bewerber? Denk daran: <code>UND</code> ist nur dann <code>WAHR</code>, wenn <b>alle</b> Bedingungen erfüllt sind.</p>
+   <p><b>Aufgabe:</b> Klicke in der letzten Spalte auf die Felder und trage für jeden Bewerber ein, was <code>UND</code> ergibt.</p>`},
+
+  {type:'task', title:'WENN mit UND – mit Bausteinen', task:'und', level:3,
+   html:`<p>Jetzt kommt alles zusammen: Die UND-Funktion ist die <b>Prüfung</b> der WENN-Funktion.</p>
+   <p class="formula-ex"><code>=WENN(UND(Bedingung1; Bedingung2); Dann_Wert; Sonst_Wert)</code></p>
+   <p>Ziehe zuerst <code>UND</code> in die Prüfung, dann die passenden Bedingungen und Werte.</p>`,
+   after:'Sieh dir Spalte D an: Nur Lena und Sarah kommen in Frage.'},
+
+  {type:'task', title:'WENN mit UND – wie in Excel', task:'und', level:8,
+   html:`<p>Tippe dieselbe Formel jetzt so ein, wie du es in Excel tun würdest.</p>${HELP_UND}`},
+
+  {type:'choice', title:'Kontrollfrage: Schreibweise',
+   html:`<p>Nur <b>eine</b> dieser Formeln ist richtig geschrieben. Welche?</p>`,
+   options:['=WENN(B4>=18 UND C4="ja";"ja";"nein")', '=WENN(UND(B4>=18;C4="ja";"ja";"nein"))', '=WENN(UND(B4>=18;C4="ja");"ja";"nein")', '=WENN(UND(B4>=18,C4="ja");"ja";"nein")'],
+   correct:[2], mono:true,
+   why:{0:'UND steht in Excel <b>vor</b> den Bedingungen: <code>UND(…; …)</code>.', 1:'Die Klammer von UND muss vor dem Dann_Wert geschlossen werden.', 3:'Im deutschen Excel trennt man mit Semikolon <code>;</code>, nicht mit Komma.'}},
+
+  {type:'task', title:'Übung: Aufgabe 1', task:'a1', level:8,
+   html:`<p>Jetzt bist du dran – ohne Bausteine. Diesmal geht es um zwei Zahlen statt um Alter und Führerschein.</p>${HELP_OPS}`},
+
+  {type:'choice', title:'Rabattaktion', sheet:'oder', multi:true,
+   html:`<p>Domi-No’s startet eine Rabattaktion: Wer <b>Menü 1 oder Menü 2</b> bestellt, bekommt 10 % Rabatt.</p><p><b>Wer bekommt Rabatt?</b> Wähle alle passenden Kunden aus.</p>`,
+   options:['Müller', 'Schmidt', 'Becker', 'Wagner', 'Fischer'], correct:[0, 1, 3, 4],
+   why:{2:'Becker hat Menü 3 bestellt.'},
+   after:'Richtig. Hier reicht es, wenn <b>eine</b> der Bedingungen erfüllt ist. Mit UND ginge das nicht: Niemand kann gleichzeitig Menü 1 und Menü 2 bestellt haben.'},
+
+  {type:'truth', title:'Die Funktion ODER', table:T_MENU, sheet:'oder',
+   html:`<div class="assign"><b>Rabattaktion:</b> Wer <b>Menü 1 oder Menü 2</b> bestellt, bekommt 10 % Rabatt. Die Formel steht in Zeile 4 (Müller).</div>
+   <p>Mit <code>ODER</code> verknüpfst du Bedingungen ebenfalls zu einer:</p>
+   <p class="formula-ex"><code>ODER(Bedingung1; Bedingung2)</code></p>
+   <p><code>ODER</code> ist <code>WAHR</code>, wenn <b>mindestens eine</b> Bedingung erfüllt ist.</p>
+   <p><b>Aufgabe:</b> Trage für jeden Kunden ein, was <code>ODER</code> ergibt.</p>`},
+
+  {type:'truth', title:'UND und ODER im Vergleich', table:T_ABS,
+   html:`<p>Fülle die Tabelle für <code>UND</code> und <code>ODER</code> vollständig aus. Sie gilt für beliebige Bedingungen.</p>`},
+
+  {type:'task', title:'WENN mit ODER – mit Bausteinen', task:'oder', level:4,
+   html:`<p>Baue die Formel für das Tabellenblatt <i>ODER</i>. Diesmal baust du die beiden Bedingungen selbst – beide prüfen dieselbe Zelle <code>B4</code>.</p>
+   <p class="formula-ex"><code>=WENN(ODER(Bedingung1; Bedingung2); Dann_Wert; Sonst_Wert)</code></p>`,
+   after:'Becker hat Menü 3 – als Einziger bekommt er 0 % Rabatt.'},
+
+  {type:'task', title:'Übung: Aufgabe 3', task:'a3', level:8,
+   html:`<p>Jetzt wieder ohne Bausteine. Lies genau: Reicht eine Bedingung oder müssen beide erfüllt sein? In dieser Tabelle steht <code>Ja</code> mit großem J – für Excel spielt die Groß-/Kleinschreibung beim Vergleichen keine Rolle.</p>${HELP_UND}`},
+
+  {type:'task', title:'Übung: Aufgabe 4', task:'a4', level:8,
+   html:`<p>Letzte Formel-Übung. Achte auf „unter“ und „mehr als“.</p>${HELP_OPS}`},
+
+  {type:'classify', title:'UND oder ODER?',
+   html:`<p>Entscheide für jede Regel, ob du sie mit <code>UND</code> oder mit <code>ODER</code> umsetzt. Vorsicht: Nicht jedes „und“ im Satz bedeutet <code>UND</code>!</p>`,
+   items:[
+     {t:'Lieferfahrer muss mindestens 18 sein und einen Führerschein haben.', a:'UND'},
+     {t:'Rabatt gibt es für Schüler oder für Kunden über 65.', a:'ODER'},
+     {t:'Die Filiale hat am Montag und am Dienstag geschlossen. (Ist heute geschlossen?)', a:'ODER', why:'Ein Tag kann nicht gleichzeitig Montag und Dienstag sein – geschlossen ist, wenn der Tag Montag <b>oder</b> Dienstag ist.'},
+     {t:'Der Jugendtarif gilt von 14 bis einschließlich 17 Jahren.', a:'UND', why:'„von … bis“ heißt: mindestens 14 <b>und</b> höchstens 17.'},
+     {t:'Eine Bestellung wird geprüft, wenn der Wert unter 50 € liegt oder der Rabatt über 10 % liegt.', a:'ODER'}
+   ]},
+
+  {type:'info', title:'Geschafft!', final:true,
+   html:`<p>Du kannst jetzt Bedingungen in einer WENN-Funktion verknüpfen:</p>
+   <ul><li><code>UND(Bedingung1; Bedingung2)</code> ist WAHR, wenn <b>alle</b> Bedingungen erfüllt sind.</li>
+   <li><code>ODER(Bedingung1; Bedingung2)</code> ist WAHR, wenn <b>mindestens eine</b> Bedingung erfüllt ist.</li>
+   <li>Die Verknüpfung steht als Prüfung in der WENN-Funktion: <code>=WENN(UND(…; …); Dann_Wert; Sonst_Wert)</code></li></ul>
+   <p>Zum Üben geht es bei den <b>Übungen</b> (30 Aufgaben) oder im Modus <b>Endlos</b> weiter.</p>
+   <p><button class="btn primary" data-mode-go="pfad">Zu den Übungen</button> <button class="btn" data-mode-go="endlos">Endlos üben</button></p>`}
+];
+</script>
+
+<!-- ===================== Oberfläche ===================== -->
+<script>
+const KEY = 'uo-';
+
+const LEVELS = [null,
+  {name:'Bedingungen auswählen',              mode:'slots', comb:'fixed',  cond:'choose',    res:'fixed'},
+  {name:'UND oder ODER wählen',               mode:'slots', comb:'choose', cond:'choose',    res:'fixed'},
+  {name:'DANN und SONST einsetzen',           mode:'slots', comb:'choose', cond:'choose',    res:'drag'},
+  {name:'Bedingungen bauen – Wert ziehen',    mode:'slots', comb:'choose', cond:'buildDrag', res:'drag'},
+  {name:'Bedingungen bauen – Wert eintippen', mode:'slots', comb:'choose', cond:'buildType', res:'drag'},
+  {name:'Formel komplett bauen',              mode:'row',   cond:'buildType', quotes:false},
+  {name:'Formel bauen inkl. Anführungszeichen', mode:'row', cond:'buildType', quotes:true},
+  {name:'Freitext mit Hilfe',                 mode:'text',  help:true},
+  {name:'Freitext ohne Hilfe',                mode:'text',  help:false}
+];
+
+/* gelöste Aufgabe bzw. erledigten Schritt an den Server melden (nur wenn die Seite über PocketBase läuft) */
+function logSolved(erstmals){
+  if (!window.TrainerSync) return;
+  if (mode === 'lernen') TrainerSync.event({modus: 'erarbeitung', stufe: STEPS[learnIdx].level || 0, aufgabe: String(learnIdx + 1), titel: STEPS[learnIdx].title, gesamt: STEPS.length, erstmals});
+  else TrainerSync.event({modus: mode === 'pfad' ? 'uebungen' : 'endlos', stufe: level,
+    aufgabe: mode === 'pfad' ? String(pfadIdx + 1) : CUR.scen, titel: CUR.scen, gesamt: mode === 'pfad' ? STD.length : 0, erstmals});
+}
+let mode = ['endlos', 'lernen'].includes(load('mode')) ? load('mode') : 'lernen';
+let level = Math.min(9, Math.max(1, parseInt(load('level')) || 1));
+let pfadIdx = Math.min(STD.length - 1, Math.max(0, parseInt(load('idx')) || 0));
+let solved = {}; try { solved = JSON.parse(load('solved') || '{}') || {}; } catch (e) {}
+let endScen = null, endSeed = 0, endCounted = false, streak = 0, best = parseInt(load('best')) || 0;
+let CUR, S, uid = 0, poolSeed = rand(), pickerOpen = false;
+
+/* ---------- Aufgaben- und Modussteuerung ---------- */
+function loadTask(){
+  if (mode === 'lernen'){ loadStep(); return; }
+  if (mode === 'pfad'){ const [id, p] = STD[pfadIdx]; CUR = buildTask(id, p, 7919 * (pfadIdx + 1) + 13); }
+  else CUR = buildTask(endScen, {}, endSeed);
+  poolSeed = rand(); setup();
+}
+function setMode(m){ if (m === mode) return; mode = m; store('mode', m); pickerOpen = false; level = Math.min(9, Math.max(1, parseInt(load('level')) || 1)); if (m === 'endlos' && !endScen) newEndless(); loadTask(); window.scrollTo({top:0, behavior:'smooth'}); }
+function canNext(){ if (mode === 'lernen') return learnIdx < STEPS.length - 1 && learnDone.has(learnIdx); return mode === 'pfad' ? (pfadIdx < STD.length - 1 && isSolved(pfadIdx)) : endCounted; }
+function nextTask(){ if (!canNext()) return; if (mode === 'lernen'){ gotoStep(learnIdx + 1); return; } if (mode === 'pfad') gotoTask(pfadIdx + 1); else { newEndless(); loadTask(); window.scrollTo({top:0, behavior:'smooth'}); } }
+function setup(){
+  const T = CUR, L = LEVELS[level], r = rng(poolSeed);
+  S = {items:{}, pools:{fn:[], cond:[], cval:[], res:[]}, slots:{comb:null, c1:null, c2:null, then:null, else:null},
+       row:[], text:'', success:false, rowRoles:{}, fb:null, result:null};
+  uid = 0;
+  if (L.mode === 'text'){ render(); return; }
+  const mk = (kind, lit, extra) => { const id = 'b' + (++uid); S.items[id] = {id, kind, lit, label:lit, ...extra}; return id; };
+  if (L.comb === 'choose') S.pools.fn = ['UND', 'ODER'].map(f => mk('fn', f));
+  const builders = (L.cond === 'buildDrag' || L.cond === 'buildType') ? T.condCells.map(c => mk('builder', '', {bcell:c, op:'', input:''})) : [];
+  if (L.cond === 'choose') S.pools.cond = shuffle([...T.conds, ...T.condD].map(l => mk('cond', l)), r);
+  if (L.cond === 'buildDrag'){
+    S.pools.cval = shuffle([...new Set([...T.cvals, ...T.cvalD])].map(l => mk('val', l)), r);
+    builders.forEach(b => S.slots['cv:' + b] = null);
+  }
+  if (L.mode === 'slots' && L.cond !== 'choose') S.pools.cond = builders;
+  if (L.res === 'drag' || L.mode === 'row'){
+    const seen = new Set();
+    const res = [T.then, T.else, ...T.resD].map(l => L.quotes ? stripQ(l) : l).filter(l => !seen.has(l) && seen.add(l));
+    S.pools.res = shuffle(res.map(l => mk('val', l)), r);
+  }
+  if (L.mode === 'row') S.pools.res = [...builders, ...S.pools.res];
+  render();
+}
+
+/* ---------- Rendering ---------- */
+function renderNav(){
+  if (mode === 'lernen') navLernen(learnIdx, STEPS.length, STEPS[learnIdx].type === 'info');
+  else navPfad();
+  renderDock();
+}
+
+function renderDock(){
+  const d = $('#dock');
+  if (mode !== 'lernen'){ d.innerHTML = dockHTML(); return; }
+  let h = `<button class="dockbtn" id="dockBtn" aria-expanded="${pickerOpen}">📘 Schritt ${learnIdx + 1}/${STEPS.length} <span class="sub">· ${learnDone.size} erledigt</span></button>`;
+  if (pickerOpen) h += '<div class="picker steps"><div class="ptitle">Schritte – erledigte sind grün, gesperrte noch nicht erreichbar</div>' +
+    STEPS.map((st, i) => `<button data-step="${i}" class="stepbtn${learnDone.has(i) ? ' solved' : ''}${i === learnIdx ? ' cur' : ''}"${stepUnlocked(i) ? '' : ' disabled'}>${i + 1}. ${esc(st.title)}</button>`).join('') +
+    '<button class="stepreset" data-learnreset="1">Fortschritt zurücksetzen</button></div>';
+  d.innerHTML = h;
+}
+
+function fmtCell(v, dp){ return v.t === 'num' ? fx(v.v, dp) : esc(v.v); }
+function renderGrid(){
+  if (CUR && CUR.sheet){ $('#grid').innerHTML = sheetHTML(CUR.sheet, S.success ? S.ast : null); return; }
+  const T = CUR, row = T.out.match(/\d+/)[0], col = c => c.replace(/\d+/, '');
+  const out = S.result ? esc(S.result.t === 'str' ? S.result.v : fmtVal(S.result)) : '';
+  $('#grid').innerHTML = `<table class="grid"><tr><th></th>${T.cells.map(c => `<th>${col(c)}</th>`).join('')}<th>${col(T.out)}</th></tr>
+    <tr><th>${row - 1}</th>${T.labels.map(l => `<td class="lbl">${esc(l)}</td>`).join('')}<td class="lbl">${esc(T.resLabel)}</td></tr>
+    <tr><th>${row}</th>${T.cells.map((c, i) => `<td>${fmtCell(T.sample[c], T.dps[i])}</td>`).join('')}<td class="fx">${out}</td></tr></table>`;
+}
+
+function builderInner(it, grip){
+  const L = LEVELS[level];
+  const opts = ['', ...OPS].map(o => `<option value="${esc(o)}"${it.op === o ? ' selected' : ''}>${o === '' ? '?' : esc(o)}</option>`).join('');
+  let v;
+  if (L.cond === 'buildDrag'){
+    const k = 'cv:' + it.id, id = S.slots[k];
+    v = `<div class="slot pill small" data-drop="slot" data-slot="${k}">${id ? blockHTML(S.items[id], {role:role('cond')}) : '<span class="ph">Wert</span>'}</div>`;
+  } else {
+    v = `<input class="cvin" data-b="${it.id}" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Wert" value="${esc(it.input)}" size="${Math.max(4, it.input.length + 1)}" aria-label="Vergleichswert">`;
+  }
+  return `${grip ? '<span class="grip" aria-hidden="true">⠿</span>' : ''}<span class="cellref">${it.bcell}</span><select class="opsel" data-b="${it.id}" aria-label="Vergleichszeichen">${opts}</select>${v}`;
+}
+
+function condSlot(key, live){
+  if (!live) return '<div class="slot hex dummy"><span class="ph">Bedingung</span></div>';
+  const id = S.slots[key];
+  return `<div class="slot hex" data-drop="slot" data-slot="${key}">${id ? blockHTML(S.items[id], {role:role('cond')}) : '<span class="ph">Bedingung</span>'}</div>`;
+}
+
+function blockHTML(it, o = {}){
+  const cls = ['block'];
+  if (it.kind === 'val') cls.push('val');
+  else if (it.kind === 'sym') cls.push('sym');
+  else if (it.kind === 'fn') cls.push('fn');
+  else cls.push('hex');
+  if (it.kind === 'builder') cls.push('builder');
+  if (o.role) cls.push('r-' + o.role);
+  if (o.ghost) cls.push('ghost');
+  const drag = o.drag !== false && !o.ghost && it.id ? ` data-drag="1" data-id="${it.id}"` : '';
+  let inner;
+  if (it.kind === 'builder' && o.ghost) inner = `<span class="cellref">${it.bcell}</span> ? Wert`;
+  else if (it.kind === 'builder') inner = builderInner(it, !!drag);
+  else if (it.kind === 'fn') inner = `<span class="fname">${it.lit}(</span>${condSlot('c1', o.live)}<span class="fsep">;</span>${condSlot('c2', o.live)}<span class="fname">)</span>`;
+  else inner = esc(it.label);
+  return `<div class="${cls.join(' ')}"${drag}>${inner}</div>`;
+}
+
+function render(){
+  if (mode === 'lernen' && STEPS[learnIdx].type !== 'task'){ renderLearnStep(); return; }
+  const T = CUR, L = LEVELS[level];
+  renderHeader();
+  $('#workcard').style.display = ''; $('#wtlabel').textContent = 'Deine Formel';
+  if (mode === 'lernen'){
+    const st = STEPS[learnIdx];
+    $('#lvlname').textContent = 'Erarbeitung · ' + st.title;
+    $('#taskmeta').textContent = `Schritt ${learnIdx + 1} von ${STEPS.length}`;
+    $('#tasktext').innerHTML = st.html + `<div class="assign"><b>Aufgabe:</b> ${T.text}</div>`;
+  } else {
+    $('#lvlname').textContent = `Stufe ${level}: ${L.name}`;
+    $('#taskmeta').textContent = mode === 'pfad' ? `Übungen · Aufgabe ${pfadIdx + 1} von ${STD.length}` : `Endlos · Szenario: ${T.scen}`;
+    $('#tasktext').innerHTML = T.text;
+  }
+  renderGrid();
+  const W = $('#work'), P = $('#pools');
+
+  if (L.mode === 'slots'){
+    let comb;
+    if (L.comb === 'fixed') comb = blockHTML({kind:'fn', lit:T.comb}, {drag:false, live:true, role:role('cond')});
+    else comb = `<div class="slot fnslot" data-drop="slot" data-slot="comb">${S.slots.comb ? blockHTML(S.items[S.slots.comb], {live:true, role:role('cond')}) : '<span class="ph">UND / ODER</span>'}</div>`;
+    const res = s => L.res === 'fixed'
+      ? `<span class="fixv${S.success ? ' c-' + s : ''}">${esc(T[s])}</span>`
+      : `<div class="slot pill" data-drop="slot" data-slot="${s}">${S.slots[s] ? blockHTML(S.items[S.slots[s]], {role:role(s)}) : `<span class="ph">${s === 'then' ? 'Dann_Wert' : 'Sonst_Wert'}</span>`}</div>`;
+    W.innerHTML = `<div class="formula"><span class="ft">=WENN(</span>${comb}<span class="ft">;</span>${res('then')}<span class="ft">;</span>${res('else')}<span class="ft">)</span></div>`;
+  } else if (L.mode === 'row'){
+    const kids = S.row.map(id => `<span class="iw">${blockHTML(S.items[id], {role:S.success ? (S.rowRoles[id] || '') : ''})}</span>`).join('');
+    W.innerHTML = `<div class="row" data-drop="row">${kids || '<span class="ph">Ziehe Zeichen und Bausteine hierher, um die Formel zu bauen.</span>'}</div>`;
+  } else {
+    W.innerHTML = `<input id="ft" class="ftin acin" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Formel eingeben …" value="${esc(S.text)}" aria-label="Formel">`;
+    updateTip();
+  }
+
+  let ph = '';
+  const pool = (title, key) => `<div class="pool" data-drop="pool"><div class="pool-title">${title}</div><div class="pool-items">${S.pools[key].map(id => blockHTML(S.items[id], {ghost:isPlaced(id)})).join('')}</div></div>`;
+  if (S.pools.fn.length) ph += pool('Verknüpfung', 'fn');
+  if (S.pools.cond.length) ph += pool(L.cond === 'choose' ? 'Bedingungen' : 'Bedingungen bauen', 'cond');
+  if (S.pools.cval.length) ph += pool('Vergleichswerte', 'cval');
+  if (S.pools.res.length) ph += pool(L.mode === 'row' ? 'Bausteine' : 'Werte für DANN und SONST', 'res');
+  if (L.mode === 'row'){
+    const syms = ['=', 'WENN', 'UND', 'ODER', '(', ';', ')'].concat(L.quotes ? ['"'] : []);
+    ph += `<div class="pool sympool" data-drop="pool"><div class="pool-title">Zeichen – beliebig oft verwendbar</div><div class="pool-items">${syms.map(s => `<div class="block sym" data-drag="1" data-sym="${esc(s)}">${esc(s)}</div>`).join('')}</div></div>`;
+  }
+  P.innerHTML = ph; P.style.display = ph ? '' : 'none';
+  $('#wthint').textContent = L.mode === 'text' ? '' : '· Zum Entfernen einen Baustein zurück nach unten ziehen';
+  renderFeedback(); renderNav();
+}
+
+/* ---------- Formel zusammensetzen & prüfen ---------- */
+function builderStr(it){
+  const L = LEVELS[level];
+  if (!it.op) return {missing:'Wähle in jeder Bedingung ein Vergleichszeichen aus.'};
+  let v;
+  if (L.cond === 'buildDrag'){ const id = S.slots['cv:' + it.id]; if (!id) return {missing:'Ziehe in jede Bedingung einen Vergleichswert.'}; v = S.items[id].lit; }
+  else { v = it.input.trim(); if (!v) return {missing:'Trage in jeder Bedingung einen Vergleichswert ein.'}; }
+  return {str:it.bcell + it.op + v};
+}
+function piece(id){ const it = S.items[id]; return it.kind === 'builder' ? builderStr(it) : {str:it.lit}; }
+
+function currentFormula(){
+  const T = CUR, L = LEVELS[level];
+  if (L.mode === 'text') return {src:S.text};
+  if (L.mode === 'slots'){
+    let comb = T.comb;
+    if (L.comb === 'choose'){ if (!S.slots.comb) return {missing:'Ziehe UND oder ODER in das Feld der Prüfung.'}; comb = S.items[S.slots.comb].lit; }
+    if (!S.slots.c1 || !S.slots.c2) return {missing:`Setze in ${comb}(…) zwei Bedingungen ein.`};
+    const a = piece(S.slots.c1), b = piece(S.slots.c2);
+    if (a.missing) return a; if (b.missing) return b;
+    let th = T.then, el = T.else;
+    if (L.res === 'drag'){
+      if (!S.slots.then) return {missing:'Das Feld „Dann_Wert“ ist noch leer.'};
+      if (!S.slots.else) return {missing:'Das Feld „Sonst_Wert“ ist noch leer.'};
+      th = S.items[S.slots.then].lit; el = S.items[S.slots.else].lit;
+    }
+    return {src:`=WENN(${comb}(${a.str};${b.str});${th};${el})`};
+  }
+  if (!S.row.length) return {missing:'Die Formelzeile ist noch leer.'};
+  let src = '', ranges = {};
+  for (let i = 0; i < S.row.length; i++){
+    const pc = piece(S.row[i]); if (pc.missing) return pc;
+    if (i) src += SEP;
+    ranges[S.row[i]] = [src.length, src.length + pc.str.length];
+    src += pc.str;
+  }
+  return {src, ranges};
+}
+
+function caseText(env){
+  const parts = CUR.cells.map((c, i) => `in <b>${c}</b> <code>${esc(fmtVal(env[c]))}</code>`);
+  return parts.length === 1 ? parts[0] : parts.slice(0, -1).join(', ') + ' und ' + parts[parts.length - 1];
+}
+
+function check(){
+  if (mode === 'lernen' && STEPS[learnIdx].type !== 'task'){ checkStep(); return; }
+  const T = CUR, L = LEVELS[level];
+  const cur = currentFormula();
+  if (cur.missing){ S.fb = {type:'err', html:esc(cur.missing)}; S.success = false; renderFeedback(); return; }
+  let res;
+  try { res = checkAgainst(cur.src, T); }
+  catch (e){
+    if (!(e instanceof FErr)) throw e;
+    S.success = false; S.fb = {type:'err', html: level === 9 ? 'Die Formel enthält einen Fehler.' : esc(e.message)};
+    renderFeedback(); return;
+  }
+  if (!res.ok){
+    S.success = false;
+    if (level === 9) S.fb = {type:'err', html:'Die Formel ist gültig, liefert aber nicht in allen Fällen das richtige Ergebnis.'};
+    else {
+      const f = res.fail;
+      let h = `Die Formel ist gültig, aber das Ergebnis stimmt noch nicht in jedem Fall.<br>Wenn ${caseText(f.env)} steht, liefert deine Formel <code>${esc(fmtVal(f.got))}</code> – richtig wäre <code>${esc(fmtVal(f.exp))}</code>.`;
+      if (f.got.t === 'str' && f.exp.t === 'str' && f.got.v.toLowerCase() === f.exp.v.toLowerCase()) h += '<br>Achte auf Groß- und Kleinschreibung.';
+      else if (f.got.t !== f.exp.t && fmtVal(f.got).replace(/"/g, '') === fmtVal(f.exp).replace(/"/g, '')) h += '<br>Achte darauf, ob eine Zahl oder ein Text ausgegeben werden soll.';
+      S.fb = {type:'err', html:h};
+    }
+    renderFeedback(); return;
+  }
+  if (!res.logic && !T.noLogic){
+    S.success = false;
+    S.fb = {type:'err', html:'Das Ergebnis stimmt – aber in dieser Übung sollst du die Bedingungen mit UND bzw. ODER verknüpfen statt mehrere WENN-Funktionen zu verschachteln.'};
+    renderFeedback(); return;
+  }
+  // richtig
+  S.success = true;
+  S.ast = res.ast;
+  let erstmals;
+  if (mode === 'lernen'){ erstmals = !learnDone.has(learnIdx); markStep(); }
+  else erstmals = countSolved();
+  logSolved(erstmals);
+  const a = res.ast;
+  if (L.mode === 'row'){
+    S.rowRoles = {};
+    for (const [id, [x, y]] of Object.entries(cur.ranges))
+      ['cond', 'then', 'else'].forEach((r, i) => { const sp = a.spans[i]; if (x >= sp[0] && y <= sp[1]) S.rowRoles[id] = r; });
+  }
+  S.result = ev(a, T.sample);
+  const colored = `=WENN(<span class="c-cond">${esc(fmtNode(a.args[0]))}</span>;<span class="c-then">${esc(fmtNode(a.args[1]))}</span>;<span class="c-else">${esc(fmtNode(a.args[2]))}</span>)`;
+  const norm = s => normQuotes(s).split(SEP).join('').replace(/\s+/g, '').toUpperCase();
+  let h = `<b>Glückwunsch, richtig! 🎉</b><br><span class="fcol">${colored}</span><br><span class="legend"><span class="c-cond">■</span> Prüfung &nbsp; <span class="c-then">■</span> Dann_Wert &nbsp; <span class="c-else">■</span> Sonst_Wert</span>`;
+  if (norm(cur.src) !== norm(T.sol)) h += `<br>Deine Lösung ist gleichwertig zur Musterlösung <code>${esc(T.sol)}</code>.`;
+  if (level !== 9){
+    h += `<details class="cases"><summary>Alle ${res.rows.length} getesteten Fälle anzeigen</summary><table class="tt"><tr>${T.cells.map(c => `<th>${c}</th>`).join('')}<th>Ergebnis</th></tr>` +
+      res.rows.map(r => `<tr>${T.cells.map(c => `<td>${esc(fmtVal(r.env[c]))}</td>`).join('')}<td>${esc(fmtVal(r.got))}</td></tr>`).join('') + '</table></details>';
+  }
+  if (mode === 'lernen' && STEPS[learnIdx].after) h += STEPS[learnIdx].after + '<br>';
+  if (canNext()) h += mode === 'lernen' ? 'Weiter geht es mit „Weiter“.' : 'Weiter geht es mit „Nächste Aufgabe“.';
+  S.fb = {type:'ok', html:h};
+  render();
+}
+
+/* ---------- Lernmodus ---------- */
+let learnIdx = 0, learnDone = new Set(), LS = null;
+try { const st = JSON.parse(load('learn') || '{}'); learnIdx = Math.min(STEPS.length - 1, Math.max(0, st.idx || 0)); learnDone = new Set(st.done || []); } catch (e) {}
+function saveLearn(){ store('learn', JSON.stringify({idx:learnIdx, done:[...learnDone]})); }
+function markStep(){ learnDone.add(learnIdx); saveLearn(); }
+function firstOpen(){ for (let i = 0; i < STEPS.length; i++) if (!learnDone.has(i)) return i; return STEPS.length - 1; }
+function stepUnlocked(i){ return i <= firstOpen() || learnDone.has(i); }
+
+function loadStep(){
+  learnIdx = Math.min(STEPS.length - 1, Math.max(0, learnIdx)); saveLearn();
+  const st = STEPS[learnIdx];
+  if (st.type === 'task'){
+    const [col, row] = LCELL[st.task];
+    CUR = buildTask(st.task, {col, row}, 101 + learnIdx);
+    level = st.level; poolSeed = rand(); setup(); return;
+  }
+  CUR = null;
+  S = {fb:null, success:false, ast:null};
+  LS = {sel:new Set(), vals:{}, ans:{}, inputs:(st.fields || []).map(() => ''), fieldErr:{}, fieldOk:{}, wrong:new Set(), checked:false};
+  if (st.type === 'dragcond'){
+    uid = 0; const r = rng(rand());
+    Object.assign(S, {items:{}, slots:{c1:null, c2:null}, row:[], pools:{fn:[], cond:[], cval:[], res:[]}});
+    S.pools.cond = shuffle(st.options.map(l => { const id = 'b' + (++uid); S.items[id] = {id, kind:'cond', lit:l, label:l}; return id; }), r);
+  }
+  if (st.type === 'info') markStep();
+  render();
+}
+function gotoStep(i){ learnIdx = i; pickerOpen = false; loadStep(); window.scrollTo({top:0, behavior:'smooth'}); }
+
+function sheetHTML(sh, ast){
+  const L = sh.cols.split(''), outCol = L[L.length - 1];
+  const val = v => typeof v === 'number' ? fmtNum(v) : esc(v);
+  let h = `<table class="grid sheet"><tr><th></th>${L.map(l => `<th>${l}</th>`).join('')}</tr>`;
+  h += `<tr><th>${sh.start - 1}</th>${sh.head.map(x => `<td class="lbl hd">${esc(x)}</td>`).join('')}</tr>`;
+  sh.rows.forEach((r, i) => {
+    let out = '';
+    if (ast){ const v = ev(ast, sheetEnv(sh, i)); out = esc(v.t === 'str' ? v.v : fmtVal(v)); }
+    const cells = r.map(v => `<td>${val(v)}</td>`).join('');
+    const outCell = r.length < L.length ? `<td class="${i === 0 ? 'fx' : 'res'}${ast ? ' filled' : ''}">${out}</td>` : '';
+    h += `<tr><th>${sh.start + i}</th>${cells}${outCell}</tr>`;
+  });
+  return h + '</table>';
+}
+
+/* Bedingung einzeln prüfen: wird als =WENN(Bedingung;"WAHR";"FALSCH") ausgewertet */
+function condCheck(inp, field, tests){
+  let s = normQuotes(inp).trim();
+  if (!s) return {err:'Bitte trage hier etwas ein.'};
+  if (s.startsWith('=')) s = s.slice(1).trim();
+  if (/^WENN\s*\(/i.test(s)) return {err:'Hier ist nur die Bedingung gefragt – ohne WENN.'};
+  let depth = 0, inStr = false;
+  for (const ch of s){ if (ch === '"') inStr = !inStr; else if (!inStr){ if (ch === '(') depth++; else if (ch === ')') depth--; else if (ch === ';' && depth === 0) return {err:'Mehrere Bedingungen verknüpft man mit UND(…; …) bzw. ODER(…; …).'}; } }
+  let a;
+  try { a = parseFormula(`=WENN(${s};"W";"F")`); }
+  catch (e){ if (!(e instanceof FErr)) throw e; return {err:e.message.replace(/ \(der erste Teil von WENN\)/, '').replace(/^Die Prüfung fehlt\.$/, 'Die Bedingung ist unvollständig.')}; }
+  const b = parseFormula(`=WENN(${field.ref};"W";"F")`);
+  if (field.need && !usesFn(a, [field.need])) return {err:`Verwende hier die Funktion ${field.need}(Bedingung1; Bedingung2).`};
+  for (const env of tests){
+    const x = ev(a, env), y = ev(b, env);
+    if (!same(x, y)){
+      const cs = Object.keys(env).map(k => `${k} = <code>${esc(fmtVal(env[k]))}</code>`).join(' und ');
+      const nice = v => v.t === 'str' ? (v.v === 'W' ? 'WAHR' : 'FALSCH') : fmtVal(v);
+      return {err:`Wenn ${cs} ist, wäre deine Bedingung <b>${nice(x)}</b> – richtig wäre <b>${nice(y)}</b>.`, html:true};
+    }
+  }
+  return {ok:true};
+}
+function condTests(spec){
+  const keys = Object.keys(spec);
+  return product(keys.map(k => spec[k].map(v => typeof v === 'number' ? {t:'num', v} : {t:'str', v})))
+    .map(vs => Object.fromEntries(vs.map((v, i) => [keys[i], v])));
+}
+
+function renderLearnStep(){
+  const st = STEPS[learnIdx];
+  renderHeader();
+  $('#lvlname').textContent = 'Erarbeitung · ' + st.title;
+  $('#taskmeta').textContent = `Schritt ${learnIdx + 1} von ${STEPS.length}`;
+  $('#tasktext').innerHTML = st.html;
+  $('#grid').innerHTML = st.sheet ? sheetHTML(SHEETS[st.sheet], null) : '';
+  $('#pools').innerHTML = ''; $('#pools').style.display = 'none';
+  $('#workcard').style.display = st.type === 'info' ? 'none' : '';
+  $('#wtlabel').textContent = 'Deine Antwort';
+  $('#wthint').textContent = '';
+  const W = $('#work');
+  if (st.type === 'choice'){
+    W.innerHTML = `<div class="opts${st.mono ? ' mono' : ''}">` + st.options.map((o, i) => {
+      let c = LS.sel.has(i) ? ' sel' : '';
+      if (LS.checked && LS.sel.has(i)) c += st.correct.includes(i) ? ' good' : ' bad';
+      return `<button class="opt${c}" data-opt="${i}">${esc(o)}</button>`;
+    }).join('') + `</div><div class="ohint">${st.multi ? 'Mehrere Antworten möglich.' : 'Genau eine Antwort ist richtig.'}</div>`;
+  } else if (st.type === 'truth'){
+    const t = st.table;
+    W.innerHTML = `<div class="tscroll"><table class="truth"><tr>${t.cols.map((c, i) => `<th class="${t.fill.includes(i) ? 'fillh' : ''}">${i === 0 && typeof t.rows[0][0] === 'string' ? esc(c) : `<code>${esc(c)}</code>`}</th>`).join('')}</tr>` +
+      t.rows.map((r, ri) => '<tr>' + r.map((v, ci) => {
+        if (typeof v === 'string') return `<td class="nm">${esc(v)}</td>`;
+        if (!t.fill.includes(ci)) return `<td><span class="tv ${v ? 'w' : 'f'}">${v ? 'WAHR' : 'FALSCH'}</span></td>`;
+        const k = ri + ',' + ci, cur = LS.vals[k];
+        return `<td><button class="tcell${cur ? (cur === 'WAHR' ? ' w' : ' f') : ''}${LS.wrong.has(k) ? ' bad' : ''}" data-tcell="${k}">${cur || '?'}</button></td>`;
+      }).join('') + '</tr>').join('') + '</table></div><div class="ohint">Klicke auf ein Feld, um zwischen WAHR und FALSCH zu wechseln.</div>';
+  } else if (st.type === 'classify'){
+    W.innerHTML = '<div class="cls">' + st.items.map((it, i) => {
+      const a = LS.ans[i], bad = LS.checked && a && a !== it.a;
+      return `<div class="clsrow${bad ? ' bad' : ''}${LS.checked && a === it.a ? ' good' : ''}"><div class="clst">${esc(it.t)}</div><div class="clsb">` +
+        ['UND', 'ODER'].map(v => `<button class="opt small${a === v ? ' sel' : ''}" data-cls="${i}" data-v="${v}">${v}</button>`).join('') + '</div></div>';
+    }).join('') + '</div>';
+  } else if (st.type === 'cond'){
+    W.innerHTML = st.fields.map((f, i) => `<div class="condrow"><label for="cf${i}">${esc(f.label)}</label>
+      <input id="cf${i}" class="condin acin${LS.fieldOk[i] ? ' ok' : ''}${LS.fieldErr[i] ? ' err' : ''}" data-f="${i}" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="${esc(f.ph || 'Bedingung, z. B. A1>5')}" value="${esc(LS.inputs[i])}">
+      <div class="condmsg">${LS.fieldErr[i] ? LS.fieldErr[i] : (LS.fieldOk[i] ? '✓ richtig' : '')}</div></div>`).join('');
+  } else if (st.type === 'dragcond'){
+    W.innerHTML = `<div class="formula">${blockHTML({kind:'fn', lit:st.fn}, {drag:false, live:true, role:role('cond')})}</div>`;
+    $('#pools').innerHTML = `<div class="pool" data-drop="pool"><div class="pool-title">Bedingungen</div><div class="pool-items">${S.pools.cond.map(id => blockHTML(S.items[id], {ghost:isPlaced(id)})).join('')}</div></div>`;
+    $('#pools').style.display = '';
+    $('#wthint').textContent = '· Zum Entfernen eine Bedingung zurück nach unten ziehen';
+  } else W.innerHTML = '';
+  renderFeedback(); renderNav();
+}
+
+function checkStep(){
+  const st = STEPS[learnIdx];
+  let ok = false, html = '';
+  if (st.type === 'choice'){
+    if (!LS.sel.size){ S.fb = {type:'err', html:'Wähle zuerst eine Antwort aus.'}; renderFeedback(); return; }
+    LS.checked = true;
+    const wrong = [...LS.sel].filter(i => !st.correct.includes(i)), missing = st.correct.filter(i => !LS.sel.has(i));
+    ok = !wrong.length && !missing.length;
+    if (!ok){
+      const lines = wrong.map(i => (st.why && st.why[i]) || `„${esc(st.options[i])}“ passt nicht.`);
+      if (!wrong.length && missing.length) lines.push(missing.length === 1 ? 'Es fehlt noch eine richtige Antwort.' : `Es fehlen noch ${missing.length} richtige Antworten.`);
+      html = 'Noch nicht ganz.<br>' + lines.join('<br>');
+    }
+  } else if (st.type === 'truth'){
+    const t = st.table; let wrong = 0, empty = 0; LS.wrong = new Set();
+    t.rows.forEach((r, ri) => t.fill.forEach(ci => { const k = ri + ',' + ci, v = LS.vals[k]; if (!v) empty++; else if ((v === 'WAHR') !== r[ci]){ wrong++; LS.wrong.add(k); } }));
+    if (empty) html = `Es ${empty === 1 ? 'ist noch ein Feld' : `sind noch ${empty} Felder`} mit „?“ offen.`;
+    else if (wrong) html = `${wrong === 1 ? 'Ein Feld ist' : wrong + ' Felder sind'} noch falsch (rot markiert).<br>UND: nur WAHR, wenn <b>alle</b> Bedingungen WAHR sind. ODER: WAHR, sobald <b>mindestens eine</b> Bedingung WAHR ist.`;
+    else ok = true;
+  } else if (st.type === 'classify'){
+    LS.checked = true;
+    const open = st.items.filter((_, i) => !LS.ans[i]).length;
+    const wrong = st.items.map((it, i) => LS.ans[i] && LS.ans[i] !== it.a ? i : -1).filter(i => i >= 0);
+    if (open) html = `Bitte entscheide dich bei ${open === 1 ? 'einer Regel' : open + ' Regeln'} noch für UND oder ODER.`;
+    else if (wrong.length) html = `${wrong.length === 1 ? 'Eine Regel ist' : wrong.length + ' Regeln sind'} noch falsch zugeordnet (rot markiert).` + wrong.map(i => st.items[i].why ? '<br>' + st.items[i].why : '').join('');
+    else ok = true;
+  } else if (st.type === 'dragcond'){
+    if (!S.slots.c1 || !S.slots.c2) html = `Ziehe in beide Felder von ${st.fn} eine Bedingung.`;
+    else {
+      const r = condCheck(`${st.fn}(${S.items[S.slots.c1].lit};${S.items[S.slots.c2].lit})`, {ref:st.ref}, condTests(st.tests));
+      ok = !!r.ok; if (!ok) html = r.html ? r.err : esc(r.err);
+    }
+    S.success = ok;
+  } else if (st.type === 'cond'){
+    const tests = condTests(st.tests);
+    let all = true;
+    st.fields.forEach((f, i) => {
+      const r = condCheck(LS.inputs[i], f, tests);
+      if (r.ok){ LS.fieldOk[i] = true; delete LS.fieldErr[i]; }
+      else { all = false; delete LS.fieldOk[i]; LS.fieldErr[i] = r.html ? r.err : esc(r.err); }
+    });
+    ok = all;
+    if (!ok) html = 'Noch nicht ganz – sieh dir die Hinweise unter den Eingabefeldern an.';
+  }
+  if (ok){
+    const erstmals = !learnDone.has(learnIdx);
+    markStep();
+    logSolved(erstmals);
+    S.fb = {type:'ok', html:'<b>Richtig! 🎉</b>' + (st.after ? '<br>' + st.after : '') + (canNext() ? '<br>Weiter geht es mit „Weiter“.' : '')};
+  } else S.fb = {type:'err', html};
+  render();
+}
+
+function learnClick(e){
+  const o = e.target.closest('[data-opt]');
+  if (o){ const st = STEPS[learnIdx], i = +o.dataset.opt;
+    if (st.multi){ LS.sel.has(i) ? LS.sel.delete(i) : LS.sel.add(i); } else LS.sel = new Set([i]);
+    LS.checked = false; S.fb = null; render(); return true; }
+  const tc = e.target.closest('[data-tcell]');
+  if (tc){ const k = tc.dataset.tcell; LS.vals[k] = LS.vals[k] === 'WAHR' ? 'FALSCH' : 'WAHR'; LS.wrong.delete(k); S.fb = null; render(); return true; }
+  const cl = e.target.closest('[data-cls]');
+  if (cl){ LS.ans[+cl.dataset.cls] = cl.dataset.v; LS.checked = false; S.fb = null; render(); return true; }
+  return false;
+}
+
+/* ---------- Drag & Drop: Ablageregeln (Ziehen: basis.js, Shift+Klick: bausteine.js) ---------- */
+function accepts(target, kind){
+  const t = target.dataset.drop;
+  if (t === 'slot'){
+    const s = target.dataset.slot;
+    if (s === 'comb') return kind === 'fn';
+    if (s === 'c1' || s === 'c2') return kind === 'cond' || kind === 'builder';
+    return kind === 'val';
+  }
+  if (t === 'row') return kind !== 'cond' && kind !== 'fn';
+  return t === 'pool';
+}
+function unplace(id){
+  for (const k in S.slots) if (S.slots[k] === id){ S.slots[k] = null; if (k === 'comb'){ S.slots.c1 = null; S.slots.c2 = null; } }
+  const i = S.row.indexOf(id); if (i >= 0) S.row.splice(i, 1);
+  if (S.items[id] && S.items[id].kind === 'sym') delete S.items[id];
+}
+
+function applyDrop(d, type, idx, t){
+  if (type === 'slot'){
+    const s = t.dataset.slot;
+    if (S.slots[s] === d.id) return;
+    const prev = Object.keys(S.slots).find(k => S.slots[k] === d.id);
+    const occ = S.slots[s];
+    if (prev) S.slots[prev] = null;
+    S.slots[s] = d.id;
+    if (prev && occ){ const pe = document.querySelector(`[data-slot="${prev}"]`); if (pe && accepts(pe, S.items[occ].kind)) S.slots[prev] = occ; } // tauschen
+  } else if (type === 'row'){
+    let id = d.id;
+    if (d.sym){ id = 's' + (++uid); S.items[id] = {id, kind:'sym', lit:d.sym, label:d.sym}; }
+    const cur = S.row.indexOf(id);
+    if (cur >= 0){ S.row.splice(cur, 1); if (cur < idx) idx--; }
+    S.row.splice(idx, 0, id);
+  } else {
+    if (d.sym || !isPlaced(d.id)) return;
+    unplace(d.id);
+  }
+  S.success = false; S.fb = null; S.result = null;
+  render();
+}
+
+/* ---------- Ereignisse ---------- */
+document.addEventListener('change', e => {
+  if (e.target.matches('.opsel')){ S.items[e.target.dataset.b].op = e.target.value; clearMarks(); }
+});
+document.addEventListener('input', e => {
+  if (e.target.matches('.cvin')){ const it = S.items[e.target.dataset.b]; it.input = e.target.value; e.target.size = Math.max(4, it.input.length + 1); clearMarks(); }
+  if (e.target.id === 'ft'){ S.text = e.target.value; updateTip(); clearMarks(); }
+  if (e.target.matches('.condin')){ const i = +e.target.dataset.f; LS.inputs[i] = e.target.value; delete LS.fieldOk[i]; delete LS.fieldErr[i]; e.target.classList.remove('ok', 'err'); e.target.nextElementSibling.textContent = ''; }
+});
+document.addEventListener('keyup', e => { if (e.target.id === 'ft') updateTip(); });
+document.addEventListener('click', e => {
+  if (e.target.id === 'ft') updateTip();
+  if (mode === 'lernen' && LS && STEPS[learnIdx].type !== 'task' && learnClick(e)) return;
+  const mg = e.target.closest('[data-mode-go]'); if (mg){ setMode(mg.dataset.modeGo); return; }
+  const sp = e.target.closest('[data-step]'); if (sp){ gotoStep(+sp.dataset.step); return; }
+  if (e.target.closest('[data-learnreset]')){ if (confirm('Den gesamten Lernfortschritt löschen und von vorne beginnen?')){ learnDone.clear(); gotoStep(0); } return; }
+  navClick(e);
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && (e.target.id === 'ft' || e.target.matches('.cvin') || e.target.matches('.condin'))){ e.preventDefault(); check(); }
+});
+$('#resetBtn').addEventListener('click', () => { if (mode === 'lernen' && STEPS[learnIdx].type !== 'task') loadStep(); else setup(); });
+$('#prevBtn').addEventListener('click', () => { if (mode === 'lernen') gotoStep(learnIdx - 1); else gotoTask(pfadIdx - 1); });
+if (mode === 'endlos') newEndless();
+loadTask();
+</script>
+</body>
+</html>

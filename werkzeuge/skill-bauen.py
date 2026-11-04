@@ -11,13 +11,13 @@ PUBLIC = WURZEL / "pb_public"
 BIBLIOTHEKEN = [
     ("katalog.js", "Inhaltsverzeichnis: hier wird jede Übung eingetragen"),
     ("sync.js", "Anmeldung und Speichern"),
-    ("excel/basis.js", "Excel: Grundlage aller Excel-Übungen (dazu basis.css)"),
-    ("excel/bausteine.js", "Excel: Formeln aus Bausteinen (wie WENN, UND/ODER; dazu bausteine.css)"),
-    ("excel/tabelle.js", "Excel: Tabellen-Übungen mit Rechenkern (wie Funktionen, Bezüge; dazu tabelle.css)"),
-    ("python/lib/pykurs.js", "Geführte Python-Übungen"),
-    ("datenbanken/abfragen.js", "Datenbanken: SQL-Abfragen mit Entwurfsansicht und Editor (dazu abfragen.css)"),
-    ("datenbanken/filme.js", "Datenbanken: Tabelle filme als Daten"),
-    ("tools/struktogramm.js", "Tools: Struktogramme zeichnen und exportieren (dazu struktogramm.css)"),
+    ("IT/excel/basis.js", "Excel: Grundlage aller Excel-Übungen (dazu basis.css)"),
+    ("IT/excel/bausteine.js", "Excel: Formeln aus Bausteinen (wie WENN, UND/ODER; dazu bausteine.css)"),
+    ("IT/excel/tabelle.js", "Excel: Tabellen-Übungen mit Rechenkern (wie Funktionen, Bezüge; dazu tabelle.css)"),
+    ("IT/python/lib/pykurs.js", "Geführte Python-Übungen"),
+    ("IT/datenbanken/abfragen.js", "Datenbanken: SQL-Abfragen mit Entwurfsansicht und Editor (dazu abfragen.css)"),
+    ("IT/datenbanken/filme.js", "Datenbanken: Tabelle filme als Daten"),
+    ("IT/tools/struktogramm.js", "Tools: Struktogramme zeichnen und exportieren (dazu struktogramm.css)"),
 ]
 
 

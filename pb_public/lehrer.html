@@ -228,15 +228,18 @@ const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 // Bereiche, Übungen und ihre Stufen kommen aus katalog.js
+// Haben Bereiche aus mehreren Fächern Übungen, steht das Fach davor („BWR 9 · Anlagen“)
 const SEITE = {}, TOOL = {}, BEREICHE = [];
-(window.KATALOG ? KATALOG.bereiche : []).forEach(b => {
-  if (!b.tools.length || b.auswertung === false) return;
+const MIT_UEBUNGEN = (window.KATALOG ? KATALOG.bereiche : []).filter(b => b.tools.length && b.auswertung !== false);
+const MEHRERE_FAECHER = new Set(MIT_UEBUNGEN.map(b => b.gruppe && b.gruppe.pfad)).size > 1;
+const bereichName = b => (MEHRERE_FAECHER && b.gruppe ? b.gruppe.titel + ' · ' : '') + b.titel;
+MIT_UEBUNGEN.forEach(b => {
   BEREICHE.push(b);
   b.tools.forEach(t => {
-    SEITE[t.id] = b.titel + ': ' + t.titel;
+    SEITE[t.id] = bereichName(b) + ': ' + t.titel;
     TOOL[t.id] = {bereich: b.id, titel: t.titel, stufen: Array.isArray(t.stufen) ? t.stufen : Array.from({length: t.stufen || 0}, (_, i) => String(i + 1))};
   });
-  document.getElementById('fBereich').appendChild(new Option(b.titel, b.id));
+  document.getElementById('fBereich').appendChild(new Option(bereichName(b), b.id));
 });
 const MODUS = {erarbeitung:'Erarbeitung', uebungen:'Übungen', endlos:'Endlos'};
 const PLATTFORM = window.KATALOG ? KATALOG.name : 'vibe learning';

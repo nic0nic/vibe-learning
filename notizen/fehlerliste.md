@@ -30,6 +30,14 @@ Gesammelt im Thread „Aufbau der Seite“. Umgesetzt wird erst, wenn die Lehrkr
 
 ## Erledigt
 
+### Version vom 04.11.
+
+31. **Fächer: IT und BWR** (gewünscht 04.11.)
+    - Vorne in der Menüleiste das Fach-Menü (IT, BWR › Jahrgangsstufe 9), danach nur die Bereiche dieses Fachs. Das zuletzt gewählte Fach merkt sich der Browser für die Startseite.
+    - Ordner: alles Bisherige nach `pb_public/IT/` und `standalone/IT/`; neu `BWR/9II/` mit Unternehmensführung, Anlagen, Finanzierung, Kapitalanlage, Forderungen (noch ohne Übungen).
+    - katalog.js mit `faecher`/`stufen`, `KATALOG.gruppen` und `KATALOG.bereiche` (mit `pfad`); Tool-ids unverändert, gespeicherter Fortschritt bleibt.
+    - Alte Adressen leitet `pb_hooks/weiterleitung.pb.js` weiter. Skripte (einzeldateien.py, skill-bauen.py, filme-aus-csv.py, pdfme/bauen.sh, pockettype nach-vibe-learning.sh) angepasst. `bericht.html` bekommt keine Einzeldatei (`data-einzeldatei="nein"`).
+
 ### Version vom 03.11.
 
 29. **Struktogramm-Editor: Einfügemarke und Tastatur** (gewünscht 03.11.)

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Erzeugt pb_public/datenbanken/filme.js aus IMDb-Exporten: Bewertungen und optional Merkliste.
+"""Erzeugt pb_public/IT/datenbanken/filme.js aus IMDb-Exporten: Bewertungen und optional Merkliste.
 
 Aufruf im Hauptordner des Repos:
   python3 werkzeuge/filme-aus-csv.py PFAD/Bewertungen.csv [PFAD/Watchlist.csv]
@@ -11,7 +11,7 @@ Feldnamen und Datentypen stehen unten in FELDER.
 import csv, json, pathlib, sys
 
 WURZEL = pathlib.Path(__file__).resolve().parent.parent
-ZIEL = WURZEL / "pb_public" / "datenbanken" / "filme.js"
+ZIEL = WURZEL / "pb_public" / "IT" / "datenbanken" / "filme.js"
 FELDER = [
     ("id", "INTEGER PRIMARY KEY", "Zahl", "laufende Nummer (Primärschlüssel)"),
     ("titel", "TEXT", "Text", "deutscher Titel"),

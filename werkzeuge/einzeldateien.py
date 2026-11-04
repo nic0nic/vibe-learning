@@ -2,7 +2,10 @@
 """Erzeugt aus jeder Übung eine eigenständige HTML-Datei (alles eingebettet).
 
 Aufruf im Ordner vibe-learning:  python3 werkzeuge/einzeldateien.py
-Ergebnis: standalone/<bereich>/<datei>.html, gleiche Ordner wie auf der Webseite, z. B. standalone/excel/wenn.html
+Ergebnis: standalone/<Fach>/…/<bereich>/<datei>.html, gleiche Ordner wie auf der Webseite,
+z. B. standalone/IT/excel/wenn.html oder standalone/BWR/9II/anlagen/….
+Alle HTML-Seiten in den Fachordnern außer index.html (Übersichten), Weiterleitungen,
+IT/tippen/ (pockettype läuft nur mit Server) und Seiten mit <html … data-einzeldatei="nein">.
 
 Eingebettet wird jede lokale Datei aus <script src="…"> und <link rel="stylesheet" href="…">.
 Vorne kommt window.PF_EINZELDATEI = true dazu: nav.js zeigt dann kein Menü,
@@ -14,7 +17,8 @@ import pathlib, re, shutil, sys
 WURZEL = pathlib.Path(__file__).resolve().parent.parent
 PUBLIC = WURZEL / "pb_public"
 ZIEL = WURZEL / "standalone"
-BEREICHE = ("excel", "python", "datenbanken", "tools")
+FAECHER = ("IT", "BWR")                 # Ordner in pb_public, siehe katalog.js
+OHNE = ("IT/tippen",)                    # Ordner ohne Einzeldateien
 
 # Ein Durchgang für beide, damit Text in schon eingebetteten Dateien (z. B. Beispiele
 # in Kommentaren) nicht noch einmal ersetzt wird.
@@ -46,21 +50,27 @@ def einbetten(seite):
     return re.sub(r"<head>", "<head>\n<script>window.PF_EINZELDATEI = true;</script>", html, count=1)
 
 
+def seiten():
+    for fach in FAECHER:
+        for seite in sorted((PUBLIC / fach).rglob("*.html")):
+            rel = seite.relative_to(PUBLIC).as_posix()
+            if seite.name == "index.html" or any(rel.startswith(o + "/") for o in OHNE) or "/lib/" in rel:
+                continue
+            text = seite.read_text(encoding="utf-8")
+            if 'http-equiv="refresh"' in text or 'data-einzeldatei="nein"' in text:
+                continue
+            yield seite
+
+
 def main():
     if ZIEL.exists():
         shutil.rmtree(ZIEL)
     ZIEL.mkdir()
-    for bereich in BEREICHE:
-        for seite in sorted((PUBLIC / bereich).glob("*.html")):
-            if seite.name == "index.html":
-                continue
-            text = seite.read_text(encoding="utf-8")
-            if 'http-equiv="refresh"' in text:          # Weiterleitung, keine Übung
-                continue
-            ziel = ZIEL / bereich / seite.name
-            ziel.parent.mkdir(exist_ok=True)
-            ziel.write_text(einbetten(seite), encoding="utf-8")
-            print(f"{ziel.relative_to(WURZEL)}  ({ziel.stat().st_size // 1024} KB)")
+    for seite in seiten():
+        ziel = ZIEL / seite.relative_to(PUBLIC)
+        ziel.parent.mkdir(parents=True, exist_ok=True)
+        ziel.write_text(einbetten(seite), encoding="utf-8")
+        print(f"{ziel.relative_to(WURZEL)}  ({ziel.stat().st_size // 1024} KB)")
 
 
 if __name__ == "__main__":

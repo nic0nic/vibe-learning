@@ -1,0 +1,1698 @@
+<!doctype html>
+<html lang="de" data-trainer="strukto">
+<head>
+<script>window.PF_EINZELDATEI = true;</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Struktogramm-Editor – vibe learning</title>
+<!--
+  Struktogramm-Editor: Elemente aus der linken Leiste ins Struktogramm ziehen (oder anklicken:
+  dann kommen sie hinter das markierte Element), anklicken zum Bearbeiten.
+  Zeichnen und Export: struktogramm.js. Gespeichert wird im Browser (strukto-diagramm),
+  über PocketBase pro Schüler. python-struktogramm.html übergibt Diagramme über sessionStorage.
+  Tastatur: Pfeiltasten wechseln zwischen Bauteilen und Lücken, Buchstaben fügen in Lücken ein
+  (TASTE_LEISTE), Enter bearbeitet den Text und kehrt zurück, D dupliziert, Entf löscht.
+-->
+<script>/* ../../katalog.js */
+/* Inhaltsverzeichnis der Übungsplattform
+ *
+ * Das ist die einzige Stelle, an der ein neues Tool eingetragen werden muss.
+ * Menüleiste, Startseite, Bereichsseiten, Speichern und Lehrerbereich lesen von hier.
+ *
+ * Aufbau:   Fach → (Jahrgangsstufe) → Bereich → Tool. Ordner in pb_public: <Fach>/<Bereich>/
+ *           bzw. <Fach>/<Stufe>/<Bereich>/, z. B. IT/excel/wenn.html, BWR/9II/anlagen/…
+ * Fach:     id      = Ordnername (z. B. IT, BWR), titel = Anzeige im Fach-Menü, text = Untertitel der Startseite
+ *           bereiche = [Bereich] oder stufen = [{id (Ordner, z. B. 9II), titel (Fach-Menü), kurz (oben in der
+ *           Leiste, z. B. 9), text, bereiche}] für Fächer mit Jahrgangsstufen
+ * Bereich:  id      = Name des Unterordners (nur a–z, 0–9, -), über alle Fächer eindeutig
+ *           titel   = Text in der Menüleiste
+ *           farbe   = Akzentfarbe im dunklen Design (Nord-Farben, nordtheme.com),
+ *           farbeHell = dunklerer Ton derselben Farbe für das helle Design (sonst schlecht lesbar)
+ *           farbeSchrift = optional: hellerer Ton für Schrift im dunklen Design, wenn farbe dort zu wenig Kontrast hat
+ *           Ohne farbe bekommt der Bereich das neutrale Nord-Blau.
+ * Tool:     id      = Kürzel für Speicherstand und Auswertung, über alle Fächer eindeutig (nie mehr ändern,
+ *                     sonst geht der gespeicherte Fortschritt verloren)
+ *           datei   = HTML-Datei im Ordner des Bereichs
+ *           titel, text = Anzeige im Menü und auf den Übersichtsseiten
+ *           bedingt = true: nur sichtbar, wenn der Server es für den angemeldeten Schüler freigibt
+ *                     (z. B. Tipp-Aufgabe, siehe /api/trainer/sichtbar in pb_hooks/tippen.pb.js)
+ *           stufen  = Stufen der Übungen für die Auswertung (lehrer.html): Anzahl oder Liste
+ *                     mit Kurznamen, wenn die Nummern allein missverständlich wären
+ *           gruppe  = optional: Untermenü im Menü (aufklappen beim Darüberfahren) und
+ *                     Zwischenüberschrift auf der Bereichsseite (Tools derselben Gruppe direkt hintereinander)
+ * Bereich mit auswertung: false (z. B. Tools ohne Aufgaben) erscheint nicht im Lehrerbereich.
+ *
+ * In der HTML-Datei eines Tools steht dieselbe id: <html lang="de" data-trainer="…">.
+ * Übersichtsseiten: Bereich <html data-bereich="IT/excel">, Fach bzw. Stufe <html data-gruppe="IT">
+ * bzw. data-gruppe="BWR/9II" mit <div id="pf-start">, Fach mit Stufen <html data-fach="BWR"> mit <div id="pf-fach">.
+ *
+ * Am Ende berechnet: KATALOG.gruppen = [{pfad, fach, stufe, titel, text, bereiche}] (Fach bzw. Fach + Stufe)
+ * und KATALOG.bereiche = alle Bereiche aller Fächer, jeweils mit pfad (Ordner) und gruppe.
+ */
+window.KATALOG = {
+  name: 'vibe learning',
+  untertitel: 'Übungen für den Unterricht. Wähle oben Fach und Bereich aus.',
+  faecher: [
+    {id: 'IT', titel: 'IT', text: 'Informationstechnologie: Tabellenkalkulation, Programmieren, Datenbanken, Tippen und Werkzeuge.',
+      bereiche: [
+        {
+          id: 'excel', titel: 'Excel', farbe: '#a3be8c', farbeHell: '#5e8a45',
+          text: 'Tabellenkalkulation: Funktionen, Bedingungen und Verknüpfungen.',
+          tools: [
+            {id: 'fn',   stufen: 5, datei: 'funktionen.html', titel: 'SUMME, MIN, MAX …', text: 'SUMME, MITTELWERT, MIN, MAX, ANZAHL und ANZAHL2 – mit Erklärung, Übungen und Endlos-Modus.'},
+            {id: 'wenn', stufen: 9, datei: 'wenn.html',       titel: 'WENN-Funktion',     text: 'Die WENN-Funktion üben – von Bausteinen bis zur eigenen Formel.'},
+            {id: 'uo',   stufen: 9, datei: 'und-oder.html',   titel: 'UND / ODER',        text: 'Bedingungen verknüpfen – mit Erarbeitung, Übungen und Endlos-Modus.'},
+            {id: 'bz',   stufen: 6, datei: 'bezuege.html',    titel: 'Zellbezüge $',      text: 'Relative und absolute Bezüge: Formeln übertragen und $-Zeichen richtig setzen.'}
+          ]
+        },
+        {id: 'python',      titel: 'Python', farbe: '#b48ead', farbeHell: '#8a5f84', text: 'Programmieren mit Python.',
+          tools: [
+            {id: 'py', datei: 'editor.html', titel: 'Python-Editor', text: 'Python direkt im Browser schreiben und ausführen – mit Terminal für Ein- und Ausgabe.'},
+            {id: 'pyif', stufen: 3, datei: 'bedingungen.html', titel: 'Bedingte Anweisung', text: 'if, elif und else: 10 Aufgaben mit Erklärung und automatischer Prüfung.'}
+          ]
+        },
+        {id: 'datenbanken', titel: 'Datenbanken', farbe: '#bf616a', farbeHell: '#a3434c', farbeSchrift: '#e0959b', text: 'Tabellen, Beziehungen und SQL-Abfragen.',
+          tools: [
+            {id: 'sqlfrei', datei: 'filmdatenbank.html', titel: 'Film-Datenbank', text: 'Eigene Abfragen an die Filmdatenbank stellen, ohne Aufgaben – mit Entwurfsansicht oder in SQL.'},
+            {id: 'sql', stufen: 5, datei: 'abfragen.html', titel: 'SQL-Abfragen', text: 'SELECT, FROM, WHERE und ORDER BY an einer Filmdatenbank – vom Entwurf wie in Access bis zur eigenen SQL-Abfrage.'},
+            {id: 'sqluo', stufen: ['Access 1', 'Access 2', 'Access 3', 'SQL 1', 'SQL 2', 'SQL 3', 'SQL 4', 'SQL 5'], datei: 'datenight.html', titel: 'Datenight: UND / ODER', text: 'Drei Wochen Dates mit immer verrückteren Filmwünschen: Kriterien mit UND und ODER – im Access-Entwurf oder mit Blöcken und SQL.'},
+            {id: 'bericht', datei: 'bericht.html', titel: 'Bericht (Versuch)', text: 'Berichte aus einer Abfrage entwerfen wie in Access: als Liste oder eine Seite je Datensatz, mit Seitenansicht als PDF.'}
+          ]
+        },
+        {id: 'tippen', titel: 'Tippen', farbe: '#8db3ee', farbeHell: '#2b579a', text: 'Schnell und sicher tippen mit zehn Fingern.',
+          tools: [
+            {id: 'tippen', datei: 'pockettype.html', titel: 'pockettype', text: 'Tipptrainer: Wörter und Anschläge pro Minute, Genauigkeit, Bestwerte und Verlauf. Eigenes Projekt auf Basis von Monkeytype (GPL-3.0).'},
+            {id: 'lektionen', datei: 'lektionen.html', titel: 'Lektion üben', text: 'Die 17 Lektionen aus TIPP10 in fester Reihenfolge: von der Grundreihe asdf jklö bis zu Ziffern und Sonderzeichen.'},
+            {id: 'tippaufgabe', bedingt: true, datei: 'aufgabe.html', titel: 'Aufgabe', text: 'Den Text abschreiben, den deine Lehrkraft aufgegeben hat – so oft du willst.'}
+          ]
+        },
+        {id: 'tools', titel: 'Tools', farbe: '#b4bdcc', farbeHell: '#4c566a', auswertung: false, text: 'Werkzeuge für den Unterricht, ohne Aufgaben.',
+          tools: [
+            {id: 'strukto', gruppe: 'Struktogramm', datei: 'struktogramm.html', titel: 'Struktogramm-Editor', text: 'Struktogramme mit der Maus zusammensetzen und als SVG, HTML oder JPG exportieren.'},
+            {id: 'pystrukto', gruppe: 'Struktogramm', datei: 'python-struktogramm.html', titel: 'Python → Struktogramm', text: 'Python-Code eingeben, das Struktogramm entsteht sofort daneben – zum Export oder zum Weiterbearbeiten im Editor.'}
+          ]
+        }
+      ]
+    },
+    {id: 'BWR', titel: 'BWR', text: 'Betriebswirtschaftslehre/Rechnungswesen.',
+      stufen: [
+        {id: '9II', titel: 'Jahrgangsstufe 9', kurz: '9', text: 'BWR, Jahrgangsstufe 9 (Wahlpflichtfächergruppe II).',
+          bereiche: [
+            {id: 'unternehmensfuehrung', titel: 'Unternehmensführung', farbe: '#81a1c1', farbeHell: '#4f73a3', text: 'Übungen zur Unternehmensführung.', tools: []},
+            {id: 'anlagen', titel: 'Anlagen', farbe: '#a3be8c', farbeHell: '#5e8a45', text: 'Übungen zu Anlagen.', tools: []},
+            {id: 'finanzierung', titel: 'Finanzierung', farbe: '#ebcb8b', farbeHell: '#8a6d1f', text: 'Übungen zur Finanzierung.', tools: []},
+            {id: 'kapitalanlage', titel: 'Kapitalanlage', farbe: '#b48ead', farbeHell: '#8a5f84', text: 'Übungen zur Kapitalanlage.', tools: []},
+            {id: 'forderungen', titel: 'Forderungen', farbe: '#bf616a', farbeHell: '#a3434c', farbeSchrift: '#e0959b', text: 'Übungen zu Forderungen.', tools: []}
+          ]
+        }
+      ]
+    }
+  ]
+};
+
+// Gruppen (Fach bzw. Fach + Jahrgangsstufe) und alle Bereiche mit Ordner, für nav.js, sync.js und lehrer.html
+(function (K) {
+  K.gruppen = [];
+  K.faecher.forEach(f => (f.stufen
+    ? f.stufen.map(s => ({pfad: f.id + '/' + s.id, fach: f, stufe: s, titel: f.titel + ' ' + (s.kurz || s.titel), text: s.text || f.text, bereiche: s.bereiche}))
+    : [{pfad: f.id, fach: f, stufe: null, titel: f.titel, text: f.text, bereiche: f.bereiche}]).forEach(g => K.gruppen.push(g)));
+  K.bereiche = [].concat(...K.gruppen.map(g => g.bereiche.map(b => Object.assign(b, {pfad: g.pfad + '/' + b.id, gruppe: g}))));
+})(window.KATALOG);
+
+</script>
+<script>/* ../../nav.js */
+/* Menüleiste der Übungsplattform
+ *
+ * Baut oben auf jeder Seite die Leiste: vorne das Fach-Menü (IT, BWR › Jahrgangsstufe 9 …),
+ * dahinter die Bereiche des gewählten Fachs aus katalog.js.
+ * Fährt man mit der Maus über einen Bereich (am Handy: antippen), klappen
+ * dessen Übungen auf. Außerdem füllt das Skript die Startseite bzw. Fachseite (#pf-start),
+ * die Auswahl der Jahrgangsstufe (#pf-fach) und die Übersichtsseite eines Bereichs (#pf-bereich).
+ * Das zuletzt gewählte Fach merkt sich der Browser (localStorage pf-fach) für die Startseite.
+ *
+ * Fehlt katalog.js oder nav.js, läuft das Tool trotzdem – nur ohne Menüleiste.
+ * Tools mit gruppe (katalog.js) stehen im Menü in einem Untermenü (klappt beim Darüberfahren auf)
+ * und auf der Bereichsseite unter einer Zwischenüberschrift.
+ * Tools mit bedingt: true (katalog.js) sind zunächst ausgeblendet; sync.js blendet sie ein,
+ * wenn der Server sie für den angemeldeten Schüler freigibt (Klasse pf-sichtbar).
+ * In Einzeldateien (werkzeuge/einzeldateien.py, window.PF_EINZELDATEI) zeigt die
+ * Leiste nur Name und Hell/Dunkel-Knopf, weil es keine anderen Seiten gibt.
+ */
+(function () {
+  'use strict';
+  const K = window.KATALOG;
+  if (!K) return;
+
+  // Wurzel der Plattform = Ordner, in dem nav.js liegt (funktioniert auch per Doppelklick)
+  const me = document.currentScript && document.currentScript.src;
+  const BASE = me ? me.replace(/[^/]*$/, '') : '';
+  const root = document.documentElement;
+  const TOOL = root.dataset.trainer || '';
+  // Aktueller Bereich: über das Tool oder <html data-bereich="IT/excel">.
+  // Aktuelle Gruppe (Fach bzw. Fach + Jahrgangsstufe): über den Bereich, <html data-gruppe="BWR/9II">
+  // oder <html data-fach="BWR">, sonst die zuletzt gewählte (localStorage pf-fach), sonst die erste.
+  const BER = K.bereiche.find(b => b.tools.some(t => t.id === TOOL)) || K.bereiche.find(b => b.pfad === root.dataset.bereich) || null;
+  const BEREICH = BER ? BER.id : '';
+  const FACHSEITE = K.faecher.find(f => f.id === root.dataset.fach) || null;
+  let GRUPPE = BER ? BER.gruppe : K.gruppen.find(g => g.pfad === root.dataset.gruppe) || (FACHSEITE && K.gruppen.find(g => g.fach === FACHSEITE));
+  if (GRUPPE){ try { localStorage.setItem('pf-fach', GRUPPE.pfad); } catch (e) {} }
+  else {
+    let zuletzt = null;
+    try { zuletzt = localStorage.getItem('pf-fach'); } catch (e) {}
+    GRUPPE = K.gruppen.find(g => g.pfad === zuletzt) || K.gruppen[0];
+  }
+
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+  const bereichUrl = b => BASE + b.pfad + '/index.html';
+  const toolUrl = (b, t) => BASE + b.pfad + '/' + t.datei;
+  const gruppeUrl = g => BASE + g.pfad + '/index.html';
+  const fachUrl = f => BASE + f.id + '/index.html';
+
+  const CSS = `
+.pf-nav{background:var(--panel,#f6f8fb);color:var(--text,#2e3440);border-bottom:1px solid var(--border,#cdd3de);position:relative;z-index:60;font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.pf-in{max-width:1400px;margin:0 auto;display:flex;align-items:center;gap:6px;padding:0 16px;min-height:50px}
+.pf-brand{font:800 18px ui-monospace,Consolas,"Liberation Mono",monospace;color:inherit;text-decoration:none;margin-right:14px;white-space:nowrap}
+.pf-brand span{color:var(--accent-text,var(--accent,#5e81ac))}
+.pf-menu{display:flex;gap:2px;list-style:none;margin:0;padding:0}
+.pf-item{position:relative;--bc:#5e81ac}
+html[data-theme=dark] .pf-item{--bc:#88c0d0}
+.pf-item>a{display:flex;align-items:center;gap:5px;padding:14px 11px;color:inherit;text-decoration:none;font-weight:600;border-bottom:3px solid transparent;white-space:nowrap}
+.pf-item>a::after{content:"";width:6px;height:6px;border:solid currentColor;border-width:0 2px 2px 0;transform:rotate(45deg) translateY(-2px);opacity:.5}
+.pf-item:hover>a,.pf-item.open>a{color:var(--bc)}
+.pf-item>a[aria-current]{border-bottom-color:var(--bc)}
+.pf-drop{display:none;position:absolute;top:100%;left:0;min-width:280px;background:var(--panel,#f6f8fb);border:1px solid var(--border,#cdd3de);border-radius:0 0 12px 12px;box-shadow:0 14px 30px rgba(0,0,0,.18);padding:6px;list-style:none;margin:0}
+.pf-item:hover .pf-drop,.pf-item:focus-within .pf-drop,.pf-item.open .pf-drop{display:block}
+.pf-drop a{display:block;padding:8px 10px;border-radius:8px;color:inherit;text-decoration:none}
+.pf-drop a:hover,.pf-drop a:focus{background:var(--panel2,#eceff4);outline:none}
+.pf-drop a[aria-current]{color:var(--bc);font-weight:600}
+.pf-drop small{display:block;color:var(--muted,#5b6578);font-size:13px}
+.pf-drop .pf-all{font-size:13px;color:var(--muted,#5b6578);border-top:1px solid var(--border,#cdd3de);border-radius:0 0 8px 8px;margin-top:4px}
+.pf-fach{margin-right:8px}
+.pf-fach>a{border:1px solid var(--border,#cdd3de);border-radius:10px;background:var(--panel2,#eceff4);padding:6px 10px!important;margin:6px 0}
+.pf-fach>a small{font-weight:500;color:var(--muted,#5b6578);margin-right:2px}
+.pf-sub{position:relative}
+.pf-sub>a{display:flex!important;align-items:center;justify-content:space-between;gap:12px}
+.pf-sub>a::after{content:"";width:6px;height:6px;border:solid currentColor;border-width:0 2px 2px 0;transform:rotate(-45deg);opacity:.5;flex:none}
+.pf-drop2{display:none;position:absolute;left:100%;top:-7px;min-width:250px;background:var(--panel,#f6f8fb);border:1px solid var(--border,#cdd3de);border-radius:12px;box-shadow:0 14px 30px rgba(0,0,0,.18);padding:6px;list-style:none;margin:0}
+.pf-sub.links>.pf-drop2{left:auto;right:100%}
+.pf-sub:hover>.pf-drop2,.pf-sub:focus-within>.pf-drop2,.pf-sub.open>.pf-drop2{display:block}
+.pf-drop .pf-leer{padding:8px 10px;color:var(--muted,#5b6578);font-style:italic}
+.pf-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.pf-btn{background:var(--panel2,#eceff4);border:1px solid var(--border,#cdd3de);color:inherit;border-radius:10px;width:38px;height:38px;display:grid;place-items:center;cursor:pointer;font-size:17px;padding:0}
+.pf-burger{display:none}
+.pf-einzeln .pf-menu{display:none!important}
+.pf-bedingt:not(.pf-sichtbar){display:none!important}
+@media (max-width:760px){
+  .pf-burger{display:grid}
+  .pf-menu{display:none;position:absolute;top:100%;left:0;right:0;flex-direction:column;background:var(--panel,#f6f8fb);border-bottom:1px solid var(--border,#cdd3de);box-shadow:0 14px 30px rgba(0,0,0,.18);padding:6px 16px 12px;max-height:80vh;overflow:auto}
+  .pf-nav.open .pf-menu{display:flex}
+  .pf-item>a{padding:10px 0 4px;border:0}
+  .pf-item>a::after{display:none}
+  .pf-drop{display:block;position:static;min-width:0;border:0;box-shadow:none;padding:0 0 4px 10px}
+  .pf-drop2{display:block;position:static;min-width:0;border:0;box-shadow:none;padding:0 0 0 12px}
+  .pf-sub>a::after{display:none}
+}
+.pf-knapp .ts-badge.gast .ts-lang{display:none}
+/* dasselbe, wenn die Leiste zu voll ist (nav.js setzt pf-eng) */
+.pf-eng .pf-burger{display:grid}
+.pf-eng .pf-menu{display:none;position:absolute;top:100%;left:0;right:0;flex-direction:column;background:var(--panel,#f6f8fb);border-bottom:1px solid var(--border,#cdd3de);box-shadow:0 14px 30px rgba(0,0,0,.18);padding:6px 16px 12px;max-height:80vh;overflow:auto}
+.pf-eng.open .pf-menu{display:flex}
+.pf-eng .pf-item>a{padding:10px 0 4px;border:0}
+.pf-eng .pf-item>a::after{display:none}
+.pf-eng .pf-drop{display:block;position:static;min-width:0;border:0;box-shadow:none;padding:0 0 4px 10px}
+.pf-eng .pf-drop2{display:block;position:static;min-width:0;border:0;box-shadow:none;padding:0 0 0 12px}
+.pf-eng .pf-sub>a::after{display:none}
+.pf-fade,.pf-fade *{transition:background-color .35s,color .35s,border-color .35s,fill .35s!important}
+.pf-gesperrt{opacity:.5;cursor:default!important}
+@media print{.pf-nav{display:none}}`;
+
+  // Farben der Bereiche (katalog.js: farbe = dunkles Design, farbeHell = helles Design,
+  // farbeSchrift = optional hellerer Ton für Schrift im dunklen Design).
+  // --accent gilt für die ganze Seite des aktuellen Bereichs, --bc nur für den eigenen Menüpunkt.
+  function akzentCss(){
+    let css = '';
+    K.bereiche.forEach(b => {
+      if (!b.farbe) return;
+      const dunkel = b.farbeSchrift || b.farbe;
+      css += `\n.pf-item[data-b="${b.id}"]{--bc:${b.farbeHell || b.farbe}}\nhtml[data-theme=dark] .pf-item[data-b="${b.id}"]{--bc:${dunkel}}`;
+      if (b.id === BEREICH) css += `\nhtml[data-theme]{--accent:${b.farbeHell || b.farbe};--accent-text:${b.farbeHell || b.farbe}}\nhtml[data-theme=dark]{--accent:${b.farbe};--accent-text:${dunkel}}`;
+    });
+    return css;
+  }
+
+  const SONNE = '☀', MOND = '☾';
+  function theme(){ return root.dataset.theme === 'dark' ? 'dark' : 'light'; }
+
+  // Tools derselben gruppe (katalog.js) hintereinander → [{name, tools}], ohne gruppe: name ''
+  function gruppen(b){
+    const out = [];
+    b.tools.forEach(t => {
+      const g = out[out.length - 1];
+      if (g && g.name === (t.gruppe || '')) g.tools.push(t); else out.push({name: t.gruppe || '', tools: [t]});
+    });
+    return out;
+  }
+  const toolLi = (b, t) => `<li${t.bedingt ? ` class="pf-bedingt" data-tool="${esc(t.id)}"` : ''}><a href="${toolUrl(b, t)}"${t.id === TOOL ? ' aria-current="page"' : ''}>${esc(t.titel)}</a></li>`;
+
+  // Fach-Menü: Fächer ohne Stufen direkt, Fächer mit Jahrgangsstufen als Untermenü (wie gruppe bei Tools)
+  function fachMenue(){
+    const eintrag = (g, text) => `<li><a href="${gruppeUrl(g)}"${g === GRUPPE ? ' aria-current="page"' : ''}>${esc(text)}</a></li>`;
+    return `<li class="pf-item pf-fach"><a href="${gruppeUrl(GRUPPE)}" aria-haspopup="true" title="Fach wechseln"><small>Fach</small> ${esc(GRUPPE.titel)}</a>
+      <ul class="pf-drop">${K.faecher.map(f => f.stufen
+        ? `<li class="pf-sub"><a href="${fachUrl(f)}"${GRUPPE.fach === f ? ' aria-current="true"' : ''} aria-haspopup="true">${esc(f.titel)}</a><ul class="pf-drop2">${f.stufen.map(st => eintrag(K.gruppen.find(g => g.stufe === st), st.titel)).join('')}</ul></li>`
+        : eintrag(K.gruppen.find(g => g.fach === f), f.titel)).join('')}</ul></li>`;
+  }
+
+  function buildNav(){
+    const s = document.createElement('style'); s.textContent = CSS + akzentCss(); document.head.appendChild(s);
+    const nav = document.createElement('nav');
+    nav.className = 'pf-nav' + (window.PF_EINZELDATEI ? ' pf-einzeln' : '');
+    nav.setAttribute('aria-label', 'Bereiche');
+    const name = esc(K.name).replace(/^(\S+)/, '<span>$1</span>');
+    const EINZELN = !!window.PF_EINZELDATEI;
+    nav.innerHTML = `<div class="pf-in">
+      ${EINZELN ? `<span class="pf-brand">${name}</span>` : `<a class="pf-brand" href="${BASE}index.html">${name}</a>`}
+      <ul class="pf-menu">${fachMenue()}${GRUPPE.bereiche.map(b => `
+        <li class="pf-item" data-b="${esc(b.id)}">
+          <a href="${bereichUrl(b)}"${b.id === BEREICH ? ' aria-current="true"' : ''}>${esc(b.titel)}</a>
+          <ul class="pf-drop">${b.tools.length
+            ? gruppen(b).map(g => g.name
+              ? `<li class="pf-sub"><a href="${bereichUrl(b)}"${g.tools.some(t => t.id === TOOL) ? ' aria-current="true"' : ''} aria-haspopup="true">${esc(g.name)}</a><ul class="pf-drop2">${g.tools.map(t => toolLi(b, t)).join('')}</ul></li>`
+              : g.tools.map(t => toolLi(b, t)).join('')).join('')
+              + `<li><a class="pf-all" href="${bereichUrl(b)}">Alle Übungen zu ${esc(b.titel)}</a></li>`
+            : '<li class="pf-leer">Hier entstehen bald Übungen.</li>'}
+          </ul>
+        </li>`).join('')}
+      </ul>
+      <div class="pf-right">
+        ${document.getElementById('themeBtn') ? '' : `<button class="pf-btn" id="pfTheme" type="button" aria-label="Hell/Dunkel umschalten">${theme() === 'dark' ? SONNE : MOND}</button>`}
+        ${EINZELN ? '' : '<button class="pf-btn pf-burger" type="button" aria-label="Menü">☰</button>'}
+      </div>
+    </div>`;
+    document.body.insertBefore(nav, document.body.firstChild);
+
+    // Passt die Leiste nicht in die Breite (Fach-Menü, lange Bereichsnamen, Anmeldung), kommt das Menü hinter ☰
+    const innen = nav.querySelector('.pf-in');
+    // Erst den Zusatz „– Fortschritt wird nicht gespeichert“ weglassen (pf-knapp), erst dann ☰ (pf-eng)
+    const voll = () => innen.scrollWidth > innen.clientWidth + 1;
+    const platz = () => {
+      nav.classList.remove('pf-eng', 'pf-knapp');
+      if (EINZELN || !voll()) return;
+      nav.classList.add('pf-knapp');
+      if (voll()) nav.classList.add('pf-eng');
+    };
+    platz();
+    addEventListener('resize', platz);
+    new MutationObserver(platz).observe(nav.querySelector('.pf-right'), {childList: true, subtree: true, characterData: true});
+    if (document.fonts) document.fonts.ready.then(platz);
+    const schmal = () => matchMedia('(max-width:760px)').matches || nav.classList.contains('pf-eng');
+
+    const burger = nav.querySelector('.pf-burger');
+    if (burger) burger.addEventListener('click', () => nav.classList.toggle('open'));
+    const tb = nav.querySelector('#pfTheme');
+    if (tb) tb.addEventListener('click', () => {
+      const t = theme() === 'dark' ? 'light' : 'dark';
+      root.dataset.theme = t; tb.textContent = t === 'dark' ? SONNE : MOND;
+      try { localStorage.setItem('wenn-theme', t); } catch (e) {}
+    });
+
+    // Geräte ohne Maus: erstes Antippen klappt auf, zweites öffnet die Bereichsseite
+    const items = [...nav.querySelectorAll('.pf-item')];
+    if (matchMedia('(hover: none)').matches) items.forEach(li => li.firstElementChild.addEventListener('click', e => {
+      if (schmal() || li.classList.contains('open')) return;
+      e.preventDefault();
+      items.forEach(x => x.classList.toggle('open', x === li));
+    }));
+    // Untermenüs (gruppe): nach links aufklappen, wenn rechts kein Platz ist; ohne Maus erst antippen
+    nav.querySelectorAll('.pf-sub').forEach(sub => {
+      sub.addEventListener('mouseenter', () => {
+        const r = sub.getBoundingClientRect();
+        sub.classList.toggle('links', r.right + 260 > innerWidth);
+      });
+      if (matchMedia('(hover: none)').matches) sub.firstElementChild.addEventListener('click', e => {
+        if (schmal() || sub.classList.contains('open')) return;
+        e.preventDefault();
+        const r = sub.getBoundingClientRect();
+        sub.classList.toggle('links', r.right + 260 > innerWidth);
+        sub.classList.add('open');
+      });
+    });
+    document.addEventListener('click', e => { if (!nav.contains(e.target)){ nav.querySelectorAll('.pf-sub.open').forEach(x => x.classList.remove('open')); items.forEach(x => x.classList.remove('open')); nav.classList.remove('open'); } });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape'){ items.forEach(x => x.classList.remove('open')); nav.classList.remove('open'); } });
+  }
+
+  /* ---------- Übersichtsseiten ---------- */
+  // Tools mit gruppe (katalog.js) stehen unter einer gemeinsamen Zwischenüberschrift
+  function kacheln(b){
+    if (!b.tools.length) return '<p class="pf-hinweis">Hier entstehen bald Übungen.</p>';
+    const kachel = t => `<a class="pf-tile${t.bedingt ? ' pf-bedingt' : ''}"${t.bedingt ? ` data-tool="${esc(t.id)}"` : ''} href="${toolUrl(b, t)}"><b>${esc(t.titel)}</b><span>${esc(t.text)}</span></a>`;
+    return gruppen(b).map(g => (g.name ? `<h3 class="pf-gruppe">${esc(g.name)}</h3>` : '') + `<div class="pf-grid">${g.tools.map(kachel).join('')}</div>`).join('');
+  }
+  function buildPages(){
+    const start = document.getElementById('pf-start');
+    if (start){
+      const gruppenseite = !!root.dataset.gruppe;
+      if (gruppenseite) document.title = GRUPPE.titel + ' – ' + K.name;
+      start.innerHTML = `<h1>${esc(gruppenseite ? GRUPPE.titel : K.name)}</h1><p class="pf-lead">${esc(GRUPPE.text)}${gruppenseite ? '' : ' ' + esc(K.untertitel)}</p>`
+        + GRUPPE.bereiche.map(b => `<section class="pf-sec"><h2><a href="${bereichUrl(b)}">${esc(b.titel)}</a></h2><p class="pf-text">${esc(b.text)}</p>${kacheln(b)}</section>`).join('');
+    }
+    // Fach mit Jahrgangsstufen: Auswahl der Stufe
+    const fach = document.getElementById('pf-fach');
+    if (fach && FACHSEITE){
+      document.title = FACHSEITE.titel + ' – ' + K.name;
+      fach.innerHTML = `<h1>${esc(FACHSEITE.titel)}</h1><p class="pf-lead">${esc(FACHSEITE.text)} Wähle die Jahrgangsstufe.</p><div class="pf-grid">`
+        + K.gruppen.filter(g => g.fach === FACHSEITE).map(g => `<a class="pf-tile" href="${gruppeUrl(g)}"><b>${esc(g.stufe.titel)}</b><span>${esc(g.text)}</span></a>`).join('') + '</div>';
+    }
+    const be = document.getElementById('pf-bereich');
+    const b = BER;
+    if (be && b){
+      document.title = b.titel + ' – ' + K.name;
+      be.innerHTML = `<h1>${esc(b.titel)}</h1><p class="pf-lead">${esc(b.text)}</p>${kacheln(b)}`;
+    }
+  }
+
+  // Hell/Dunkel höchstens einmal pro Sekunde umschalten und weich überblenden – kein Flackern beim schnellen Klicken
+  let themeSperre = 0;
+  document.addEventListener('click', e => {
+    const btn = e.target.closest('#themeBtn,#pfTheme');
+    if (!btn) return;
+    if (Date.now() < themeSperre){ e.stopImmediatePropagation(); e.preventDefault(); return; }
+    themeSperre = Date.now() + 1000;
+    root.classList.add('pf-fade'); btn.classList.add('pf-gesperrt');
+    setTimeout(() => root.classList.remove('pf-fade'), 400);
+    setTimeout(() => btn.classList.remove('pf-gesperrt'), 1000);
+  }, true);
+
+  function init(){ buildNav(); buildPages(); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();
+
+</script>
+<script>/* ../../sync.js */
+/* vibe learning – Anmeldung und Anbindung an PocketBase
+ *
+ * Läuft die Seite über den PocketBase-Server, erscheint beim ersten Öffnen ein
+ * Anmeldefenster: ein Feld für Code oder Benutzername (bei Benutzernamen folgt das
+ * Passwort), alternativ „Seite ohne Anmeldung nutzen“. Oben rechts in der Leiste
+ * steht danach, wer angemeldet ist; dort meldet man sich auch an und ab.
+ *
+ * Schüler: Fortschritt wird auf dem Server gespeichert, jede gelöste Aufgabe protokolliert.
+ * Lehrkraft/Admin: Anmeldung gilt bis zum Schließen des Browsers, im Menü steht
+ * der Link zur Verwaltung (lehrer.html).
+ * Wird die HTML-Datei direkt geöffnet (oder läuft kein PocketBase dahinter),
+ * passiert nichts davon – die Seite speichert dann wie bisher nur im Browser.
+ *
+ * Bedingte Menüpunkte (katalog.js: bedingt) blendet das Skript nach der Anmeldung ein,
+ * wenn der Server sie für diesen Schüler freigibt (/api/trainer/sichtbar).
+ *
+ * Die Seite ruft auf:
+ *   TrainerSync.changed()      nach jeder Änderung am gespeicherten Stand
+ *   TrainerSync.event({...})   wenn eine Aufgabe richtig gelöst wurde
+ */
+(function () {
+  'use strict';
+
+  const CONFIG = {
+    api: '/api/trainer',
+    verwaltung: 'lehrer.html'   // relativ zum Ordner von sync.js
+  };
+
+  const me = document.currentScript && document.currentScript.src;
+  const BASE = me ? me.replace(/[^/]*$/, '') : '';
+  const PAGE = document.documentElement.dataset.trainer || '';          // Tool-id aus katalog.js, leer auf Übersichtsseiten
+  const TOOL_IDS = window.KATALOG ? [].concat(...window.KATALOG.bereiche.map(b => b.tools.map(t => t.id))) : [];
+  const ALL_PREFIXES = [...new Set(['wenn', 'uo', 'fn', PAGE].concat(TOOL_IDS))].filter(Boolean).map(id => id + '-');
+  const OWN = PAGE + '-';
+  const SKIP = ['wenn-theme'];                                             // Hell/Dunkel bleibt pro Gerät
+  const K = {code: 'ts-code', anzeige: 'ts-anzeige', klasse: 'ts-klasse', queue: 'ts-queue', stand: 'ts-stand-' + PAGE};
+  const SS = {gast: 'ts-gast', lehrer: 'ts-lehrer'};                      // gilt nur bis zum Schließen des Browsers
+
+  const ls = {
+    get(k){ try { return localStorage.getItem(k); } catch (e) { return null; } },
+    set(k, v){ try { localStorage.setItem(k, v); } catch (e) {} },
+    del(k){ try { localStorage.removeItem(k); } catch (e) {} },
+    keys(){ try { return Object.keys(localStorage); } catch (e) { return []; } }
+  };
+  const ss = {
+    get(k){ try { return sessionStorage.getItem(k); } catch (e) { return null; } },
+    set(k, v){ try { sessionStorage.setItem(k, v); } catch (e) {} },
+    del(k){ try { sessionStorage.removeItem(k); } catch (e) {} }
+  };
+  function lehrerSitzung(){ try { return JSON.parse(ss.get(SS.lehrer) || 'null'); } catch (e) { return null; } }
+
+  const hosted = /^https?:$/.test(location.protocol);
+  let aktiv = false, pushTimer = null, pushPending = false, menuEl = null, lastSnap = '';
+
+  /* ---------- Hilfen ---------- */
+  function api(path, opt){
+    opt = opt || {};
+    return fetch(CONFIG.api + path, {
+      method: opt.method || 'GET',
+      keepalive: !!opt.keepalive,
+      headers: {'Content-Type': 'application/json', 'X-Trainer-Code': ls.get(K.code) || ''},
+      body: opt.body ? JSON.stringify(opt.body) : undefined
+    }).then(async r => {
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok){ const err = new Error(j.message || ('HTTP ' + r.status)); err.status = r.status; err.data = j; throw err; }
+      return j;
+    });
+  }
+  const trainerKeys = prefix => ls.keys().filter(k => k.startsWith(prefix) && !SKIP.includes(k));
+  function snapshot(prefix){ prefix = prefix || OWN; const d = {}; trainerKeys(prefix).sort().forEach(k => { d[k] = ls.get(k); }); return d; }
+  function applySnapshot(d, prefix){
+    prefix = prefix || OWN;
+    trainerKeys(prefix).forEach(k => ls.del(k));
+    Object.keys(d || {}).forEach(k => { if (k.startsWith(prefix) && !SKIP.includes(k) && typeof d[k] === 'string') ls.set(k, d[k]); });
+  }
+  function wipeLocal(){
+    ALL_PREFIXES.forEach(p => trainerKeys(p).forEach(k => ls.del(k)));
+    ls.keys().filter(k => k.startsWith('ts-stand-')).forEach(k => ls.del(k));
+    [K.queue, K.code, K.klasse, K.anzeige].forEach(k => ls.del(k));
+  }
+  function reloadOnce(){
+    let last = 0; try { last = +sessionStorage.getItem('ts-reload') || 0; } catch (e) {}
+    if (Date.now() - last < 8000) return;
+    try { sessionStorage.setItem('ts-reload', Date.now()); } catch (e) {}
+    location.reload();
+  }
+
+  /* ---------- Fortschritt abgleichen ---------- */
+  async function pull(){
+    if (!PAGE){ setStatus('ok'); return; }
+    const r = await api('/state?seite=' + PAGE);
+    const local = +ls.get(K.stand) || 0, server = +r.stand || 0;
+    if (r.daten && server > local){
+      const before = JSON.stringify(snapshot());
+      applySnapshot(r.daten);
+      ls.set(K.stand, server);
+      lastSnap = JSON.stringify(snapshot());
+      if (lastSnap !== before) reloadOnce();
+    } else if (local > server) await push();
+    setStatus('ok');
+  }
+
+  async function push(keepalive){
+    clearTimeout(pushTimer); pushPending = false;
+    if (!aktiv || !PAGE) return;
+    const stand = +ls.get(K.stand) || Date.now();
+    setStatus('saving');
+    try {
+      await api('/state', {method: 'POST', body: {seite: PAGE, daten: snapshot(), stand}, keepalive});
+      setStatus('ok');
+    } catch (err){
+      if (err.status === 409){ await pull().catch(() => setStatus('offline')); }
+      else if (err.status === 401) abgelaufen();
+      else { pushPending = true; setStatus('offline'); }
+    }
+  }
+
+  function changed(){
+    if (!PAGE) return;
+    // Seiten schreiben ihren Stand auch beim Öffnen neu – nur echte Änderungen zählen,
+    // sonst würde ein frisch geöffnetes Gerät einen neueren Stand vom Server überschreiben.
+    const snap = JSON.stringify(snapshot());
+    if (snap === lastSnap) return;
+    lastSnap = snap;
+    ls.set(K.stand, Date.now());
+    if (!aktiv) return;
+    pushPending = true;
+    clearTimeout(pushTimer);
+    pushTimer = setTimeout(push, 700);
+  }
+
+  /* ---------- Protokoll gelöster Aufgaben ---------- */
+  function queue(){ try { return JSON.parse(ls.get(K.queue) || '[]'); } catch (e) { return []; } }
+  function event(ev){
+    if (!aktiv || !PAGE) return;
+    const q = queue(); q.push(Object.assign({seite: PAGE}, ev)); ls.set(K.queue, JSON.stringify(q.slice(-500)));
+    flush();
+  }
+  let flushing = false;
+  async function flush(keepalive){
+    if (!aktiv || flushing) return;
+    const q = queue(); if (!q.length) return;
+    flushing = true;
+    try {
+      await api('/events', {method: 'POST', body: {events: q.slice(0, 200)}, keepalive});
+      ls.set(K.queue, JSON.stringify(queue().slice(Math.min(q.length, 200))));
+    } catch (err){
+      if (err.status === 401) abgelaufen(); else setStatus('offline');
+    } finally { flushing = false; }
+    if (queue().length && !keepalive) setTimeout(flush, 2000);
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden' && aktiv){ if (pushPending) push(true); flush(true); }
+  });
+  window.addEventListener('online', () => { if (aktiv){ flush(); if (pushPending) push(); else pull().catch(() => {}); } });
+
+
+  /* ---------- Gast-Fortschritt beim Anmelden übernehmen ---------- */
+  // Für jede Übung: Ist das Konto dort noch leer, wird der Stand dieses Geräts hochgeladen,
+  // sonst gilt der Stand vom Server.
+  async function uebernehmen(){
+    for (const p of ALL_PREFIXES){
+      const id = p.slice(0, -1), lokal = snapshot(p);
+      const st = await api('/state?seite=' + id);
+      const leer = !st.daten || !Object.keys(st.daten).length;
+      if (leer){
+        if (!Object.keys(lokal).length) continue;
+        const stand = Date.now();
+        await api('/state', {method: 'POST', body: {seite: id, daten: lokal, stand}});
+        ls.set('ts-stand-' + id, stand);
+      } else {
+        applySnapshot(st.daten, p);
+        ls.set('ts-stand-' + id, +st.stand || 0);
+      }
+    }
+  }
+
+  /* ---------- Oberfläche: Anmeldefenster + Menü oben rechts ---------- */
+  const CSS = `
+.ts-ov{position:fixed;inset:0;z-index:2000;background:rgba(20,24,32,.6);backdrop-filter:blur(3px);display:grid;place-items:center;padding:16px}
+.ts-box{position:relative;background:var(--panel,#f6f8fb);color:var(--text,#2e3440);border:1px solid var(--border,#cdd3de);border-radius:16px;padding:24px;width:min(420px,100%);box-shadow:0 20px 50px rgba(0,0,0,.3);font:16px/1.5 system-ui,sans-serif}
+.ts-box h2{margin:0 0 6px;font-size:21px}
+.ts-box p{margin:0 0 14px;color:var(--muted,#5b6578)}
+.ts-x{position:absolute;top:10px;right:10px;width:34px;height:34px;border-radius:9px;border:0;background:none;color:var(--muted,#5b6578);font-size:22px;line-height:1;cursor:pointer}
+.ts-x:hover{background:var(--panel2,#eceff4);color:var(--text,#2e3440)}
+.ts-in{width:100%;box-sizing:border-box;font:700 20px ui-monospace,Consolas,monospace;letter-spacing:.03em;padding:12px 14px;border-radius:10px;border:2px solid var(--slot-border,var(--border,#a7b1c2));background:var(--slot,var(--panel2,#eceff4));color:var(--text,#2e3440);outline:none}
+.ts-in:focus{border-color:var(--accent,#5e81ac)}
+.ts-btn{margin-top:12px;width:100%;font:600 17px system-ui,sans-serif;padding:12px;border-radius:10px;border:1px solid color-mix(in srgb,var(--accent,#5e81ac) 50%,var(--panel,#f6f8fb));background:color-mix(in srgb,var(--accent,#5e81ac) 22%,var(--panel,#f6f8fb));color:color-mix(in srgb,var(--accent,#5e81ac) 60%,var(--text,#2e3440));cursor:pointer}
+.ts-btn:disabled{opacity:.6;cursor:wait}
+.ts-err{color:var(--err,#a8434d);min-height:1.4em;margin-top:8px;font-size:14px}
+.ts-zurueck{background:none;border:0;padding:0;margin-top:10px;color:var(--muted,#5b6578);text-decoration:underline;cursor:pointer;font-size:14px}
+.ts-gast{display:block;width:100%;margin-top:18px;padding:12px;border-radius:10px;border:1px solid var(--border,#cdd3de);background:var(--panel2,#eceff4);color:var(--text,#2e3440);font:600 16px system-ui,sans-serif;cursor:pointer}
+.ts-gast small{display:block;font-weight:400;font-size:13px;color:var(--muted,#5b6578)}
+.ts-wrap{position:relative}
+.ts-badge{display:inline-flex;align-items:center;gap:6px;font:600 13px system-ui,sans-serif;padding:7px 11px;border-radius:999px;border:1px solid var(--border,#cdd3de);background:var(--panel2,#eceff4);color:var(--text,#2e3440);cursor:pointer;white-space:nowrap}
+.ts-badge .ts-dot{width:8px;height:8px;border-radius:50%;background:#8a95ab}
+.ts-badge.ok .ts-dot{background:var(--then,#a3be8c)}
+.ts-badge.saving .ts-dot{background:#ebcb8b}
+.ts-badge.offline .ts-dot{background:var(--else,#bf616a)}
+.ts-badge.gast{border-color:color-mix(in srgb,#d08770 60%,var(--border,#cdd3de));background:color-mix(in srgb,#d08770 16%,var(--panel,#f6f8fb))}
+.ts-badge.gast .ts-dot{background:#d08770}
+.ts-dd{display:none;position:absolute;right:0;top:calc(100% + 6px);min-width:240px;z-index:70;background:var(--panel,#f6f8fb);color:var(--text,#2e3440);border:1px solid var(--border,#cdd3de);border-radius:12px;box-shadow:0 14px 30px rgba(0,0,0,.18);padding:6px;font:14px/1.4 system-ui,sans-serif}
+.ts-wrap.open .ts-dd{display:block}
+.ts-dd .ts-info{padding:8px 10px;color:var(--muted,#5b6578);border-bottom:1px solid var(--border,#cdd3de);margin-bottom:4px}
+.ts-dd .ts-info b{color:var(--text,#2e3440)}
+.ts-dd a,.ts-dd button{display:block;width:100%;text-align:left;padding:8px 10px;border-radius:8px;border:0;background:none;color:inherit;font:inherit;text-decoration:none;cursor:pointer}
+.ts-dd a:hover,.ts-dd button:hover{background:var(--panel2,#eceff4)}
+@media (max-width:640px){.ts-badge .ts-lang{display:none}}`;
+
+  function injectCss(){ const s = document.createElement('style'); s.textContent = CSS; document.head.appendChild(s); }
+  const escH = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+
+  function setStatus(st){
+    const b = menuEl && menuEl.querySelector('.ts-badge');
+    if (!b || !aktiv) return;
+    b.className = 'ts-badge ' + st;
+    const t = {ok: 'Fortschritt gespeichert', saving: 'Wird gespeichert …', offline: 'Keine Verbindung – wird später gespeichert'}[st] || '';
+    b.title = t;
+    const i = menuEl.querySelector('.ts-status'); if (i) i.textContent = t;
+  }
+
+  // Menü oben rechts: angemeldet (Dropdown mit Abmelden) oder Gast (Klick öffnet die Anmeldung)
+  function showMenu(){
+    if (menuEl) menuEl.remove();
+    const host = document.querySelector('.pf-right') || document.querySelector('.hdr-right') || document.querySelector('header') || document.body;
+    const L = lehrerSitzung();
+    menuEl = document.createElement('div');
+    menuEl.className = 'ts-wrap';
+    if (aktiv){
+      const klasse = ls.get(K.klasse);
+      menuEl.innerHTML = `<button class="ts-badge saving" type="button"><span class="ts-dot"></span>👤 <span class="ts-lang">${escH(ls.get(K.anzeige) || ls.get(K.code))}</span></button>
+        <div class="ts-dd"><div class="ts-info">Angemeldet als <b>${escH(ls.get(K.anzeige) || ls.get(K.code))}</b>${klasse ? ' (Klasse ' + escH(klasse) + ')' : ''}<br><span class="ts-status"></span></div>
+        <button type="button" data-a="ab">Abmelden</button></div>`;
+    } else if (L){
+      menuEl.innerHTML = `<button class="ts-badge" type="button">👤 <span class="ts-lang">${escH(L.name)}</span></button>
+        <div class="ts-dd"><div class="ts-info">Angemeldet als <b>${escH(L.name)}</b> (${L.rolle === 'admin' ? 'Admin' : 'Lehrkraft'})</div>
+        <a href="${BASE + CONFIG.verwaltung}">Verwaltung: Klassen und Auswertung</a>
+        <button type="button" data-a="ab">Abmelden</button></div>`;
+    } else {
+      menuEl.innerHTML = `<button class="ts-badge gast" type="button" title="Fortschritt wird nicht gespeichert. Klicken zum Anmelden."><span class="ts-dot"></span>Nicht angemeldet<span class="ts-lang">&nbsp;– Fortschritt wird nicht gespeichert</span></button>`;
+    }
+    host.insertBefore(menuEl, host.firstChild);
+    menuEl.querySelector('.ts-badge').addEventListener('click', () => {
+      if (!aktiv && !L){ showLogin(); return; }
+      menuEl.classList.toggle('open');
+    });
+    const ab = menuEl.querySelector('[data-a="ab"]');
+    if (ab) ab.addEventListener('click', abmelden);
+    document.addEventListener('click', e => { if (menuEl && !menuEl.contains(e.target)) menuEl.classList.remove('open'); });
+  }
+
+  function showLogin(msg){
+    if (document.querySelector('.ts-ov')) return;
+    const ov = document.createElement('div');
+    ov.className = 'ts-ov';
+    ov.innerHTML = `<div class="ts-box" role="dialog" aria-modal="true" aria-label="Anmelden">
+      <button class="ts-x" type="button" aria-label="Schließen und ohne Anmeldung nutzen" title="Ohne Anmeldung nutzen">×</button>
+      <form class="ts-f1" autocomplete="off">
+        <h2>Anmelden</h2>
+        <p>Gib deinen Zugangscode oder deinen Benutzernamen ein.</p>
+        <input class="ts-in" name="kennung" placeholder="Code oder Benutzername" autocapitalize="none" spellcheck="false" aria-label="Code oder Benutzername">
+        <button class="ts-btn" type="submit">Weiter</button>
+      </form>
+      <form class="ts-f2" hidden>
+        <h2>Passwort</h2>
+        <p>für <b class="ts-wer"></b></p>
+        <input class="ts-in" name="passwort" type="password" autocomplete="current-password" aria-label="Passwort">
+        <button class="ts-btn" type="submit">Anmelden</button>
+        <button class="ts-zurueck" type="button">Anderen Namen eingeben</button>
+      </form>
+      <div class="ts-err">${msg || ''}</div>
+      <button class="ts-gast" type="button">Seite ohne Anmeldung nutzen<small>Dein Fortschritt wird dann nur in diesem Browser gespeichert.</small></button>
+    </div>`;
+    document.body.appendChild(ov);
+    const f1 = ov.querySelector('.ts-f1'), f2 = ov.querySelector('.ts-f2'), err = ov.querySelector('.ts-err');
+    const k = f1.kennung, pw = f2.passwort;
+    setTimeout(() => k.focus(), 50);
+
+    const gast = () => { ss.set(SS.gast, '1'); ov.remove(); document.removeEventListener('keydown', esc); };
+    const esc = e => { if (e.key === 'Escape') gast(); };
+    document.addEventListener('keydown', esc);
+    ov.querySelector('.ts-x').addEventListener('click', gast);
+    ov.querySelector('.ts-gast').addEventListener('click', gast);
+    ov.querySelector('.ts-zurueck').addEventListener('click', () => { f2.hidden = true; f1.hidden = false; err.textContent = ''; k.select(); });
+
+    async function senden(btn, body){
+      btn.disabled = true; err.textContent = '';
+      try {
+        const r = await fetch(CONFIG.api + '/login', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)})
+          .then(async x => { const j = await x.json().catch(() => ({})); if (!x.ok) throw new Error(x.status === 429 ? 'Zu viele Versuche – bitte kurz warten.' : (j.message || 'Anmeldung fehlgeschlagen.')); return j; });
+        if (r.passwort){ f1.hidden = true; f2.hidden = false; ov.querySelector('.ts-wer').textContent = body.kennung; pw.value = ''; pw.focus(); return; }
+        if (r.rolle === 'schueler'){
+          ls.set(K.code, r.cred); ls.set(K.anzeige, r.anzeige); ls.set(K.klasse, r.klasse || '');
+          ss.del(SS.lehrer); ss.del('ts-reload');
+          aktiv = true;
+          await uebernehmen().catch(() => {});
+        } else {
+          ss.set(SS.lehrer, JSON.stringify({rolle: r.rolle, token: r.token, name: r.name}));
+        }
+        location.reload();
+      } catch (x){
+        err.textContent = x.message || 'Anmeldung fehlgeschlagen.';
+        (f2.hidden ? k : pw).select();
+      } finally { btn.disabled = false; }
+    }
+    f1.addEventListener('submit', e => {
+      e.preventDefault();
+      const v = k.value.trim();
+      if (!v){ err.textContent = 'Bitte gib deinen Code oder Benutzernamen ein.'; return; }
+      senden(f1.querySelector('.ts-btn'), {kennung: v});
+    });
+    f2.addEventListener('submit', e => {
+      e.preventDefault();
+      if (!pw.value){ err.textContent = 'Bitte gib dein Passwort ein.'; return; }
+      senden(f2.querySelector('.ts-btn'), {kennung: k.value.trim(), passwort: pw.value});
+    });
+  }
+
+  async function abmelden(){
+    if (lehrerSitzung()){ ss.del(SS.lehrer); ss.del(SS.gast); location.reload(); return; }
+    if (!confirm(`Abmelden?\n\nAngemeldet als ${ls.get(K.anzeige) || ls.get(K.code)}. Dein Fortschritt bleibt auf dem Server gespeichert.`)) return;
+    if (pushPending) await push();
+    await flush();
+    if (queue().length && !confirm('Einige gelöste Aufgaben konnten noch nicht übertragen werden (keine Verbindung). Trotzdem abmelden?')) return;
+    wipeLocal(); ss.del(SS.gast); ss.del('ts-sichtbar');
+    location.reload();
+  }
+  function abgelaufen(){
+    aktiv = false;
+    wipeLocal(); ss.del('ts-sichtbar');
+    showMenu();
+    showLogin('Deine Anmeldung ist nicht mehr gültig. Bitte melde dich neu an.');
+  }
+
+  /* ---------- Bedingte Menüpunkte (z. B. Tipp-Aufgabe nur mit aufgegebener Aufgabe) ---------- */
+  function zeigeTools(ids){
+    // Tool-ids bestehen nur aus a–z, 0–9 und - (katalog.js); andere werden ignoriert
+    ids.filter(id => /^[a-z0-9-]+$/.test(id)).forEach(id => document.querySelectorAll(`[data-tool="${id}"]`).forEach(el => el.classList.add('pf-sichtbar')));
+  }
+  async function sichtbar(){
+    try { zeigeTools(JSON.parse(ss.get('ts-sichtbar') || '[]')); } catch (e) {}   // Stand der letzten Seite, ohne Flackern
+    try { const r = await api('/sichtbar'); ss.set('ts-sichtbar', JSON.stringify(r.tools || [])); zeigeTools(r.tools || []); } catch (e) {}
+  }
+
+  /* ---------- Start ---------- */
+  async function start(){
+    if (!hosted || window.PF_EINZELDATEI) return;          // Einzeldatei: immer ohne Anmeldung, Fortschritt nur im Browser
+    try {
+      const h = await fetch('/api/health', {cache: 'no-store'});
+      if (!h.ok) return;                                    // kein PocketBase: Seite läuft nur lokal
+    } catch (e){ return; }
+    injectCss();
+    aktiv = !!ls.get(K.code);
+    showMenu();
+    if (!aktiv){
+      if (!lehrerSitzung() && !ss.get(SS.gast)) showLogin();
+      return;
+    }
+    sichtbar();
+    try { await pull(); flush(); }
+    catch (err){ if (err.status === 401) abgelaufen(); else setStatus('offline'); }
+  }
+
+  lastSnap = JSON.stringify(snapshot());   // Stand beim Laden der Seite (vor deren Initialisierung)
+  window.TrainerSync = {changed, event, anmelden: () => showLogin(), get aktiv(){ return aktiv; }, get lehrer(){ return lehrerSitzung(); }, abmelden};
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
+})();
+
+</script>
+<script>
+(function(){var t=null;try{t=localStorage.getItem('wenn-theme');}catch(e){}
+document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');})();
+</script>
+<style>/* struktogramm.css */
+/* struktogramm.css – Aussehen von struktogramm.html und python-struktogramm.html (Nord-Farben, hell und dunkel) */
+:root{--bg:#e5e9f0;--panel:#f6f8fb;--panel2:#eceff4;--text:#2e3440;--muted:#5b6578;--border:#cdd3de;--accent:#5e81ac;--marke:#c05a1c;--err:#a8434d;--mono:ui-monospace,Consolas,"Liberation Mono",monospace;
+  --ed-bg:#f6f8fb;--gutter:#e5e9f0;--gutter-text:#7b88a1;--active:#e9ecf2;--sel:#d8dee9;
+  --kw:#8a5f84;--str:#5e8a45;--num:#b0631f;--com:#7b88a1;--def:#4f73a3;--builtin:#3b7f8c;--op:#4c566a}
+[data-theme=dark]{--bg:#2e3440;--panel:#3b4252;--panel2:#434c5e;--text:#eceff4;--muted:#a9b3c4;--border:#4c566a;--accent:#88c0d0;--marke:#d8dee9;--err:#d4848b;
+  --ed-bg:#2e3440;--gutter:#2a2f3a;--gutter-text:#616e88;--active:#353b49;--sel:#434c5e;
+  --kw:#b48ead;--str:#a3be8c;--num:#d08770;--com:#7b88a1;--def:#88c0d0;--builtin:#8fbcbb;--op:#81a1c1}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;min-height:100vh}
+.wrap{width:min(1400px,100%);margin:0 auto;padding:14px 16px 24px}
+.bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:12px}
+.brand{font:800 20px var(--mono);letter-spacing:-.5px;margin-right:8px}
+.brand span{color:var(--accent-text,var(--accent))}
+.spacer{flex:1}
+.btn{font:600 14px system-ui,sans-serif;background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:7px 12px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;text-decoration:none}
+.btn:hover{border-color:var(--accent)}
+.btn:disabled{opacity:.45;cursor:default;border-color:var(--border)}
+.btn.haupt{background:var(--accent);border-color:var(--accent);color:#fff}
+[data-theme=dark] .btn.haupt{color:#2e3440}
+.feld{font:14px system-ui,sans-serif;background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:7px 10px}
+.feld:focus,.btn:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+label.klein{font-size:13px;color:var(--muted);display:inline-flex;align-items:center;gap:6px}
+.gruppe{display:inline-flex;gap:4px;align-items:center}
+.gruppe .hint{font-size:13px;color:var(--muted);margin-right:2px}
+.pane{background:var(--panel);border:1px solid var(--border);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;min-height:0}
+.pane-head{display:flex;align-items:center;gap:10px;padding:5px 12px;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700;border-bottom:1px solid var(--border);background:var(--panel2)}
+.pane-head .status{margin-left:auto;text-transform:none;letter-spacing:0;font-weight:600}
+.status.fehler{color:var(--err)}
+.leinwand{overflow:auto;padding:16px;flex:1;min-height:200px}
+.leinwand svg{display:block;max-width:none}
+.fehlerbox{margin:0 16px 12px;padding:8px 12px;border:1px solid var(--err);color:var(--err);border-radius:10px;font-size:14px}
+.fehlerbox:empty{display:none}
+.alt{opacity:.35}
+.zahnrad{padding:7px 9px;font-size:16px;line-height:1}
+.st-pop{position:absolute;z-index:80;background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:12px;box-shadow:0 14px 30px rgba(0,0,0,.2);padding:12px;display:flex;flex-direction:column;gap:8px;width:240px;font-size:14px}
+.st-pop label{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.st-pop input[type=color]{width:44px;height:30px;border:1px solid var(--border);border-radius:6px;background:none;padding:2px;cursor:pointer}
+.hinweis{font-size:13px;color:var(--muted)}
+@media print{.bar,.pf-nav,.seite{display:none}}
+
+</style>
+<script>/* struktogramm.js */
+/* struktogramm.js – Struktogramme (Nassi-Shneiderman, DIN 66261) zeichnen und exportieren
+ *
+ * Gemeinsam für struktogramm.html (Editor) und python-struktogramm.html (Python → Struktogramm).
+ * Alles unter window.Strukto, kein Build-Schritt, läuft auch per file://.
+ *
+ * Diagramm  {name, breite, kinder: [Element]}
+ * Element   {typ: 'anweisung', text}                    einfache Anweisung
+ *           {typ: 'aufruf', text}                       Aufruf eines Unterprogramms (doppelte Seitenlinien)
+ *           {typ: 'abbruch', text}                      Aussprung (break, return)
+ *           {typ: 'wenn', text, ja: [], nein: []}       Verzweigung
+ *           {typ: 'fall', text, faelle: [{text, kinder: []}]}   Fallauswahl (letzter Fall z. B. „sonst“)
+ *           {typ: 'kopf', text, kinder: []}             kopfgesteuerte Schleife und Zählschleife
+ *           {typ: 'fuss', text, kinder: []}             fußgesteuerte Schleife
+ *           {typ: 'block', text, kinder: []}            Programm, Funktion oder Block mit Rahmen
+ *
+ * Strukto.zeichne(diagramm, farben, opt) → {svg, breite, hoehe, treffer, zonen, inhalt: {y, h}}
+ *     farben  Strukto.EXPORT (weiß, schwarze Linien) oder Strukto.farbenAusCss() (Seitenfarben)
+ *     opt     {leer: 'Text für leere Listen', titel: false (Name nicht zeichnen)}
+ *     breite 0 = automatisch (mindestens 400 px, breiter, bis das längste Wort in jede Spalte passt)
+ *     treffer [{el, liste, i, x, y, w, h, H}]  h = anklickbare Fläche, H = ganze Höhe; innere Elemente zuletzt
+ *     zonen   [{liste, i, x, y, w}]         Einfügestellen (Ziehen und Ablegen); leere Liste: leer, y0, h = Kasten
+ * Strukto.exportiere(diagramm, 'svg' | 'html' | 'jpg')   Datei herunterladen in den Exportfarben
+ *     (Standard weiß mit schwarzen Linien, gegen Dunkelmodus von Browser und Erweiterungen gesperrt)
+ * Strukto.zahnrad(knopf)      Knopf öffnet die Einstellung der Exportfarben (Hintergrund, Linien und Schrift),
+ *                             gespeichert pro Gerät unter struktofarben
+ * Strukto.TYPEN               [{typ, name}] in der Reihenfolge der Werkzeugleiste
+ * Strukto.neu(typ)            neues Element mit Beispieltext
+ * Strukto.listen(el)          alle Unterlisten eines Elements
+ * Strukto.pruefe(daten)       Diagramm aus fremdem JSON (Datei öffnen, Speicher) bereinigen, sonst null
+ * Strukto.BREITEN             wählbare Breiten in Pixeln (0 = automatisch)
+ */
+(function () {
+  'use strict';
+
+  const FS = 14, CW = FS * 0.6, LH = 19, PX = 8, PY = 7, MINH = 34;
+  const BAR = 22, RAND = 12, ASP = 12, AUF = 6, TITEL = 30;
+  const FONT = '"DejaVu Sans Mono",Consolas,Menlo,"Liberation Mono",monospace';
+  const BREITEN = [0, 400, 600, 800, 1000];   // 0 = automatisch: so breit, dass kein Wort getrennt wird
+  const AUTO_MIN = 400, AUTO_MAX = 2400;
+
+  const TYPEN = [
+    {typ: 'anweisung', name: 'Anweisung'},
+    {typ: 'wenn', name: 'Verzweigung'},
+    {typ: 'fall', name: 'Fallauswahl'},
+    {typ: 'kopf', name: 'Kopfgesteuerte Schleife'},
+    {typ: 'fuss', name: 'Fußgesteuerte Schleife'},
+    {typ: 'aufruf', name: 'Aufruf'},
+    {typ: 'abbruch', name: 'Aussprung'},
+    {typ: 'block', name: 'Block / Funktion'}
+  ];
+  const BEISPIEL = {anweisung: 'Anweisung', wenn: 'Bedingung', fall: 'Variable', kopf: 'solange Bedingung',
+    fuss: 'solange Bedingung', aufruf: 'Unterprogramm()', abbruch: 'Abbruch', block: 'Programm'};
+
+  const EXPORT = {papier: '#ffffff', kopf: '#ffffff', linie: '#000000', schrift: '#000000', leise: '#000000'};
+  const FARBKEY = 'struktofarben';   // ohne Tool-Präfix: gilt pro Gerät für beide Seiten, wird nicht abgeglichen
+  const HEX = /^#[0-9a-f]{6}$/i;
+  function exportFarben(){
+    let f = {};
+    try { f = JSON.parse(localStorage.getItem(FARBKEY)) || {}; } catch (e) {}
+    const papier = HEX.test(f.papier) ? f.papier : EXPORT.papier, linie = HEX.test(f.linie) ? f.linie : EXPORT.linie;
+    return {papier, kopf: papier, linie, schrift: linie, leise: linie};
+  }
+
+  function farbenAusCss(el){
+    const s = getComputedStyle(el || document.documentElement);
+    const v = (n, d) => (s.getPropertyValue(n) || '').trim() || d;
+    return {papier: v('--panel', '#fff'), kopf: v('--panel2', '#eee'), linie: v('--text', '#000'),
+      schrift: v('--text', '#000'), leise: v('--muted', '#777')};
+  }
+
+  function neu(typ){
+    const e = {typ, text: BEISPIEL[typ] || ''};
+    if (typ === 'wenn'){ e.ja = []; e.nein = []; }
+    else if (typ === 'fall') e.faelle = [{text: '1', kinder: []}, {text: '2', kinder: []}, {text: 'sonst', kinder: []}];
+    else if (typ === 'kopf' || typ === 'fuss' || typ === 'block') e.kinder = [];
+    return e;
+  }
+
+  function listen(el){
+    if (el.typ === 'wenn') return [el.ja, el.nein];
+    if (el.typ === 'fall') return el.faelle.map(f => f.kinder);
+    if (el.kinder) return [el.kinder];
+    return [];
+  }
+
+  function pruefe(d){
+    const TYP = new Set(TYPEN.map(t => t.typ));
+    const txt = t => String(t == null ? '' : t).slice(0, 2000);
+    function liste(a, tiefe){
+      if (!Array.isArray(a) || tiefe > 40) return [];
+      return a.map(e => element(e, tiefe)).filter(Boolean).slice(0, 2000);
+    }
+    function element(e, tiefe){
+      if (!e || !TYP.has(e.typ)) return null;
+      const n = {typ: e.typ, text: txt(e.text)};
+      if (e.typ === 'wenn'){ n.ja = liste(e.ja, tiefe + 1); n.nein = liste(e.nein, tiefe + 1); }
+      else if (e.typ === 'fall'){
+        n.faelle = (Array.isArray(e.faelle) ? e.faelle : []).slice(0, 20)
+          .map(f => ({text: txt(f && f.text), kinder: liste(f && f.kinder, tiefe + 1)}));
+        if (n.faelle.length < 2) return null;
+      }
+      else if (e.typ === 'kopf' || e.typ === 'fuss' || e.typ === 'block') n.kinder = liste(e.kinder, tiefe + 1);
+      return n;
+    }
+    if (!d || typeof d !== 'object' || !Array.isArray(d.kinder)) return null;
+    return {name: txt(d.name).slice(0, 200), breite: BREITEN.includes(+d.breite) ? +d.breite : 0, kinder: liste(d.kinder, 0)};
+  }
+
+  /* ---------- Text ---------- */
+  const xml = s => String(s).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+
+  // Bricht nach Zeichenzahl um (Monospace: Breite = Zeichen · 0,6 · Schriftgröße), harte Umbrüche bleiben
+  function umbrechen(text, breite){
+    const max = Math.max(1, Math.floor((breite - 2 * PX) / CW));
+    const out = [];
+    String(text || '').split('\n').forEach(absatz => {
+      let zeile = '';
+      absatz.split(/\s+/).filter(Boolean).forEach(wort => {
+        while (wort.length > max){
+          if (zeile){ out.push(zeile); zeile = ''; }
+          out.push(wort.slice(0, max)); wort = wort.slice(max);
+        }
+        if (!wort) return;
+        if (!zeile) zeile = wort;
+        else if (zeile.length + 1 + wort.length <= max) zeile += ' ' + wort;
+        else { out.push(zeile); zeile = wort; }
+      });
+      out.push(zeile);
+    });
+    return out.length ? out : [''];
+  }
+
+  /* ---------- Höhe messen ---------- */
+  function hText(zeilen){ return Math.max(MINH, zeilen.length * LH + 2 * PY); }
+  function kopfText(el, w){ return umbrechen(el.text, w); }
+  function dreieck(el, w, px){
+    const zeilen = umbrechen(el.text, Math.max(4 * CW + 2 * PX, Math.min(px, w - px)));
+    return {zeilen, h: 2 * (PY + zeilen.length * LH)};
+  }
+  function fallMasse(el, w){
+    const n = el.faelle.length, sw = w / n, px = sw * (n - 1);
+    const d = dreieck(el, w, px);
+    const labels = el.faelle.map(f => umbrechen(f.text, sw));
+    const lh = Math.max(...labels.map(l => l.length)) * LH + 6;
+    return {n, sw, px, zeilen: d.zeilen, h1: d.h, lh, labels};
+  }
+
+  function hoeheListe(liste, w){
+    if (!liste.length) return MINH;
+    return liste.reduce((s, e) => s + hoehe(e, w), 0);
+  }
+  function hoehe(el, w){
+    switch (el.typ){
+      case 'wenn': return dreieck(el, w, w / 2).h + Math.max(hoeheListe(el.ja, w / 2), hoeheListe(el.nein, w - w / 2));
+      case 'fall': {
+        const m = fallMasse(el, w);
+        return m.h1 + m.lh + Math.max(...el.faelle.map(f => hoeheListe(f.kinder, m.sw)));
+      }
+      case 'kopf': case 'fuss': return hText(kopfText(el, w)) + hoeheListe(el.kinder, w - BAR);
+      case 'block': return hText(kopfText(el, w)) + hoeheListe(el.kinder, w - 2 * RAND) + RAND;
+      case 'aufruf': return hText(umbrechen(el.text, w - 2 * AUF));
+      case 'abbruch': return hText(umbrechen(el.text, w - ASP));
+      default: return hText(umbrechen(el.text, w));
+    }
+  }
+
+  /* ---------- Mindestbreite (automatische Breite) ---------- */
+  function wort(text, min){
+    const n = Math.max(min || 4, ...String(text || '').split(/\s+/).map(w => w.length));
+    return n * CW + 2 * PX;
+  }
+  function bedarfListe(l){ return Math.max(40, ...l.map(bedarf)); }
+  function bedarf(el){
+    switch (el.typ){
+      case 'wenn': return Math.max(2 * wort(el.text), 2 * wort('', 6), 2 * Math.max(bedarfListe(el.ja), bedarfListe(el.nein)));
+      case 'fall': return Math.max(2 * wort(el.text), el.faelle.length * Math.max(...el.faelle.map(f => Math.max(wort(f.text), bedarfListe(f.kinder)))));
+      case 'kopf': case 'fuss': return Math.max(wort(el.text), BAR + bedarfListe(el.kinder));
+      case 'block': return Math.max(wort(el.text), 2 * RAND + bedarfListe(el.kinder));
+      case 'aufruf': return wort(el.text) + 2 * AUF;
+      case 'abbruch': return wort(el.text) + ASP;
+      default: return wort(el.text);
+    }
+  }
+
+  /* ---------- Zeichnen ---------- */
+  function zeichne(d, F, opt){
+    opt = opt || {};
+    const W = d.breite || Math.ceil(Math.min(AUTO_MAX, Math.max(AUTO_MIN, bedarfListe(d.kinder))));
+    const out = [], treffer = [], zonen = [];
+    const r = n => Math.round(n * 10) / 10;
+    const rect = (x, y, w, h, fill) => out.push(`<rect x="${r(x)}" y="${r(y)}" width="${r(w)}" height="${r(h)}" fill="${fill || F.papier}" stroke="${F.linie}"/>`);
+    const linie = (x1, y1, x2, y2) => out.push(`<line x1="${r(x1)}" y1="${r(y1)}" x2="${r(x2)}" y2="${r(y2)}" stroke="${F.linie}"/>`);
+    function text(zeilen, x, y, h, anker, farbe, gross){
+      const y0 = y + (h - zeilen.length * LH) / 2 + LH * 0.72;
+      zeilen.forEach((z, k) => { if (z) out.push(`<text x="${r(x)}" y="${r(y0 + k * LH)}" text-anchor="${anker || 'start'}" fill="${farbe || F.schrift}"${gross ? ` font-size="${gross}"` : ''}>${xml(z)}</text>`); });
+    }
+
+    // Liste von Elementen in die Höhe H strecken: das letzte Element bekommt den Rest
+    function liste(l, x, y, w, H){
+      if (!l.length){
+        rect(x, y, w, H);
+        if (opt.leer) text([opt.leer], x + w / 2, y, Math.min(H, MINH), 'middle', F.leise);
+        zonen.push({liste: l, i: 0, x, y: y + Math.min(H, MINH) / 2, w, leer: true, y0: y, h: H});
+        return;
+      }
+      let yy = y;
+      l.forEach((el, i) => {
+        zonen.push({liste: l, i, x, y: yy, w});
+        const natur = hoehe(el, w);
+        let h = i === l.length - 1 ? y + H - yy : natur;
+        if (el.typ === 'abbruch' && h > natur + 0.5){ rect(x, yy + natur, w, h - natur); h = natur; }
+        element(el, x, yy, w, h, l, i);
+        yy += h;
+      });
+      zonen.push({liste: l, i: l.length, x, y: y + H, w});
+    }
+
+    function element(el, x, y, w, H, l, i){
+      const t = {el, liste: l, i, x, y, w, h: H, H};
+      treffer.push(t);
+      switch (el.typ){
+        case 'wenn': {
+          const dr = dreieck(el, w, w / 2), wl = w / 2;
+          rect(x, y, w, dr.h, F.kopf);
+          linie(x, y, x + wl, y + dr.h); linie(x + w, y, x + wl, y + dr.h);
+          text(dr.zeilen, x + wl, y + PY / 2, dr.zeilen.length * LH + PY, 'middle');
+          text(['wahr'], x + PX / 2, y + dr.h - LH, LH, 'start', F.schrift, 12);
+          text(['falsch'], x + w - PX / 2, y + dr.h - LH, LH, 'end', F.schrift, 12);
+          t.h = dr.h;
+          liste(el.ja, x, y + dr.h, wl, H - dr.h);
+          liste(el.nein, x + wl, y + dr.h, w - wl, H - dr.h);
+          break;
+        }
+        case 'fall': {
+          const m = fallMasse(el, w), yk = y + m.h1;
+          rect(x, y, w, m.h1 + m.lh, F.kopf);
+          linie(x, y, x + m.px, yk); linie(x + w, y, x + m.px, yk); linie(x, yk, x + w, yk);
+          const mitte = Math.min(Math.max(x + m.px, x + w * 0.25), x + w * 0.75);
+          text(m.zeilen, mitte, y + PY / 2, m.zeilen.length * LH + PY, 'middle');
+          el.faelle.forEach((f, k) => {
+            const fx = x + k * m.sw;
+            if (k) linie(fx, yk, fx, yk + m.lh);
+            text(m.labels[k], fx + m.sw / 2, yk, m.lh, 'middle');
+            liste(f.kinder, fx, yk + m.lh, k === m.n - 1 ? x + w - fx : m.sw, H - m.h1 - m.lh);
+          });
+          t.h = m.h1 + m.lh;
+          break;
+        }
+        case 'kopf': case 'fuss': {
+          const z = kopfText(el, w), hk = hText(z), kopf = el.typ === 'kopf';
+          rect(x, y, w, H, F.kopf);
+          const yt = kopf ? y : y + H - hk;
+          text(z, x + PX, yt, hk);
+          liste(el.kinder, x + BAR, kopf ? y + hk : y, w - BAR, H - hk);
+          t.kopfY = yt; t.kopfH = hk;
+          break;
+        }
+        case 'block': {
+          const z = kopfText(el, w), hk = hText(z);
+          rect(x, y, w, H, F.kopf);
+          text(z, x + PX, y, hk, 'start', F.schrift);
+          liste(el.kinder, x + RAND, y + hk, w - 2 * RAND, H - hk - RAND);
+          t.kopfH = hk;
+          break;
+        }
+        case 'aufruf': {
+          rect(x, y, w, H);
+          linie(x + AUF, y, x + AUF, y + H); linie(x + w - AUF, y, x + w - AUF, y + H);
+          text(umbrechen(el.text, w - 2 * AUF), x + AUF + PX, y, H);
+          break;
+        }
+        case 'abbruch': {
+          rect(x, y, w, H);
+          out.push(`<polyline points="${r(x + ASP)},${r(y)} ${r(x)},${r(y + H / 2)} ${r(x + ASP)},${r(y + H)}" fill="none" stroke="${F.linie}"/>`);
+          text(umbrechen(el.text, w - ASP), x + ASP + PX, y, H);
+          break;
+        }
+        default: {
+          rect(x, y, w, H);
+          text(umbrechen(el.text, w), x + PX, y, H);
+        }
+      }
+    }
+
+    const titel = opt.titel !== false && d.name ? TITEL : 0;
+    const H = hoeheListe(d.kinder, W);
+    if (titel) out.push(`<text x="0" y="20" font-weight="bold" font-size="16" fill="${F.schrift}">${xml(d.name)}</text>`);
+    liste(d.kinder, 0, titel, W, H);
+    const B = W + 2, HH = H + titel + 2;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${B}" height="${HH}" viewBox="-1 -1 ${B} ${HH}" font-family='${FONT}' font-size="${FS}" stroke-width="1.5"${opt.fest ? ` style="color-scheme:only light;background:${F.papier}"` : ''}>`
+      + `<rect x="-1" y="-1" width="${B}" height="${HH}" fill="${F.papier}"/>` + out.join('') + '</svg>';
+    return {svg, breite: B, hoehe: HH, treffer, zonen, inhalt: {y: titel, h: H}};
+  }
+
+  /* ---------- Export ---------- */
+  function dateiname(d){
+    return (String(d.name || '').trim().replace(/[^\wäöüÄÖÜß-]+/g, '_').replace(/^_+|_+$/g, '') || 'struktogramm');
+  }
+  function laden(blob, name){
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  }
+  function exportiere(d, art){
+    const F = exportFarben();
+    const z = zeichne(d, F, {fest: true});
+    const svg = '<?xml version="1.0" encoding="UTF-8"?>\n' + z.svg;
+    const name = dateiname(d);
+    if (art === 'svg') return laden(new Blob([svg], {type: 'image/svg+xml'}), name + '.svg');
+    if (art === 'html'){
+      const html = `<!doctype html>\n<html lang="de" style="color-scheme:only light;background:${F.papier}">\n<head>\n<meta charset="utf-8">\n`
+        + `<meta name="color-scheme" content="only light">\n<meta name="darkreader-lock">\n<title>${xml(d.name || 'Struktogramm')}</title>\n`
+        + `<style>html,body{background:${F.papier}}body{margin:24px}</style>\n</head>\n<body>\n` + z.svg + '\n</body>\n</html>\n';
+      return laden(new Blob([html], {type: 'text/html'}), name + '.html');
+    }
+    // JPG: SVG in doppelter Auflösung auf weißen Hintergrund zeichnen
+    return new Promise((ok, fehler) => {
+      const img = new Image(), s = 2;
+      img.onload = () => {
+        const c = document.createElement('canvas');
+        c.width = z.breite * s; c.height = z.hoehe * s;
+        const g = c.getContext('2d');
+        g.fillStyle = F.papier; g.fillRect(0, 0, c.width, c.height);
+        g.drawImage(img, 0, 0, c.width, c.height);
+        c.toBlob(b => { if (b){ laden(b, name + '.jpg'); ok(); } else fehler(new Error('JPG fehlgeschlagen')); }, 'image/jpeg', 0.95);
+      };
+      img.onerror = () => fehler(new Error('Bild konnte nicht erzeugt werden'));
+      img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(z.svg);
+    });
+  }
+
+  /* ---------- Exportfarben einstellen ---------- */
+  function zahnrad(knopf){
+    let pop = null;
+    function zu(){ if (pop){ pop.remove(); pop = null; knopf.setAttribute('aria-expanded', 'false'); } }
+    function auf(){
+      const f = exportFarben();
+      pop = document.createElement('div');
+      pop.className = 'st-pop'; pop.setAttribute('role', 'dialog'); pop.setAttribute('aria-label', 'Exportfarben');
+      pop.innerHTML = `<b>Exportfarben</b>
+        <label>Hintergrund <input type="color" data-f="papier" value="${f.papier}"></label>
+        <label>Linien und Schrift <input type="color" data-f="linie" value="${f.linie}"></label>
+        <button class="btn" type="button" data-std>Weiß mit Schwarz</button>
+        <span class="hinweis">Gilt für SVG, HTML und JPG auf diesem Gerät.</span>`;
+      document.body.appendChild(pop);
+      const r = knopf.getBoundingClientRect();
+      pop.style.top = (r.bottom + scrollY + 6) + 'px';
+      pop.style.left = Math.max(8, Math.min(r.right + scrollX - pop.offsetWidth, innerWidth - pop.offsetWidth - 8)) + 'px';
+      const merke = () => {
+        const v = {};
+        pop.querySelectorAll('[data-f]').forEach(i => { v[i.dataset.f] = i.value; });
+        try { localStorage.setItem(FARBKEY, JSON.stringify(v)); } catch (e) {}
+      };
+      pop.querySelectorAll('[data-f]').forEach(i => i.addEventListener('input', merke));
+      pop.querySelector('[data-std]').addEventListener('click', () => {
+        pop.querySelector('[data-f=papier]').value = EXPORT.papier; pop.querySelector('[data-f=linie]').value = EXPORT.linie;
+        merke();
+      });
+      knopf.setAttribute('aria-expanded', 'true');
+    }
+    knopf.setAttribute('aria-expanded', 'false');
+    knopf.addEventListener('click', e => { e.stopPropagation(); pop ? zu() : auf(); });
+    document.addEventListener('pointerdown', e => { if (pop && !pop.contains(e.target) && e.target !== knopf) zu(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') zu(); });
+  }
+
+  window.Strukto = {zeichne, exportiere, zahnrad, exportFarben, farbenAusCss, EXPORT, TYPEN, BREITEN, neu, listen, pruefe, umbrechen};
+})();
+
+</script>
+<style>
+.arbeit{display:grid;grid-template-columns:224px minmax(0,1fr) 260px;gap:12px;align-items:start}
+@media (max-width:1000px){.arbeit{grid-template-columns:1fr}.leiste{flex-direction:row!important;flex-wrap:wrap}}
+.leiste{display:flex;flex-direction:column;gap:6px;position:sticky;top:12px}
+.teil{display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:7px 10px;cursor:grab;font:600 14px system-ui,sans-serif;color:var(--text);text-align:left;touch-action:none;user-select:none}
+.teil:hover{border-color:var(--accent)}
+.teil svg{flex:none;width:30px;height:22px}
+.teil:active{cursor:grabbing}
+.leinwand{background:var(--panel);border:1px solid var(--border);border-radius:12px;min-height:60vh}
+.leinwand svg{user-select:none}
+.leinwand.zieht{cursor:grabbing}
+.leinwand:focus{outline:none}
+.leinwand:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.leinwand svg{overflow:visible}
+.zieht #ueber>:not(.ziel):not(.quelle){display:none}
+#ueber .puls{animation:puls 4.1s ease-in-out infinite}
+@keyframes puls{50%{opacity:.21}}
+.teil kbd,.panel kbd{font:600 11px var(--mono);border:1px solid var(--border);border-bottom-width:2px;border-radius:4px;padding:0 5px;color:var(--muted);background:var(--panel2)}
+.teil span{flex:1}
+.teil kbd{flex:none}
+.geist.nein{opacity:.55}
+.st-schreibt #ueber .auswahl rect{stroke-dasharray:8 5}
+.st-schreibt .panel textarea:focus,.st-schreibt .panel input:focus{outline:3px solid var(--marke);outline-offset:1px}
+.zustand .ja{display:none} .st-schreibt .zustand .ja{display:inline} .st-schreibt .zustand .nicht{display:none}
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px;position:sticky;top:12px;display:flex;flex-direction:column;gap:10px}
+.panel h3{margin:0;font:800 15px var(--mono)}
+.panel p{margin:0}
+.panel textarea{width:100%;min-height:80px;resize:vertical;font:14px/1.4 var(--mono)}
+.panel .zeile{display:flex;gap:6px;flex-wrap:wrap}
+.panel .fall{display:flex;gap:6px}
+.panel .fall input{flex:1;min-width:0}
+.geist{position:fixed;z-index:100;pointer-events:none;background:var(--marke);color:#fff;padding:5px 10px;border-radius:8px;font:600 13px system-ui,sans-serif;box-shadow:0 6px 16px rgba(0,0,0,.25);transform:translate(10px,10px)}
+[data-theme=dark] .geist{color:#2e3440}
+.meldung{font-size:13px;color:var(--muted);min-height:18px;margin:-4px 0 8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="bar">
+    <div class="brand">Struktogramm<span>-Editor</span></div>
+    <input class="feld" id="name" placeholder="Name des Programms" maxlength="200" aria-label="Name des Programms">
+    <label class="klein">Breite <select class="feld" id="breite"></select></label>
+    <button class="btn" id="rueck" type="button" title="Rückgängig (Strg+Z)">↶</button>
+    <button class="btn" id="vor" type="button" title="Wiederholen (Strg+Y)">↷</button>
+    <button class="btn" id="neu" type="button">Neu</button>
+    <button class="btn" id="oeffnen" type="button" title="Gespeichertes Struktogramm (.json) öffnen">Öffnen</button>
+    <button class="btn" id="speichern" type="button" title="Als Datei speichern, um später weiterzuarbeiten">Speichern</button>
+    <input type="file" id="datei" accept=".json,application/json" hidden>
+    <span class="spacer"></span>
+    <span class="gruppe"><span class="hint">Export</span>
+      <button class="btn haupt" data-export="svg" type="button">SVG</button>
+      <button class="btn haupt" data-export="html" type="button">HTML</button>
+      <button class="btn haupt" data-export="jpg" type="button">JPG</button>
+      <button class="btn zahnrad" id="zahnrad" type="button" title="Exportfarben einstellen" aria-label="Exportfarben einstellen">⚙</button>
+    </span>
+  </div>
+  <div class="meldung" id="meldung"></div>
+  <div class="arbeit">
+    <div class="leiste" id="leiste" aria-label="Elemente"></div>
+    <div class="leinwand" id="bild" tabindex="0" aria-label="Struktogramm, mit Pfeiltasten bedienbar"></div>
+    <div class="panel" id="panel"></div>
+  </div>
+</div>
+<script>
+'use strict';
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+const SPEICHER = 'strukto-diagramm';
+const NAME = Object.fromEntries(Strukto.TYPEN.map(t => [t.typ, t.name]));
+const SVGNS = 'http://www.w3.org/2000/svg';
+const TASTE_LEISTE = {anweisung: 'A', wenn: 'V', fall: 'F', kopf: 'K', fuss: 'U', aufruf: 'R', abbruch: 'X', block: 'B'};
+
+/* ---------- Zustand ---------- */
+let doc = {name: '', breite: 0, kinder: []};
+try { doc = Strukto.pruefe(JSON.parse(localStorage.getItem(SPEICHER))) || doc; } catch (e) {}
+let auswahl = null;            // {el} = Bauteil oder {liste, i} = Lücke
+let bild = null;               // letztes Ergebnis von Strukto.zeichne
+const rueck = [], vor = [];
+let gruppe = null;             // aufeinanderfolgende Tipp-Änderungen = ein Rückgängig-Schritt
+
+function speichern(){
+  try { localStorage.setItem(SPEICHER, JSON.stringify(doc)); } catch (e) {}
+  window.TrainerSync && TrainerSync.changed();
+}
+function aendern(fn, g){
+  if (!g || g !== gruppe){ rueck.push(JSON.stringify(doc)); if (rueck.length > 200) rueck.shift(); vor.length = 0; }
+  gruppe = g || null;
+  fn();
+  speichern(); zeichnen();
+}
+function zurueck(von, nach){
+  if (!von.length) return;
+  nach.push(JSON.stringify(doc));
+  doc = Strukto.pruefe(JSON.parse(von.pop())) || doc;
+  gruppe = null; auswahl = null;
+  speichern(); kopfFelder(); zeichnen(); panel();
+}
+function melde(t){ $('#meldung').textContent = t || ''; }
+
+/* ---------- Werkzeugleiste ---------- */
+function mini(typ){
+  const r = '<rect x="1" y="1" width="28" height="20" fill="none"/>';
+  const p = {
+    anweisung: r,
+    wenn: r + '<path d="M1 1 15 9 29 1M1 9H29M15 9V21"/>',
+    fall: r + '<path d="M1 1 20 9 29 1M1 9H29M10 9V21M20 9V21"/>',
+    kopf: r + '<path d="M7 8H29M7 8V21"/>',
+    fuss: r + '<path d="M7 1V14H29"/>',
+    aufruf: r + '<path d="M5 1V21M25 1V21"/>',
+    abbruch: r + '<path d="M7 1 2 11 7 21"/>',
+    block: r + '<path d="M1 8H29"/><rect x="5" y="8" width="20" height="9" fill="none"/>'
+  }[typ];
+  return `<svg viewBox="0 0 30 22" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">${p}</svg>`;
+}
+$('#leiste').innerHTML = Strukto.TYPEN.map(t => `<button class="teil" type="button" data-typ="${t.typ}" title="Ziehen oder anklicken">${mini(t.typ)}<span>${esc(t.name)}</span><kbd>${TASTE_LEISTE[t.typ]}</kbd></button>`).join('');
+$('#breite').innerHTML = Strukto.BREITEN.map(b => `<option value="${b}">${b ? b + ' px' : 'automatisch'}</option>`).join('');
+function kopfFelder(){ $('#name').value = doc.name; $('#breite').value = String(doc.breite); }
+
+/* ---------- Zeichnen ---------- */
+// auswahl: {el} = Bauteil, {liste, i} = Lücke vor liste[i] (bei leerer Liste das leere Feld)
+const istLuecke = a => !!(a && a.liste);
+function zoneVon(liste, i){ return bild.zonen.find(z => z.liste === liste && z.i === i); }
+function zeichnen(){
+  bild = Strukto.zeichne(doc, Strukto.farbenAusCss(), {leer: doc.kinder.length ? '∅' : 'Element hierher ziehen'});
+  const box = $('#bild');
+  box.innerHTML = bild.svg;
+  const svg = box.firstElementChild;
+  const g = document.createElementNS(SVGNS, 'g');
+  g.id = 'ueber'; svg.appendChild(g);
+  const t = auswahlTreffer();
+  if (t) markiere(g, 'auswahl', t.x, t.y, t.w, t.H);
+  else if (istLuecke(auswahl)){
+    const z = zoneVon(auswahl.liste, auswahl.i);
+    if (z) luecke(g, z); else auswahl = null;
+  } else auswahl = null;
+  document.querySelectorAll('[data-export]').forEach(b => { b.disabled = !doc.kinder.length; });
+  $('#rueck').disabled = !rueck.length; $('#vor').disabled = !vor.length;
+}
+function farbe(n, d){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim() || d; }
+// Markierungen über dem Struktogramm: auswahl (Bauteil), luecke (Einfügestelle), leer (leeres Feld), quelle (wird verschoben)
+function markiere(g, art, x, y, w, h){
+  const a = farbe('--marke', '#c05a1c');   // eigene Farbe, damit Marken auch im grauen Bereich auffallen
+  const grp = document.createElementNS(SVGNS, 'g');
+  grp.setAttribute('pointer-events', 'none');
+  const r = attrs => { const e = document.createElementNS(SVGNS, 'rect'); Object.entries(attrs).forEach(([k, v]) => e.setAttribute(k, v)); grp.appendChild(e); };
+  if (art === 'auswahl') r({x, y, width: w, height: h, fill: a, 'fill-opacity': 0.14, stroke: a, 'stroke-width': 3});
+  else if (art === 'leer') r({x: x + 2, y: y + 2, width: Math.max(0, w - 4), height: Math.max(0, h - 4), fill: a, 'fill-opacity': 0.25, stroke: a, 'stroke-width': 3, 'stroke-dasharray': '7 4'});
+  else if (art === 'luecke'){
+    r({x: x - 1, y: y - 3, width: w + 2, height: 6, rx: 3, fill: a, 'fill-opacity': 0.25});
+    r({x: x + 2, y: y - 1.5, width: Math.max(0, w - 1), height: 3, rx: 1.5, fill: a});
+  }
+  else if (art === 'quelle') r({x, y, width: w, height: h, fill: farbe('--panel', '#fff'), 'fill-opacity': 0.7, stroke: a, 'stroke-width': 2, 'stroke-dasharray': '6 4'});
+  grp.classList.add(art);
+  if (art === 'luecke' || art === 'leer') grp.classList.add('puls');
+  g.appendChild(grp);
+  return grp;
+}
+const luecke = (g, z) => z.leer ? markiere(g, 'leer', z.x, z.y0, z.w, z.h) : markiere(g, 'luecke', z.x, z.y, z.w, 0);
+function auswahlTreffer(){ return auswahl && auswahl.el ? bild.treffer.find(t => t.el === auswahl.el) : null; }
+
+function punkt(e){
+  const svg = $('#bild svg'), p = svg.createSVGPoint();
+  p.x = e.clientX; p.y = e.clientY;
+  return p.matrixTransform(svg.getScreenCTM().inverse());
+}
+function trifft(p){
+  const leer = bild.zonen.find(z => z.leer && p.x >= z.x && p.x <= z.x + z.w && p.y >= z.y0 && p.y <= z.y0 + z.h);
+  if (leer) return {liste: leer.liste, i: 0};
+  let best = null;
+  bild.treffer.forEach(t => { if (p.x >= t.x && p.x <= t.x + t.w && p.y >= t.y && p.y <= t.y + t.h) best = t; });
+  return best ? {el: best.el} : null;
+}
+
+/* ---------- Bearbeiten ---------- */
+function unterlisten(el, set){
+  set = set || new Set();
+  Strukto.listen(el).forEach(l => { set.add(l); l.forEach(k => unterlisten(k, set)); });
+  return set;
+}
+function einfuegen(el, liste, i, fokus){
+  aendern(() => { liste.splice(i, 0, el); auswahl = {el}; });
+  panel(fokus !== false);
+}
+function neuEinfuegen(typ){
+  const el = Strukto.neu(typ);
+  const t = auswahlTreffer();
+  if (t) einfuegen(el, t.liste, t.i + 1);
+  else if (istLuecke(auswahl)) einfuegen(el, auswahl.liste, auswahl.i);
+  else einfuegen(el, doc.kinder, doc.kinder.length);
+}
+function verschieben(el, liste, i){
+  const t = bild.treffer.find(x => x.el === el);
+  if (!t || unterlisten(el).has(liste)) return;
+  if (t.liste === liste && (i === t.i || i === t.i + 1)) return;
+  aendern(() => {
+    t.liste.splice(t.i, 1);
+    liste.splice(t.liste === liste && i > t.i ? i - 1 : i, 0, el);
+    auswahl = {el};
+  });
+  panel();
+}
+function duplizieren(fokus){
+  const t = auswahlTreffer();
+  if (t) einfuegen(Strukto.pruefe({kinder: [t.el]}).kinder[0], t.liste, t.i + 1, fokus);
+}
+// Löschen: danach ist die Lücke an derselben Stelle ausgewählt
+function loeschen(){
+  const t = auswahlTreffer();
+  if (!t) return;
+  aendern(() => { t.liste.splice(t.i, 1); auswahl = {liste: t.liste, i: t.i}; });
+  panel();
+}
+
+/* ---------- Tastatur: Weg durch das Struktogramm ---------- */
+// ↑ ↓ laufen abwechselnd über Lücken und Bauteile, in Verzweigungen und Fallauswahl durch die linke Spalte;
+// ← → wechseln die Spalte. Fußgesteuerte Schleife: erst der Rumpf, dann die Bedingung unten.
+function struktur(){
+  const L = new Map(), E = new Map();
+  (function lauf(liste, owner, spalte, eltern, idx){
+    L.set(liste, {owner, spalte, eltern, idx});
+    liste.forEach((el, i) => { E.set(el, {liste, i}); Strukto.listen(el).forEach((k, s) => lauf(k, el, s, liste, i)); });
+  })(doc.kinder, null, 0, null, 0);
+  return {L, E};
+}
+const lk = (liste, i) => ({liste, i});
+const innen = el => el.typ !== 'fuss' && Strukto.listen(el).length > 0;
+const obenRein = el => el.typ === 'fuss' ? lk(el.kinder, 0) : {el};
+function untenRein(el){
+  if (!innen(el)) return {el};
+  const l = Strukto.listen(el)[0];
+  return lk(l, l.length);
+}
+function runter(pos, S){
+  if (pos.el){
+    if (innen(pos.el)) return lk(Strukto.listen(pos.el)[0], 0);
+    const e = S.E.get(pos.el);
+    return lk(e.liste, e.i + 1);
+  }
+  if (pos.i < pos.liste.length) return obenRein(pos.liste[pos.i]);
+  const o = S.L.get(pos.liste);
+  if (!o.owner) return pos;
+  return o.owner.typ === 'fuss' ? {el: o.owner} : lk(o.eltern, o.idx + 1);
+}
+function hoch(pos, S){
+  if (pos.el){
+    if (pos.el.typ === 'fuss') return lk(pos.el.kinder, pos.el.kinder.length);
+    const e = S.E.get(pos.el);
+    return lk(e.liste, e.i);
+  }
+  if (pos.i > 0) return untenRein(pos.liste[pos.i - 1]);
+  const o = S.L.get(pos.liste);
+  if (!o.owner) return pos;
+  return o.owner.typ === 'fuss' ? lk(o.eltern, o.idx) : {el: o.owner};
+}
+function seitlich(pos, S, r){
+  let liste, idx, istEl;
+  if (pos.el){ const e = S.E.get(pos.el); liste = e.liste; idx = e.i; istEl = true; }
+  else { liste = pos.liste; idx = pos.i; istEl = false; }
+  for (;;){
+    const o = S.L.get(liste);
+    if (!o || !o.owner) return pos;
+    const ziel = (o.owner.typ === 'wenn' || o.owner.typ === 'fall') && Strukto.listen(o.owner)[o.spalte + r];
+    if (ziel){
+      if (istEl && ziel.length) return {el: ziel[Math.min(idx, ziel.length - 1)]};
+      return lk(ziel, Math.min(idx, ziel.length));
+    }
+    liste = o.eltern; idx = o.idx; istEl = true;
+  }
+}
+function waehle(pos){
+  auswahl = pos; zeichnen(); panel();
+  const m = $('#ueber') && $('#ueber').lastElementChild;
+  if (m && m.scrollIntoView) m.scrollIntoView({block: 'nearest', inline: 'nearest'});
+}
+function bearbeiten(){
+  const ta = $('#text'), t = auswahlTreffer();
+  if (!ta || !t) return;
+  ta.focus();
+  if (ta.value === Strukto.neu(t.el.typ).text) ta.select(); else ta.setSelectionRange(ta.value.length, ta.value.length);
+}
+function zumBild(){ gruppe = null; $('#bild').focus({preventScroll: true}); }
+// Schreibt jemand im Textfeld rechts, ist das Bauteil im Struktogramm gestrichelt und das Feld hervorgehoben
+const istFeld = el => !!(el && el.closest && el.closest('#panel') && el.matches('textarea, input'));
+document.addEventListener('focusin', e => { if (istFeld(e.target)) document.documentElement.classList.add('st-schreibt'); });
+document.addEventListener('focusout', e => { if (istFeld(e.target)) document.documentElement.classList.remove('st-schreibt'); });
+document.addEventListener('keydown', e => {
+  if (!istFeld(document.activeElement) || !((e.key === 'Enter' && !e.shiftKey) || e.key === 'Escape')) return;
+  e.preventDefault(); e.stopImmediatePropagation();
+  zumBild();
+}, true);
+const TASTEN = Object.fromEntries(Object.entries(TASTE_LEISTE).map(([typ, k]) => [k.toLowerCase(), typ]));
+
+/* ---------- Eigenschaften ---------- */
+const HILFE = `<p class="hinweis"><b>Tastatur:</b> ↑ ↓ wechselt zwischen Bauteilen und Lücken, ← → zwischen den Spalten einer Verzweigung oder Fallauswahl.</p>
+  <p class="hinweis">In einer Lücke: <kbd>A</kbd> Anweisung, <kbd>V</kbd> Verzweigung, <kbd>F</kbd> Fallauswahl, <kbd>K</kbd> kopfgesteuerte, <kbd>U</kbd> fußgesteuerte Schleife, <kbd>R</kbd> Aufruf, <kbd>X</kbd> Aussprung, <kbd>B</kbd> Block.</p>
+  <p class="hinweis"><kbd>Enter</kbd> Text bearbeiten, noch einmal <kbd>Enter</kbd> zurück (Zeilenumbruch: Umschalt+Enter). <kbd>D</kbd> dupliziert, <kbd>Entf</kbd> löscht, Strg+Z macht rückgängig.</p>`;
+function panel(fokus){
+  const p = $('#panel'), t = auswahlTreffer();
+  if (!t){
+    p.innerHTML = istLuecke(auswahl)
+      ? `<h3>Lücke</h3><p class="hinweis">Hier wird eingefügt: Buchstabe drücken oder ein Element der Leiste anklicken.</p>${HILFE}`
+      : `<h3>Bearbeiten</h3><p class="hinweis">Ein Element anklicken, um seinen Text zu ändern. Neue Elemente aus der Leiste ins Struktogramm ziehen oder anklicken (kommt hinter das markierte Element). Markierte Elemente lassen sich mit der Maus verschieben.</p>${HILFE}`;
+    return;
+  }
+  const el = t.el;
+  const label = {wenn: 'Bedingung', fall: 'Ausdruck', kopf: 'Bedingung / Zählbereich', fuss: 'Bedingung'}[el.typ] || 'Text';
+  p.innerHTML = `<h3>${esc(NAME[el.typ])}</h3>
+    <label class="klein" for="text">${label}</label>
+    <textarea class="feld" id="text" spellcheck="false">${esc(el.text)}</textarea>
+    ${el.typ === 'fall' ? `<label class="klein">Fälle</label>${el.faelle.map((f, k) => `<div class="fall"><input class="feld" data-fall="${k}" value="${esc(f.text)}" aria-label="Fall ${k + 1}"><button class="btn" data-weg="${k}" type="button" title="Fall entfernen"${el.faelle.length <= 2 ? ' disabled' : ''}>✕</button></div>`).join('')}
+      <div class="zeile"><button class="btn" id="fallNeu" type="button">+ Fall</button></div>` : ''}
+    ${el.typ === 'wenn' ? '<div class="zeile"><button class="btn" id="tauschen" type="button">wahr und falsch tauschen</button></div>' : ''}
+    <div class="zeile">
+      <button class="btn" id="hoch" type="button" title="nach oben"${t.i === 0 ? ' disabled' : ''}>↑</button>
+      <button class="btn" id="runter" type="button" title="nach unten"${t.i === t.liste.length - 1 ? ' disabled' : ''}>↓</button>
+      <button class="btn" id="kopie" type="button" title="Duplizieren (D)">Duplizieren</button>
+      <button class="btn" id="weg" type="button">Löschen</button>
+    </div>
+    <p class="hinweis zustand"><span class="nicht"><kbd>Enter</kbd> Text bearbeiten, <kbd>D</kbd> duplizieren, <kbd>Entf</kbd> löschen, Pfeiltasten wechseln.</span><span class="ja">Du schreibst gerade. <kbd>Enter</kbd> fertig (Zeilenumbruch: Umschalt+Enter).</span></p>`;
+  const ta = $('#text');
+  ta.addEventListener('input', () => aendern(() => { el.text = ta.value; }, 'text'));
+  ta.addEventListener('focus', () => { gruppe = null; });
+  if (fokus){ ta.focus(); ta.select(); }
+  p.querySelectorAll('[data-fall]').forEach(inp => {
+    inp.addEventListener('focus', () => { gruppe = null; });
+    inp.addEventListener('input', () => aendern(() => { el.faelle[+inp.dataset.fall].text = inp.value; }, 'fall' + inp.dataset.fall));
+  });
+  p.querySelectorAll('[data-weg]').forEach(b => b.addEventListener('click', () => {
+    const k = +b.dataset.weg;
+    if (el.faelle[k].kinder.length && !confirm('Der Fall enthält Elemente. Trotzdem entfernen?')) return;
+    aendern(() => el.faelle.splice(k, 1)); panel();
+  }));
+  const an = (id, fn) => { const b = p.querySelector('#' + id); if (b) b.addEventListener('click', fn); };
+  an('fallNeu', () => { aendern(() => el.faelle.splice(el.faelle.length - 1, 0, {text: String(el.faelle.length), kinder: []})); panel(); });
+  an('tauschen', () => { aendern(() => { [el.ja, el.nein] = [el.nein, el.ja]; }); });
+  an('hoch', () => { aendern(() => { t.liste.splice(t.i, 1); t.liste.splice(t.i - 1, 0, el); }); panel(); });
+  an('runter', () => { aendern(() => { t.liste.splice(t.i, 1); t.liste.splice(t.i + 1, 0, el); }); panel(); });
+  an('kopie', () => duplizieren(true));
+  an('weg', loeschen);
+}
+
+/* ---------- Ziehen und Ablegen ---------- */
+let zug = null;   // {typ | el, x0, y0, aktiv, geist, ziel}
+function zielZone(p){
+  const verboten = zug.el ? unterlisten(zug.el) : new Set();
+  let best = null, bestD = Infinity;
+  bild.zonen.forEach(z => {
+    if (verboten.has(z.liste) || p.x < z.x - 4 || p.x > z.x + z.w + 4) return;
+    let d = Math.abs(p.y - z.y);
+    if (z.leer && p.y >= z.y0 && p.y <= z.y0 + z.h && p.x >= z.x && p.x <= z.x + z.w) d = -1;
+    d += z.w / 10000;   // bei gleichem Abstand die innere (schmalere) Stelle
+    if (d < bestD){ bestD = d; best = z; }
+  });
+  if (bestD < 40) return best;
+  // unterhalb des Struktogramms: ans Ende
+  if (p.y > bild.inhalt.y + bild.inhalt.h && p.x >= 0 && p.x <= bild.breite) return zoneVon(doc.kinder, doc.kinder.length) || null;
+  return null;
+}
+function zugStart(e, daten){
+  zug = Object.assign({x0: e.clientX, y0: e.clientY, aktiv: false, ziel: null}, daten);
+  window.addEventListener('pointermove', zugBewegen);
+  window.addEventListener('pointerup', zugEnde);
+  window.addEventListener('pointercancel', zugAbbruch);
+}
+function zugBewegen(e){
+  if (!zug) return;
+  const g = $('#ueber');
+  if (!zug.aktiv){
+    if (Math.hypot(e.clientX - zug.x0, e.clientY - zug.y0) < 6) return;
+    zug.aktiv = true;
+    zug.geist = document.createElement('div');
+    zug.geist.className = 'geist';
+    zug.geist.textContent = NAME[zug.typ || zug.el.typ];
+    document.body.appendChild(zug.geist);
+    $('#bild').classList.add('zieht');
+    const t = zug.el && bild.treffer.find(x => x.el === zug.el);
+    if (t) markiere(g, 'quelle', t.x, t.y, t.w, t.H).classList.add('quelle');
+  }
+  e.preventDefault();
+  zug.geist.style.left = e.clientX + 'px'; zug.geist.style.top = e.clientY + 'px';
+  const alt = g.querySelector('.ziel');
+  if (alt) alt.remove();
+  zug.ziel = zielZone(punkt(e));
+  zug.geist.classList.toggle('nein', !zug.ziel);
+  if (zug.ziel) luecke(g, zug.ziel).classList.add('ziel');
+}
+function zugEnde(){
+  const z = zug;
+  zugAbbruch();
+  if (!z) return;
+  if (!z.aktiv){
+    if (z.typ) neuEinfuegen(z.typ);
+    else klickAuf(z.treffer);
+    return;
+  }
+  if (!z.ziel) return;
+  if (z.typ) einfuegen(Strukto.neu(z.typ), z.ziel.liste, z.ziel.i);
+  else verschieben(z.el, z.ziel.liste, z.ziel.i);
+}
+function zugAbbruch(){
+  window.removeEventListener('pointermove', zugBewegen);
+  window.removeEventListener('pointerup', zugEnde);
+  window.removeEventListener('pointercancel', zugAbbruch);
+  if (zug && zug.geist) zug.geist.remove();
+  $('#bild').classList.remove('zieht');
+  document.querySelectorAll('#ueber .ziel, #ueber .quelle').forEach(x => x.remove());
+  zug = null;
+}
+
+$('#leiste').addEventListener('pointerdown', e => {
+  const b = e.target.closest('.teil');
+  if (!b || e.button) return;
+  e.preventDefault();
+  zugStart(e, {typ: b.dataset.typ});
+});
+$('#leiste').addEventListener('keydown', e => {
+  const b = e.target.closest('.teil');
+  if (b && (e.key === 'Enter' || e.key === ' ')){ e.preventDefault(); e.stopPropagation(); neuEinfuegen(b.dataset.typ); }
+});
+$('#bild').addEventListener('pointerdown', e => {
+  if (e.button || !$('#bild svg')) return;
+  $('#bild').focus({preventScroll: true});
+  const tr = trifft(punkt(e));
+  if (!tr){ auswahl = null; zeichnen(); panel(); return; }
+  // Elemente nur mit der Maus verschieben; am Handy bleibt Wischen zum Blättern (↑ ↓ im Bearbeiten-Feld)
+  if (tr.el && e.pointerType === 'mouse'){ e.preventDefault(); zugStart(e, {el: tr.el, treffer: tr}); return; }
+  klickAuf(tr);
+});
+let letzterKlick = {el: null, t: 0};
+function klickAuf(tr){
+  const doppelt = tr.el && letzterKlick.el === tr.el && Date.now() - letzterKlick.t < 450;
+  letzterKlick = {el: tr.el, t: Date.now()};
+  auswahl = tr; zeichnen(); panel();
+  if (doppelt) bearbeiten();
+}
+
+/* ---------- Leiste oben ---------- */
+$('#name').addEventListener('focus', () => { gruppe = null; });
+$('#name').addEventListener('input', () => aendern(() => { doc.name = $('#name').value; }, 'name'));
+$('#breite').addEventListener('change', () => aendern(() => { doc.breite = +$('#breite').value; }));
+$('#rueck').addEventListener('click', () => zurueck(rueck, vor));
+$('#vor').addEventListener('click', () => zurueck(vor, rueck));
+$('#neu').addEventListener('click', () => {
+  if (doc.kinder.length && !confirm('Ein neues, leeres Struktogramm anfangen? Mit ↶ kommst du zurück.')) return;
+  aendern(() => { doc = {name: '', breite: doc.breite, kinder: []}; auswahl = null; });
+  kopfFelder(); panel(); melde('');
+});
+$('#speichern').addEventListener('click', () => {
+  const name = (doc.name.trim().replace(/[^\wäöüÄÖÜß-]+/g, '_').replace(/^_+|_+$/g, '') || 'struktogramm') + '.struktogramm.json';
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(doc, null, 1)], {type: 'application/json'}));
+  a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+});
+$('#oeffnen').addEventListener('click', () => $('#datei').click());
+$('#datei').addEventListener('change', async e => {
+  const f = e.target.files[0]; e.target.value = '';
+  if (!f) return;
+  let neu = null;
+  try { neu = f.size < 2000000 ? Strukto.pruefe(JSON.parse(await f.text())) : null; } catch (err) {}
+  if (!neu){ alert('Diese Datei ist kein gespeichertes Struktogramm.'); return; }
+  aendern(() => { doc = neu; auswahl = null; });
+  kopfFelder(); panel(); melde(`„${f.name}“ geöffnet. Mit ↶ kommst du zum vorherigen Struktogramm zurück.`);
+});
+Strukto.zahnrad($('#zahnrad'));
+document.querySelectorAll('[data-export]').forEach(b => b.addEventListener('click', () => {
+  Promise.resolve(Strukto.exportiere(doc, b.dataset.export)).catch(err => alert(err.message));
+}));
+
+document.addEventListener('keydown', e => {
+  const ae = document.activeElement;
+  const tippt = /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName) || ae.isContentEditable;
+  const strg = e.ctrlKey || e.metaKey;
+  if (tippt || document.querySelector('.ts-ov') || e.altKey) return;
+  if (strg && e.key.toLowerCase() === 'z'){ e.preventDefault(); e.shiftKey ? zurueck(vor, rueck) : zurueck(rueck, vor); return; }
+  if (strg && e.key.toLowerCase() === 'y'){ e.preventDefault(); zurueck(vor, rueck); return; }
+  if (strg) return;
+  const pfeil = {ArrowDown: 'runter', ArrowUp: 'hoch', ArrowLeft: -1, ArrowRight: 1}[e.key];
+  if (pfeil !== undefined){
+    e.preventDefault();
+    const S = struktur();
+    let pos;
+    if (!auswahl) pos = e.key === 'ArrowUp' ? lk(doc.kinder, doc.kinder.length) : doc.kinder.length ? obenRein(doc.kinder[0]) : lk(doc.kinder, 0);
+    else pos = pfeil === 'runter' ? runter(auswahl, S) : pfeil === 'hoch' ? hoch(auswahl, S) : seitlich(auswahl, S, pfeil);
+    waehle(pos);
+    return;
+  }
+  const amBild = ae === document.body || ae === $('#bild');
+  if (e.key === 'Enter' && amBild && auswahlTreffer()){ e.preventDefault(); bearbeiten(); return; }
+  if (istLuecke(auswahl) && TASTEN[e.key.toLowerCase()]){
+    e.preventDefault();
+    einfuegen(Strukto.neu(TASTEN[e.key.toLowerCase()]), auswahl.liste, auswahl.i, false);
+    zumBild();
+    return;
+  }
+  if ((e.key === 'Delete' || e.key === 'Backspace') && auswahlTreffer()){ e.preventDefault(); loeschen(); return; }
+  if (e.key.toLowerCase() === 'd' && auswahlTreffer()){ e.preventDefault(); duplizieren(false); zumBild(); return; }
+  if (e.key === 'Escape' && auswahl){ auswahl = null; zeichnen(); panel(); }
+});
+
+/* ---------- Start ---------- */
+try {
+  const ue = sessionStorage.getItem('strukto-uebergabe');
+  if (ue){
+    sessionStorage.removeItem('strukto-uebergabe');
+    const neu = Strukto.pruefe(JSON.parse(ue));
+    if (neu){
+      if (doc.kinder.length) rueck.push(JSON.stringify(doc));
+      doc = neu; speichern();
+      melde('Aus Python übernommen.' + (rueck.length ? ' Mit ↶ kommst du zu deinem vorherigen Struktogramm zurück.' : ''));
+    }
+  }
+} catch (e) {}
+kopfFelder(); zeichnen(); panel();
+new MutationObserver(zeichnen).observe(document.documentElement, {attributes: true, attributeFilter: ['data-theme']});
+</script>
+</body>
+</html>

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Baut pb_public/datenbanken/lib/pdfme.min.js (Berichtsentwurf und PDF-Erzeugung, pdfme, MIT).
+# Baut pb_public/IT/datenbanken/lib/pdfme.min.js (Berichtsentwurf und PDF-Erzeugung, pdfme, MIT).
 # Aufruf im Hauptordner von vibe-learning: bash werkzeuge/pdfme/bauen.sh   (braucht Node und npm)
 # Ein einziges Skript für den Browser (window.PDFME), kein Build-Schritt im Betrieb.
 # @pdfme/converter wird durch converter-ersatz.js ersetzt: Berichte nutzen nur leere Seiten,
@@ -7,7 +7,7 @@
 set -euo pipefail
 VERSION=6.2.4
 HIER="$(cd "$(dirname "$0")" && pwd)"
-ZIEL="$HIER/../../pb_public/datenbanken/lib"
+ZIEL="$HIER/../../pb_public/IT/datenbanken/lib"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 cp "$HIER/eintrag.js" "$HIER/converter-ersatz.js" "$TMP/"

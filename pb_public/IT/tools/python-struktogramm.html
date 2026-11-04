@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="de" data-trainer="pystrukto">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Python → Struktogramm – vibe learning</title>
+<!--
+  Python-Code links eingeben, rechts erscheint sofort das Struktogramm.
+  Zeichnen und Export: struktogramm.js (gemeinsam mit dem Editor). Den Python-Code liest
+  diese Seite selbst anhand der Einrückung, Python wird dabei nicht ausgeführt.
+  Gespeichert wird der Code im Browser (pystrukto-code, pystrukto-name, pystrukto-breite).
+-->
+<script src="../../katalog.js"></script>
+<script src="../../nav.js"></script>
+<script src="../../sync.js"></script>
+<script>
+(function(){var t=null;try{t=localStorage.getItem('wenn-theme');}catch(e){}
+document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');})();
+</script>
+<link rel="stylesheet" href="../python/lib/codemirror.css">
+<script src="../python/lib/codemirror.min.js"></script>
+<link rel="stylesheet" href="struktogramm.css">
+<script src="struktogramm.js"></script>
+<style>
+.haelften{display:grid;grid-template-columns:minmax(300px,2fr) 3fr;gap:12px;height:calc(100vh - 150px);min-height:480px}
+@media (max-width:900px){.haelften{grid-template-columns:1fr;height:auto}#codePane{height:50vh}}
+.CodeMirror{flex:1;height:auto;min-height:0;font:15px/1.5 var(--mono);background:var(--ed-bg);color:var(--text)}
+.CodeMirror-gutters{background:var(--gutter);border-right:1px solid var(--border)}
+.CodeMirror-linenumber{color:var(--gutter-text)}
+.CodeMirror-cursor{border-left:2px solid var(--text)}
+.CodeMirror-selected,.CodeMirror-focused .CodeMirror-selected{background:var(--sel)}
+.cm-s-default .cm-keyword{color:var(--kw);font-weight:600} .cm-s-default .cm-string{color:var(--str)} .cm-s-default .cm-number{color:var(--num)}
+.cm-s-default .cm-comment{color:var(--com);font-style:italic} .cm-s-default .cm-def{color:var(--def);font-weight:600}
+.cm-s-default .cm-builtin{color:var(--builtin)} .cm-s-default .cm-operator{color:var(--op)} .cm-s-default .cm-variable-2{color:var(--def)}
+.cm-s-default .cm-meta,.cm-s-default .cm-atom{color:var(--num)} .cm-s-default .cm-property,.cm-s-default .cm-variable{color:var(--text)}
+.fehlerzeile{background:color-mix(in srgb,var(--err) 22%,transparent)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="bar">
+    <div class="brand">Python <span>→</span> Struktogramm</div>
+    <input class="feld" id="name" placeholder="Name des Programms" maxlength="200" aria-label="Name des Programms">
+    <label class="klein">Breite <select class="feld" id="breite"></select></label>
+    <button class="btn" id="oeffnen" type="button">Datei öffnen</button>
+    <input type="file" id="datei" accept=".py,.txt,text/x-python,text/plain" hidden>
+    <button class="btn" id="beispiel" type="button">Beispiel</button>
+    <span class="spacer"></span>
+    <button class="btn" id="zumEditor" type="button" title="Struktogramm im Struktogramm-Editor weiterbearbeiten">Im Editor bearbeiten</button>
+    <span class="gruppe"><span class="hint">Export</span>
+      <button class="btn haupt" data-export="svg" type="button">SVG</button>
+      <button class="btn haupt" data-export="html" type="button">HTML</button>
+      <button class="btn haupt" data-export="jpg" type="button">JPG</button>
+      <button class="btn zahnrad" id="zahnrad" type="button" title="Exportfarben einstellen" aria-label="Exportfarben einstellen">⚙</button>
+    </span>
+  </div>
+  <div class="haelften">
+    <div class="pane" id="codePane">
+      <div class="pane-head">Python-Code</div>
+      <textarea id="code"></textarea>
+    </div>
+    <div class="pane">
+      <div class="pane-head">Struktogramm <span class="status" id="status"></span></div>
+      <div class="leinwand" id="bild"></div>
+      <div class="fehlerbox" id="fehler"></div>
+    </div>
+  </div>
+  <p class="hinweis">Erkannt werden if/elif/else, while, for, match/case, def, class, try/except und with. break, continue, return und raise werden als Aussprung gezeichnet, Docstrings weggelassen. Exportiert wird weiß mit schwarzen Linien (änderbar über ⚙).</p>
+</div>
+<script>
+'use strict';
+const $ = s => document.querySelector(s);
+const KEY = 'pystrukto-';
+const ls = {
+  get(k){ try { return localStorage.getItem(KEY + k); } catch (e) { return null; } },
+  set(k, v){ try { localStorage.setItem(KEY + k, v); } catch (e) {} window.TrainerSync && TrainerSync.changed(); }
+};
+const BEISPIEL = `def notenstufe(punkte):
+    if punkte >= 90:
+        return "sehr gut"
+    elif punkte >= 75:
+        return "gut"
+    elif punkte >= 50:
+        return "bestanden"
+    else:
+        return "nicht bestanden"
+
+anzahl = int(input("Wie viele Schüler? "))
+summe = 0
+for i in range(anzahl):
+    punkte = int(input("Punkte: "))
+    while punkte < 0 or punkte > 100:
+        print("Bitte 0 bis 100 eingeben")
+        punkte = int(input("Punkte: "))
+    summe = summe + punkte
+    print(notenstufe(punkte))
+print("Durchschnitt:", summe / anzahl)
+`;
+
+/* ---------- Python lesen ---------- */
+class PyFehler extends Error { constructor(nr, msg){ super(msg); this.nr = nr; } }
+
+// Logische Zeilen: Kommentare weg, Klammern und \ über mehrere Zeilen zusammengefasst
+function logischeZeilen(src){
+  const L = src.replace(/\r\n?/g, '\n').replace(/\t/g, '    ').split('\n');
+  const out = [];
+  let buf = '', einr = 0, start = 0, tiefe = 0, str = null, offen = false;
+  for (let n = 0; n < L.length; n++){
+    let line = L[n];
+    if (!offen){
+      if (!line.trim() || line.trim().startsWith('#')) continue;
+      einr = line.match(/^ */)[0].length; start = n + 1; line = line.slice(einr);
+    }
+    let teil = '';
+    for (let i = 0; i < line.length; i++){
+      const c = line[i];
+      if (str){
+        if (c === '\\'){ teil += c + (line[i + 1] || ''); i++; continue; }
+        if (line.startsWith(str, i)){ teil += str; i += str.length - 1; str = null; continue; }
+        teil += c; continue;
+      }
+      if (c === '#') break;
+      if (c === '"' || c === "'"){ str = line.startsWith(c + c + c, i) ? c + c + c : c; teil += str; i += str.length - 1; continue; }
+      if ('([{'.includes(c)) tiefe++;
+      else if (')]}'.includes(c)) tiefe = Math.max(0, tiefe - 1);
+      teil += c;
+    }
+    if (str && str.length === 1 && !teil.endsWith('\\')) throw new PyFehler(n + 1, 'Anführungszeichen nicht geschlossen');
+    let weiter = false;
+    teil = teil.trim();
+    if (!str && teil.endsWith('\\')){ teil = teil.slice(0, -1).trim(); weiter = true; }
+    buf += (buf && teil ? ' ' : '') + teil;
+    offen = !!str || tiefe > 0 || weiter;
+    if (!offen){ out.push({einr, text: buf, nr: start}); buf = ''; }
+  }
+  if (offen) throw new PyFehler(start, str ? 'Zeichenkette nicht geschlossen' : 'Klammer nicht geschlossen');
+  return out;
+}
+
+// Stelle des ersten Zeichens z außerhalb von Klammern und Zeichenketten, sonst -1
+function aussen(text, z){
+  let tiefe = 0, str = null;
+  for (let i = 0; i < text.length; i++){
+    const c = text[i];
+    if (str){
+      if (c === '\\'){ i++; continue; }
+      if (text.startsWith(str, i)){ i += str.length - 1; str = null; }
+      continue;
+    }
+    if (c === '"' || c === "'"){ str = text.startsWith(c + c + c, i) ? c + c + c : c; i += str.length - 1; continue; }
+    if ('([{'.includes(c)) tiefe++;
+    else if (')]}'.includes(c)) tiefe--;
+    else if (c === z && tiefe === 0) return i;
+  }
+  return -1;
+}
+function teileAussen(text, z){
+  const out = [];
+  let i;
+  while ((i = aussen(text, z)) >= 0){ out.push(text.slice(0, i)); text = text.slice(i + 1); }
+  out.push(text);
+  return out.map(s => s.trim()).filter(Boolean);
+}
+
+const KOPF = /^(if|elif|else|while|for|def|class|try|except|finally|with|match|case|async\s+(?:def|for|with))(?=[\s:(]|$)/;
+const SOFT = ['match', 'case'];   // nur Schlüsselwort, wenn die Zeile ein Kopf mit Doppelpunkt ist
+
+// Zeilen nach Einrückung zu Blöcken: {wort, kopf, rest, kinder, nr} bzw. {text, nr}
+function bloecke(zeilen){
+  let i = 0;
+  if (zeilen.length && zeilen[0].einr > 0) throw new PyFehler(zeilen[0].nr, 'Die erste Zeile darf nicht eingerückt sein');
+  function block(einr){
+    const out = [];
+    while (i < zeilen.length){
+      const z = zeilen[i];
+      if (z.einr < einr) break;
+      if (z.einr > einr) throw new PyFehler(z.nr, 'Einrückung stimmt nicht');
+      i++;
+      const m = z.text.match(KOPF);
+      const dp = m ? aussen(z.text, ':') : -1;
+      if (!m || (SOFT.includes(m[1]) && dp < 0)){ out.push({text: z.text, nr: z.nr}); continue; }
+      if (dp < 0) throw new PyFehler(z.nr, `Nach „${m[1]}“ fehlt der Doppelpunkt`);
+      const k = {wort: m[1].replace(/\s+/g, ' '), kopf: z.text.slice(m[0].length, dp).trim(), nr: z.nr};
+      const rest = z.text.slice(dp + 1).trim();
+      if (rest) k.kinder = [{text: rest, nr: z.nr}];
+      else {
+        const n = zeilen[i];
+        if (!n || n.einr <= einr) throw new PyFehler(z.nr, 'Nach dem Doppelpunkt fehlt der eingerückte Block');
+        k.kinder = block(n.einr);
+      }
+      out.push(k);
+    }
+    return out;
+  }
+  return block(0);
+}
+
+const DOCSTRING = /^[rRbBuUfF]{0,2}("""[\s\S]*"""|'''[\s\S]*'''|"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*')$/;
+const SPRUNG = /^(break|continue|return|raise)\b/;
+
+function inElemente(knoten){
+  const out = [];
+  for (let k = 0; k < knoten.length; k++){
+    const n = knoten[k];
+    if (!n.wort){
+      teileAussen(n.text, ';').forEach(t => {
+        if (DOCSTRING.test(t)) return;
+        out.push({typ: SPRUNG.test(t) ? 'abbruch' : 'anweisung', text: t});
+      });
+      continue;
+    }
+    const kinder = () => inElemente(n.kinder);
+    switch (n.wort){
+      case 'if': {
+        const el = {typ: 'wenn', text: n.kopf, ja: kinder(), nein: []};
+        let akt = el;
+        while (knoten[k + 1] && (knoten[k + 1].wort === 'elif' || knoten[k + 1].wort === 'else')){
+          const f = knoten[++k];
+          if (f.wort === 'else'){ akt.nein = inElemente(f.kinder); break; }
+          const neu = {typ: 'wenn', text: f.kopf, ja: inElemente(f.kinder), nein: []};
+          akt.nein = [neu]; akt = neu;
+        }
+        out.push(el);
+        break;
+      }
+      case 'elif': throw new PyFehler(n.nr, '„elif“ ohne „if“ davor');
+      case 'while': case 'for': case 'async for':
+        out.push({typ: 'kopf', text: n.wort + ' ' + n.kopf, kinder: kinder()});
+        break;
+      case 'match': {
+        const faelle = n.kinder.filter(c => c.wort === 'case')
+          .map(c => ({text: c.kopf === '_' ? 'sonst' : c.kopf, kinder: inElemente(c.kinder)}));
+        if (faelle.length !== n.kinder.length) throw new PyFehler(n.nr, 'In „match“ sind nur „case“-Blöcke erlaubt');
+        if (faelle.length < 2) faelle.push({text: 'sonst', kinder: []});
+        out.push({typ: 'fall', text: n.kopf, faelle});
+        break;
+      }
+      case 'case': throw new PyFehler(n.nr, '„case“ ohne „match“ davor');
+      default:   // def, class, try, except, else, finally, with
+        out.push({typ: 'block', text: (n.wort + ' ' + n.kopf).trim(), kinder: kinder()});
+    }
+  }
+  return out;
+}
+
+function pythonZuDiagramm(src){ return inElemente(bloecke(logischeZeilen(src))); }
+
+/* ---------- Seite ---------- */
+const ed = CodeMirror.fromTextArea($('#code'), {
+  mode: {name: 'python', version: 3}, lineNumbers: true, indentUnit: 4, tabSize: 4, indentWithTabs: false,
+  extraKeys: {
+    'Tab': cm => cm.somethingSelected() ? cm.indentSelection('add') : cm.replaceSelection('    ', 'end'),
+    'Shift-Tab': cm => cm.indentSelection('subtract')
+  }
+});
+const breite = $('#breite');
+breite.innerHTML = Strukto.BREITEN.map(b => `<option value="${b}">${b ? b + ' px' : 'automatisch'}</option>`).join('');
+breite.value = Strukto.BREITEN.includes(+ls.get('breite')) && ls.get('breite') !== null ? ls.get('breite') : '0';
+$('#name').value = ls.get('name') || '';
+ed.setValue(ls.get('code') ?? BEISPIEL);
+
+let diagramm = null, fehlerZeile = null;
+function aktualisieren(){
+  const bild = $('#bild'), fehler = $('#fehler'), status = $('#status');
+  if (fehlerZeile !== null){ ed.removeLineClass(fehlerZeile, 'background', 'fehlerzeile'); fehlerZeile = null; }
+  try {
+    const kinder = pythonZuDiagramm(ed.getValue());
+    diagramm = {name: $('#name').value.trim(), breite: +breite.value, kinder};
+    bild.innerHTML = Strukto.zeichne(diagramm, Strukto.farbenAusCss(), {leer: kinder.length ? '' : 'Noch kein Code'}).svg;
+    bild.classList.remove('alt'); fehler.textContent = ''; status.textContent = ''; status.className = 'status';
+  } catch (err){
+    if (!(err instanceof PyFehler)) throw err;
+    fehler.textContent = `Zeile ${err.nr}: ${err.message}`;
+    status.textContent = 'Fehler im Code'; status.className = 'status fehler';
+    bild.classList.add('alt');
+    fehlerZeile = err.nr - 1; ed.addLineClass(fehlerZeile, 'background', 'fehlerzeile');
+  }
+  document.querySelectorAll('[data-export],#zumEditor').forEach(b => { b.disabled = !diagramm || bild.classList.contains('alt'); });
+}
+
+let timer = null;
+ed.on('change', () => { clearTimeout(timer); timer = setTimeout(() => { ls.set('code', ed.getValue()); aktualisieren(); }, 250); });
+$('#name').addEventListener('input', () => { ls.set('name', $('#name').value); aktualisieren(); });
+breite.addEventListener('change', () => { ls.set('breite', breite.value); aktualisieren(); });
+$('#beispiel').addEventListener('click', () => {
+  if (ed.getValue().trim() && ed.getValue() !== BEISPIEL && !confirm('Den Code durch das Beispiel ersetzen?')) return;
+  ed.setValue(BEISPIEL);
+});
+$('#oeffnen').addEventListener('click', () => $('#datei').click());
+$('#datei').addEventListener('change', async e => {
+  const f = e.target.files[0]; e.target.value = '';
+  if (!f) return;
+  if (f.size > 500000){ alert('Die Datei ist zu groß.'); return; }
+  ed.setValue(await f.text());
+  if (!$('#name').value.trim()){ $('#name').value = f.name.replace(/\.[^.]*$/, ''); ls.set('name', $('#name').value); aktualisieren(); }
+});
+Strukto.zahnrad($('#zahnrad'));
+document.querySelectorAll('[data-export]').forEach(b => b.addEventListener('click', () => {
+  if (!diagramm) return;
+  Promise.resolve(Strukto.exportiere(diagramm, b.dataset.export)).catch(err => alert(err.message));
+}));
+// Übergabe an den Editor: sessionStorage gilt nur in diesem Tab, der Editor übernimmt sie beim Öffnen
+$('#zumEditor').addEventListener('click', () => {
+  if (!diagramm) return;
+  try { sessionStorage.setItem('strukto-uebergabe', JSON.stringify(diagramm)); } catch (e) { alert('Übergabe nicht möglich.'); return; }
+  location.href = 'struktogramm.html';
+});
+new MutationObserver(aktualisieren).observe(document.documentElement, {attributes: true, attributeFilter: ['data-theme']});
+aktualisieren();
+</script>
+</body>
+</html>

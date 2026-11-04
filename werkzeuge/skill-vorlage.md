@@ -1,6 +1,6 @@
 ---
 name: vibe-learning-uebung
-description: Neue Übungsseite für die Plattform „vibe learning“ (Excel, Python, Datenbanken, Tippen, Tools) bauen, passend zu Bibliotheken, Katalog und Speicherung.
+description: Neue Übungsseite für die Plattform „vibe learning“ (IT: Excel, Python, Datenbanken, Tippen, Tools; BWR Jahrgangsstufe 9) bauen, passend zu Bibliotheken, Katalog und Speicherung.
 ---
 
 # Neue Übung für vibe learning
@@ -9,8 +9,8 @@ Diese Datei wird von `werkzeuge/skill-bauen.py` aus den Kopfkommentaren der Bibl
 
 ## Ergebnis
 
-- Eine HTML-Datei für `pb_public/<bereich>/`, z. B. `pb_public/excel/sverweis.html`.
-- Die Zeile für `katalog.js` (Tool-Eintrag im passenden Bereich).
+- Eine HTML-Datei im Ordner des Bereichs: `pb_public/<Fach>/<bereich>/` bzw. `pb_public/<Fach>/<Stufe>/<bereich>/`, z. B. `pb_public/IT/excel/sverweis.html` oder `pb_public/BWR/9II/anlagen/abschreibung.html`.
+- Die Zeile für `katalog.js` (Tool-Eintrag im passenden Bereich des Fachs).
 - Ein Satz, was getestet wurde: Seite mit `python3 -m http.server` im Ordner `pb_public` (ohne Server) bzw. mit `pocketbase serve` (mit Anmeldung) öffnen und durchspielen. Wurde nicht im Browser getestet, das klar sagen.
 
 ## Regeln (aus PRINZIPIEN.md)
@@ -30,9 +30,9 @@ Diese Datei wird von `werkzeuge/skill-bauen.py` aus den Kopfkommentaren der Bibl
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Titel – vibe learning</title>
-<script src="../katalog.js"></script>
-<script src="../nav.js"></script>
-<script src="../sync.js"></script>
+<script src="../../katalog.js"></script>
+<script src="../../nav.js"></script>
+<script src="../../sync.js"></script>
 <script>
 (function(){var t=null;try{t=localStorage.getItem('wenn-theme');}catch(e){}
 document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');})();
@@ -41,7 +41,8 @@ document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: da
 </head>
 ```
 
-- Die Tool-id (kurz, a–z, 0–9, -) steht in `data-trainer` und in `katalog.js`. Sie wird nie mehr geändert, sonst ist der Fortschritt weg.
+- Pfade zu `katalog.js`, `nav.js`, `sync.js` führen zum Hauptordner `pb_public/`: bei IT-Seiten (`IT/excel/…`) `../../`, bei BWR-Seiten (`BWR/9II/anlagen/…`) `../../../`. Bibliotheken anderer Bereiche desselben Fachs wie gewohnt relativ (`../excel/basis.js`).
+- Die Tool-id (kurz, a–z, 0–9, -) steht in `data-trainer` und in `katalog.js` und ist über alle Fächer eindeutig. Sie wird nie mehr geändert, sonst ist der Fortschritt weg.
 - Alles, was im localStorage gespeichert wird, beginnt mit `TOOL-ID-`. Nur dann wird es mit dem Server abgeglichen.
 - Nach jeder Änderung am gespeicherten Stand `window.TrainerSync && TrainerSync.changed()`, nach jeder gelösten Aufgabe `TrainerSync.event({...})` (Felder siehe sync.js unten bzw. die Bereichsbibliothek).
 - Farben nur über die CSS-Variablen (Nord-Schema, hell und dunkel), nie fest eintragen. Die Akzentfarbe `--accent` setzt nav.js aus `katalog.js`.

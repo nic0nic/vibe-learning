@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="de" data-trainer="bericht" data-einzeldatei="nein">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bericht (Versuch) – vibe learning</title>
+<!--
+  VERSUCH (Branch versuch-berichte): Berichte entwerfen wie in Access.
+  Ein Bericht beruht auf einer Abfrage an die Filmdatenbank (SQLite im Browser, sql.js).
+  Entwurf und PDF: pdfme (lib/pdfme.min.js, MIT, gebaut mit werkzeuge/pdfme/bauen.sh).
+  Zwei Arten: Liste (eine Tabelle, Spalten = Spalten der Abfrage) und
+  eine Seite je Datensatz (Textfelder, deren Feldname einer Spalte der Abfrage entspricht).
+  Gespeichert im Browser: bericht-sql, bericht-art, bericht-vorlage-liste, bericht-vorlage-seite.
+-->
+<script src="../../katalog.js"></script>
+<script src="../../nav.js"></script>
+<script src="../../sync.js"></script>
+<script>
+(function(){var t=null;try{t=localStorage.getItem('wenn-theme');}catch(e){}
+document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');})();
+</script>
+<script src="filme.js"></script>
+<script src="lib/sql-asm.js"></script>
+<script src="lib/pdfme.min.js"></script>
+<style>
+:root{--bg:#e5e9f0;--panel:#f6f8fb;--panel2:#eceff4;--text:#2e3440;--muted:#5b6578;--border:#cdd3de;--accent:#a3434c;--err:#a8434d;--mono:ui-monospace,Consolas,"Liberation Mono",monospace}
+[data-theme=dark]{--bg:#2e3440;--panel:#3b4252;--panel2:#434c5e;--text:#eceff4;--muted:#a9b3c4;--border:#4c566a;--accent:#bf616a;--err:#d4848b}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;min-height:100vh}
+.wrap{width:min(1400px,100%);margin:0 auto;padding:14px 16px 24px}
+.bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:12px}
+.brand{font:800 20px var(--mono);margin-right:8px}
+.brand span{color:var(--accent-text,var(--accent));font-weight:600;font-size:15px}
+.spacer{flex:1}
+.btn{font:600 14px system-ui,sans-serif;background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:7px 12px;cursor:pointer}
+.btn:hover{border-color:var(--accent)}
+.btn:disabled{opacity:.45;cursor:default}
+.btn.haupt{background:var(--accent);border-color:var(--accent);color:#fff}
+[data-theme=dark] .btn.haupt{color:#2e3440}
+.feld{font:14px system-ui,sans-serif;background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:7px 10px}
+.karte{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:12px}
+.quelle{display:grid;grid-template-columns:1fr auto;gap:8px 12px;align-items:start}
+.quelle textarea{width:100%;min-height:76px;resize:vertical;font:14px/1.45 var(--mono)}
+.quelle .rechts{display:flex;flex-direction:column;gap:6px;align-items:stretch;min-width:180px}
+.kopf{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700;margin:0 0 6px}
+.status{font-size:13px;color:var(--muted)} .status.fehler{color:var(--err);font-weight:600}
+.felder{display:flex;flex-wrap:wrap;gap:6px;align-items:center;grid-column:1/-1}
+.felder .chip{font:600 13px var(--mono);background:var(--panel2);border:1px solid var(--border);border-radius:999px;padding:3px 10px;color:var(--text);cursor:pointer}
+.felder .chip:hover{border-color:var(--accent)}
+.felder .chip.da{opacity:.5}
+.hinweis{font-size:13px;color:var(--muted);margin:0}
+#entwurf{height:72vh;min-height:520px;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:#fff}
+.vorschau{position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.55);display:none;padding:24px}
+.vorschau.offen{display:flex;flex-direction:column;gap:8px}
+.vorschau .zeile{display:flex;gap:8px;justify-content:flex-end}
+.vorschau iframe{flex:1;width:100%;border:0;border-radius:10px;background:#fff}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="bar">
+    <div class="brand">Bericht <span>Versuch</span></div>
+    <label class="hinweis">Art
+      <select class="feld" id="art">
+        <option value="liste">Liste (Tabelle)</option>
+        <option value="seite">Eine Seite je Datensatz</option>
+      </select>
+    </label>
+    <span class="spacer"></span>
+    <button class="btn" id="zuruecksetzen" type="button" title="Entwurf dieser Art neu aus der Abfrage erzeugen">Entwurf neu</button>
+    <button class="btn haupt" id="vorschauBtn" type="button">Seitenansicht (PDF)</button>
+  </div>
+
+  <div class="karte quelle">
+    <div>
+      <p class="kopf">Datenquelle: Abfrage an die Tabelle filme</p>
+      <textarea class="feld" id="sql" spellcheck="false" aria-label="SQL-Abfrage"></textarea>
+    </div>
+    <div class="rechts">
+      <p class="kopf">&nbsp;</p>
+      <button class="btn" id="ausfuehren" type="button">Abfrage ausführen</button>
+      <span class="status" id="status"></span>
+    </div>
+    <div class="felder" id="felder"></div>
+  </div>
+
+  <div id="entwurf"></div>
+  <p class="hinweis" id="artHinweis" style="margin-top:8px"></p>
+</div>
+
+<div class="vorschau" id="vorschau" role="dialog" aria-label="Seitenansicht">
+  <div class="zeile">
+    <a class="btn haupt" id="pdfLaden" download="bericht.pdf">PDF speichern</a>
+    <button class="btn" id="vorschauZu" type="button">Schließen</button>
+  </div>
+  <iframe id="pdfRahmen" title="Seitenansicht"></iframe>
+</div>
+
+<script>
+'use strict';
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+const KEY = 'bericht-';
+const ls = {
+  get(k){ try { return localStorage.getItem(KEY + k); } catch (e) { return null; } },
+  set(k, v){ try { localStorage.setItem(KEY + k, v); } catch (e) {} clearTimeout(ls.t); ls.t = setTimeout(() => window.TrainerSync && TrainerSync.changed(), 500); }
+};
+const STD_SQL = 'SELECT titel, jahr, regie, eigene_bewertung\nFROM filme\nWHERE eigene_bewertung >= 9\nORDER BY jahr';
+const MAX_SEITEN = 300;   // „Eine Seite je Datensatz“: mehr Seiten dauern im Browser zu lange
+const A4 = {width: 210, height: 297, padding: [15, 15, 15, 15]};
+const PLUGINS = {Text: PDFME.text, Tabelle: PDFME.table, Linie: PDFME.line, Rechteck: PDFME.rectangle, Ellipse: PDFME.ellipse, Bild: PDFME.image};
+const ERZEUGEN = {text: PDFME.text, table: PDFME.table, line: PDFME.line, rectangle: PDFME.rectangle, ellipse: PDFME.ellipse, image: PDFME.image};
+
+/* ---------- Datenbank ---------- */
+let db = null, ergebnis = {columns: [], values: []};
+function baueDB(SQL){
+  const T = window.DB_FILME;
+  db = new SQL.Database();
+  db.run(`CREATE TABLE ${T.name} (` + T.felder.map(f => f.n + ' ' + f.typ + (f.typ === 'TEXT' ? ' COLLATE NOCASE' : '')).join(', ') + ')');
+  const st = db.prepare(`INSERT INTO ${T.name} VALUES (` + T.felder.map(() => '?').join(',') + ')');
+  db.run('BEGIN'); T.zeilen.forEach(z => st.run(z)); db.run('COMMIT'); st.free();
+}
+function abfrage(sql){
+  if (!/^\s*select\b/i.test(sql)) throw new Error('Ein Bericht braucht eine SELECT-Abfrage.');
+  const st = db.prepare(sql), values = [];
+  try { while (st.step()) values.push(st.get()); return {columns: st.getColumnNames(), values}; }
+  finally { st.free(); }
+}
+// Werte für den Bericht: Kommazahlen mit Komma, leere Felder leer
+const zeigen = v => v == null ? '' : typeof v === 'number' && !Number.isInteger(v) ? String(v).replace('.', ',') : String(v);
+
+/* ---------- Vorlagen ---------- */
+const kopie = o => JSON.parse(JSON.stringify(o));
+function textFeld(name, x, y, w, h, extra){
+  return Object.assign(kopie(PDFME.text.propPanel.defaultSchema), {name, position: {x, y}, width: w, height: h}, extra || {});
+}
+function tabellenDaten(){
+  return ergebnis.values.map(z => z.map(zeigen));
+}
+function neueVorlage(art){
+  const titel = textFeld('ueberschrift', 15, 15, 180, 12, {readOnly: true, content: art === 'liste' ? 'Filmliste' : 'Filmkarte', fontSize: 20});
+  const cols = ergebnis.columns;
+  if (art === 'liste'){
+    const t = kopie(PDFME.table.propPanel.defaultSchema);
+    Object.assign(t, {name: 'daten', position: {x: 15, y: 32}, width: 180, height: 30,
+      head: cols.slice(), headWidthPercentages: cols.map(() => 100 / Math.max(1, cols.length)),
+      content: JSON.stringify(tabellenDaten().slice(0, 3))});
+    return {basePdf: A4, schemas: [[titel, t]]};
+  }
+  // eine Seite je Datensatz: Beschriftung links (fest), Wert rechts (Feldname = Spalte)
+  const felder = [titel];
+  const probe = ergebnis.values[0] || [];
+  cols.forEach((c, i) => {
+    const y = 36 + i * 12;
+    felder.push(textFeld('beschriftung_' + c, 15, y, 45, 9, {readOnly: true, content: c + ':', fontColor: '#555555'}));
+    felder.push(textFeld(c, 62, y, 133, 9, {content: zeigen(probe[i])}));
+  });
+  return {basePdf: A4, schemas: [felder]};
+}
+// Liste: Tabellenkopf an die Spalten der Abfrage anpassen, Aussehen und Lage bleiben
+function listeAnpassen(v){
+  const cols = ergebnis.columns;
+  v.schemas.forEach(seite => seite.forEach(s => {
+    if (s.type !== 'table') return;
+    const gleich = JSON.stringify(s.head) === JSON.stringify(cols);
+    s.head = cols.slice();
+    if (!gleich) s.headWidthPercentages = cols.map(() => 100 / Math.max(1, cols.length));
+    s.content = JSON.stringify(tabellenDaten().slice(0, 3));
+  }));
+  return v;
+}
+function ladeVorlage(art){
+  try { const v = JSON.parse(ls.get('vorlage-' + art)); if (v && v.schemas) return v; } catch (e) {}
+  return neueVorlage(art);
+}
+
+/* ---------- Entwurf ---------- */
+let designer = null, art = ls.get('art') === 'seite' ? 'seite' : 'liste';
+function zeigeEntwurf(vorlage){
+  if (art === 'liste') vorlage = listeAnpassen(vorlage);
+  if (!designer){
+    const akzent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#a3434c';
+    designer = new PDFME.Designer({domContainer: $('#entwurf'), template: vorlage, plugins: PLUGINS,
+      options: {lang: 'de', theme: {token: {colorPrimary: akzent}}, sidebarOpen: true}});
+    designer.onChangeTemplate(v => { ls.set('vorlage-' + art, JSON.stringify(v)); felderZeigen(); });
+  } else designer.updateTemplate(vorlage);
+  ls.set('vorlage-' + art, JSON.stringify(vorlage));
+  $('#artHinweis').textContent = art === 'liste'
+    ? 'Liste: Die Tabelle zeigt alle Datensätze der Abfrage, die Spalten kommen aus der Abfrage. Im Entwurf stehen nur die ersten drei Zeilen. Überschrift, Linien und weitere Texte frei gestalten.'
+    : 'Eine Seite je Datensatz: Ein Textfeld wird gefüllt, wenn sein Feldname (rechts unter „Name“) genau einer Spalte der Abfrage entspricht. Felder mit „schreibgeschützt“ sind feste Beschriftungen.';
+  felderZeigen();
+}
+function namenImEntwurf(){
+  return new Set(designer ? designer.getTemplate().schemas.flat().map(s => s.name) : []);
+}
+function felderZeigen(){
+  const box = $('#felder');
+  if (!ergebnis.columns.length){ box.innerHTML = ''; return; }
+  const da = namenImEntwurf();
+  box.innerHTML = art === 'liste'
+    ? `<span class="hinweis">Spalten der Tabelle:</span>${ergebnis.columns.map(c => `<span class="chip da">${esc(c)}</span>`).join('')}`
+    : `<span class="hinweis">Feld einfügen:</span>${ergebnis.columns.map(c => `<button class="chip${da.has(c) ? ' da' : ''}" type="button" data-feld="${esc(c)}" title="${da.has(c) ? 'schon im Bericht' : 'als Textfeld einfügen'}">${esc(c)}</button>`).join('')}`;
+}
+$('#felder').addEventListener('click', e => {
+  const b = e.target.closest('[data-feld]');
+  if (!b || !designer) return;
+  const c = b.dataset.feld, v = designer.getTemplate();
+  if (v.schemas.flat().some(s => s.name === c)){ alert(`Das Feld „${c}“ ist schon im Bericht.`); return; }
+  const i = ergebnis.columns.indexOf(c), probe = ergebnis.values[0] || [];
+  const unten = Math.max(30, ...v.schemas[0].map(s => s.position.y + s.height));
+  v.schemas[0].push(textFeld(c, 62, Math.min(unten + 3, 270), 133, 9, {content: zeigen(probe[i])}));
+  designer.updateTemplate(v);
+  ls.set('vorlage-' + art, JSON.stringify(v));
+  felderZeigen();
+});
+
+/* ---------- Abfrage ---------- */
+function ausfuehren(){
+  const sql = $('#sql').value, st = $('#status');
+  try {
+    ergebnis = abfrage(sql);
+    st.textContent = ergebnis.values.length + ' Datensätze, ' + ergebnis.columns.length + ' Spalten';
+    st.className = 'status';
+    ls.set('sql', sql);
+    zeigeEntwurf(designer ? designer.getTemplate() : ladeVorlage(art));
+    return true;
+  } catch (err){
+    st.textContent = 'Fehler: ' + err.message;
+    st.className = 'status fehler';
+    return false;
+  }
+}
+
+/* ---------- Seitenansicht ---------- */
+let pdfUrl = null;
+async function vorschau(){
+  if (!designer || !ausfuehren()) return;
+  const v = designer.getTemplate();
+  const namen = v.schemas.flat().filter(s => !s.readOnly && s.type !== 'table').map(s => s.name);
+  let inputs;
+  if (art === 'liste'){
+    const e = {};
+    v.schemas.flat().forEach(s => { if (s.type === 'table') e[s.name] = JSON.stringify(tabellenDaten()); else if (!s.readOnly) e[s.name] = s.content || ''; });
+    inputs = [e];
+  } else {
+    const fremd = namen.filter(n => !ergebnis.columns.includes(n));
+    if (fremd.length && !confirm(`Diese Felder gibt es in der Abfrage nicht und bleiben leer: ${fremd.join(', ')}\n\nTrotzdem anzeigen?`)) return;
+    if (!ergebnis.values.length){ alert('Die Abfrage liefert keine Datensätze.'); return; }
+    if (ergebnis.values.length > MAX_SEITEN && !confirm(`Die Abfrage liefert ${ergebnis.values.length} Datensätze. Angezeigt werden die ersten ${MAX_SEITEN} Seiten.`)) return;
+    inputs = ergebnis.values.slice(0, MAX_SEITEN).map(z => {
+      const e = {};
+      namen.forEach(n => { const i = ergebnis.columns.indexOf(n); e[n] = i < 0 ? '' : zeigen(z[i]); });
+      return e;
+    });
+  }
+  const knopf = $('#vorschauBtn');
+  knopf.disabled = true; knopf.textContent = 'PDF wird erstellt …';
+  try {
+    const pdf = await PDFME.generate({template: v, inputs, plugins: ERZEUGEN});
+    if (pdfUrl) URL.revokeObjectURL(pdfUrl);
+    pdfUrl = URL.createObjectURL(new Blob([pdf.buffer], {type: 'application/pdf'}));
+    $('#pdfRahmen').src = pdfUrl;
+    $('#pdfLaden').href = pdfUrl;
+    $('#vorschau').classList.add('offen');
+  } catch (err){
+    alert('Das PDF konnte nicht erstellt werden: ' + err.message);
+  } finally {
+    knopf.disabled = false; knopf.textContent = 'Seitenansicht (PDF)';
+  }
+}
+
+/* ---------- Bedienung ---------- */
+$('#sql').value = ls.get('sql') || STD_SQL;
+$('#art').value = art;
+$('#ausfuehren').addEventListener('click', ausfuehren);
+$('#sql').addEventListener('keydown', e => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)){ e.preventDefault(); ausfuehren(); } });
+$('#art').addEventListener('change', () => {
+  art = $('#art').value; ls.set('art', art);
+  zeigeEntwurf(ladeVorlage(art));
+});
+$('#zuruecksetzen').addEventListener('click', () => {
+  if (!confirm('Den Entwurf dieser Art verwerfen und neu aus der Abfrage erzeugen?')) return;
+  zeigeEntwurf(neueVorlage(art));
+});
+$('#vorschauBtn').addEventListener('click', vorschau);
+$('#vorschauZu').addEventListener('click', () => $('#vorschau').classList.remove('offen'));
+document.addEventListener('keydown', e => { if (e.key === 'Escape') $('#vorschau').classList.remove('offen'); });
+
+initSqlJs().then(SQL => { baueDB(SQL); ausfuehren(); })
+  .catch(err => { $('#status').textContent = 'Datenbank konnte nicht geladen werden: ' + err.message; $('#status').className = 'status fehler'; });
+</script>
+</body>
+</html>

@@ -1,6 +1,6 @@
 ---
 name: vibe-learning-uebung
-description: Neue Übungsseite für die Plattform „vibe learning“ (Excel, Python, Datenbanken, Tippen, Tools) bauen, passend zu Bibliotheken, Katalog und Speicherung.
+description: Neue Übungsseite für die Plattform „vibe learning“ (IT: Excel, Python, Datenbanken, Tippen, Tools; BWR Jahrgangsstufe 9) bauen, passend zu Bibliotheken, Katalog und Speicherung.
 ---
 
 # Neue Übung für vibe learning
@@ -9,8 +9,8 @@ Diese Datei wird von `werkzeuge/skill-bauen.py` aus den Kopfkommentaren der Bibl
 
 ## Ergebnis
 
-- Eine HTML-Datei für `pb_public/<bereich>/`, z. B. `pb_public/excel/sverweis.html`.
-- Die Zeile für `katalog.js` (Tool-Eintrag im passenden Bereich).
+- Eine HTML-Datei im Ordner des Bereichs: `pb_public/<Fach>/<bereich>/` bzw. `pb_public/<Fach>/<Stufe>/<bereich>/`, z. B. `pb_public/IT/excel/sverweis.html` oder `pb_public/BWR/9II/anlagen/abschreibung.html`.
+- Die Zeile für `katalog.js` (Tool-Eintrag im passenden Bereich des Fachs).
 - Ein Satz, was getestet wurde: Seite mit `python3 -m http.server` im Ordner `pb_public` (ohne Server) bzw. mit `pocketbase serve` (mit Anmeldung) öffnen und durchspielen. Wurde nicht im Browser getestet, das klar sagen.
 
 ## Regeln (aus PRINZIPIEN.md)
@@ -30,9 +30,9 @@ Diese Datei wird von `werkzeuge/skill-bauen.py` aus den Kopfkommentaren der Bibl
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Titel – vibe learning</title>
-<script src="../katalog.js"></script>
-<script src="../nav.js"></script>
-<script src="../sync.js"></script>
+<script src="../../katalog.js"></script>
+<script src="../../nav.js"></script>
+<script src="../../sync.js"></script>
 <script>
 (function(){var t=null;try{t=localStorage.getItem('wenn-theme');}catch(e){}
 document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');})();
@@ -41,7 +41,8 @@ document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: da
 </head>
 ```
 
-- Die Tool-id (kurz, a–z, 0–9, -) steht in `data-trainer` und in `katalog.js`. Sie wird nie mehr geändert, sonst ist der Fortschritt weg.
+- Pfade zu `katalog.js`, `nav.js`, `sync.js` führen zum Hauptordner `pb_public/`: bei IT-Seiten (`IT/excel/…`) `../../`, bei BWR-Seiten (`BWR/9II/anlagen/…`) `../../../`. Bibliotheken anderer Bereiche desselben Fachs wie gewohnt relativ (`../excel/basis.js`).
+- Die Tool-id (kurz, a–z, 0–9, -) steht in `data-trainer` und in `katalog.js` und ist über alle Fächer eindeutig. Sie wird nie mehr geändert, sonst ist der Fortschritt weg.
 - Alles, was im localStorage gespeichert wird, beginnt mit `TOOL-ID-`. Nur dann wird es mit dem Server abgeglichen.
 - Nach jeder Änderung am gespeicherten Stand `window.TrainerSync && TrainerSync.changed()`, nach jeder gelösten Aufgabe `TrainerSync.event({...})` (Felder siehe sync.js unten bzw. die Bereichsbibliothek).
 - Farben nur über die CSS-Variablen (Nord-Schema, hell und dunkel), nie fest eintragen. Die Akzentfarbe `--accent` setzt nav.js aus `katalog.js`.
@@ -64,13 +65,18 @@ Inhaltsverzeichnis der Übungsplattform
 Das ist die einzige Stelle, an der ein neues Tool eingetragen werden muss.
 Menüleiste, Startseite, Bereichsseiten, Speichern und Lehrerbereich lesen von hier.
 
-Bereich:  id      = Name des Unterordners in pb_public (nur a–z, 0–9, -)
+Aufbau:   Fach → (Jahrgangsstufe) → Bereich → Tool. Ordner in pb_public: <Fach>/<Bereich>/
+          bzw. <Fach>/<Stufe>/<Bereich>/, z. B. IT/excel/wenn.html, BWR/9II/anlagen/…
+Fach:     id      = Ordnername (z. B. IT, BWR), titel = Anzeige im Fach-Menü, text = Untertitel der Startseite
+          bereiche = [Bereich] oder stufen = [{id (Ordner, z. B. 9II), titel (Fach-Menü), kurz (oben in der
+          Leiste, z. B. 9), text, bereiche}] für Fächer mit Jahrgangsstufen
+Bereich:  id      = Name des Unterordners (nur a–z, 0–9, -), über alle Fächer eindeutig
           titel   = Text in der Menüleiste
           farbe   = Akzentfarbe im dunklen Design (Nord-Farben, nordtheme.com),
           farbeHell = dunklerer Ton derselben Farbe für das helle Design (sonst schlecht lesbar)
           farbeSchrift = optional: hellerer Ton für Schrift im dunklen Design, wenn farbe dort zu wenig Kontrast hat
           Ohne farbe bekommt der Bereich das neutrale Nord-Blau.
-Tool:     id      = Kürzel für Speicherstand und Auswertung (nie mehr ändern,
+Tool:     id      = Kürzel für Speicherstand und Auswertung, über alle Fächer eindeutig (nie mehr ändern,
                     sonst geht der gespeicherte Fortschritt verloren)
           datei   = HTML-Datei im Ordner des Bereichs
           titel, text = Anzeige im Menü und auf den Übersichtsseiten
@@ -82,7 +88,12 @@ Tool:     id      = Kürzel für Speicherstand und Auswertung (nie mehr ändern,
                     Zwischenüberschrift auf der Bereichsseite (Tools derselben Gruppe direkt hintereinander)
 Bereich mit auswertung: false (z. B. Tools ohne Aufgaben) erscheint nicht im Lehrerbereich.
 
-In der HTML-Datei eines Tools steht dieselbe id: <html lang="de" data-trainer="…">
+In der HTML-Datei eines Tools steht dieselbe id: <html lang="de" data-trainer="…">.
+Übersichtsseiten: Bereich <html data-bereich="IT/excel">, Fach bzw. Stufe <html data-gruppe="IT">
+bzw. data-gruppe="BWR/9II" mit <div id="pf-start">, Fach mit Stufen <html data-fach="BWR"> mit <div id="pf-fach">.
+
+Am Ende berechnet: KATALOG.gruppen = [{pfad, fach, stufe, titel, text, bereiche}] (Fach bzw. Fach + Stufe)
+und KATALOG.bereiche = alle Bereiche aller Fächer, jeweils mit pfad (Ordner) und gruppe.
 ```
 
 ### sync.js – Anmeldung und Speichern
@@ -109,7 +120,7 @@ Die Seite ruft auf:
   TrainerSync.event({...})   wenn eine Aufgabe richtig gelöst wurde
 ```
 
-### excel/basis.js – Excel: Grundlage aller Excel-Übungen (dazu basis.css)
+### IT/excel/basis.js – Excel: Grundlage aller Excel-Übungen (dazu basis.css)
 
 ```text
 basis.js – gemeinsamer Kern aller Excel-Trainer (wenn, und-oder, funktionen, bezuege)
@@ -154,7 +165,7 @@ Gerüst einer Seite
   </script>
 ```
 
-### excel/bausteine.js – Excel: Formeln aus Bausteinen (wie WENN, UND/ODER; dazu bausteine.css)
+### IT/excel/bausteine.js – Excel: Formeln aus Bausteinen (wie WENN, UND/ODER; dazu bausteine.css)
 
 ```text
 bausteine.js – Ergänzung zu basis.js für Trainer, die Formeln aus Bausteinen bauen (wenn, und-oder)
@@ -174,7 +185,7 @@ Die Seite liefert
   außerdem für basis.js: setMode, canNext, nextTask, renderNav, renderDock (Pfad/Endlos über dockHTML())
 ```
 
-### excel/tabelle.js – Excel: Tabellen-Übungen mit Rechenkern (wie Funktionen, Bezüge; dazu tabelle.css)
+### IT/excel/tabelle.js – Excel: Tabellen-Übungen mit Rechenkern (wie Funktionen, Bezüge; dazu tabelle.css)
 
 ```text
 tabelle.js – Ergänzung zu basis.js für Trainer mit Tabellenblatt (funktionen, bezuege)
@@ -197,7 +208,7 @@ Die Seite liefert
   render, resetS, loadStep, newEndless, setLevel, clearMarks, syncInput(inp, keepSel), logSolved
 ```
 
-### python/lib/pykurs.js – Geführte Python-Übungen
+### IT/python/lib/pykurs.js – Geführte Python-Übungen
 
 ```text
 vibe learning – geführte Python-Übungen mit automatischer Prüfung
@@ -229,7 +240,7 @@ Verglichen wird ohne Groß-/Kleinschreibung, Satzzeichen und doppelte Leerzeiche
 ä/ö/ü/ß zählen wie ae/oe/ue/ss. Texte in input("…") gehören nicht zur Ausgabe.
 ```
 
-### datenbanken/abfragen.js – Datenbanken: SQL-Abfragen mit Entwurfsansicht und Editor (dazu abfragen.css)
+### IT/datenbanken/abfragen.js – Datenbanken: SQL-Abfragen mit Entwurfsansicht und Editor (dazu abfragen.css)
 
 ```text
 abfragen.js – SQL-Abfragen üben: Entwurf, Blöcke, Access-Entwurfsansicht, SQL-Editor
@@ -272,7 +283,7 @@ selbst gesucht und auf Deutsch erklärt; SQLite-Meldungen nur als Rückfall übe
 Tasten: Strg+Enter führt aus, Strg+Shift+Enter prüft; Autovervollständigung beim Tippen.
 ```
 
-### datenbanken/filme.js – Datenbanken: Tabelle filme als Daten
+### IT/datenbanken/filme.js – Datenbanken: Tabelle filme als Daten
 
 ```text
 filme.js – Tabelle „filme“: 888 Filme und Serien von Herrn Maier (484 bewertet, 404 auf der Merkliste)
@@ -283,7 +294,7 @@ Daten für Datenbank-Übungen. abfragen.js baut daraus die SQLite-Tabelle im Bro
 Erzeugt mit werkzeuge/filme-aus-csv.py aus dem IMDb-Export, nicht von Hand ändern.
 ```
 
-### tools/struktogramm.js – Tools: Struktogramme zeichnen und exportieren (dazu struktogramm.css)
+### IT/tools/struktogramm.js – Tools: Struktogramme zeichnen und exportieren (dazu struktogramm.css)
 
 ```text
 struktogramm.js – Struktogramme (Nassi-Shneiderman, DIN 66261) zeichnen und exportieren

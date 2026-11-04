@@ -1,0 +1,2700 @@
+<!doctype html>
+<html lang="de" data-trainer="fn">
+<head>
+<script>window.PF_EINZELDATEI = true;</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Funktionen – vibe learning</title>
+<script>/* ../../katalog.js */
+/* Inhaltsverzeichnis der Übungsplattform
+ *
+ * Das ist die einzige Stelle, an der ein neues Tool eingetragen werden muss.
+ * Menüleiste, Startseite, Bereichsseiten, Speichern und Lehrerbereich lesen von hier.
+ *
+ * Aufbau:   Fach → (Jahrgangsstufe) → Bereich → Tool. Ordner in pb_public: <Fach>/<Bereich>/
+ *           bzw. <Fach>/<Stufe>/<Bereich>/, z. B. IT/excel/wenn.html, BWR/9II/anlagen/…
+ * Fach:     id      = Ordnername (z. B. IT, BWR), titel = Anzeige im Fach-Menü, text = Untertitel der Startseite
+ *           bereiche = [Bereich] oder stufen = [{id (Ordner, z. B. 9II), titel (Fach-Menü), kurz (oben in der
+ *           Leiste, z. B. 9), text, bereiche}] für Fächer mit Jahrgangsstufen
+ * Bereich:  id      = Name des Unterordners (nur a–z, 0–9, -), über alle Fächer eindeutig
+ *           titel   = Text in der Menüleiste
+ *           farbe   = Akzentfarbe im dunklen Design (Nord-Farben, nordtheme.com),
+ *           farbeHell = dunklerer Ton derselben Farbe für das helle Design (sonst schlecht lesbar)
+ *           farbeSchrift = optional: hellerer Ton für Schrift im dunklen Design, wenn farbe dort zu wenig Kontrast hat
+ *           Ohne farbe bekommt der Bereich das neutrale Nord-Blau.
+ * Tool:     id      = Kürzel für Speicherstand und Auswertung, über alle Fächer eindeutig (nie mehr ändern,
+ *                     sonst geht der gespeicherte Fortschritt verloren)
+ *           datei   = HTML-Datei im Ordner des Bereichs
+ *           titel, text = Anzeige im Menü und auf den Übersichtsseiten
+ *           bedingt = true: nur sichtbar, wenn der Server es für den angemeldeten Schüler freigibt
+ *                     (z. B. Tipp-Aufgabe, siehe /api/trainer/sichtbar in pb_hooks/tippen.pb.js)
+ *           stufen  = Stufen der Übungen für die Auswertung (lehrer.html): Anzahl oder Liste
+ *                     mit Kurznamen, wenn die Nummern allein missverständlich wären
+ *           gruppe  = optional: Untermenü im Menü (aufklappen beim Darüberfahren) und
+ *                     Zwischenüberschrift auf der Bereichsseite (Tools derselben Gruppe direkt hintereinander)
+ * Bereich mit auswertung: false (z. B. Tools ohne Aufgaben) erscheint nicht im Lehrerbereich.
+ *
+ * In der HTML-Datei eines Tools steht dieselbe id: <html lang="de" data-trainer="…">.
+ * Übersichtsseiten: Bereich <html data-bereich="IT/excel">, Fach bzw. Stufe <html data-gruppe="IT">
+ * bzw. data-gruppe="BWR/9II" mit <div id="pf-start">, Fach mit Stufen <html data-fach="BWR"> mit <div id="pf-fach">.
+ *
+ * Am Ende berechnet: KATALOG.gruppen = [{pfad, fach, stufe, titel, text, bereiche}] (Fach bzw. Fach + Stufe)
+ * und KATALOG.bereiche = alle Bereiche aller Fächer, jeweils mit pfad (Ordner) und gruppe.
+ */
+window.KATALOG = {
+  name: 'vibe learning',
+  untertitel: 'Übungen für den Unterricht. Wähle oben Fach und Bereich aus.',
+  faecher: [
+    {id: 'IT', titel: 'IT', text: 'Informationstechnologie: Tabellenkalkulation, Programmieren, Datenbanken, Tippen und Werkzeuge.',
+      bereiche: [
+        {
+          id: 'excel', titel: 'Excel', farbe: '#a3be8c', farbeHell: '#5e8a45',
+          text: 'Tabellenkalkulation: Funktionen, Bedingungen und Verknüpfungen.',
+          tools: [
+            {id: 'fn',   stufen: 5, datei: 'funktionen.html', titel: 'SUMME, MIN, MAX …', text: 'SUMME, MITTELWERT, MIN, MAX, ANZAHL und ANZAHL2 – mit Erklärung, Übungen und Endlos-Modus.'},
+            {id: 'wenn', stufen: 9, datei: 'wenn.html',       titel: 'WENN-Funktion',     text: 'Die WENN-Funktion üben – von Bausteinen bis zur eigenen Formel.'},
+            {id: 'uo',   stufen: 9, datei: 'und-oder.html',   titel: 'UND / ODER',        text: 'Bedingungen verknüpfen – mit Erarbeitung, Übungen und Endlos-Modus.'},
+            {id: 'bz',   stufen: 6, datei: 'bezuege.html',    titel: 'Zellbezüge $',      text: 'Relative und absolute Bezüge: Formeln übertragen und $-Zeichen richtig setzen.'}
+          ]
+        },
+        {id: 'python',      titel: 'Python', farbe: '#b48ead', farbeHell: '#8a5f84', text: 'Programmieren mit Python.',
+          tools: [
+            {id: 'py', datei: 'editor.html', titel: 'Python-Editor', text: 'Python direkt im Browser schreiben und ausführen – mit Terminal für Ein- und Ausgabe.'},
+            {id: 'pyif', stufen: 3, datei: 'bedingungen.html', titel: 'Bedingte Anweisung', text: 'if, elif und else: 10 Aufgaben mit Erklärung und automatischer Prüfung.'}
+          ]
+        },
+        {id: 'datenbanken', titel: 'Datenbanken', farbe: '#bf616a', farbeHell: '#a3434c', farbeSchrift: '#e0959b', text: 'Tabellen, Beziehungen und SQL-Abfragen.',
+          tools: [
+            {id: 'sqlfrei', datei: 'filmdatenbank.html', titel: 'Film-Datenbank', text: 'Eigene Abfragen an die Filmdatenbank stellen, ohne Aufgaben – mit Entwurfsansicht oder in SQL.'},
+            {id: 'sql', stufen: 5, datei: 'abfragen.html', titel: 'SQL-Abfragen', text: 'SELECT, FROM, WHERE und ORDER BY an einer Filmdatenbank – vom Entwurf wie in Access bis zur eigenen SQL-Abfrage.'},
+            {id: 'sqluo', stufen: ['Access 1', 'Access 2', 'Access 3', 'SQL 1', 'SQL 2', 'SQL 3', 'SQL 4', 'SQL 5'], datei: 'datenight.html', titel: 'Datenight: UND / ODER', text: 'Drei Wochen Dates mit immer verrückteren Filmwünschen: Kriterien mit UND und ODER – im Access-Entwurf oder mit Blöcken und SQL.'},
+            {id: 'bericht', datei: 'bericht.html', titel: 'Bericht (Versuch)', text: 'Berichte aus einer Abfrage entwerfen wie in Access: als Liste oder eine Seite je Datensatz, mit Seitenansicht als PDF.'}
+          ]
+        },
+        {id: 'tippen', titel: 'Tippen', farbe: '#8db3ee', farbeHell: '#2b579a', text: 'Schnell und sicher tippen mit zehn Fingern.',
+          tools: [
+            {id: 'tippen', datei: 'pockettype.html', titel: 'pockettype', text: 'Tipptrainer: Wörter und Anschläge pro Minute, Genauigkeit, Bestwerte und Verlauf. Eigenes Projekt auf Basis von Monkeytype (GPL-3.0).'},
+            {id: 'lektionen', datei: 'lektionen.html', titel: 'Lektion üben', text: 'Die 17 Lektionen aus TIPP10 in fester Reihenfolge: von der Grundreihe asdf jklö bis zu Ziffern und Sonderzeichen.'},
+            {id: 'tippaufgabe', bedingt: true, datei: 'aufgabe.html', titel: 'Aufgabe', text: 'Den Text abschreiben, den deine Lehrkraft aufgegeben hat – so oft du willst.'}
+          ]
+        },
+        {id: 'tools', titel: 'Tools', farbe: '#b4bdcc', farbeHell: '#4c566a', auswertung: false, text: 'Werkzeuge für den Unterricht, ohne Aufgaben.',
+          tools: [
+            {id: 'strukto', gruppe: 'Struktogramm', datei: 'struktogramm.html', titel: 'Struktogramm-Editor', text: 'Struktogramme mit der Maus zusammensetzen und als SVG, HTML oder JPG exportieren.'},
+            {id: 'pystrukto', gruppe: 'Struktogramm', datei: 'python-struktogramm.html', titel: 'Python → Struktogramm', text: 'Python-Code eingeben, das Struktogramm entsteht sofort daneben – zum Export oder zum Weiterbearbeiten im Editor.'}
+          ]
+        }
+      ]
+    },
+    {id: 'BWR', titel: 'BWR', text: 'Betriebswirtschaftslehre/Rechnungswesen.',
+      stufen: [
+        {id: '9II', titel: 'Jahrgangsstufe 9', kurz: '9', text: 'BWR, Jahrgangsstufe 9 (Wahlpflichtfächergruppe II).',
+          bereiche: [
+            {id: 'unternehmensfuehrung', titel: 'Unternehmensführung', farbe: '#81a1c1', farbeHell: '#4f73a3', text: 'Übungen zur Unternehmensführung.', tools: []},
+            {id: 'anlagen', titel: 'Anlagen', farbe: '#a3be8c', farbeHell: '#5e8a45', text: 'Übungen zu Anlagen.', tools: []},
+            {id: 'finanzierung', titel: 'Finanzierung', farbe: '#ebcb8b', farbeHell: '#8a6d1f', text: 'Übungen zur Finanzierung.', tools: []},
+            {id: 'kapitalanlage', titel: 'Kapitalanlage', farbe: '#b48ead', farbeHell: '#8a5f84', text: 'Übungen zur Kapitalanlage.', tools: []},
+            {id: 'forderungen', titel: 'Forderungen', farbe: '#bf616a', farbeHell: '#a3434c', farbeSchrift: '#e0959b', text: 'Übungen zu Forderungen.', tools: []}
+          ]
+        }
+      ]
+    }
+  ]
+};
+
+// Gruppen (Fach bzw. Fach + Jahrgangsstufe) und alle Bereiche mit Ordner, für nav.js, sync.js und lehrer.html
+(function (K) {
+  K.gruppen = [];
+  K.faecher.forEach(f => (f.stufen
+    ? f.stufen.map(s => ({pfad: f.id + '/' + s.id, fach: f, stufe: s, titel: f.titel + ' ' + (s.kurz || s.titel), text: s.text || f.text, bereiche: s.bereiche}))
+    : [{pfad: f.id, fach: f, stufe: null, titel: f.titel, text: f.text, bereiche: f.bereiche}]).forEach(g => K.gruppen.push(g)));
+  K.bereiche = [].concat(...K.gruppen.map(g => g.bereiche.map(b => Object.assign(b, {pfad: g.pfad + '/' + b.id, gruppe: g}))));
+})(window.KATALOG);
+
+</script>
+<script>/* ../../nav.js */
+/* Menüleiste der Übungsplattform
+ *
+ * Baut oben auf jeder Seite die Leiste: vorne das Fach-Menü (IT, BWR › Jahrgangsstufe 9 …),
+ * dahinter die Bereiche des gewählten Fachs aus katalog.js.
+ * Fährt man mit der Maus über einen Bereich (am Handy: antippen), klappen
+ * dessen Übungen auf. Außerdem füllt das Skript die Startseite bzw. Fachseite (#pf-start),
+ * die Auswahl der Jahrgangsstufe (#pf-fach) und die Übersichtsseite eines Bereichs (#pf-bereich).
+ * Das zuletzt gewählte Fach merkt sich der Browser (localStorage pf-fach) für die Startseite.
+ *
+ * Fehlt katalog.js oder nav.js, läuft das Tool trotzdem – nur ohne Menüleiste.
+ * Tools mit gruppe (katalog.js) stehen im Menü in einem Untermenü (klappt beim Darüberfahren auf)
+ * und auf der Bereichsseite unter einer Zwischenüberschrift.
+ * Tools mit bedingt: true (katalog.js) sind zunächst ausgeblendet; sync.js blendet sie ein,
+ * wenn der Server sie für den angemeldeten Schüler freigibt (Klasse pf-sichtbar).
+ * In Einzeldateien (werkzeuge/einzeldateien.py, window.PF_EINZELDATEI) zeigt die
+ * Leiste nur Name und Hell/Dunkel-Knopf, weil es keine anderen Seiten gibt.
+ */
+(function () {
+  'use strict';
+  const K = window.KATALOG;
+  if (!K) return;
+
+  // Wurzel der Plattform = Ordner, in dem nav.js liegt (funktioniert auch per Doppelklick)
+  const me = document.currentScript && document.currentScript.src;
+  const BASE = me ? me.replace(/[^/]*$/, '') : '';
+  const root = document.documentElement;
+  const TOOL = root.dataset.trainer || '';
+  // Aktueller Bereich: über das Tool oder <html data-bereich="IT/excel">.
+  // Aktuelle Gruppe (Fach bzw. Fach + Jahrgangsstufe): über den Bereich, <html data-gruppe="BWR/9II">
+  // oder <html data-fach="BWR">, sonst die zuletzt gewählte (localStorage pf-fach), sonst die erste.
+  const BER = K.bereiche.find(b => b.tools.some(t => t.id === TOOL)) || K.bereiche.find(b => b.pfad === root.dataset.bereich) || null;
+  const BEREICH = BER ? BER.id : '';
+  const FACHSEITE = K.faecher.find(f => f.id === root.dataset.fach) || null;
+  let GRUPPE = BER ? BER.gruppe : K.gruppen.find(g => g.pfad === root.dataset.gruppe) || (FACHSEITE && K.gruppen.find(g => g.fach === FACHSEITE));
+  if (GRUPPE){ try { localStorage.setItem('pf-fach', GRUPPE.pfad); } catch (e) {} }
+  else {
+    let zuletzt = null;
+    try { zuletzt = localStorage.getItem('pf-fach'); } catch (e) {}
+    GRUPPE = K.gruppen.find(g => g.pfad === zuletzt) || K.gruppen[0];
+  }
+
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+  const bereichUrl = b => BASE + b.pfad + '/index.html';
+  const toolUrl = (b, t) => BASE + b.pfad + '/' + t.datei;
+  const gruppeUrl = g => BASE + g.pfad + '/index.html';
+  const fachUrl = f => BASE + f.id + '/index.html';
+
+  const CSS = `
+.pf-nav{background:var(--panel,#f6f8fb);color:var(--text,#2e3440);border-bottom:1px solid var(--border,#cdd3de);position:relative;z-index:60;font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.pf-in{max-width:1400px;margin:0 auto;display:flex;align-items:center;gap:6px;padding:0 16px;min-height:50px}
+.pf-brand{font:800 18px ui-monospace,Consolas,"Liberation Mono",monospace;color:inherit;text-decoration:none;margin-right:14px;white-space:nowrap}
+.pf-brand span{color:var(--accent-text,var(--accent,#5e81ac))}
+.pf-menu{display:flex;gap:2px;list-style:none;margin:0;padding:0}
+.pf-item{position:relative;--bc:#5e81ac}
+html[data-theme=dark] .pf-item{--bc:#88c0d0}
+.pf-item>a{display:flex;align-items:center;gap:5px;padding:14px 11px;color:inherit;text-decoration:none;font-weight:600;border-bottom:3px solid transparent;white-space:nowrap}
+.pf-item>a::after{content:"";width:6px;height:6px;border:solid currentColor;border-width:0 2px 2px 0;transform:rotate(45deg) translateY(-2px);opacity:.5}
+.pf-item:hover>a,.pf-item.open>a{color:var(--bc)}
+.pf-item>a[aria-current]{border-bottom-color:var(--bc)}
+.pf-drop{display:none;position:absolute;top:100%;left:0;min-width:280px;background:var(--panel,#f6f8fb);border:1px solid var(--border,#cdd3de);border-radius:0 0 12px 12px;box-shadow:0 14px 30px rgba(0,0,0,.18);padding:6px;list-style:none;margin:0}
+.pf-item:hover .pf-drop,.pf-item:focus-within .pf-drop,.pf-item.open .pf-drop{display:block}
+.pf-drop a{display:block;padding:8px 10px;border-radius:8px;color:inherit;text-decoration:none}
+.pf-drop a:hover,.pf-drop a:focus{background:var(--panel2,#eceff4);outline:none}
+.pf-drop a[aria-current]{color:var(--bc);font-weight:600}
+.pf-drop small{display:block;color:var(--muted,#5b6578);font-size:13px}
+.pf-drop .pf-all{font-size:13px;color:var(--muted,#5b6578);border-top:1px solid var(--border,#cdd3de);border-radius:0 0 8px 8px;margin-top:4px}
+.pf-fach{margin-right:8px}
+.pf-fach>a{border:1px solid var(--border,#cdd3de);border-radius:10px;background:var(--panel2,#eceff4);padding:6px 10px!important;margin:6px 0}
+.pf-fach>a small{font-weight:500;color:var(--muted,#5b6578);margin-right:2px}
+.pf-sub{position:relative}
+.pf-sub>a{display:flex!important;align-items:center;justify-content:space-between;gap:12px}
+.pf-sub>a::after{content:"";width:6px;height:6px;border:solid currentColor;border-width:0 2px 2px 0;transform:rotate(-45deg);opacity:.5;flex:none}
+.pf-drop2{display:none;position:absolute;left:100%;top:-7px;min-width:250px;background:var(--panel,#f6f8fb);border:1px solid var(--border,#cdd3de);border-radius:12px;box-shadow:0 14px 30px rgba(0,0,0,.18);padding:6px;list-style:none;margin:0}
+.pf-sub.links>.pf-drop2{left:auto;right:100%}
+.pf-sub:hover>.pf-drop2,.pf-sub:focus-within>.pf-drop2,.pf-sub.open>.pf-drop2{display:block}
+.pf-drop .pf-leer{padding:8px 10px;color:var(--muted,#5b6578);font-style:italic}
+.pf-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.pf-btn{background:var(--panel2,#eceff4);border:1px solid var(--border,#cdd3de);color:inherit;border-radius:10px;width:38px;height:38px;display:grid;place-items:center;cursor:pointer;font-size:17px;padding:0}
+.pf-burger{display:none}
+.pf-einzeln .pf-menu{display:none!important}
+.pf-bedingt:not(.pf-sichtbar){display:none!important}
+@media (max-width:760px){
+  .pf-burger{display:grid}
+  .pf-menu{display:none;position:absolute;top:100%;left:0;right:0;flex-direction:column;background:var(--panel,#f6f8fb);border-bottom:1px solid var(--border,#cdd3de);box-shadow:0 14px 30px rgba(0,0,0,.18);padding:6px 16px 12px;max-height:80vh;overflow:auto}
+  .pf-nav.open .pf-menu{display:flex}
+  .pf-item>a{padding:10px 0 4px;border:0}
+  .pf-item>a::after{display:none}
+  .pf-drop{display:block;position:static;min-width:0;border:0;box-shadow:none;padding:0 0 4px 10px}
+  .pf-drop2{display:block;position:static;min-width:0;border:0;box-shadow:none;padding:0 0 0 12px}
+  .pf-sub>a::after{display:none}
+}
+.pf-knapp .ts-badge.gast .ts-lang{display:none}
+/* dasselbe, wenn die Leiste zu voll ist (nav.js setzt pf-eng) */
+.pf-eng .pf-burger{display:grid}
+.pf-eng .pf-menu{display:none;position:absolute;top:100%;left:0;right:0;flex-direction:column;background:var(--panel,#f6f8fb);border-bottom:1px solid var(--border,#cdd3de);box-shadow:0 14px 30px rgba(0,0,0,.18);padding:6px 16px 12px;max-height:80vh;overflow:auto}
+.pf-eng.open .pf-menu{display:flex}
+.pf-eng .pf-item>a{padding:10px 0 4px;border:0}
+.pf-eng .pf-item>a::after{display:none}
+.pf-eng .pf-drop{display:block;position:static;min-width:0;border:0;box-shadow:none;padding:0 0 4px 10px}
+.pf-eng .pf-drop2{display:block;position:static;min-width:0;border:0;box-shadow:none;padding:0 0 0 12px}
+.pf-eng .pf-sub>a::after{display:none}
+.pf-fade,.pf-fade *{transition:background-color .35s,color .35s,border-color .35s,fill .35s!important}
+.pf-gesperrt{opacity:.5;cursor:default!important}
+@media print{.pf-nav{display:none}}`;
+
+  // Farben der Bereiche (katalog.js: farbe = dunkles Design, farbeHell = helles Design,
+  // farbeSchrift = optional hellerer Ton für Schrift im dunklen Design).
+  // --accent gilt für die ganze Seite des aktuellen Bereichs, --bc nur für den eigenen Menüpunkt.
+  function akzentCss(){
+    let css = '';
+    K.bereiche.forEach(b => {
+      if (!b.farbe) return;
+      const dunkel = b.farbeSchrift || b.farbe;
+      css += `\n.pf-item[data-b="${b.id}"]{--bc:${b.farbeHell || b.farbe}}\nhtml[data-theme=dark] .pf-item[data-b="${b.id}"]{--bc:${dunkel}}`;
+      if (b.id === BEREICH) css += `\nhtml[data-theme]{--accent:${b.farbeHell || b.farbe};--accent-text:${b.farbeHell || b.farbe}}\nhtml[data-theme=dark]{--accent:${b.farbe};--accent-text:${dunkel}}`;
+    });
+    return css;
+  }
+
+  const SONNE = '☀', MOND = '☾';
+  function theme(){ return root.dataset.theme === 'dark' ? 'dark' : 'light'; }
+
+  // Tools derselben gruppe (katalog.js) hintereinander → [{name, tools}], ohne gruppe: name ''
+  function gruppen(b){
+    const out = [];
+    b.tools.forEach(t => {
+      const g = out[out.length - 1];
+      if (g && g.name === (t.gruppe || '')) g.tools.push(t); else out.push({name: t.gruppe || '', tools: [t]});
+    });
+    return out;
+  }
+  const toolLi = (b, t) => `<li${t.bedingt ? ` class="pf-bedingt" data-tool="${esc(t.id)}"` : ''}><a href="${toolUrl(b, t)}"${t.id === TOOL ? ' aria-current="page"' : ''}>${esc(t.titel)}</a></li>`;
+
+  // Fach-Menü: Fächer ohne Stufen direkt, Fächer mit Jahrgangsstufen als Untermenü (wie gruppe bei Tools)
+  function fachMenue(){
+    const eintrag = (g, text) => `<li><a href="${gruppeUrl(g)}"${g === GRUPPE ? ' aria-current="page"' : ''}>${esc(text)}</a></li>`;
+    return `<li class="pf-item pf-fach"><a href="${gruppeUrl(GRUPPE)}" aria-haspopup="true" title="Fach wechseln"><small>Fach</small> ${esc(GRUPPE.titel)}</a>
+      <ul class="pf-drop">${K.faecher.map(f => f.stufen
+        ? `<li class="pf-sub"><a href="${fachUrl(f)}"${GRUPPE.fach === f ? ' aria-current="true"' : ''} aria-haspopup="true">${esc(f.titel)}</a><ul class="pf-drop2">${f.stufen.map(st => eintrag(K.gruppen.find(g => g.stufe === st), st.titel)).join('')}</ul></li>`
+        : eintrag(K.gruppen.find(g => g.fach === f), f.titel)).join('')}</ul></li>`;
+  }
+
+  function buildNav(){
+    const s = document.createElement('style'); s.textContent = CSS + akzentCss(); document.head.appendChild(s);
+    const nav = document.createElement('nav');
+    nav.className = 'pf-nav' + (window.PF_EINZELDATEI ? ' pf-einzeln' : '');
+    nav.setAttribute('aria-label', 'Bereiche');
+    const name = esc(K.name).replace(/^(\S+)/, '<span>$1</span>');
+    const EINZELN = !!window.PF_EINZELDATEI;
+    nav.innerHTML = `<div class="pf-in">
+      ${EINZELN ? `<span class="pf-brand">${name}</span>` : `<a class="pf-brand" href="${BASE}index.html">${name}</a>`}
+      <ul class="pf-menu">${fachMenue()}${GRUPPE.bereiche.map(b => `
+        <li class="pf-item" data-b="${esc(b.id)}">
+          <a href="${bereichUrl(b)}"${b.id === BEREICH ? ' aria-current="true"' : ''}>${esc(b.titel)}</a>
+          <ul class="pf-drop">${b.tools.length
+            ? gruppen(b).map(g => g.name
+              ? `<li class="pf-sub"><a href="${bereichUrl(b)}"${g.tools.some(t => t.id === TOOL) ? ' aria-current="true"' : ''} aria-haspopup="true">${esc(g.name)}</a><ul class="pf-drop2">${g.tools.map(t => toolLi(b, t)).join('')}</ul></li>`
+              : g.tools.map(t => toolLi(b, t)).join('')).join('')
+              + `<li><a class="pf-all" href="${bereichUrl(b)}">Alle Übungen zu ${esc(b.titel)}</a></li>`
+            : '<li class="pf-leer">Hier entstehen bald Übungen.</li>'}
+          </ul>
+        </li>`).join('')}
+      </ul>
+      <div class="pf-right">
+        ${document.getElementById('themeBtn') ? '' : `<button class="pf-btn" id="pfTheme" type="button" aria-label="Hell/Dunkel umschalten">${theme() === 'dark' ? SONNE : MOND}</button>`}
+        ${EINZELN ? '' : '<button class="pf-btn pf-burger" type="button" aria-label="Menü">☰</button>'}
+      </div>
+    </div>`;
+    document.body.insertBefore(nav, document.body.firstChild);
+
+    // Passt die Leiste nicht in die Breite (Fach-Menü, lange Bereichsnamen, Anmeldung), kommt das Menü hinter ☰
+    const innen = nav.querySelector('.pf-in');
+    // Erst den Zusatz „– Fortschritt wird nicht gespeichert“ weglassen (pf-knapp), erst dann ☰ (pf-eng)
+    const voll = () => innen.scrollWidth > innen.clientWidth + 1;
+    const platz = () => {
+      nav.classList.remove('pf-eng', 'pf-knapp');
+      if (EINZELN || !voll()) return;
+      nav.classList.add('pf-knapp');
+      if (voll()) nav.classList.add('pf-eng');
+    };
+    platz();
+    addEventListener('resize', platz);
+    new MutationObserver(platz).observe(nav.querySelector('.pf-right'), {childList: true, subtree: true, characterData: true});
+    if (document.fonts) document.fonts.ready.then(platz);
+    const schmal = () => matchMedia('(max-width:760px)').matches || nav.classList.contains('pf-eng');
+
+    const burger = nav.querySelector('.pf-burger');
+    if (burger) burger.addEventListener('click', () => nav.classList.toggle('open'));
+    const tb = nav.querySelector('#pfTheme');
+    if (tb) tb.addEventListener('click', () => {
+      const t = theme() === 'dark' ? 'light' : 'dark';
+      root.dataset.theme = t; tb.textContent = t === 'dark' ? SONNE : MOND;
+      try { localStorage.setItem('wenn-theme', t); } catch (e) {}
+    });
+
+    // Geräte ohne Maus: erstes Antippen klappt auf, zweites öffnet die Bereichsseite
+    const items = [...nav.querySelectorAll('.pf-item')];
+    if (matchMedia('(hover: none)').matches) items.forEach(li => li.firstElementChild.addEventListener('click', e => {
+      if (schmal() || li.classList.contains('open')) return;
+      e.preventDefault();
+      items.forEach(x => x.classList.toggle('open', x === li));
+    }));
+    // Untermenüs (gruppe): nach links aufklappen, wenn rechts kein Platz ist; ohne Maus erst antippen
+    nav.querySelectorAll('.pf-sub').forEach(sub => {
+      sub.addEventListener('mouseenter', () => {
+        const r = sub.getBoundingClientRect();
+        sub.classList.toggle('links', r.right + 260 > innerWidth);
+      });
+      if (matchMedia('(hover: none)').matches) sub.firstElementChild.addEventListener('click', e => {
+        if (schmal() || sub.classList.contains('open')) return;
+        e.preventDefault();
+        const r = sub.getBoundingClientRect();
+        sub.classList.toggle('links', r.right + 260 > innerWidth);
+        sub.classList.add('open');
+      });
+    });
+    document.addEventListener('click', e => { if (!nav.contains(e.target)){ nav.querySelectorAll('.pf-sub.open').forEach(x => x.classList.remove('open')); items.forEach(x => x.classList.remove('open')); nav.classList.remove('open'); } });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape'){ items.forEach(x => x.classList.remove('open')); nav.classList.remove('open'); } });
+  }
+
+  /* ---------- Übersichtsseiten ---------- */
+  // Tools mit gruppe (katalog.js) stehen unter einer gemeinsamen Zwischenüberschrift
+  function kacheln(b){
+    if (!b.tools.length) return '<p class="pf-hinweis">Hier entstehen bald Übungen.</p>';
+    const kachel = t => `<a class="pf-tile${t.bedingt ? ' pf-bedingt' : ''}"${t.bedingt ? ` data-tool="${esc(t.id)}"` : ''} href="${toolUrl(b, t)}"><b>${esc(t.titel)}</b><span>${esc(t.text)}</span></a>`;
+    return gruppen(b).map(g => (g.name ? `<h3 class="pf-gruppe">${esc(g.name)}</h3>` : '') + `<div class="pf-grid">${g.tools.map(kachel).join('')}</div>`).join('');
+  }
+  function buildPages(){
+    const start = document.getElementById('pf-start');
+    if (start){
+      const gruppenseite = !!root.dataset.gruppe;
+      if (gruppenseite) document.title = GRUPPE.titel + ' – ' + K.name;
+      start.innerHTML = `<h1>${esc(gruppenseite ? GRUPPE.titel : K.name)}</h1><p class="pf-lead">${esc(GRUPPE.text)}${gruppenseite ? '' : ' ' + esc(K.untertitel)}</p>`
+        + GRUPPE.bereiche.map(b => `<section class="pf-sec"><h2><a href="${bereichUrl(b)}">${esc(b.titel)}</a></h2><p class="pf-text">${esc(b.text)}</p>${kacheln(b)}</section>`).join('');
+    }
+    // Fach mit Jahrgangsstufen: Auswahl der Stufe
+    const fach = document.getElementById('pf-fach');
+    if (fach && FACHSEITE){
+      document.title = FACHSEITE.titel + ' – ' + K.name;
+      fach.innerHTML = `<h1>${esc(FACHSEITE.titel)}</h1><p class="pf-lead">${esc(FACHSEITE.text)} Wähle die Jahrgangsstufe.</p><div class="pf-grid">`
+        + K.gruppen.filter(g => g.fach === FACHSEITE).map(g => `<a class="pf-tile" href="${gruppeUrl(g)}"><b>${esc(g.stufe.titel)}</b><span>${esc(g.text)}</span></a>`).join('') + '</div>';
+    }
+    const be = document.getElementById('pf-bereich');
+    const b = BER;
+    if (be && b){
+      document.title = b.titel + ' – ' + K.name;
+      be.innerHTML = `<h1>${esc(b.titel)}</h1><p class="pf-lead">${esc(b.text)}</p>${kacheln(b)}`;
+    }
+  }
+
+  // Hell/Dunkel höchstens einmal pro Sekunde umschalten und weich überblenden – kein Flackern beim schnellen Klicken
+  let themeSperre = 0;
+  document.addEventListener('click', e => {
+    const btn = e.target.closest('#themeBtn,#pfTheme');
+    if (!btn) return;
+    if (Date.now() < themeSperre){ e.stopImmediatePropagation(); e.preventDefault(); return; }
+    themeSperre = Date.now() + 1000;
+    root.classList.add('pf-fade'); btn.classList.add('pf-gesperrt');
+    setTimeout(() => root.classList.remove('pf-fade'), 400);
+    setTimeout(() => btn.classList.remove('pf-gesperrt'), 1000);
+  }, true);
+
+  function init(){ buildNav(); buildPages(); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();
+
+</script>
+<script>/* ../../sync.js */
+/* vibe learning – Anmeldung und Anbindung an PocketBase
+ *
+ * Läuft die Seite über den PocketBase-Server, erscheint beim ersten Öffnen ein
+ * Anmeldefenster: ein Feld für Code oder Benutzername (bei Benutzernamen folgt das
+ * Passwort), alternativ „Seite ohne Anmeldung nutzen“. Oben rechts in der Leiste
+ * steht danach, wer angemeldet ist; dort meldet man sich auch an und ab.
+ *
+ * Schüler: Fortschritt wird auf dem Server gespeichert, jede gelöste Aufgabe protokolliert.
+ * Lehrkraft/Admin: Anmeldung gilt bis zum Schließen des Browsers, im Menü steht
+ * der Link zur Verwaltung (lehrer.html).
+ * Wird die HTML-Datei direkt geöffnet (oder läuft kein PocketBase dahinter),
+ * passiert nichts davon – die Seite speichert dann wie bisher nur im Browser.
+ *
+ * Bedingte Menüpunkte (katalog.js: bedingt) blendet das Skript nach der Anmeldung ein,
+ * wenn der Server sie für diesen Schüler freigibt (/api/trainer/sichtbar).
+ *
+ * Die Seite ruft auf:
+ *   TrainerSync.changed()      nach jeder Änderung am gespeicherten Stand
+ *   TrainerSync.event({...})   wenn eine Aufgabe richtig gelöst wurde
+ */
+(function () {
+  'use strict';
+
+  const CONFIG = {
+    api: '/api/trainer',
+    verwaltung: 'lehrer.html'   // relativ zum Ordner von sync.js
+  };
+
+  const me = document.currentScript && document.currentScript.src;
+  const BASE = me ? me.replace(/[^/]*$/, '') : '';
+  const PAGE = document.documentElement.dataset.trainer || '';          // Tool-id aus katalog.js, leer auf Übersichtsseiten
+  const TOOL_IDS = window.KATALOG ? [].concat(...window.KATALOG.bereiche.map(b => b.tools.map(t => t.id))) : [];
+  const ALL_PREFIXES = [...new Set(['wenn', 'uo', 'fn', PAGE].concat(TOOL_IDS))].filter(Boolean).map(id => id + '-');
+  const OWN = PAGE + '-';
+  const SKIP = ['wenn-theme'];                                             // Hell/Dunkel bleibt pro Gerät
+  const K = {code: 'ts-code', anzeige: 'ts-anzeige', klasse: 'ts-klasse', queue: 'ts-queue', stand: 'ts-stand-' + PAGE};
+  const SS = {gast: 'ts-gast', lehrer: 'ts-lehrer'};                      // gilt nur bis zum Schließen des Browsers
+
+  const ls = {
+    get(k){ try { return localStorage.getItem(k); } catch (e) { return null; } },
+    set(k, v){ try { localStorage.setItem(k, v); } catch (e) {} },
+    del(k){ try { localStorage.removeItem(k); } catch (e) {} },
+    keys(){ try { return Object.keys(localStorage); } catch (e) { return []; } }
+  };
+  const ss = {
+    get(k){ try { return sessionStorage.getItem(k); } catch (e) { return null; } },
+    set(k, v){ try { sessionStorage.setItem(k, v); } catch (e) {} },
+    del(k){ try { sessionStorage.removeItem(k); } catch (e) {} }
+  };
+  function lehrerSitzung(){ try { return JSON.parse(ss.get(SS.lehrer) || 'null'); } catch (e) { return null; } }
+
+  const hosted = /^https?:$/.test(location.protocol);
+  let aktiv = false, pushTimer = null, pushPending = false, menuEl = null, lastSnap = '';
+
+  /* ---------- Hilfen ---------- */
+  function api(path, opt){
+    opt = opt || {};
+    return fetch(CONFIG.api + path, {
+      method: opt.method || 'GET',
+      keepalive: !!opt.keepalive,
+      headers: {'Content-Type': 'application/json', 'X-Trainer-Code': ls.get(K.code) || ''},
+      body: opt.body ? JSON.stringify(opt.body) : undefined
+    }).then(async r => {
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok){ const err = new Error(j.message || ('HTTP ' + r.status)); err.status = r.status; err.data = j; throw err; }
+      return j;
+    });
+  }
+  const trainerKeys = prefix => ls.keys().filter(k => k.startsWith(prefix) && !SKIP.includes(k));
+  function snapshot(prefix){ prefix = prefix || OWN; const d = {}; trainerKeys(prefix).sort().forEach(k => { d[k] = ls.get(k); }); return d; }
+  function applySnapshot(d, prefix){
+    prefix = prefix || OWN;
+    trainerKeys(prefix).forEach(k => ls.del(k));
+    Object.keys(d || {}).forEach(k => { if (k.startsWith(prefix) && !SKIP.includes(k) && typeof d[k] === 'string') ls.set(k, d[k]); });
+  }
+  function wipeLocal(){
+    ALL_PREFIXES.forEach(p => trainerKeys(p).forEach(k => ls.del(k)));
+    ls.keys().filter(k => k.startsWith('ts-stand-')).forEach(k => ls.del(k));
+    [K.queue, K.code, K.klasse, K.anzeige].forEach(k => ls.del(k));
+  }
+  function reloadOnce(){
+    let last = 0; try { last = +sessionStorage.getItem('ts-reload') || 0; } catch (e) {}
+    if (Date.now() - last < 8000) return;
+    try { sessionStorage.setItem('ts-reload', Date.now()); } catch (e) {}
+    location.reload();
+  }
+
+  /* ---------- Fortschritt abgleichen ---------- */
+  async function pull(){
+    if (!PAGE){ setStatus('ok'); return; }
+    const r = await api('/state?seite=' + PAGE);
+    const local = +ls.get(K.stand) || 0, server = +r.stand || 0;
+    if (r.daten && server > local){
+      const before = JSON.stringify(snapshot());
+      applySnapshot(r.daten);
+      ls.set(K.stand, server);
+      lastSnap = JSON.stringify(snapshot());
+      if (lastSnap !== before) reloadOnce();
+    } else if (local > server) await push();
+    setStatus('ok');
+  }
+
+  async function push(keepalive){
+    clearTimeout(pushTimer); pushPending = false;
+    if (!aktiv || !PAGE) return;
+    const stand = +ls.get(K.stand) || Date.now();
+    setStatus('saving');
+    try {
+      await api('/state', {method: 'POST', body: {seite: PAGE, daten: snapshot(), stand}, keepalive});
+      setStatus('ok');
+    } catch (err){
+      if (err.status === 409){ await pull().catch(() => setStatus('offline')); }
+      else if (err.status === 401) abgelaufen();
+      else { pushPending = true; setStatus('offline'); }
+    }
+  }
+
+  function changed(){
+    if (!PAGE) return;
+    // Seiten schreiben ihren Stand auch beim Öffnen neu – nur echte Änderungen zählen,
+    // sonst würde ein frisch geöffnetes Gerät einen neueren Stand vom Server überschreiben.
+    const snap = JSON.stringify(snapshot());
+    if (snap === lastSnap) return;
+    lastSnap = snap;
+    ls.set(K.stand, Date.now());
+    if (!aktiv) return;
+    pushPending = true;
+    clearTimeout(pushTimer);
+    pushTimer = setTimeout(push, 700);
+  }
+
+  /* ---------- Protokoll gelöster Aufgaben ---------- */
+  function queue(){ try { return JSON.parse(ls.get(K.queue) || '[]'); } catch (e) { return []; } }
+  function event(ev){
+    if (!aktiv || !PAGE) return;
+    const q = queue(); q.push(Object.assign({seite: PAGE}, ev)); ls.set(K.queue, JSON.stringify(q.slice(-500)));
+    flush();
+  }
+  let flushing = false;
+  async function flush(keepalive){
+    if (!aktiv || flushing) return;
+    const q = queue(); if (!q.length) return;
+    flushing = true;
+    try {
+      await api('/events', {method: 'POST', body: {events: q.slice(0, 200)}, keepalive});
+      ls.set(K.queue, JSON.stringify(queue().slice(Math.min(q.length, 200))));
+    } catch (err){
+      if (err.status === 401) abgelaufen(); else setStatus('offline');
+    } finally { flushing = false; }
+    if (queue().length && !keepalive) setTimeout(flush, 2000);
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden' && aktiv){ if (pushPending) push(true); flush(true); }
+  });
+  window.addEventListener('online', () => { if (aktiv){ flush(); if (pushPending) push(); else pull().catch(() => {}); } });
+
+
+  /* ---------- Gast-Fortschritt beim Anmelden übernehmen ---------- */
+  // Für jede Übung: Ist das Konto dort noch leer, wird der Stand dieses Geräts hochgeladen,
+  // sonst gilt der Stand vom Server.
+  async function uebernehmen(){
+    for (const p of ALL_PREFIXES){
+      const id = p.slice(0, -1), lokal = snapshot(p);
+      const st = await api('/state?seite=' + id);
+      const leer = !st.daten || !Object.keys(st.daten).length;
+      if (leer){
+        if (!Object.keys(lokal).length) continue;
+        const stand = Date.now();
+        await api('/state', {method: 'POST', body: {seite: id, daten: lokal, stand}});
+        ls.set('ts-stand-' + id, stand);
+      } else {
+        applySnapshot(st.daten, p);
+        ls.set('ts-stand-' + id, +st.stand || 0);
+      }
+    }
+  }
+
+  /* ---------- Oberfläche: Anmeldefenster + Menü oben rechts ---------- */
+  const CSS = `
+.ts-ov{position:fixed;inset:0;z-index:2000;background:rgba(20,24,32,.6);backdrop-filter:blur(3px);display:grid;place-items:center;padding:16px}
+.ts-box{position:relative;background:var(--panel,#f6f8fb);color:var(--text,#2e3440);border:1px solid var(--border,#cdd3de);border-radius:16px;padding:24px;width:min(420px,100%);box-shadow:0 20px 50px rgba(0,0,0,.3);font:16px/1.5 system-ui,sans-serif}
+.ts-box h2{margin:0 0 6px;font-size:21px}
+.ts-box p{margin:0 0 14px;color:var(--muted,#5b6578)}
+.ts-x{position:absolute;top:10px;right:10px;width:34px;height:34px;border-radius:9px;border:0;background:none;color:var(--muted,#5b6578);font-size:22px;line-height:1;cursor:pointer}
+.ts-x:hover{background:var(--panel2,#eceff4);color:var(--text,#2e3440)}
+.ts-in{width:100%;box-sizing:border-box;font:700 20px ui-monospace,Consolas,monospace;letter-spacing:.03em;padding:12px 14px;border-radius:10px;border:2px solid var(--slot-border,var(--border,#a7b1c2));background:var(--slot,var(--panel2,#eceff4));color:var(--text,#2e3440);outline:none}
+.ts-in:focus{border-color:var(--accent,#5e81ac)}
+.ts-btn{margin-top:12px;width:100%;font:600 17px system-ui,sans-serif;padding:12px;border-radius:10px;border:1px solid color-mix(in srgb,var(--accent,#5e81ac) 50%,var(--panel,#f6f8fb));background:color-mix(in srgb,var(--accent,#5e81ac) 22%,var(--panel,#f6f8fb));color:color-mix(in srgb,var(--accent,#5e81ac) 60%,var(--text,#2e3440));cursor:pointer}
+.ts-btn:disabled{opacity:.6;cursor:wait}
+.ts-err{color:var(--err,#a8434d);min-height:1.4em;margin-top:8px;font-size:14px}
+.ts-zurueck{background:none;border:0;padding:0;margin-top:10px;color:var(--muted,#5b6578);text-decoration:underline;cursor:pointer;font-size:14px}
+.ts-gast{display:block;width:100%;margin-top:18px;padding:12px;border-radius:10px;border:1px solid var(--border,#cdd3de);background:var(--panel2,#eceff4);color:var(--text,#2e3440);font:600 16px system-ui,sans-serif;cursor:pointer}
+.ts-gast small{display:block;font-weight:400;font-size:13px;color:var(--muted,#5b6578)}
+.ts-wrap{position:relative}
+.ts-badge{display:inline-flex;align-items:center;gap:6px;font:600 13px system-ui,sans-serif;padding:7px 11px;border-radius:999px;border:1px solid var(--border,#cdd3de);background:var(--panel2,#eceff4);color:var(--text,#2e3440);cursor:pointer;white-space:nowrap}
+.ts-badge .ts-dot{width:8px;height:8px;border-radius:50%;background:#8a95ab}
+.ts-badge.ok .ts-dot{background:var(--then,#a3be8c)}
+.ts-badge.saving .ts-dot{background:#ebcb8b}
+.ts-badge.offline .ts-dot{background:var(--else,#bf616a)}
+.ts-badge.gast{border-color:color-mix(in srgb,#d08770 60%,var(--border,#cdd3de));background:color-mix(in srgb,#d08770 16%,var(--panel,#f6f8fb))}
+.ts-badge.gast .ts-dot{background:#d08770}
+.ts-dd{display:none;position:absolute;right:0;top:calc(100% + 6px);min-width:240px;z-index:70;background:var(--panel,#f6f8fb);color:var(--text,#2e3440);border:1px solid var(--border,#cdd3de);border-radius:12px;box-shadow:0 14px 30px rgba(0,0,0,.18);padding:6px;font:14px/1.4 system-ui,sans-serif}
+.ts-wrap.open .ts-dd{display:block}
+.ts-dd .ts-info{padding:8px 10px;color:var(--muted,#5b6578);border-bottom:1px solid var(--border,#cdd3de);margin-bottom:4px}
+.ts-dd .ts-info b{color:var(--text,#2e3440)}
+.ts-dd a,.ts-dd button{display:block;width:100%;text-align:left;padding:8px 10px;border-radius:8px;border:0;background:none;color:inherit;font:inherit;text-decoration:none;cursor:pointer}
+.ts-dd a:hover,.ts-dd button:hover{background:var(--panel2,#eceff4)}
+@media (max-width:640px){.ts-badge .ts-lang{display:none}}`;
+
+  function injectCss(){ const s = document.createElement('style'); s.textContent = CSS; document.head.appendChild(s); }
+  const escH = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+
+  function setStatus(st){
+    const b = menuEl && menuEl.querySelector('.ts-badge');
+    if (!b || !aktiv) return;
+    b.className = 'ts-badge ' + st;
+    const t = {ok: 'Fortschritt gespeichert', saving: 'Wird gespeichert …', offline: 'Keine Verbindung – wird später gespeichert'}[st] || '';
+    b.title = t;
+    const i = menuEl.querySelector('.ts-status'); if (i) i.textContent = t;
+  }
+
+  // Menü oben rechts: angemeldet (Dropdown mit Abmelden) oder Gast (Klick öffnet die Anmeldung)
+  function showMenu(){
+    if (menuEl) menuEl.remove();
+    const host = document.querySelector('.pf-right') || document.querySelector('.hdr-right') || document.querySelector('header') || document.body;
+    const L = lehrerSitzung();
+    menuEl = document.createElement('div');
+    menuEl.className = 'ts-wrap';
+    if (aktiv){
+      const klasse = ls.get(K.klasse);
+      menuEl.innerHTML = `<button class="ts-badge saving" type="button"><span class="ts-dot"></span>👤 <span class="ts-lang">${escH(ls.get(K.anzeige) || ls.get(K.code))}</span></button>
+        <div class="ts-dd"><div class="ts-info">Angemeldet als <b>${escH(ls.get(K.anzeige) || ls.get(K.code))}</b>${klasse ? ' (Klasse ' + escH(klasse) + ')' : ''}<br><span class="ts-status"></span></div>
+        <button type="button" data-a="ab">Abmelden</button></div>`;
+    } else if (L){
+      menuEl.innerHTML = `<button class="ts-badge" type="button">👤 <span class="ts-lang">${escH(L.name)}</span></button>
+        <div class="ts-dd"><div class="ts-info">Angemeldet als <b>${escH(L.name)}</b> (${L.rolle === 'admin' ? 'Admin' : 'Lehrkraft'})</div>
+        <a href="${BASE + CONFIG.verwaltung}">Verwaltung: Klassen und Auswertung</a>
+        <button type="button" data-a="ab">Abmelden</button></div>`;
+    } else {
+      menuEl.innerHTML = `<button class="ts-badge gast" type="button" title="Fortschritt wird nicht gespeichert. Klicken zum Anmelden."><span class="ts-dot"></span>Nicht angemeldet<span class="ts-lang">&nbsp;– Fortschritt wird nicht gespeichert</span></button>`;
+    }
+    host.insertBefore(menuEl, host.firstChild);
+    menuEl.querySelector('.ts-badge').addEventListener('click', () => {
+      if (!aktiv && !L){ showLogin(); return; }
+      menuEl.classList.toggle('open');
+    });
+    const ab = menuEl.querySelector('[data-a="ab"]');
+    if (ab) ab.addEventListener('click', abmelden);
+    document.addEventListener('click', e => { if (menuEl && !menuEl.contains(e.target)) menuEl.classList.remove('open'); });
+  }
+
+  function showLogin(msg){
+    if (document.querySelector('.ts-ov')) return;
+    const ov = document.createElement('div');
+    ov.className = 'ts-ov';
+    ov.innerHTML = `<div class="ts-box" role="dialog" aria-modal="true" aria-label="Anmelden">
+      <button class="ts-x" type="button" aria-label="Schließen und ohne Anmeldung nutzen" title="Ohne Anmeldung nutzen">×</button>
+      <form class="ts-f1" autocomplete="off">
+        <h2>Anmelden</h2>
+        <p>Gib deinen Zugangscode oder deinen Benutzernamen ein.</p>
+        <input class="ts-in" name="kennung" placeholder="Code oder Benutzername" autocapitalize="none" spellcheck="false" aria-label="Code oder Benutzername">
+        <button class="ts-btn" type="submit">Weiter</button>
+      </form>
+      <form class="ts-f2" hidden>
+        <h2>Passwort</h2>
+        <p>für <b class="ts-wer"></b></p>
+        <input class="ts-in" name="passwort" type="password" autocomplete="current-password" aria-label="Passwort">
+        <button class="ts-btn" type="submit">Anmelden</button>
+        <button class="ts-zurueck" type="button">Anderen Namen eingeben</button>
+      </form>
+      <div class="ts-err">${msg || ''}</div>
+      <button class="ts-gast" type="button">Seite ohne Anmeldung nutzen<small>Dein Fortschritt wird dann nur in diesem Browser gespeichert.</small></button>
+    </div>`;
+    document.body.appendChild(ov);
+    const f1 = ov.querySelector('.ts-f1'), f2 = ov.querySelector('.ts-f2'), err = ov.querySelector('.ts-err');
+    const k = f1.kennung, pw = f2.passwort;
+    setTimeout(() => k.focus(), 50);
+
+    const gast = () => { ss.set(SS.gast, '1'); ov.remove(); document.removeEventListener('keydown', esc); };
+    const esc = e => { if (e.key === 'Escape') gast(); };
+    document.addEventListener('keydown', esc);
+    ov.querySelector('.ts-x').addEventListener('click', gast);
+    ov.querySelector('.ts-gast').addEventListener('click', gast);
+    ov.querySelector('.ts-zurueck').addEventListener('click', () => { f2.hidden = true; f1.hidden = false; err.textContent = ''; k.select(); });
+
+    async function senden(btn, body){
+      btn.disabled = true; err.textContent = '';
+      try {
+        const r = await fetch(CONFIG.api + '/login', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)})
+          .then(async x => { const j = await x.json().catch(() => ({})); if (!x.ok) throw new Error(x.status === 429 ? 'Zu viele Versuche – bitte kurz warten.' : (j.message || 'Anmeldung fehlgeschlagen.')); return j; });
+        if (r.passwort){ f1.hidden = true; f2.hidden = false; ov.querySelector('.ts-wer').textContent = body.kennung; pw.value = ''; pw.focus(); return; }
+        if (r.rolle === 'schueler'){
+          ls.set(K.code, r.cred); ls.set(K.anzeige, r.anzeige); ls.set(K.klasse, r.klasse || '');
+          ss.del(SS.lehrer); ss.del('ts-reload');
+          aktiv = true;
+          await uebernehmen().catch(() => {});
+        } else {
+          ss.set(SS.lehrer, JSON.stringify({rolle: r.rolle, token: r.token, name: r.name}));
+        }
+        location.reload();
+      } catch (x){
+        err.textContent = x.message || 'Anmeldung fehlgeschlagen.';
+        (f2.hidden ? k : pw).select();
+      } finally { btn.disabled = false; }
+    }
+    f1.addEventListener('submit', e => {
+      e.preventDefault();
+      const v = k.value.trim();
+      if (!v){ err.textContent = 'Bitte gib deinen Code oder Benutzernamen ein.'; return; }
+      senden(f1.querySelector('.ts-btn'), {kennung: v});
+    });
+    f2.addEventListener('submit', e => {
+      e.preventDefault();
+      if (!pw.value){ err.textContent = 'Bitte gib dein Passwort ein.'; return; }
+      senden(f2.querySelector('.ts-btn'), {kennung: k.value.trim(), passwort: pw.value});
+    });
+  }
+
+  async function abmelden(){
+    if (lehrerSitzung()){ ss.del(SS.lehrer); ss.del(SS.gast); location.reload(); return; }
+    if (!confirm(`Abmelden?\n\nAngemeldet als ${ls.get(K.anzeige) || ls.get(K.code)}. Dein Fortschritt bleibt auf dem Server gespeichert.`)) return;
+    if (pushPending) await push();
+    await flush();
+    if (queue().length && !confirm('Einige gelöste Aufgaben konnten noch nicht übertragen werden (keine Verbindung). Trotzdem abmelden?')) return;
+    wipeLocal(); ss.del(SS.gast); ss.del('ts-sichtbar');
+    location.reload();
+  }
+  function abgelaufen(){
+    aktiv = false;
+    wipeLocal(); ss.del('ts-sichtbar');
+    showMenu();
+    showLogin('Deine Anmeldung ist nicht mehr gültig. Bitte melde dich neu an.');
+  }
+
+  /* ---------- Bedingte Menüpunkte (z. B. Tipp-Aufgabe nur mit aufgegebener Aufgabe) ---------- */
+  function zeigeTools(ids){
+    // Tool-ids bestehen nur aus a–z, 0–9 und - (katalog.js); andere werden ignoriert
+    ids.filter(id => /^[a-z0-9-]+$/.test(id)).forEach(id => document.querySelectorAll(`[data-tool="${id}"]`).forEach(el => el.classList.add('pf-sichtbar')));
+  }
+  async function sichtbar(){
+    try { zeigeTools(JSON.parse(ss.get('ts-sichtbar') || '[]')); } catch (e) {}   // Stand der letzten Seite, ohne Flackern
+    try { const r = await api('/sichtbar'); ss.set('ts-sichtbar', JSON.stringify(r.tools || [])); zeigeTools(r.tools || []); } catch (e) {}
+  }
+
+  /* ---------- Start ---------- */
+  async function start(){
+    if (!hosted || window.PF_EINZELDATEI) return;          // Einzeldatei: immer ohne Anmeldung, Fortschritt nur im Browser
+    try {
+      const h = await fetch('/api/health', {cache: 'no-store'});
+      if (!h.ok) return;                                    // kein PocketBase: Seite läuft nur lokal
+    } catch (e){ return; }
+    injectCss();
+    aktiv = !!ls.get(K.code);
+    showMenu();
+    if (!aktiv){
+      if (!lehrerSitzung() && !ss.get(SS.gast)) showLogin();
+      return;
+    }
+    sichtbar();
+    try { await pull(); flush(); }
+    catch (err){ if (err.status === 401) abgelaufen(); else setStatus('offline'); }
+  }
+
+  lastSnap = JSON.stringify(snapshot());   // Stand beim Laden der Seite (vor deren Initialisierung)
+  window.TrainerSync = {changed, event, anmelden: () => showLogin(), get aktiv(){ return aktiv; }, get lehrer(){ return lehrerSitzung(); }, abmelden};
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
+})();
+
+</script>
+<script>
+(function(){var t=null;try{t=localStorage.getItem('wenn-theme');}catch(e){}
+document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');})();
+</script>
+<style>/* basis.css */
+/* basis.css – gemeinsame Gestaltung aller Excel-Trainer (Nord-Farben, hell/dunkel über [data-theme=dark]).
+ * Ergänzung je Seitenart danach laden: bausteine.css (wenn, und-oder) oder tabelle.css (funktionen, bezuege).
+ * Seitenspezifisches steht im <style> der Seite. */
+:root{
+  --bg:#e5e9f0; --panel:#f6f8fb; --panel2:#eceff4; --text:#2e3440; --muted:#5b6578; --border:#cdd3de;
+  --accent:#5e8a45; --cond:#5e81ac; --then:#5e8a45; --else:#a8434d; --blk-val:#ebcb8b; --blk-val-text:#2e3440;
+  --blk-cond:#8a5f84; --blk-sym:#4c566a; --slot:#e5e9f0; --slot-border:#a7b1c2; --ok-bg:#dfe9d6;
+  --err-bg:#f1d9db; --err:#a8434d; --solved-bg:#e3ebdc; --solved-border:#a3be8c; --solved-text:#4a7034;
+  --flame-off:#d8dee9; --flame-num-off:#6b7589;
+  --mono:ui-monospace,"Cascadia Mono","SF Mono",Consolas,"Liberation Mono",monospace;
+  --hex:polygon(16px 0,calc(100% - 16px) 0,100% 50%,calc(100% - 16px) 100%,16px 100%,0 50%); --on-color:#ffffff;
+  --blk-fn:#4c8a89; --cell:#ffffff; --cellhd:#eceff4; --grid:#cdd3de; --r0:#5e81ac; --r1:#a8434d; --r2:#8a5f84;
+  --r3:#5e8a45; --r4:#b0663f; --r5:#4c8a89;
+}
+[data-theme=dark]{
+  --bg:#2e3440; --panel:#3b4252; --panel2:#434c5e; --text:#eceff4; --muted:#a9b3c4; --border:#4c566a;
+  --cond:#81a1c1; --then:#a3be8c; --else:#bf616a; --slot:#434c5e; --slot-border:#616e88; --ok-bg:#3e4a45;
+  --err-bg:#4a3c45; --err:#d4848b; --solved-bg:#3e4a45; --solved-border:#6f8a5c; --solved-text:#a3be8c;
+  --flame-off:#4c566a; --flame-num-off:#9aa4b8; --blk-val:#ebcb8b; --blk-val-text:#2e3440; --blk-cond:#b48ead;
+  --blk-sym:#8a95ab; --on-color:#2e3440; --accent:#a3be8c; --blk-fn:#8fbcbb; --cell:#3b4252; --cellhd:#434c5e;
+  --grid:#4c566a; --r0:#81a1c1; --r1:#d4848b; --r2:#b48ead; --r3:#a3be8c; --r4:#d08770; --r5:#8fbcbb;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding-bottom:110px}
+header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:12px 20px;background:var(--panel);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:20}
+.brand{font-weight:800;font-size:20px;font-family:var(--mono);letter-spacing:-.5px}
+.brand span{color:var(--accent)}
+.hdr-right{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.flames{display:flex;gap:4px;align-items:flex-end}
+.flame{background:none;border:0;padding:2px;cursor:pointer;transform-origin:50% 90%;line-height:0}
+.flame svg{width:30px;height:38px;display:block}
+.flame path{fill:var(--flame-off);transition:fill .2s}
+.flame text{fill:var(--flame-num-off);font:800 13px system-ui,sans-serif}
+.flame:hover path{fill:#f0b27a}
+.flame.on path{fill:url(#fg)}
+.flame.on text{fill:#fff}
+.flame.on{filter:drop-shadow(0 0 5px rgba(255,150,0,.95)) drop-shadow(0 0 12px rgba(255,70,0,.6));animation:flick 1.4s ease-in-out infinite alternate}
+@keyframes flick{0%{transform:scale(1) rotate(-2deg)}50%{transform:scale(1.05,1.1) rotate(0)}100%{transform:scale(1.02) rotate(2deg)}}
+.iconbtn{background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:10px;width:40px;height:40px;display:grid;place-items:center;cursor:pointer}
+.iconbtn svg{width:20px;height:20px}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px 18px;margin-bottom:14px}
+.meta{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;font-size:14px;color:var(--muted);margin-bottom:6px}
+.lvlname{font-weight:700;color:var(--accent)}
+.taskrow{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start}
+code{font-family:var(--mono);background:var(--panel2);padding:1px 5px;border-radius:5px;font-size:.95em}
+.grid{border-collapse:collapse;font-size:14px;font-family:var(--mono)}
+.grid th,.grid td{border:1px solid var(--border);padding:4px 10px;min-width:44px;text-align:left;white-space:nowrap}
+.grid th{background:var(--panel2);color:var(--muted);font-weight:600;text-align:center}
+.grid td.fx{outline:2px solid var(--then);outline-offset:-2px;min-width:110px}
+.grid td.lbl{color:var(--muted);font-family:system-ui,sans-serif}
+.wthint{text-transform:none;letter-spacing:0;font-weight:500;opacity:.8;margin-left:6px}
+.ph{color:var(--muted);font-size:14px;font-weight:500;font-family:system-ui,sans-serif;opacity:.75;padding:0 8px;pointer-events:none}
+.block[data-drag]{cursor:grab}
+.block.val{background:var(--blk-val);color:var(--blk-val-text);border-radius:999px;box-shadow:inset 0 -3px 0 rgba(0,0,0,.15)}
+.block.hex{background:var(--blk-cond);clip-path:var(--hex);padding:7px 26px}
+.block.sym{background:var(--blk-sym);border-radius:7px;min-width:38px;justify-content:center;box-shadow:inset 0 -3px 0 rgba(0,0,0,.2)}
+.block.fn .gapin{background:var(--slot);border-style:solid}
+.block.ghost{opacity:.18;filter:grayscale(1);pointer-events:none}
+.block.drag-src{opacity:.3}
+.drag-ghost{position:fixed;z-index:1000;pointer-events:none;opacity:.95;transform:scale(1.06);filter:drop-shadow(0 6px 12px rgba(0,0,0,.35))}
+.block.r-cond{background:var(--cond);color:var(--on-color)}
+.block.r-then{background:var(--then);color:var(--on-color)}
+.block.r-else{background:var(--else);color:var(--on-color)}
+.builder .cellref{padding:0 2px}
+.builder .grip{font-size:20px;opacity:.75;margin-left:-8px;padding:0 2px}
+.opsel{font:700 17px var(--mono);background:rgba(255,255,255,.92);color:#1c2130;border:0;border-radius:7px;padding:4px 4px;cursor:pointer}
+.cvin{font:700 17px var(--mono);background:rgba(255,255,255,.92);color:#1c2130;border:0;border-radius:999px;padding:5px 10px;min-width:60px;outline:none}
+.cvin:focus{box-shadow:0 0 0 3px rgba(255,255,255,.6)}
+.slot{display:inline-flex;align-items:center;justify-content:center;position:relative}
+.slot.pill{min-width:130px;min-height:48px;border:2px dashed var(--slot-border);border-radius:999px;background:var(--slot);padding:2px}
+.slot.pill.small{min-width:70px;min-height:38px}
+.slot.hex{min-width:210px;min-height:54px;padding:4px 22px}
+.slot.hex::before,.slot.hex::after{content:"";position:absolute;clip-path:var(--hex)}
+.slot.hex::before{inset:0;background:var(--slot-border)}
+.slot.hex::after{inset:2px;background:var(--slot)}
+.slot.hex>*{position:relative;z-index:1}
+.slot.hex.drop-hover::before{background:var(--accent)}
+.slot.hex.drop-hover::after{background:color-mix(in srgb,var(--accent) 14%,var(--slot))}
+.slot-fixed{display:inline-flex}
+.iw{position:relative;display:inline-flex}
+.iw.ins::before,.iw.ins-after::after{content:"";position:absolute;top:2px;bottom:2px;width:4px;border-radius:2px;background:var(--accent)}
+.iw.ins::before{left:-6px}
+.iw.ins-after::after{right:-6px}
+.bx{position:absolute;top:-8px;right:-8px;width:20px;height:20px;border-radius:50%;border:none;background:var(--err);color:var(--on-color);font:700 13px/20px system-ui,sans-serif;padding:0;cursor:pointer}
+.mkrow{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.pool{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:12px 14px}
+.pool-items{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.pool.sympool{background:var(--panel2)}
+.actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:14px 0}
+.btn{font:600 16px system-ui,sans-serif;border-radius:10px;padding:10px 18px;border:1px solid var(--border);background:var(--panel);color:var(--text);cursor:pointer}
+.btn.primary{background:color-mix(in srgb,var(--accent) 22%,var(--panel));border-color:color-mix(in srgb,var(--accent) 50%,var(--panel));color:color-mix(in srgb,var(--accent) 60%,var(--text))}
+.btn:hover{filter:brightness(1.07)}
+.spacer{flex:1}
+.fb{border-radius:12px;padding:12px 16px;border-left:5px solid;margin-bottom:14px}
+.fb.err{background:var(--err-bg);border-color:var(--err)}
+.fb.ok{background:var(--ok-bg);border-color:var(--then);animation:pop .35s ease-out}
+@keyframes pop{0%{transform:scale(.97);opacity:.4}100%{transform:scale(1);opacity:1}}
+.fcol{font:700 18px var(--mono);display:inline-block;margin:6px 0;background:var(--panel);padding:4px 10px;border-radius:8px}
+.topics{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;margin-top:12px}
+.topic{display:flex;flex-direction:column;gap:4px;text-align:left;background:var(--panel2);border:2px solid var(--border);border-radius:14px;padding:14px 16px;cursor:pointer;color:var(--text);font:15px/1.4 system-ui,sans-serif}
+.topic:hover{border-color:var(--accent)}
+.topic b{font:800 19px var(--mono)}
+.topic .tdesc{color:var(--muted)}
+.topic .tprog{font-size:13px;color:var(--muted);margin-top:4px}
+.topic.done{border-color:var(--solved-border);background:var(--solved-bg)}
+.topic.done .tprog{color:var(--solved-text);font-weight:600}
+.c-cond{color:var(--cond)}
+.c-then{color:var(--then)}
+.c-else{color:var(--else)}
+.tt th,.tt td{border:1px solid var(--border);padding:3px 10px;text-align:left}
+.fbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.nbox{font:600 14px var(--mono);min-width:62px;text-align:center;padding:9px 8px;border:1px solid var(--border);border-radius:8px;background:var(--panel2)}
+.fxl{font:italic 700 15px Georgia,serif;color:var(--muted);padding:0 2px}
+.fin{flex:1 1 300px;display:flex;align-items:center;gap:4px;flex-wrap:wrap;min-height:48px;font:700 20px var(--mono)}
+.gapin{font:700 20px var(--mono);padding:7px 10px;border-radius:10px;border:2px dashed var(--slot-border);background:var(--slot);color:var(--text);outline:none;width:9em}
+.fnsel{font:700 18px var(--mono);padding:7px 8px;border-radius:10px;border:2px dashed var(--slot-border);background:var(--slot);color:var(--text);cursor:pointer}
+.fshow{flex:1;font:600 18px var(--mono);padding:9px 12px;border-radius:10px;border:1px solid var(--border);background:var(--panel2);min-height:46px;white-space:pre}
+.fshow.empty{color:var(--muted);font:italic 15px system-ui,sans-serif}
+.selhint{font-size:14px;color:var(--err);min-height:0;margin:-4px 0 8px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;font:600 13px var(--mono);min-height:4px}
+.chip{padding:2px 8px;border-radius:6px;border:2px solid;background:var(--panel)}
+.howto{font:13px system-ui,sans-serif;color:var(--muted);align-self:center}
+.xl{border-collapse:collapse;font:14px system-ui,sans-serif;user-select:none;-webkit-user-select:none}
+.xl th{background:var(--cellhd);color:var(--muted);font-weight:600;border:1px solid var(--grid);padding:3px 8px;min-width:30px;text-align:center}
+.xl td{background:var(--cell);border:1px solid var(--grid);padding:5px 9px;min-width:70px;height:32px;white-space:nowrap;cursor:cell;position:relative}
+.xl.pick td{touch-action:none}
+.xl td.hd{font-weight:700}
+.xl td.lbl{font-weight:500}
+.xl td.num{text-align:right;font-variant-numeric:tabular-nums}
+.xl td.calc{color:var(--muted)}
+.xl td.tgt{outline:3px solid var(--then);outline-offset:-3px;font:700 14px var(--mono)}
+.xl td.tgt.done{background:color-mix(in srgb,var(--then) 16%,var(--cell));color:var(--text);text-align:right}
+.xl td.ins{outline:3px solid var(--cond);outline-offset:-3px}
+.xl td.sel{outline:2px dashed var(--accent);outline-offset:-3px}
+.xl td.rc0{background:color-mix(in srgb,var(--r0) 16%,var(--cell));box-shadow:inset 0 0 0 1px var(--r0)}
+.xl td.rc1{background:color-mix(in srgb,var(--r1) 16%,var(--cell));box-shadow:inset 0 0 0 1px var(--r1)}
+.xl td.rc2{background:color-mix(in srgb,var(--r2) 16%,var(--cell));box-shadow:inset 0 0 0 1px var(--r2)}
+.xl td.rc3{background:color-mix(in srgb,var(--r3) 16%,var(--cell));box-shadow:inset 0 0 0 1px var(--r3)}
+.xl td.rc4{background:color-mix(in srgb,var(--r4) 16%,var(--cell));box-shadow:inset 0 0 0 1px var(--r4)}
+.xl td.rc5{background:color-mix(in srgb,var(--r5) 16%,var(--cell));box-shadow:inset 0 0 0 1px var(--r5)}
+.c0{color:var(--r0);border-color:var(--r0)}
+.c3{color:var(--r3);border-color:var(--r3)}
+.c4{color:var(--r4);border-color:var(--r4)}
+.c5{color:var(--r5);border-color:var(--r5)}
+.legend{font-size:13px;color:var(--muted)}
+body.dragging,body.dragging *{cursor:grabbing!important}
+.assign{margin-top:12px;padding:12px 14px;border-left:4px solid var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--panel));border-radius:8px}
+.intro{color:var(--muted);font-size:15px;margin-bottom:6px}
+.formula-ex{margin:8px 0}
+.formula-ex code{font-size:17px;padding:4px 10px}
+.opts.mono{flex-direction:column;align-items:stretch}
+.opt{font:600 16px system-ui,sans-serif;padding:10px 16px;border-radius:10px;border:2px solid var(--border);background:var(--panel2);color:var(--text);cursor:pointer;text-align:left}
+.opt.sel{border-color:var(--cond);background:color-mix(in srgb,var(--cond) 15%,var(--panel))}
+.opt.good{border-color:var(--then);background:color-mix(in srgb,var(--then) 18%,var(--panel))}
+.opt.bad{border-color:var(--else);background:color-mix(in srgb,var(--else) 15%,var(--panel))}
+.ohint{font-size:13px;color:var(--muted);margin-top:8px}
+.stepbtn{text-align:left;font:500 14px system-ui,sans-serif;padding:7px 10px;border-radius:8px;border:1px solid var(--border);background:var(--panel2);color:var(--text);cursor:pointer}
+.stepbtn.solved{border-color:var(--then);background:color-mix(in srgb,var(--then) 14%,var(--panel))}
+.stepbtn.cur{outline:2px solid var(--accent)}
+.stepbtn:disabled{opacity:.45;cursor:not-allowed}
+.stepreset{margin-top:6px;font:500 13px system-ui,sans-serif;background:none;border:0;color:var(--muted);text-decoration:underline;cursor:pointer;text-align:left}
+.acpop{position:fixed;z-index:60;display:none;background:var(--panel);border:1px solid var(--border);border-radius:6px;box-shadow:0 6px 20px rgba(0,0,0,.22);min-width:200px;max-width:min(420px,calc(100vw - 16px));font-size:14px;overflow:hidden}
+.acl{max-height:220px;overflow:auto;padding:3px 0}
+.aci{display:flex;align-items:center;gap:8px;padding:5px 10px;font:600 14px var(--mono);cursor:pointer;white-space:nowrap}
+.aci.sel{background:color-mix(in srgb,var(--cond) 20%,var(--panel))}
+.acfx{font:italic 700 11px Georgia,serif;color:var(--cond);border:1px solid color-mix(in srgb,var(--cond) 50%,transparent);border-radius:3px;padding:0 3px}
+.acdesc{border-top:1px solid var(--border);padding:7px 10px;color:var(--muted);font:13px/1.4 system-ui,sans-serif;white-space:normal}
+.ackey{padding:4px 10px 6px;color:var(--muted);font:11px system-ui,sans-serif;opacity:.8}
+.actip{position:fixed;z-index:59;display:none;background:var(--panel);border:1px solid var(--border);border-radius:4px;box-shadow:0 3px 10px rgba(0,0,0,.15);padding:3px 9px;font:13px system-ui,sans-serif;color:var(--muted);white-space:nowrap;max-width:calc(100vw - 16px);overflow:hidden;text-overflow:ellipsis}
+.actip b{color:var(--text)}
+.acfn{color:var(--cond);text-decoration:underline}
+.card.solved{background:var(--solved-bg);border-color:var(--solved-border);box-shadow:0 0 0 1px var(--solved-border) inset;transition:background .3s,border-color .3s}
+.card.solved .wthint{display:none}
+.hdr-left{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.modes{display:inline-flex;background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:3px}
+.modes button{border:0;background:none;color:var(--muted);font:600 14px system-ui,sans-serif;padding:7px 14px;border-radius:7px;cursor:pointer}
+.modes button.on{background:var(--panel);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.18)}
+.btn:disabled{opacity:.45;cursor:not-allowed;filter:none}
+.dock{position:fixed;left:22px;bottom:22px;z-index:30}
+.dockbtn{font:600 15px system-ui,sans-serif;background:var(--panel);color:var(--text);border:2px solid var(--border);border-radius:999px;padding:12px 18px;box-shadow:0 4px 14px rgba(0,0,0,.15);cursor:pointer;display:flex;gap:8px;align-items:center}
+.dockbtn.static{cursor:default}
+.dockbtn .sub{color:var(--muted);font-weight:500}
+.picker .ptitle{font-size:13px;color:var(--muted);margin-bottom:8px}
+.pg button{height:38px;border-radius:8px;border:1px solid var(--border);background:var(--panel2);color:var(--text);font:600 14px system-ui,sans-serif;cursor:pointer}
+.pg button.solved{background:var(--then);color:var(--on-color);border-color:transparent}
+.pg button.cur{outline:3px solid var(--accent);outline-offset:1px}
+.pgl{font-size:12px;color:var(--muted);margin:8px 0 4px}
+@media (max-width:640px){
+  header{padding:10px 12px}
+  .flame svg{width:26px;height:33px}
+  .slot.hex{min-width:170px}
+  body{padding-bottom:24px}
+  .picker{bottom:auto;top:auto;position:relative;margin-bottom:8px}
+}
+
+</style>
+<style>/* tabelle.css */
+/* tabelle.css – nach basis.css laden; Tabellenblatt-Trainer (funktionen, bezuege) */
+.tasktext{margin:0;font-size:17px}
+.tasktext p{margin:0 0 10px}
+.tasktext p:last-child{margin-bottom:0}
+.tasktext ul,.tasktext ol{margin:6px 0 10px;padding-left:22px}
+.block{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:17px;font-weight:700;padding:7px 15px;min-height:40px;user-select:none;-webkit-user-select:none;touch-action:none;white-space:pre;color:var(--on-color);transition:background .25s,opacity .2s;position:relative}
+.block.fn{background:var(--blk-fn);border-radius:12px;padding:6px 12px;box-shadow:inset 0 -3px 0 rgba(0,0,0,.2)}
+.block.fn .fname{font-size:19px}
+.slot.fnslot{min-width:220px;min-height:56px;border:2px dashed var(--slot-border);border-radius:16px;background:var(--slot);padding:3px}
+.slot.fnslot.drop-hover,.row.drop-hover{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,var(--slot))}
+.row{display:flex;flex-wrap:wrap;align-items:center;gap:6px;min-height:60px;flex:1;border:2px dashed var(--slot-border);background:var(--slot);border-radius:14px;padding:8px 10px}
+.btn.small{font-size:14px;padding:7px 12px}
+.pool-title{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700;margin-bottom:8px}
+.fb .note{display:block;margin-top:6px;font-size:15px;color:var(--muted)}
+.tt th{color:var(--muted)}
+.ftin{flex:1;width:100%;font:700 20px var(--mono);padding:9px 12px;border-radius:10px;border:2px solid var(--slot-border);background:var(--slot);color:var(--text);outline:none}
+.ftin:focus,.gapin:focus,.fnsel:focus{border-color:var(--accent)}
+.tscroll{overflow-x:auto;padding-bottom:2px}
+.c1{color:var(--r1);border-color:var(--r1)}
+.c2{color:var(--r2);border-color:var(--r2)}
+details.help{margin-top:10px;background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:8px 12px;font-size:15px}
+details.help summary{cursor:pointer;font-weight:600;color:var(--muted)}
+details.help p,details.help ul{margin:8px 0}
+.tt{border-collapse:collapse;font-size:14px;margin-top:6px}
+.opts{display:flex;flex-wrap:wrap;gap:10px}
+.opts.mono .opt{font:600 17px var(--mono)}
+.worktitle{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700;margin-bottom:8px}
+main{max-width:1020px;margin:0 auto;padding:18px 16px}
+.picker{position:absolute;bottom:62px;left:0;background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:14px;box-shadow:0 8px 28px rgba(0,0,0,.25);width:min(340px,calc(100vw - 44px))}
+.pg{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.picker.steps{max-height:70vh;overflow:auto;display:flex;flex-direction:column;gap:4px}
+@media (max-width:640px){
+  .fin,.ftin,.gapin{font-size:17px}
+  .dock{position:static;margin:0 16px 16px;display:flex;flex-direction:column-reverse;align-items:flex-start}
+}
+.pools{display:grid;gap:12px;margin:4px 0 10px}
+
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <linearGradient id="fg" x1="0" y1="1" x2="0" y2="0">
+    <stop offset="0" stop-color="#d9230f"/><stop offset=".55" stop-color="#ff7a00"/><stop offset="1" stop-color="#ffd23f"/>
+  </linearGradient></defs></svg>
+
+<header>
+  <div class="hdr-left">
+    <div class="brand"><span>=</span>Funktionen<span>()</span></div>
+    <div class="modes" role="group" aria-label="Modus">
+      <button data-mode="lernen">Erklärung</button><button data-mode="pfad">Übungen</button><button data-mode="endlos">Endlos</button>
+    </div>
+  </div>
+  <div class="hdr-right">
+    <button class="iconbtn" id="themeBtn" aria-label="Hell/Dunkel umschalten"></button>
+    <div class="flames" id="flames" aria-label="Stufe wählen"></div>
+  </div>
+</header>
+
+<main>
+  <section class="card" id="taskcard">
+    <div class="meta">
+      <span class="lvlname" id="lvlname"></span>
+      <span id="taskmeta"></span>
+    </div>
+    <div class="tasktext" id="tasktext"></div>
+  </section>
+
+  <section class="card" id="sheetcard">
+    <div class="fbar" id="fbar"></div>
+    <div class="selhint" id="selhint"></div>
+    <div class="pools" id="pools"></div>
+    <div class="tscroll"><div id="grid"></div></div>
+    <div class="chips" id="chips"></div>
+  </section>
+
+  <section class="card" id="workcard">
+    <div class="worktitle">Deine Antwort</div>
+    <div id="work"></div>
+  </section>
+
+  <div class="actions" id="actions">
+    <button class="btn primary" id="checkBtn">Prüfen</button>
+    <button class="btn" id="resetBtn">Zurücksetzen</button>
+    <button class="btn" id="ovBtn">Übersicht</button>
+    <span class="spacer"></span>
+    <button class="btn" id="skipBtn" title="Neue Aufgabe – die Serie beginnt wieder bei 0">Andere Aufgabe</button>
+    <button class="btn" id="prevBtn" aria-label="Zurück">◀</button>
+    <button class="btn" id="nextBtn">Nächste Aufgabe ▶</button>
+  </div>
+  <div id="fb"></div>
+</main>
+
+<div class="dock" id="dock"></div>
+
+<script>/* basis.js */
+/* basis.js – gemeinsamer Kern aller Excel-Trainer (wenn, und-oder, funktionen, bezuege)
+ *
+ * Einbinden (nach dem Markup, vor den eigenen <script>s), dazu genau eine Ergänzung je Seitenart:
+ *   Formeln aus Bausteinen (wenn, und-oder):   basis.css + bausteine.css, basis.js + bausteine.js
+ *   Tabellenblatt (funktionen, bezuege):       basis.css + tabelle.css,   basis.js + tabelle.js
+ * Alles sind globale Namen, kein Build-Schritt, läuft auch per file://.
+ *
+ * API
+ *   $, esc, rand, clamp, rng, shuffle, pick1, ri, C, B, normQuotes, FErr   Helfer und Zufall
+ *   store(k, v), load(k)       localStorage unter KEY + k; store meldet TrainerSync.changed()
+ *   isSolved(i), markSolved()  gelöste Übung je Stufe (solved[level])
+ *   countSolved()              zählt eine gelöste Übung bzw. Endlos-Aufgabe (Serie, Rekord), → „erstmals“
+ *   skipTask()                 Endlos: andere Aufgabe, Serie auf 0
+ *   renderHeader()             Flammen (Stufen 1 … solange LEVELS[n] existiert), Modusknöpfe, Theme-Symbol
+ *   navPfad(), navLernen(idx, n, info)   Knöpfe Prüfen/Zurücksetzen/Zurück/Weiter je Modus
+ *   dockHTML(groups)           Dock für Übungen/Endlos; groups = Gruppennamen (Gruppe = letztes STD-Feld)
+ *   navClick(e)                Flammen, Modi, Aufgabenwahl, Dock – am Ende des Klick-Handlers aufrufen
+ *   Drag & Drop (Maus/Touch)   Ziehen, Ablageziel hervorheben, Einfügemarke in Zeilen (.iw)
+ *   AC                         Autovervollständigung wie in Excel für Eingaben mit Klasse .acin
+ *   Verdrahtet: #themeBtn, #checkBtn → check(), #nextBtn → nextTask(), #skipBtn → skipTask(),
+ *   Escape schließt die Aufgabenwahl.
+ *
+ * Die Seite (bzw. bausteine.js/tabelle.js) liefert
+ *   KEY, LEVELS, STD; let mode, level, pfadIdx, solved, streak, best, endCounted, pickerOpen
+ *   check, loadTask, setLevel, setMode, gotoTask, canNext, nextTask, newEndless, renderDock
+ *   Drag-Hooks: dragData(b, e) → Zusatzfelder für D (src:true = Quelle blass) oder null;
+ *     dropOk(t); applyDrop(d, type, idx, t); dragTap(d) bei Klick ohne Ziehen; optional dragGhost(g)
+ *   AC_FN = [{n, v | a, d}]; optional AC.word(before, inp) → getipptes Wort oder null
+ *
+ * Gerüst einer Seite
+ *   <link rel="stylesheet" href="basis.css"><link rel="stylesheet" href="tabelle.css"> … Markup
+ *   <script src="basis.js"><\/script><script src="tabelle.js"><\/script>
+ *   <script>
+ *     const KEY = 'xy-', LEVELS = [null, {name:'…'}], STD = [[…, 1]];
+ *     let mode = load('mode') || 'pfad', level = 1, pfadIdx = 0, solved = {}, streak = 0,
+ *         best = 0, endCounted = false, pickerOpen = false, …;
+ *     function check(){ … logSolved(countSolved()); … }   function loadTask(){ … }  …
+ *     if (mode === 'endlos') newEndless();
+ *     loadTask();
+ *   <\/script>
+ */
+
+/* ================= Teil A: alle Seiten ================= */
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const rand = () => (Math.random() * 1e9) | 0;
+const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+function rng(a){ return function(){ a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function shuffle(arr, r){ const a = arr.slice(); for (let i = a.length - 1; i > 0; i--){ const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+const pick1 = (r, a) => a[Math.floor(r() * a.length)];
+const ri = (r, a, b) => a + Math.floor(r() * (b - a + 1));
+const C = s => `<code>${s}</code>`, B = s => `<b>${s}</b>`;
+function normQuotes(s){ return s.replace(/[„“”″«»]/g, '"'); }
+class FErr extends Error { constructor(msg){ super(msg); this.name = 'FErr'; } }
+
+/* Speicher (Schlüssel KEY + k) und Fortschritt */
+function store(k, v){ try{ localStorage.setItem(KEY + k, v); }catch(e){} if (window.TrainerSync) TrainerSync.changed(); }
+function load(k){ try{ return localStorage.getItem(KEY + k); }catch(e){ return null; } }
+function isSolved(i){ return (solved[level] || []).includes(i); }
+function markSolved(){ const a = solved[level] || (solved[level] = []); if (!a.includes(pfadIdx)){ a.push(pfadIdx); store('solved', JSON.stringify(solved)); } }
+function countSolved(){
+  if (mode === 'pfad'){ const erstmals = !isSolved(pfadIdx); markSolved(); return erstmals; }
+  const erstmals = !endCounted;
+  if (!endCounted){ endCounted = true; streak++; if (streak > best){ best = streak; store('best', best); } }
+  return erstmals;
+}
+function skipTask(){ streak = 0; newEndless(); loadTask(); }
+
+/* Kopfzeile, Navigation, Dock */
+function renderHeader(){
+  let h = '';
+  for (let n = 1; LEVELS[n]; n++){
+    h += `<button class="flame${n === level ? ' on' : ''}" data-level="${n}" title="Stufe ${n}: ${esc(LEVELS[n].name)}" aria-label="Stufe ${n}" aria-pressed="${n === level}">
+      <svg viewBox="0 0 32 40"><path d="M16 2C18 9 27 14 27 26C27 33 22 38 16 38C10 38 5 33 5 26C5 20 9 16 11 11C12 15 13 17 15 18C16 13 17 8 16 2Z"/>
+      <text x="16" y="32" text-anchor="middle">${n}</text></svg></button>`;
+  }
+  $('#flames').innerHTML = h;
+  $('#flames').style.display = mode === 'lernen' ? 'none' : '';
+  document.querySelectorAll('.modes button').forEach(b => b.classList.toggle('on', b.dataset.mode === mode));
+  const dark = document.documentElement.dataset.theme === 'dark';
+  $('#themeBtn').innerHTML = dark
+    ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>'
+    : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>';
+}
+function navButtons(){ return {nb:$('#nextBtn'), pb:$('#prevBtn'), sb:$('#skipBtn'), cb:$('#checkBtn'), rb:$('#resetBtn'), ob:$('#ovBtn')}; }
+function navPfad(){
+  const {nb, pb, sb, cb, rb, ob} = navButtons();
+  cb.style.display = rb.style.display = nb.style.display = ''; if (ob) ob.style.display = 'none';
+  pb.style.display = mode === 'pfad' ? '' : 'none'; pb.disabled = pfadIdx === 0;
+  sb.style.display = mode === 'endlos' ? '' : 'none';
+  const ok = canNext(); nb.disabled = !ok;
+  if (mode === 'pfad' && pfadIdx === STD.length - 1 && isSolved(pfadIdx)) nb.textContent = 'Alle Übungen geschafft 🎉';
+  else nb.textContent = (ok ? '' : '🔒 ') + 'Nächste Aufgabe ▶';
+  nb.title = ok ? '' : 'Erst die aktuelle Aufgabe richtig lösen';
+}
+function navLernen(idx, n, info){
+  const {nb, pb, sb, cb, rb, ob} = navButtons();
+  pb.style.display = ''; pb.disabled = idx === 0; sb.style.display = 'none'; if (ob) ob.style.display = '';
+  cb.style.display = rb.style.display = info ? 'none' : '';
+  nb.style.display = idx === n - 1 ? 'none' : '';
+  const ok = canNext(); nb.disabled = !ok;
+  nb.textContent = (ok ? '' : '🔒 ') + 'Weiter ▶';
+  nb.title = ok ? '' : 'Erst die Aufgabe in diesem Schritt richtig lösen';
+}
+function dockHTML(groups){
+  if (mode === 'endlos') return `<div class="dockbtn static">🔥 Serie: ${streak} <span class="sub">· Rekord ${best}</span></div>`;
+  let h = `<button class="dockbtn" id="dockBtn" aria-expanded="${pickerOpen}">▦ Aufgabe ${pfadIdx + 1}/${STD.length} <span class="sub">· ${(solved[level] || []).length} gelöst</span></button>`;
+  if (!pickerOpen) return h;
+  const btn = i => `<button data-goto="${i}" class="${isSolved(i) ? 'solved' : ''}${i === pfadIdx ? ' cur' : ''}">${i + 1}</button>`;
+  h += `<div class="picker"><div class="ptitle">Zu Aufgabe springen – grün = auf Stufe ${level} gelöst</div>`;
+  if (!groups) h += '<div class="pg">' + STD.map((_, i) => btn(i)).join('') + '</div>';
+  else for (let g = 1; g < groups.length; g++)
+    h += `<div class="pgl">${esc(groups[g])}</div><div class="pg">` + STD.map((e, i) => e[e.length - 1] !== g ? '' : btn(i)).join('') + '</div>';
+  return h + '</div>';
+}
+function navClick(e){
+  const f = e.target.closest('.flame'); if (f){ setLevel(+f.dataset.level); return; }
+  const m = e.target.closest('.modes button'); if (m){ setMode(m.dataset.mode); return; }
+  const g = e.target.closest('[data-goto]'); if (g){ gotoTask(+g.dataset.goto); return; }
+  if (e.target.closest('#dockBtn')){ pickerOpen = !pickerOpen; renderDock(); return; }
+  if (pickerOpen && !e.target.closest('.picker')){ pickerOpen = false; renderDock(); }
+}
+$('#checkBtn').addEventListener('click', () => check());
+$('#nextBtn').addEventListener('click', () => nextTask());
+$('#skipBtn').addEventListener('click', () => skipTask());
+$('#themeBtn').addEventListener('click', () => {
+  const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+  document.documentElement.dataset.theme = t; try { localStorage.setItem('wenn-theme', t); } catch (e) {} renderHeader();
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && pickerOpen){ pickerOpen = false; renderDock(); } });
+
+/* Drag & Drop (Maus + Touch über Pointer Events) */
+let D = null, hoverEl = null, insEl = null, scrollRAF = null;
+function findTarget(x, y){
+  const el = document.elementFromPoint(x, y);
+  let t = el && el.closest && el.closest('[data-drop]');
+  // ein Baustein darf nicht in sich selbst abgelegt werden (z. B. Wert in den eigenen Baustein)
+  while (t && D.el.contains(t)) t = t.parentElement && t.parentElement.closest('[data-drop]');
+  return t && dropOk(t) ? t : null;
+}
+function rowIndex(row, x, y){
+  const kids = [...row.querySelectorAll(':scope > .iw')];
+  for (let i = 0; i < kids.length; i++){
+    const r = kids[i].getBoundingClientRect();
+    if (y < r.top) return i;
+    if (y <= r.bottom && x < r.left + r.width / 2) return i;
+  }
+  return kids.length;
+}
+function clearHover(){
+  if (hoverEl){ hoverEl.classList.remove('drop-hover'); hoverEl = null; }
+  if (insEl){ insEl.classList.remove('ins', 'ins-after'); insEl = null; }
+}
+function updateHover(x, y){
+  clearHover();
+  const t = findTarget(x, y); if (!t) return;
+  hoverEl = t; t.classList.add('drop-hover');
+  if (t.dataset.drop === 'row'){
+    const kids = [...t.querySelectorAll(':scope > .iw')], i = rowIndex(t, x, y);
+    if (kids.length){ insEl = i < kids.length ? kids[i] : kids[kids.length - 1]; insEl.classList.add(i < kids.length ? 'ins' : 'ins-after'); }
+  }
+}
+function autoScroll(){
+  if (!D || !D.started) return;
+  const topEdge = document.querySelector('header').getBoundingClientRect().bottom + 20;
+  if (D.y < topEdge) window.scrollBy(0, -8); else if (D.y > innerHeight - 30) window.scrollBy(0, 8);
+  updateHover(D.x, D.y);
+  scrollRAF = requestAnimationFrame(autoScroll);
+}
+function endDrag(cancel){
+  cancelAnimationFrame(scrollRAF);
+  const t = cancel ? null : findTarget(D.x, D.y);
+  const idx = t && t.dataset.drop === 'row' ? rowIndex(t, D.x, D.y) : 0;
+  clearHover(); D.ghost.remove(); D.el.classList.remove('drag-src'); document.body.classList.remove('dragging');
+  const d = D; D = null;
+  if (t) applyDrop(d, t.dataset.drop, idx, t);
+}
+document.addEventListener('pointerdown', e => {
+  const b = e.target.closest('.block[data-drag]');
+  if (!b || (e.pointerType === 'mouse' && e.button !== 0)) return;
+  const extra = dragData(b, e); if (!extra) return;
+  e.preventDefault();
+  D = Object.assign({el:b, x0:e.clientX, y0:e.clientY, x:e.clientX, y:e.clientY, started:false}, extra);
+});
+window.addEventListener('pointermove', e => {
+  if (!D) return;
+  D.x = e.clientX; D.y = e.clientY;
+  if (!D.started){
+    if (Math.hypot(e.clientX - D.x0, e.clientY - D.y0) < 5) return;
+    const r = D.el.getBoundingClientRect(), g = D.el.cloneNode(true);
+    ['select', 'input'].forEach(sel => { const gs = g.querySelectorAll(sel); D.el.querySelectorAll(sel).forEach((s, i) => { gs[i].value = s.value; }); });
+    if (window.dragGhost) dragGhost(g);
+    g.classList.add('drag-ghost'); g.classList.remove('drag-src');
+    g.style.width = r.width + 'px'; g.style.left = r.left + 'px'; g.style.top = r.top + 'px';
+    document.body.appendChild(g);
+    D.ghost = g; D.dx = D.x0 - r.left; D.dy = D.y0 - r.top; D.started = true;
+    if (D.src) D.el.classList.add('drag-src');
+    document.body.classList.add('dragging');
+    autoScroll();
+  }
+  D.ghost.style.left = (e.clientX - D.dx) + 'px'; D.ghost.style.top = (e.clientY - D.dy) + 'px';
+  updateHover(e.clientX, e.clientY);
+}, {passive:false});
+window.addEventListener('pointerup', () => {
+  if (!D) return;
+  if (D.started){ endDrag(false); return; }
+  const d = D; D = null;
+  dragTap(d);
+});
+window.addEventListener('pointercancel', () => { if (!D) return; if (D.started) endDrag(true); else D = null; });
+
+/* Autovervollständigung wie in Excel: Funktionsliste beim Tippen, Argument-Hinweis in Klammern */
+const acCanvas = document.createElement('canvas').getContext('2d');
+const AC = {list:[], sel:0, key:'', start:0, token:'', closed:'', input:null,
+  digits:false,           // Funktionsnamen dürfen Ziffern enthalten (ANZAHL2)
+  prev:/[=(;<>\s,]/,      // erlaubtes Zeichen vor dem getippten Wort
+  // getipptes Wort am Cursor (oder null); in #ft erst nach einem „=“
+  word:(before, inp) => { const m = before.match(/[A-Za-zÄÖÜäöüß]+$/); return m && (inp.id !== 'ft' || before.trimStart().startsWith('=')) ? m[0] : null; }};
+function acArgs(f, i){
+  if (f.a) return f.a;
+  const n = Math.max(2, i + 1), out = [];
+  for (let k = 1; k <= n; k++) out.push(k === 1 ? f.v + k : `[${f.v}${k}]`);
+  return [...out, '…'];
+}
+function acCaretX(inp, idx){
+  const cs = getComputedStyle(inp), r = inp.getBoundingClientRect();
+  acCanvas.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+  return r.left + parseFloat(cs.paddingLeft) + parseFloat(cs.borderLeftWidth) + acCanvas.measureText(inp.value.slice(0, idx)).width - inp.scrollLeft;
+}
+function acEls(){
+  let pop = document.getElementById('acpop'), tip = document.getElementById('actip');
+  if (!pop){
+    pop = document.createElement('div'); pop.id = 'acpop'; pop.className = 'acpop'; document.body.appendChild(pop);
+    tip = document.createElement('div'); tip.id = 'actip'; tip.className = 'actip'; document.body.appendChild(tip);
+    pop.addEventListener('pointerdown', e => { const it = e.target.closest('[data-aci]'); e.preventDefault(); if (it){ AC.sel = +it.dataset.aci; acInsert(); } });
+  }
+  return {pop, tip};
+}
+function acHide(){ const {pop, tip} = acEls(); pop.style.display = 'none'; tip.style.display = 'none'; AC.list = []; }
+function acPlace(el, x, inp){
+  const r = inp.getBoundingClientRect();
+  el.style.display = 'block';
+  el.style.left = Math.max(8, Math.min(x - 6, innerWidth - el.offsetWidth - 8)) + 'px';
+  el.style.top = (r.bottom + 4) + 'px';
+}
+function acUpdate(inp){
+  inp = inp || document.activeElement;
+  if (!inp || !inp.matches || !inp.matches('.acin') || document.activeElement !== inp){ acHide(); return; }
+  AC.input = inp;
+  const {pop, tip} = acEls();
+  const pos = inp.selectionStart ?? inp.value.length, before = normQuotes(inp.value.slice(0, pos));
+  // Zeichen für Zeichen lesen: Textbereiche überspringen, offene Funktionen merken
+  const stack = []; let inStr = false, word = '', wstart = 0;
+  for (let i = 0; i < before.length; i++){
+    const ch = before[i];
+    if (ch === '"'){ inStr = !inStr; word = ''; continue; }
+    if (inStr) continue;
+    if (/[A-Za-zÄÖÜäöüß]/.test(ch) || (AC.digits && word && /[0-9]/.test(ch))){ if (!word) wstart = i; word += ch; continue; }
+    if (ch === '(') stack.push({fn:word.toUpperCase(), i:0, at:wstart});
+    else if (ch === ';' && stack.length) stack[stack.length - 1].i++;
+    else if (ch === ')') stack.pop();
+    word = '';
+  }
+  // Funktionsliste: nur wenn gerade ein Funktionsname getippt wird (nicht in Text, nicht Teil einer Zelle)
+  let list = [], token = '', start = pos;
+  const w = !inStr && AC.word(before, inp);
+  if (w){
+    token = w; start = pos - token.length;
+    const prev = before[start - 1];
+    if (!prev || AC.prev.test(prev)) list = AC_FN.filter(f => f.n.startsWith(token.toUpperCase()));
+    if (list.length === 1 && list[0].n === token.toUpperCase() && inp.value[pos] === '(') list = [];
+  }
+  const key = start + ':' + token.toUpperCase();
+  if (AC.closed === key) list = [];
+  if (key !== AC.key) AC.sel = 0;
+  AC.key = key; AC.token = token; AC.start = start; AC.list = list;
+  if (AC.sel >= list.length) AC.sel = 0;
+  if (list.length){
+    const f = list[AC.sel];
+    pop.innerHTML = `<div class="acl">${list.map((x, i) => `<div class="aci${i === AC.sel ? ' sel' : ''}" data-aci="${i}"><span class="acfx">fx</span>${x.n}</div>`).join('')}</div><div class="acdesc">${esc(f.d)}</div><div class="ackey">Tab ↹ fügt ein · ↑ ↓ wählen</div>`;
+    acPlace(pop, acCaretX(inp, start), inp);
+    tip.style.display = 'none';
+    return;
+  }
+  pop.style.display = 'none';
+  const top = stack[stack.length - 1], f = top && AC_FN.find(x => x.n === top.fn);
+  if (f){
+    const args = acArgs(f, top.i);
+    const act = f.a ? Math.min(top.i, args.length - 1) : top.i;
+    tip.innerHTML = `<span class="acfn">${f.n}</span>(${args.map((a, i) => i === act ? `<b>${esc(a)}</b>` : esc(a)).join('; ')})`;
+    acPlace(tip, acCaretX(inp, top.at), inp);
+  } else tip.style.display = 'none';
+}
+function acInsert(){
+  const inp = AC.input, f = AC.list[AC.sel];
+  if (!inp || !f) return;
+  const pos = inp.selectionStart ?? inp.value.length;
+  const after = inp.value.slice(pos), add = after.startsWith('(') ? f.n : f.n + '(';
+  inp.value = inp.value.slice(0, AC.start) + add + after;
+  const c = AC.start + f.n.length + 1;
+  inp.focus(); inp.setSelectionRange(c, c);
+  inp.dispatchEvent(new Event('input', {bubbles:true}));
+  acUpdate(inp);
+}
+document.addEventListener('keydown', e => {
+  if (!e.target.matches || !e.target.matches('.acin') || !AC.list.length) return;
+  if (e.key === 'ArrowDown'){ e.preventDefault(); AC.sel = (AC.sel + 1) % AC.list.length; acUpdate(e.target); }
+  else if (e.key === 'ArrowUp'){ e.preventDefault(); AC.sel = (AC.sel - 1 + AC.list.length) % AC.list.length; acUpdate(e.target); }
+  else if (e.key === 'Tab'){ e.preventDefault(); acInsert(); }
+  else if (e.key === 'Escape'){ e.preventDefault(); AC.closed = AC.key; acUpdate(e.target); }
+  else if (e.key === 'Enter'){ acHide(); }
+}, true);
+document.addEventListener('keyup', e => { if (e.target.matches && e.target.matches('.acin') && !['ArrowDown', 'ArrowUp', 'Tab', 'Escape', 'Enter', 'F4'].includes(e.key)) acUpdate(e.target); });
+document.addEventListener('focusin', e => { if (e.target.matches && e.target.matches('.acin')) acUpdate(e.target); });
+document.addEventListener('focusout', () => setTimeout(() => acUpdate(), 0));
+window.addEventListener('scroll', () => { if (AC.input && document.activeElement === AC.input) acUpdate(AC.input); }, {passive:true});
+window.addEventListener('resize', () => acUpdate());
+
+</script>
+<script>/* tabelle.js */
+/* tabelle.js – Ergänzung zu basis.js für Trainer mit Tabellenblatt (funktionen, bezuege)
+ * Laden nach basis.js; dazu tabelle.css nach basis.css.
+ *
+ * API
+ *   Rechenwerk: FUNCS, FDESC, GOAL, ALIAS, ENGLISH, CELLRE, colN, colL, addr, ad, normRef, rangeCells,
+ *     normRange, tokenize, parseFormula, refsOf, cellsOfRefs, fnsOf, numsOf, topCall, refsInText,
+ *     E, toNum, evalAst, callFn, parseCached, Sheet(cells).val(a), same, fmtNum, fmtVal(v, 'eur'|'usd'|'pct')
+ *   Erklärung (learn = {topic, prog:{id:{idx, done}}}): topic, prog, saveLearn, stepDone, markStep,
+ *     firstOpen, stepUnlocked, curStep, gotoStep, openTopic, overview
+ *   setMode, gotoTask, canNext, nextTask, renderNav, renderDock, renderOverview(introHtml),
+ *   renderFeedback, renderChoice(st), checkChoice(), hint(msg)
+ *   topicClick(e)   Antworten, Themen, Schritte, Übersicht, dann navClick – am Ende des Klick-Handlers
+ *   caret, setCaret, focusInp, applyPT, cellAt, endPT, gridEl, trackCaret   Bezüge mit der Maus einfügen
+ *   Verdrahtet: #ovBtn, #prevBtn, #resetBtn, Eingabe in .pin → syncInput, Maus-Ende im #grid
+ *
+ * Die Seite liefert
+ *   TOPICS, GROUPS, AC_FN; let learn, endPick, CUR, S, LS, PT
+ *   render, resetS, loadStep, newEndless, setLevel, clearMarks, syncInput(inp, keepSel), logSolved
+ */
+
+
+const FUNCS = ['SUMME', 'MITTELWERT', 'MIN', 'MAX', 'ANZAHL', 'ANZAHL2'];
+const FDESC = {
+  SUMME:'addiert alle Zahlen',
+  MITTELWERT:'berechnet den Durchschnitt',
+  MIN:'liefert den kleinsten Wert',
+  MAX:'liefert den größten Wert',
+  ANZAHL:'zählt die Zellen, in denen eine Zahl steht',
+  ANZAHL2:'zählt alle Zellen, die nicht leer sind – auch Zellen mit Text'
+};
+const GOAL = {SUMME:'die Summe (alles zusammen)', MITTELWERT:'der Durchschnitt', MIN:'der kleinste Wert', MAX:'der größte Wert',
+  ANZAHL:'die Anzahl der Zellen mit einer Zahl', ANZAHL2:'die Anzahl aller Einträge'};
+// englische oder falsche Funktionsnamen -> Hinweis
+const ALIAS = {SUM:'SUMME', AVERAGE:'MITTELWERT', COUNT:'ANZAHL', COUNTA:'ANZAHL2', MINIMUM:'MIN', MAXIMUM:'MAX',
+  DURCHSCHNITT:'MITTELWERT', MITTEL:'MITTELWERT', MITTELWERTE:'MITTELWERT', SUMMEN:'SUMME', SUM2:'SUMME', SUMM:'SUMME', SUME:'SUMME',
+  ANZAL:'ANZAHL', ANZAHL1:'ANZAHL', ANZAL2:'ANZAHL2', ZÄHLEN:'ANZAHL', ANZAHLZWEI:'ANZAHL2'};
+const ENGLISH = ['SUM', 'AVERAGE', 'COUNT', 'COUNTA'];
+
+
+/* ---- Zellbezüge ---- */
+const CELLRE = /^\$?([A-Za-z]{1,3})\$?([0-9]{1,5})$/;
+const colN = L => L.toUpperCase().split('').reduce((a, ch) => a * 26 + ch.charCodeAt(0) - 64, 0) - 1;
+function colL(n){ let s = ''; n++; while (n > 0){ const m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = Math.floor((n - 1) / 26); } return s; }
+function addr(s){ const m = String(s).match(CELLRE); return m ? {c:colN(m[1]), r:+m[2]} : null; }
+const ad = (c, r) => colL(c) + r;
+const normRef = s => { const a = addr(s); return ad(a.c, a.r); };
+function rangeCells(a, b){
+  const x = addr(a), y = addr(b), out = [];
+  for (let r = Math.min(x.r, y.r); r <= Math.max(x.r, y.r); r++)
+    for (let c = Math.min(x.c, y.c); c <= Math.max(x.c, y.c); c++) out.push(ad(c, r));
+  return out;
+}
+function normRange(a, b){
+  const x = addr(a), y = addr(b);
+  return ad(Math.min(x.c, y.c), Math.min(x.r, y.r)) + ':' + ad(Math.max(x.c, y.c), Math.max(x.r, y.r));
+}
+
+/* ---- Zerlegen ---- */
+function tokenize(src){
+  const t = []; let i = 0; const n = src.length;
+  const isL = ch => /[A-Za-zÄÖÜäöüß$]/.test(ch);
+  while (i < n){
+    const c = src[i];
+    if (/\s/.test(c)){ i++; continue; }
+    if (c === '"'){
+      i++; let v = '', closed = false;
+      while (i < n){ if (src[i] === '"'){ if (src[i+1] === '"'){ v += '"'; i += 2; continue; } closed = true; i++; break; } v += src[i++]; }
+      if (!closed) throw new FErr('Ein Anführungszeichen wurde geöffnet, aber nicht wieder geschlossen.');
+      t.push({type:'str', v}); continue;
+    }
+    if (/[0-9]/.test(c)){
+      let j = i; while (j < n && /[0-9]/.test(src[j])) j++;
+      if (src[j] === ',' && /[0-9]/.test(src[j+1] || '')){ j++; while (j < n && /[0-9]/.test(src[j])) j++; }
+      if (src[j] === '.' && /[0-9]/.test(src[j+1] || '')) throw new FErr('Dezimalzahlen schreibt man im deutschen Excel mit Komma, z. B. 0,25.');
+      if (j < n && isL(src[j])){ let k = j; while (k < n && /[A-Za-z0-9]/.test(src[k])) k++; throw new FErr(`„${src.slice(i, k)}“ verstehe ich nicht. Ein Zellbezug beginnt mit dem Buchstaben der Spalte, z. B. B4.`); }
+      t.push({type:'num', v:parseFloat(src.slice(i, j).replace(',', '.'))}); i = j; continue;
+    }
+    if (isL(c)){
+      let j = i; while (j < n && /[A-Za-z0-9ÄÖÜäöüß$_.]/.test(src[j])) j++;
+      const w = src.slice(i, j), up = w.toUpperCase();
+      let k = j; while (k < n && /\s/.test(src[k])) k++;
+      if (src[k] === '('){ t.push({type:'fn', v:up.replace(/\./g, '')}); i = j; continue; }
+      if (CELLRE.test(w)){ t.push({type:'ref', v:normRef(w)}); i = j; continue; }
+      if (FUNCS.includes(up)) throw new FErr(`Nach ${up} muss eine Klammer folgen: ${up}(…)`);
+      if (/^\$?[A-Za-z]{1,3}\$?\d+\$?[A-Za-z]{1,3}\$?\d+$/.test(w)) throw new FErr(`Zwischen den Zellen in „${w}“ fehlt etwas. Für einen Bereich schreibst du einen Doppelpunkt, z. B. B4:B8.`);
+      if (ALIAS[up]) throw new FErr(`Meinst du ${ALIAS[up]}? Nach dem Funktionsnamen folgt eine Klammer: ${ALIAS[up]}(…)`);
+      throw new FErr(`„${w}“ ist weder ein Zellbezug (wie B4) noch eine Funktion.`);
+    }
+    if ('+-*/^();:'.includes(c)){ t.push({type:'op', v:c}); i++; continue; }
+    if (c === ',') throw new FErr('Im deutschen Excel trennt man die Teile einer Funktion mit einem Semikolon ; – und einen Bereich „von … bis“ schreibt man mit Doppelpunkt, z. B. B4:B8.');
+    if (c === '=') throw new FErr('Das = steht nur einmal ganz am Anfang der Formel.');
+    if (c === '<' || c === '>') throw new FErr('Vergleiche mit < oder > brauchst du hier nicht.');
+    if (c === '€' || c === '%') throw new FErr(`Das Zeichen ${c} gehört nicht in die Formel. Schreibe nur die Zahl bzw. den Zellbezug.`);
+    throw new FErr(`Das Zeichen „${c}“ gehört nicht in eine Formel.`);
+  }
+  return t;
+}
+
+/* ---- Parser: + - * / ^, Klammern, Funktionen mit Bereichen ---- */
+function noRange(n){ if (n.k === 'range') throw new FErr(`Ein Bereich wie ${n.a}:${n.b} funktioniert nur in einer Funktion, z. B. =SUMME(${n.a}:${n.b}).`); return n; }
+function parseFormula(raw){
+  const s = normQuotes(String(raw)).trim();
+  if (!s) throw new FErr('Gib zuerst eine Formel ein.');
+  if (s[0] !== '=') throw new FErr('Eine Formel beginnt in Excel immer mit einem Gleichheitszeichen =.');
+  const toks = tokenize(s.slice(1)); let p = 0;
+  if (!toks.length) throw new FErr('Nach dem = fehlt noch die Formel.');
+  const peek = () => toks[p], next = () => toks[p++];
+  const isOp = (t, v) => t && t.type === 'op' && t.v === v;
+  function expr(){ let a = term(); while (isOp(peek(), '+') || isOp(peek(), '-')){ const o = next().v; a = {k:'bin', o, a:noRange(a), b:noRange(term())}; } return a; }
+  function term(){ let a = factor(); while (isOp(peek(), '*') || isOp(peek(), '/')){ const o = next().v; a = {k:'bin', o, a:noRange(a), b:noRange(factor())}; } return a; }
+  function factor(){ if (isOp(peek(), '-') || isOp(peek(), '+')){ const o = next().v; return {k:'neg', o, a:noRange(factor())}; } return power(); }
+  function power(){ let a = atom(); if (isOp(peek(), '^')){ next(); a = {k:'bin', o:'^', a:noRange(a), b:noRange(factor())}; } return a; }
+  function atom(){
+    const t = next();
+    if (!t) throw new FErr('Die Formel hört zu früh auf – am Ende fehlt noch etwas.');
+    if (t.type === 'num') return {k:'num', v:t.v};
+    if (t.type === 'str') return {k:'str', v:t.v};
+    if (t.type === 'ref'){
+      if (isOp(peek(), ':')){
+        next(); const u = next();
+        if (!u || u.type !== 'ref') throw new FErr('Nach dem Doppelpunkt muss eine Zelle folgen, z. B. B4:B8.');
+        return {k:'range', a:t.v, b:u.v};
+      }
+      return {k:'ref', v:t.v};
+    }
+    if (t.type === 'fn'){
+      const name = t.v; next(); // (
+      if (!FUNCS.includes(name)){
+        if (ENGLISH.includes(name)) throw new FErr(`Im deutschen Excel heißt die Funktion ${ALIAS[name]} statt ${name}.`);
+        if (ALIAS[name]) throw new FErr(`Die Funktion heißt ${ALIAS[name]}, nicht ${name}.`);
+        if (CELLRE.test(name)) throw new FErr(`Nach der Zelle ${name} darf keine Klammer folgen. Fehlt ein Rechenzeichen?`);
+        throw new FErr(`Die Funktion ${name} gibt es hier nicht. Du brauchst SUMME, MITTELWERT, MIN, MAX, ANZAHL oder ANZAHL2.`);
+      }
+      if (isOp(peek(), ')')){ next(); throw new FErr(`In die Klammer von ${name} gehört ein Bereich, z. B. ${name}(B4:B8).`); }
+      const args = [];
+      for (;;){
+        if (isOp(peek(), ';') || isOp(peek(), ')')) throw new FErr(`In ${name}(…) fehlt zwischen den Semikolons etwas.`);
+        args.push(expr());
+        const u = next();
+        if (!u) throw new FErr(`Es fehlt die schließende Klammer ) von ${name}.`);
+        if (isOp(u, ';')) continue;
+        if (isOp(u, ')')) break;
+        if (isOp(u, ':')) throw new FErr('Vor und nach dem Doppelpunkt muss je eine Zelle stehen, z. B. B4:B8.');
+        throw new FErr(`In ${name}(…) fehlt ein ; oder ein Rechenzeichen zwischen zwei Teilen.`);
+      }
+      return {k:'call', name, args};
+    }
+    if (isOp(t, '(')){
+      const e = expr(), u = next();
+      if (!isOp(u, ')')) throw new FErr('Es fehlt eine schließende Klammer ).');
+      return {k:'par', a:noRange(e)};
+    }
+    if (isOp(t, ')')) throw new FErr('Hier steht eine Klammer ) zu viel oder an der falschen Stelle.');
+    if (isOp(t, ';')) throw new FErr('Das Semikolon ; trennt nur die Teile innerhalb einer Funktion, z. B. SUMME(B4:B8;D4:D8).');
+    if (isOp(t, ':')) throw new FErr('Vor dem Doppelpunkt muss eine Zelle stehen, z. B. B4:B8.');
+    throw new FErr(`Das Zeichen ${t.v} steht an der falschen Stelle.`);
+  }
+  const ast = expr();
+  if (p < toks.length){
+    const t = toks[p];
+    if (isOp(t, ')')) throw new FErr('Hier steht eine Klammer ) zu viel.');
+    if (isOp(t, ';')) throw new FErr('Das Semikolon ; steht außerhalb einer Funktion. Steht die Klammer ) zu früh?');
+    if (isOp(t, ':')) throw new FErr('Vor dem Doppelpunkt muss eine einzelne Zelle stehen, z. B. B4:B8.');
+    throw new FErr('Zwischen zwei Teilen der Formel fehlt ein Rechenzeichen.');
+  }
+  return noRange(ast);
+}
+
+/* ---- Bezüge einer Formel ---- */
+function refsOf(n, out = []){
+  if (!n) return out;
+  if (n.k === 'ref') out.push({a:n.v, b:n.v});
+  else if (n.k === 'range') out.push({a:n.a, b:n.b});
+  else if (n.k === 'call') n.args.forEach(x => refsOf(x, out));
+  else if (n.k === 'bin'){ refsOf(n.a, out); refsOf(n.b, out); }
+  else if (n.k === 'neg' || n.k === 'par') refsOf(n.a, out);
+  return out;
+}
+const cellsOfRefs = refs => new Set(refs.flatMap(r => rangeCells(r.a, r.b)));
+function fnsOf(n, out = new Set()){
+  if (!n) return out;
+  if (n.k === 'call'){ out.add(n.name); n.args.forEach(x => fnsOf(x, out)); }
+  else if (n.k === 'bin'){ fnsOf(n.a, out); fnsOf(n.b, out); }
+  else if (n.k === 'neg' || n.k === 'par') fnsOf(n.a, out);
+  return out;
+}
+function numsOf(n, out = []){
+  if (!n) return out;
+  if (n.k === 'num') out.push(n.v);
+  else if (n.k === 'call') n.args.forEach(x => numsOf(x, out));
+  else if (n.k === 'bin'){ numsOf(n.a, out); numsOf(n.b, out); }
+  else if (n.k === 'neg' || n.k === 'par') numsOf(n.a, out);
+  return out;
+}
+function topCall(n){ while (n && n.k === 'par') n = n.a; return n && n.k === 'call' ? n : null; }
+// Bezüge in einem (evtl. unfertigen) Formeltext finden – für die Farben in der Tabelle
+function refsInText(s){
+  const out = []; let inStr = false, chunk = '';
+  const scan = c => { const re = /(^|[^A-Za-z0-9_$ÄÖÜäöüß])(\$?[A-Za-z]{1,3}\$?\d{1,5})(?:\s*:\s*(\$?[A-Za-z]{1,3}\$?\d{1,5}))?(?![A-Za-z0-9(])/g; let m;
+    while ((m = re.exec(c))){ const a = normRef(m[2]), b = m[3] ? normRef(m[3]) : a; out.push({a, b, txt:m[3] ? `${a}:${b}` : a}); re.lastIndex = m.index + m[0].length; } };
+  for (const ch of normQuotes(s)){ if (ch === '"'){ if (!inStr){ scan(chunk); chunk = ''; } inStr = !inStr; continue; } if (!inStr) chunk += ch; }
+  scan(chunk);
+  return out;
+}
+
+/* ---- Auswertung wie in Excel ---- */
+const E = v => ({t:'err', v});
+function toNum(v){
+  if (v.t === 'num' || v.t === 'err') return v;
+  if (v.t === 'empty') return {t:'num', v:0};
+  return E('#WERT!');
+}
+function evalAst(n, sh){
+  switch (n.k){
+    case 'num': return {t:'num', v:n.v};
+    case 'str': return {t:'str', v:n.v};
+    case 'ref': return sh.val(n.v);
+    case 'par': return evalAst(n.a, sh);
+    case 'neg': { const x = toNum(evalAst(n.a, sh)); return x.t === 'err' ? x : {t:'num', v:n.o === '-' ? -x.v : x.v}; }
+    case 'bin': {
+      const a = toNum(evalAst(n.a, sh)); if (a.t === 'err') return a;
+      const b = toNum(evalAst(n.b, sh)); if (b.t === 'err') return b;
+      if (n.o === '+') return {t:'num', v:a.v + b.v};
+      if (n.o === '-') return {t:'num', v:a.v - b.v};
+      if (n.o === '*') return {t:'num', v:a.v * b.v};
+      if (n.o === '/') return b.v === 0 ? E('#DIV/0!') : {t:'num', v:a.v / b.v};
+      return {t:'num', v:Math.pow(a.v, b.v)};
+    }
+    case 'call': return callFn(n, sh);
+  }
+  return E('#WERT!');
+}
+function callFn(n, sh){
+  const vals = [];
+  for (const a of n.args){
+    if (a.k === 'range') rangeCells(a.a, a.b).forEach(c => vals.push({x:sh.val(c), ref:true}));
+    else if (a.k === 'ref') vals.push({x:sh.val(a.v), ref:true});
+    else vals.push({x:evalAst(a, sh), ref:false});
+  }
+  if (n.name === 'ANZAHL') return {t:'num', v:vals.filter(o => o.x.t === 'num').length};
+  if (n.name === 'ANZAHL2') return {t:'num', v:vals.filter(o => o.x.t !== 'empty').length};
+  const nums = [];
+  for (const o of vals){
+    if (o.x.t === 'err') return o.x;
+    if (o.x.t === 'num') nums.push(o.x.v);
+    else if (!o.ref && o.x.t === 'str') return E('#WERT!');
+  }
+  if (n.name === 'SUMME') return {t:'num', v:nums.reduce((s, x) => s + x, 0)};
+  if (n.name === 'MITTELWERT') return nums.length ? {t:'num', v:nums.reduce((s, x) => s + x, 0) / nums.length} : E('#DIV/0!');
+  if (n.name === 'MIN') return {t:'num', v:nums.length ? Math.min(...nums) : 0};
+  if (n.name === 'MAX') return {t:'num', v:nums.length ? Math.max(...nums) : 0};
+  return E('#NAME?');
+}
+const PCACHE = new Map();
+function parseCached(s){ if (!PCACHE.has(s)){ try { PCACHE.set(s, parseFormula(s)); } catch (e){ PCACHE.set(s, null); } } return PCACHE.get(s); }
+class Sheet {
+  constructor(cells){ this.cells = cells; this.memo = {}; this.busy = new Set(); }
+  with(a, raw){ return new Sheet(Object.assign({}, this.cells, {[a]:raw})); }
+  isFormula(a){ const r = this.cells[a]; return typeof r === 'string' && r[0] === '='; }
+  val(a){
+    if (a in this.memo) return this.memo[a];
+    const r = this.cells[a]; let v;
+    if (r == null || r === '') v = {t:'empty'};
+    else if (typeof r === 'number') v = {t:'num', v:r};
+    else if (this.isFormula(a) && r.includes('#BEZUG!')) v = E('#BEZUG!');
+    else if (this.isFormula(a)){
+      if (this.busy.has(a)) return E('Zirkelbezug');
+      this.busy.add(a);
+      const ast = parseCached(r);
+      v = ast ? evalAst(ast, this) : E('#NAME?');
+      this.busy.delete(a);
+    } else v = {t:'str', v:r};
+    this.memo[a] = v; return v;
+  }
+}
+function same(a, b){
+  if (a.t !== b.t) return false;
+  if (a.t === 'num') return Math.abs(a.v - b.v) < 1e-9 * Math.max(1, Math.abs(b.v));
+  return a.v === b.v;
+}
+function fmtNum(x, dp){ if (Math.abs(x) >= 1e11) return x.toExponential(2).replace('.', ',').replace('e+', 'E+'); return (dp != null ? x.toFixed(dp) : String(+x.toFixed(2))).replace('.', ','); }
+function fmtVal(v, f){
+  if (v.t === 'num') return f === 'eur' ? fmtNum(v.v, 2) + ' €' : f === 'usd' ? fmtNum(v.v, 2) + ' $' : f === 'pct' ? fmtNum(v.v * 100) + ' %' : fmtNum(v.v);
+  if (v.t === 'empty') return '';
+  if (v.t === 'err') return v.v === 'Zirkelbezug' ? '0' : v.v;
+  return v.v;
+}
+
+/* ---- Erklärung: Fortschritt je Thema (learn = {topic, prog:{id:{idx, done}}}) ---- */
+const topic = () => TOPICS.find(t => t.id === learn.topic);
+function prog(id){ id = id || learn.topic; return learn.prog[id] || (learn.prog[id] = {idx:0, done:[]}); }
+function saveLearn(){ store('learn', JSON.stringify(learn)); }
+const stepDone = i => prog().done.includes(i);
+function markStep(){ const p = prog(); if (!p.done.includes(p.idx)){ p.done.push(p.idx); saveLearn(); } }
+function firstOpen(){ const n = topic().steps.length; for (let i = 0; i < n; i++) if (!stepDone(i)) return i; return n - 1; }
+const stepUnlocked = i => i <= firstOpen() || stepDone(i);
+const curStep = () => topic().steps[prog().idx];
+function gotoStep(i){ prog().idx = i; pickerOpen = false; loadStep(); window.scrollTo({top:0, behavior:'smooth'}); }
+function openTopic(id){ learn.topic = id; saveLearn(); pickerOpen = false; loadStep(); window.scrollTo({top:0, behavior:'smooth'}); }
+function overview(){ learn.topic = null; saveLearn(); pickerOpen = false; loadTask(); window.scrollTo({top:0, behavior:'smooth'}); }
+
+/* ---- Modus- und Aufgabensteuerung ---- */
+function setMode(m){ if (m === mode) return; mode = m; store('mode', m); pickerOpen = false; if (m === 'endlos' && !endPick) newEndless(); loadTask(); window.scrollTo({top:0, behavior:'smooth'}); }
+function gotoTask(i){ pfadIdx = clamp(i, 0, STD.length - 1); store('idx', pfadIdx); pickerOpen = false; loadTask(); window.scrollTo({top:0, behavior:'smooth'}); }
+function canNext(){
+  if (mode === 'lernen') return !!learn.topic && prog().idx < topic().steps.length - 1 && stepDone(prog().idx);
+  return mode === 'pfad' ? (pfadIdx < STD.length - 1 && isSolved(pfadIdx)) : endCounted;
+}
+function nextTask(){
+  if (!canNext()) return;
+  if (mode === 'lernen'){ gotoStep(prog().idx + 1); return; }
+  if (mode === 'pfad') gotoTask(pfadIdx + 1); else { newEndless(); loadTask(); window.scrollTo({top:0, behavior:'smooth'}); }
+}
+
+/* ---- Darstellung ---- */
+function renderOverview(intro){
+  $('#lvlname').textContent = 'Erklärung';
+  $('#taskmeta').textContent = '';
+  $('#tasktext').innerHTML = `${intro}\n    <div class="topics">${TOPICS.map(t => { const p = learn.prog[t.id], n = p ? p.done.length : 0, all = n >= t.steps.length;
+      return `<button class="topic${all ? ' done' : ''}" data-topic="${t.id}"><b>${esc(t.name)}</b><span class="tdesc">${esc(t.desc)}</span><span class="tprog">${all ? '✓ erledigt' : n ? `${n} von ${t.steps.length} Schritten` : `${t.steps.length} Schritte`}</span></button>`; }).join('')}</div>`;
+  ['#sheetcard', '#workcard', '#actions'].forEach(id => { $(id).style.display = 'none'; });
+  $('#fb').innerHTML = ''; $('#dock').innerHTML = '';
+}
+function renderNav(){
+  if (mode === 'lernen') navLernen(prog().idx, topic().steps.length, curStep().type === 'info');
+  else navPfad();
+  renderDock();
+}
+function renderDock(){
+  const d = $('#dock');
+  if (mode !== 'lernen'){ d.innerHTML = dockHTML(GROUPS); return; }
+  const tp = topic(), p = prog();
+  let h = `<button class="dockbtn" id="dockBtn" aria-expanded="${pickerOpen}">📘 Schritt ${p.idx + 1}/${tp.steps.length} <span class="sub">· ${p.done.length} erledigt</span></button>`;
+  if (pickerOpen) h += `<div class="picker steps"><div class="ptitle">${esc(tp.name)} – erledigte Schritte sind grün</div>` +
+    tp.steps.map((st, i) => `<button data-step="${i}" class="stepbtn${stepDone(i) ? ' solved' : ''}${i === p.idx ? ' cur' : ''}"${stepUnlocked(i) ? '' : ' disabled'}>${i + 1}. ${esc(st.title)}</button>`).join('') +
+    '<button class="stepbtn" data-ov="1">◀ Zur Übersicht</button><button class="stepreset" data-learnreset="1">Fortschritt in diesem Thema zurücksetzen</button></div>';
+  d.innerHTML = h;
+}
+function renderFeedback(){ $('#fb').innerHTML = S.fb ? `<div class="fb ${S.fb.type}">${S.fb.html}</div>` : ''; }
+let hintTimer = null;
+function hint(msg){ const el = $('#selhint'); el.textContent = msg; clearTimeout(hintTimer); hintTimer = setTimeout(() => { el.textContent = ''; }, 4500); }
+
+/* ---- Fragen in der Erklärung (LS = {sel, checked}) ---- */
+function renderChoice(st){
+  $('#work').innerHTML = `<div class="opts${st.mono ? ' mono' : ''}">` + st.options.map((o, i) => {
+    let c = LS.sel.has(i) ? ' sel' : '';
+    if (LS.checked && LS.sel.has(i)) c += st.correct.includes(i) ? ' good' : ' bad';
+    return `<button class="opt${c}" data-opt="${i}">${esc(o)}</button>`;
+  }).join('') + `</div><div class="ohint">${st.correct.length > 1 ? 'Mehrere Antworten möglich.' : 'Genau eine Antwort ist richtig.'}</div>`;
+}
+function checkChoice(){
+  const st = curStep();
+  if (!LS.sel.size){ S.fb = {type:'err', html:'Wähle zuerst eine Antwort aus.'}; renderFeedback(); return; }
+  LS.checked = true;
+  const wrong = [...LS.sel].filter(i => !st.correct.includes(i)), missing = st.correct.filter(i => !LS.sel.has(i));
+  if (!wrong.length && !missing.length){
+    const erstmals = !stepDone(prog().idx); markStep(); logSolved(erstmals);
+    S.fb = {type:'ok', html:'<b>Richtig! 🎉</b>' + (st.after ? `<span class="note">${st.after}</span>` : '') + (canNext() ? '<span class="note">Weiter geht es mit „Weiter“.</span>' : '')};
+  } else {
+    const lines = wrong.map(i => (st.why && st.why[i]) || `„${esc(st.options[i])}“ passt nicht.`);
+    if (!wrong.length) lines.push('Es fehlt noch eine richtige Antwort.');
+    S.fb = {type:'err', html:'Noch nicht ganz.<br>' + lines.join('<br>')};
+  }
+  renderChoice(st); renderFeedback(); renderNav();
+}
+// Klicks auf Antworten, Themen, Schritte und Übersicht, danach navClick; die Seite ruft topicClick(e) am Ende ihres Klick-Handlers
+function topicClick(e){
+  const o = e.target.closest('[data-opt]');
+  if (o && LS){ const st = curStep(), i = +o.dataset.opt;
+    if (st.correct.length > 1){ LS.sel.has(i) ? LS.sel.delete(i) : LS.sel.add(i); } else LS.sel = new Set([i]);
+    LS.checked = false; S.fb = null; renderChoice(st); renderFeedback(); return; }
+  const tp = e.target.closest('[data-topic]'); if (tp){ openTopic(tp.dataset.topic); return; }
+  const tg = e.target.closest('[data-topic-go]'); if (tg){ openTopic(tg.dataset.topicGo); return; }
+  if (e.target.closest('[data-ov]')){ overview(); return; }
+  const mg = e.target.closest('[data-mode-go]'); if (mg){ setMode(mg.dataset.modeGo); return; }
+  const sp = e.target.closest('[data-step]'); if (sp){ gotoStep(+sp.dataset.step); return; }
+  if (e.target.closest('[data-learnreset]')){ if (confirm('Den Fortschritt in diesem Thema löschen und von vorne beginnen?')){ learn.prog[learn.topic] = {idx:0, done:[]}; gotoStep(0); } return; }
+  navClick(e);
+}
+
+/* ---- Zellen und Bereiche mit der Maus in Eingaben (.pin) einfügen, wie in Excel ---- */
+// Cursorposition einer Eingabe merken, auch wenn sie gerade nicht den Fokus hat
+function caret(inp){
+  if (document.activeElement === inp) return [inp.selectionStart, inp.selectionEnd];
+  const n = inp.value.length;
+  return [inp._s != null ? Math.min(inp._s, n) : n, inp._e != null ? Math.min(inp._e, n) : n];
+}
+function setCaret(inp, c){ inp._s = inp._e = c; if (document.activeElement === inp) inp.setSelectionRange(c, c); }
+function focusInp(inp){ const [s, e] = caret(inp); inp.focus({preventScroll:true}); inp.setSelectionRange(s, e); }
+// PT = {inp, anchor, cur, start, end, base}: laufende Markierung in der Tabelle
+function applyPT(){
+  const ref = PT.anchor === PT.cur ? PT.anchor : normRange(PT.anchor, PT.cur);
+  PT.inp.value = PT.base.slice(0, PT.start) + ref + PT.base.slice(PT.end);
+  setCaret(PT.inp, PT.start + ref.length);
+  S.sel = new Set(rangeCells(PT.anchor, PT.cur));
+  syncInput(PT.inp, true);
+}
+function cellAt(x, y){ const el = document.elementFromPoint(x, y); return el && el.closest ? el.closest('#grid td[data-c]') : null; }
+function endPT(){ if (!PT) return; const inp = PT.inp; PT = null; if (document.body.contains(inp)) focusInp(inp); }
+const gridEl = $('#grid');
+gridEl.addEventListener('pointerup', endPT);
+gridEl.addEventListener('pointercancel', endPT);
+gridEl.addEventListener('mousedown', e => { if (CUR && e.target.closest('td[data-c]')) e.preventDefault(); });
+gridEl.addEventListener('touchstart', e => { if (CUR && e.target.closest('td[data-c]')) e.preventDefault(); }, {passive:false});
+const trackCaret = e => { const t = e.target; if (t.matches && t.matches('.pin')){ t._s = t.selectionStart; t._e = t.selectionEnd; } };
+['keyup', 'click', 'select', 'focusout'].forEach(ev => document.addEventListener(ev, trackCaret, true));
+document.addEventListener('input', e => { if (e.target.matches('.pin')){ trackCaret(e); syncInput(e.target, false); } });
+
+$('#ovBtn').addEventListener('click', () => overview());
+$('#resetBtn').addEventListener('click', () => { if (mode === 'lernen') loadStep(); else { resetS(); render(); } });
+$('#prevBtn').addEventListener('click', () => { if (mode === 'lernen') gotoStep(prog().idx - 1); else gotoTask(pfadIdx - 1); });
+
+/* Funktionsnamen mit Ziffern (ANZAHL2), Wörter nach Rechenzeichen */
+AC.digits = true;
+AC.prev = /[=(;+\-*/^\s]/;
+
+</script>
+
+<!-- ===================== Szenarien & Aufgaben ===================== -->
+<script id="tasks">
+/* Zufallswerte für Endlos und für die Testtabellen beim Prüfen */
+const G = {
+  n:(lo, hi, dp = 0, step = 1) => r => dp ? +(lo + r() * (hi - lo)).toFixed(dp) : lo + step * Math.floor(r() * ((hi - lo) / step + 1)),
+  hole:(p, vals, g) => r => r() < p ? pick1(r, vals) : g(r),
+  x:p => r => r() < p ? 'x' : null
+};
+const DAYS5 = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag'];
+const DAYS7 = [...DAYS5, 'Samstag', 'Sonntag'];
+
+/* Unterschied größter – kleinster Wert einer Spalte (MIN/MAX schon vorhanden) */
+const diffMake = phr => x => {
+  const R = x.last + 2, c = x.c, rg = `${c}${x.first}:${c}${x.last}`;
+  x.cells['A' + R] = 'Kleinster Wert'; x.cells[c + R] = `=MIN(${rg})`;
+  x.cells['A' + (R + 1)] = 'Größter Wert'; x.cells[c + (R + 1)] = `=MAX(${rg})`;
+  x.cells['A' + (R + 2)] = 'Unterschied';
+  const t = c + (R + 2);
+  return {target:t, ref:`=${c}${R + 1}-${c}${R}`, text:`Berechne in ${B(t)}, ${phr(x.p)}. Die Werte in ${B(c + R)} und ${B(c + (R + 1))} helfen dir.`};
+};
+
+const SC = {
+  brezel: {title:'Brezelverkauf der SMV', intro:'Die SMV verkauft in der Pause Brezeln und Muffins.', top:3,
+    head:['Tag', 'Brezeln', 'Muffins'], cols:'BC', names:DAYS5,
+    data:[[38, 21], [42, 25], [30, 18], [45, 27], [51, 30]],
+    g:{B:G.n(30, 60), C:G.n(10, 30)},
+    T:[
+      {id:'sum', k:'col', fn:'SUMME', cols:'BC', lab:'Summe', q:p => `wie viele ${p.h} in der Woche insgesamt verkauft wurden`},
+      {id:'avg', k:'col', fn:'MITTELWERT', cols:'BC', lab:'Durchschnitt pro Tag', q:p => `wie viele ${p.h} im Durchschnitt pro Tag verkauft wurden`},
+      {id:'max', k:'col', fn:'MAX', cols:'BC', lab:'Meiste an einem Tag', q:p => `wie viele ${p.h} an einem Tag höchstens verkauft wurden`},
+      {id:'min', k:'col', fn:'MIN', cols:'BC', lab:'Wenigste an einem Tag', q:p => `wie viele ${p.h} am schwächsten Tag verkauft wurden`},
+      {id:'rsum', k:'row', fn:'SUMME', rng:'BC', out:'D', hdr:'Zusammen', q:p => `wie viele Brezeln und Muffins am ${p.n} zusammen verkauft wurden`},
+      {id:'all', k:'block', fn:'SUMME', rng:'BC', lab:'Alles zusammen', q:() => 'wie viele Brezeln und Muffins in der ganzen Woche zusammen verkauft wurden'},
+      {id:'geld', k:'x', make:x => {
+        const R = x.last + 2, t = 'B' + (R + 1);
+        x.cells['A' + R] = 'Preis pro Brezel'; x.cells['B' + R] = 0.8; x.fmt['B' + R] = 'eur';
+        x.cells['A' + (R + 1)] = 'Einnahmen Brezeln'; x.fmt[t] = 'eur';
+        return {target:t, ref:`=SUMME(B${x.first}:B${x.last})*B${R}`,
+          text:`Eine Brezel kostet 0,80 € (Zelle ${B('B' + R)}). Berechne in ${B(t)}, wie viel Geld die SMV in der Woche mit Brezeln eingenommen hat. Verwende dafür die Zelle ${B('B' + R)}.`}; }},
+      {id:'mehr', k:'x', make:x => {
+        const R = x.last + 2, t = 'B' + R;
+        x.cells['A' + R] = 'Mehr Brezeln als Muffins';
+        return {target:t, ref:`=SUMME(B${x.first}:B${x.last})-SUMME(C${x.first}:C${x.last})`,
+          text:`Berechne in ${B(t)} mit einer einzigen Formel, wie viele Brezeln in der Woche mehr verkauft wurden als Muffins.`}; }}
+    ]},
+
+  pfand: {title:'Pfandflaschen-Sammelaktion', intro:'Die 7. Klassen sammeln vier Wochen lang Pfandflaschen für die Klassenkasse.', top:3,
+    head:['Klasse', 'Woche 1', 'Woche 2', 'Woche 3', 'Woche 4'], cols:'BCDE', names:['7a', '7b', '7c', '7d'],
+    data:[[34, 41, 28, 50], [45, 38, 52, 47], [22, 30, 35, 29], [40, 44, 39, 51]],
+    g:{B:G.n(15, 55), C:G.n(15, 55), D:G.n(15, 55), E:G.n(15, 55)},
+    T:[
+      {id:'rsum', k:'row', fn:'SUMME', rng:'BE', out:'F', hdr:'Gesamt', q:p => `wie viele Flaschen die ${p.n} insgesamt gesammelt hat`},
+      {id:'ravg', k:'row', fn:'MITTELWERT', rng:'BE', out:'F', hdr:'Durchschnitt', q:p => `wie viele Flaschen die ${p.n} im Durchschnitt pro Woche gesammelt hat`},
+      {id:'rmax', k:'row', fn:'MAX', rng:'BE', out:'F', hdr:'Beste Woche', q:p => `wie viele Flaschen die ${p.n} in ihrer besten Woche gesammelt hat`},
+      {id:'csum', k:'col', fn:'SUMME', cols:'BCDE', lab:'Summe pro Woche', q:p => `wie viele Flaschen alle Klassen zusammen in ${p.h} gesammelt haben`},
+      {id:'cmin', k:'col', fn:'MIN', cols:'BCDE', lab:'Wenigste', q:p => `wie viele Flaschen die schwächste Klasse in ${p.h} gesammelt hat`},
+      {id:'all', k:'block', fn:'SUMME', rng:'BE', lab:'Alle Flaschen', q:() => 'wie viele Flaschen alle Klassen in allen vier Wochen zusammen gesammelt haben'},
+      {id:'geld', k:'x', make:x => {
+        const R = x.last + 2, t = 'B' + (R + 1);
+        x.cells['A' + R] = 'Pfand pro Flasche'; x.cells['B' + R] = 0.25; x.fmt['B' + R] = 'eur';
+        x.cells['A' + (R + 1)] = 'Pfandgeld gesamt'; x.fmt[t] = 'eur';
+        return {target:t, ref:`=SUMME(B${x.first}:E${x.last})*B${R}`,
+          text:`Für jede Flasche gibt es 0,25 € Pfand (${B('B' + R)}). Berechne in ${B(t)} mit einer einzigen Formel, wie viel Pfandgeld alle Klassen zusammen bekommen.`}; }}
+    ]},
+
+  einkauf: {title:'Einkauf für das Klassenfest', intro:'Die Klasse kauft für das Klassenfest ein. In Spalte D sind die Kosten schon ausgerechnet (Preis mal Menge).', top:3,
+    head:['Artikel', 'Preis pro Stück', 'Menge', 'Kosten'], cols:'BCD',
+    names:['Apfelsaft (1 Liter)', 'Brezeln', 'Chips', 'Gummibärchen', 'Pappbecher (50 Stück)', 'Servietten', 'Würstchen (Packung)'],
+    data:[[1.29, 6], [0.45, 30], [1.79, 5], [0.99, 8], [2.49, 1], [1.19, 2], [3.49, 4]].map((r, i) => [...r, `=B${4 + i}*C${4 + i}`]),
+    fmt:{B:'eur', D:'eur'}, g:{B:G.n(0.39, 3.99, 2), C:G.n(2, 30)},
+    T:[
+      {id:'ges', k:'x', lv:[1, 2, 3, 4], make:x => {
+        const R = x.last + 2; x.cells['A' + R] = 'Gesamtkosten'; x.fmt['D' + R] = 'eur';
+        return {target:'D' + R, fn:'SUMME', rng:`D${x.first}:D${x.last}`, q:'wie viel der ganze Einkauf kostet'}; }},
+      {id:'teuer', k:'x', lv:[1, 2, 3, 4], make:x => {
+        const R = x.last + 2; x.cells['A' + R] = 'Teuerster Artikel (Stückpreis)'; x.fmt['B' + R] = 'eur';
+        return {target:'B' + R, fn:'MAX', rng:`B${x.first}:B${x.last}`, q:'welcher Stückpreis am höchsten ist'}; }},
+      {id:'rest', k:'x', make:x => {
+        const R = x.last + 2;
+        x.cells['A' + R] = 'Gesamtkosten'; x.cells['D' + R] = `=SUMME(D${x.first}:D${x.last})`;
+        x.cells['A' + (R + 1)] = 'Zuschuss Elternbeirat'; x.cells['D' + (R + 1)] = 20;
+        x.cells['A' + (R + 2)] = 'Restbetrag';
+        [R, R + 1, R + 2].forEach(k => x.fmt['D' + k] = 'eur');
+        return {target:'D' + (R + 2), ref:`=D${R}-D${R + 1}`,
+          text:`Der Elternbeirat gibt 20 € dazu (${B('D' + (R + 1))}). Berechne in ${B('D' + (R + 2))}, wie viel die Klasse noch selbst bezahlen muss.`}; }},
+      {id:'pro', k:'x', make:x => {
+        const R = x.last + 2;
+        x.cells['A' + R] = 'Gesamtkosten'; x.cells['D' + R] = `=SUMME(D${x.first}:D${x.last})`;
+        x.cells['A' + (R + 1)] = 'Zuschuss Elternbeirat'; x.cells['D' + (R + 1)] = 20;
+        x.cells['A' + (R + 2)] = 'Restbetrag'; x.cells['D' + (R + 2)] = `=D${R}-D${R + 1}`;
+        x.cells['A' + (R + 3)] = 'Anzahl Schülerinnen und Schüler'; x.cells['D' + (R + 3)] = 26;
+        x.cells['A' + (R + 4)] = 'Betrag pro Person';
+        [R, R + 1, R + 2, R + 4].forEach(k => x.fmt['D' + k] = 'eur');
+        return {target:'D' + (R + 4), ref:`=D${R + 2}/D${R + 3}`,
+          text:`Die Klasse bezahlt den Restbetrag gemeinsam. Berechne in ${B('D' + (R + 4))}, wie viel jede Schülerin und jeder Schüler bezahlen muss.`}; }},
+      {id:'pro1', k:'x', make:x => {
+        const R = x.last + 2;
+        x.cells['A' + R] = 'Zuschuss Elternbeirat'; x.cells['D' + R] = 20;
+        x.cells['A' + (R + 1)] = 'Anzahl Schülerinnen und Schüler'; x.cells['D' + (R + 1)] = 26;
+        x.cells['A' + (R + 2)] = 'Betrag pro Person';
+        x.fmt['D' + R] = 'eur'; x.fmt['D' + (R + 2)] = 'eur';
+        return {target:'D' + (R + 2), ref:`=(SUMME(D${x.first}:D${x.last})-D${R})/D${R + 1}`,
+          text:`Der Elternbeirat gibt 20 € dazu (${B('D' + R)}), den Rest teilen sich die 26 Kinder (${B('D' + (R + 1))}). Berechne in ${B('D' + (R + 2))} mit einer einzigen Formel, wie viel jedes Kind bezahlen muss. Tipp: Denk an Klammern!`}; }}
+    ]},
+
+  temp: {title:'Temperaturen in der Projektwoche', intro:'Die Wetter-AG hat jeden Tag morgens und mittags die Temperatur gemessen.', top:3,
+    head:['Tag', 'Morgens (°C)', 'Mittags (°C)'], cols:'BC', names:DAYS5,
+    data:[[8, 15], [6, 13], [9, 17], [4, 12], [7, 16]],
+    g:{B:G.n(-3, 10), C:G.n(8, 22)}, noun:{B:'morgens', C:'mittags'},
+    T:[
+      {id:'min', k:'col', fn:'MIN', cols:'BC', lab:'Niedrigste Temperatur', q:p => `welche Temperatur ${p.h} am niedrigsten war`},
+      {id:'max', k:'col', fn:'MAX', cols:'BC', lab:'Höchste Temperatur', q:p => `welche Temperatur ${p.h} am höchsten war`},
+      {id:'avg', k:'col', fn:'MITTELWERT', cols:'BC', lab:'Durchschnitt', q:p => `wie warm es ${p.h} im Durchschnitt war`},
+      {id:'ravg', k:'row', fn:'MITTELWERT', rng:'BC', out:'D', hdr:'Tagesmittel', q:p => `wie warm es am ${p.n} im Durchschnitt war`},
+      {id:'diff', k:'x', cols:'BC', make:diffMake(p => `wie viel Grad zwischen der höchsten und der niedrigsten Temperatur ${p.h} liegen`)}
+    ]},
+
+  bjs: {title:'Bundesjugendspiele', intro:'Hier sind die Ergebnisse von acht Schülerinnen und Schülern der 7a.', top:3,
+    head:['Name', '50-m-Lauf (Sekunden)', 'Weitsprung (Meter)', 'Ballwurf (Meter)'], cols:'BCD',
+    names:['Mia', 'Jonas', 'Aylin', 'Luca', 'Sophie', 'Ben', 'Emma', 'Noah'],
+    data:[[8.4, 3.65, 28.5], [7.9, 4.1, 35], [8.9, 3.2, 22], [8.1, 3.95, 38.5], [8.6, 3.4, 26], [7.6, 4.35, 41], [9.2, 3.05, 19.5], [8, 3.8, 33.5]],
+    g:{B:G.n(7.2, 9.8, 1), C:G.n(2.8, 4.6, 2), D:G.n(15, 45, 1)}, noun:{B:'beim 50-m-Lauf', C:'beim Weitsprung', D:'beim Ballwurf'},
+    T:[
+      {id:'min', k:'col', fn:'MIN', cols:'BCD', lab:'Kleinster Wert', q:p => `welcher Wert ${p.h} am kleinsten ist`},
+      {id:'max', k:'col', fn:'MAX', cols:'BCD', lab:'Größter Wert', q:p => `welcher Wert ${p.h} am größten ist`},
+      {id:'avg', k:'col', fn:'MITTELWERT', cols:'BCD', lab:'Durchschnitt', q:p => `welches Ergebnis ${p.h} im Durchschnitt erreicht wurde`},
+      {id:'best', k:'col', lv:[4], fn:c => c === 'B' ? 'MIN' : 'MAX', cols:'BCD', lab:'Bestes Ergebnis', goal:'das beste Ergebnis',
+       q:p => `welches das beste Ergebnis ${p.h} ist`, hint:'Überlege genau: Ist beim Laufen eine kleine oder eine große Zahl besser?',
+       after:p => p.c === 'B' ? 'Beim Laufen ist die <b>kleinste</b> Zeit die beste – deshalb MIN.' : ''},
+      {id:'diff', k:'x', cols:'BCD', make:diffMake(p => `wie groß der Unterschied zwischen dem größten und dem kleinsten Wert ${p.h} ist`)}
+    ]},
+
+  screen: {title:'Bildschirmzeit-Check', intro:'Drei Freunde haben eine Woche lang aufgeschrieben, wie viele Minuten sie am Handy waren.', top:3,
+    head:['Tag', 'Lena', 'Tim', 'Ali'], cols:'BCD', names:DAYS7,
+    data:[[95, 120, 60], [80, 135, 75], [110, 90, 45], [70, 150, 80], [125, 160, 90], [180, 210, 140], [150, 195, 120]],
+    g:{B:G.n(30, 220, 0, 5), C:G.n(30, 220, 0, 5), D:G.n(30, 220, 0, 5)},
+    T:[
+      {id:'sum', k:'col', fn:'SUMME', cols:'BCD', lab:'Minuten in der Woche', q:p => `wie viele Minuten ${p.h} in der Woche insgesamt am Handy war`},
+      {id:'min', k:'col', fn:'MIN', cols:'BCD', lab:'Wenigste Minuten an einem Tag', q:p => `wie viele Minuten ${p.h} an einem Tag am wenigsten am Handy war`},
+      {id:'max', k:'col', fn:'MAX', cols:'BCD', lab:'Meiste Minuten an einem Tag', q:p => `wie viele Minuten ${p.h} an einem Tag am längsten am Handy war`},
+      {id:'avg', k:'col', fn:'MITTELWERT', cols:'BCD', lab:'Durchschnitt pro Tag', q:p => `wie viele Minuten ${p.h} im Durchschnitt pro Tag am Handy war`},
+      {id:'rsum', k:'row', fn:'SUMME', rng:'BD', out:'E', hdr:'Zusammen', q:p => `wie viele Minuten alle drei am ${p.n} zusammen am Handy waren`},
+      {id:'std', k:'x', cols:'BCD', make:x => {
+        const R = x.last + 2, c = x.c, t = c + (R + 1);
+        x.cells['A' + R] = 'Minuten in der Woche'; x.cells[c + R] = `=SUMME(${c}${x.first}:${c}${x.last})`;
+        x.cells['A' + (R + 1)] = 'Stunden in der Woche';
+        return {target:t, ref:`=${c}${R}/60`, text:`Rechne in ${B(t)} die Minuten von ${x.p.h} (${B(c + R)}) in Stunden um. Tipp: 1 Stunde = 60 Minuten. Welches Rechenzeichen brauchst du?`}; }},
+      {id:'std1', k:'x', cols:'BCD', make:x => {
+        const R = x.last + 2, c = x.c, t = c + R;
+        x.cells['A' + R] = 'Stunden in der Woche';
+        return {target:t, ref:`=SUMME(${c}${x.first}:${c}${x.last})/60`, text:`Berechne in ${B(t)} mit einer einzigen Formel, wie viele <b>Stunden</b> ${x.p.h} in der Woche am Handy war (1 Stunde = 60 Minuten).`}; }},
+      {id:'diff', k:'x', cols:'BCD', make:diffMake(p => `wie viele Minuten zwischen dem längsten und dem kürzesten Handytag von ${p.h} liegen`)}
+    ]},
+
+  vokabel: {title:'Vokabeltests in Englisch', intro:'Lena hat in diesem Halbjahr sechs Vokabeltests geschrieben, bei jedem gab es 20 Punkte. Eine leere Zelle heißt: Lena war krank.', top:3,
+    head:['Test', 'Punkte'], cols:'B', names:['Test 1', 'Test 2', 'Test 3', 'Test 4', 'Test 5', 'Test 6'],
+    data:[[14], [17], [12], [19], [15], [null]],
+    g:{B:G.hole(0.2, [null], G.n(5, 20))},
+    T:[
+      {id:'avg', k:'col', fn:'MITTELWERT', cols:'B', lab:'Durchschnitt', q:() => 'wie viele Punkte Lena im Durchschnitt erreicht hat'},
+      {id:'sum', k:'col', fn:'SUMME', cols:'B', lab:'Summe', q:() => 'wie viele Punkte Lena insgesamt erreicht hat'},
+      {id:'max', k:'col', fn:'MAX', cols:'B', lab:'Bester Test', q:() => 'wie viele Punkte Lena in ihrem besten Test hatte'},
+      {id:'min', k:'col', fn:'MIN', cols:'B', lab:'Schlechtester Test', q:() => 'wie viele Punkte Lena in ihrem schlechtesten Test hatte'},
+      {id:'cnt', k:'col', fn:'ANZAHL', cols:'B', lab:'Mitgeschrieben', q:() => 'bei wie vielen Tests Lena mitgeschrieben hat'},
+      {id:'fehlt', k:'x', make:x => {
+        const R = x.last + 2, t = 'B' + R;
+        x.cells['A' + R] = 'Fehlende Punkte im Schnitt';
+        return {target:t, ref:`=20-MITTELWERT(B${x.first}:B${x.last})`, text:`Berechne in ${B(t)} mit einer Formel, wie viele Punkte Lena im Durchschnitt zur vollen Punktzahl von 20 fehlen.`}; }}
+    ]},
+
+  wetter: {title:'Wetterstation der Schule', intro:'Die Wetter-AG hat ein halbes Jahr lang Daten gesammelt.', top:3,
+    head:['Monat', 'Temperatur (°C)', 'Regen (mm)', 'Sonnenstunden'], cols:'BCD', names:['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni'],
+    data:[[1.5, 58, 55], [2.8, 49, 80], [6.4, 52, 125], [10.2, 45, 180], [14.6, 70, 210], [18.1, 82, 230]],
+    g:{B:G.n(-2, 20, 1), C:G.n(25, 95), D:G.n(40, 250)},
+    T:[
+      {id:'avg', k:'col', fn:'MITTELWERT', cols:'BCD', lab:'Durchschnitt', q:{B:'wie warm es im Durchschnitt war', C:'wie viel es im Durchschnitt pro Monat geregnet hat', D:'wie viele Sonnenstunden es im Durchschnitt pro Monat gab'}},
+      {id:'min', k:'col', fn:'MIN', cols:'BCD', lab:'Niedrigster Wert', q:{B:'welche Monatstemperatur am niedrigsten war', C:'wie viel es im trockensten Monat geregnet hat', D:'wie viele Sonnenstunden der trübste Monat hatte'}},
+      {id:'max', k:'col', fn:'MAX', cols:'BCD', lab:'Höchster Wert', q:{B:'welche Monatstemperatur am höchsten war', C:'wie viel es im regenreichsten Monat geregnet hat', D:'wie viele Sonnenstunden der sonnigste Monat hatte'}},
+      {id:'sum', k:'col', fn:'SUMME', cols:'CD', lab:'Summe', q:{C:'wie viel es im Halbjahr insgesamt geregnet hat', D:'wie viele Sonnenstunden es im Halbjahr insgesamt gab'}}
+    ]},
+
+  sport: {title:'Sporttest der 7b', intro:'Beim Sporttest gibt es in drei Disziplinen jeweils bis zu 10 Punkte. Eine leere Zelle heißt: Die Person war krank.', top:3,
+    head:['Name', 'Sprint', 'Weitsprung', 'Ausdauer'], cols:'BCD', names:['Mia', 'Jonas', 'Tim', 'Aylin', 'Luca', 'Emma'],
+    data:[[8, 7, 9], [9, 8, 6], [7, null, 8], [6, 7, 7], [10, 9, 8], [5, 6, 9]],
+    g:{B:G.hole(0.1, [null], G.n(3, 10)), C:G.hole(0.15, [null], G.n(3, 10)), D:G.hole(0.1, [null], G.n(3, 10))},
+    noun:{B:'Sprint', C:'Weitsprung', D:'Ausdauerlauf'},
+    T:[
+      {id:'ravg', k:'row', fn:'MITTELWERT', rng:'BD', out:'E', hdr:'Durchschnitt', q:p => `wie viele Punkte ${p.n} im Durchschnitt erreicht hat`},
+      {id:'rsum', k:'row', fn:'SUMME', rng:'BD', out:'E', hdr:'Gesamtpunkte', q:p => `wie viele Punkte ${p.n} insgesamt erreicht hat`},
+      {id:'avg', k:'col', fn:'MITTELWERT', cols:'BCD', lab:'Durchschnitt der Klasse', q:p => `wie viele Punkte die Klasse im ${p.h} im Durchschnitt erreicht hat`},
+      {id:'max', k:'col', fn:'MAX', cols:'BCD', lab:'Beste Punktzahl', q:p => `welche Punktzahl im ${p.h} die beste war`},
+      {id:'cnt', k:'col', fn:'ANZAHL', cols:'BCD', lab:'Mitgemacht', q:p => `wie viele beim ${p.h} mitgemacht haben`}
+    ]},
+
+  sponsor: {title:'Sponsorenlauf – Anmeldeliste', intro:'Die Klasse 7c macht beim Sponsorenlauf mit. Nicht alle konnten laufen.', top:3,
+    head:['Name', 'Gelaufene Runden'], cols:'B', names:['Mia', 'Jonas', 'Tim', 'Aylin', 'Luca', 'Emma', 'Noah', 'Sophie'],
+    data:[[12], [15], ['krank'], [10], ['krank'], [14], [null], [11]],
+    g:{B:G.hole(0.3, ['krank', 'krank', null], G.n(6, 20))},
+    T:[
+      {id:'cnt', k:'col', fn:'ANZAHL', cols:'B', lab:'Gelaufen', q:() => 'wie viele Kinder gelaufen sind'},
+      {id:'cnta', k:'col', fn:'ANZAHL2', cols:'A', outCol:'B', lab:'Auf der Liste', q:() => 'wie viele Kinder auf der Liste stehen'},
+      {id:'sum', k:'col', fn:'SUMME', cols:'B', lab:'Runden insgesamt', q:() => 'wie viele Runden alle zusammen gelaufen sind'},
+      {id:'avg', k:'col', fn:'MITTELWERT', cols:'B', lab:'Durchschnitt', q:() => 'wie viele Runden die Kinder, die gelaufen sind, im Durchschnitt geschafft haben'},
+      {id:'max', k:'col', fn:'MAX', cols:'B', lab:'Meiste Runden', q:() => 'wie viele Runden das schnellste Kind gelaufen ist'},
+      {id:'nicht', k:'x', make:x => {
+        const R = x.last + 2, t = 'B' + R;
+        x.cells['A' + R] = 'Nicht gelaufen';
+        return {target:t, ref:`=ANZAHL2(A${x.first}:A${x.last})-ANZAHL(B${x.first}:B${x.last})`,
+          text:`Ermittle in ${B(t)} mit einer einzigen Formel, wie viele Kinder auf der Liste nicht gelaufen sind.`}; }}
+    ]},
+
+  ha: {title:'Hausaufgaben-Check', intro:'Herr Maier hakt mit x ab, wer die Hausaufgabe gemacht hat. Beim Vokabeltest steht „fehlt“, wenn jemand nicht da war.', top:3,
+    head:['Name', 'HA 1', 'HA 2', 'HA 3', 'HA 4', 'Gemachte HA', 'Vokabeltest (Punkte)'], cols:'BCDEFG',
+    names:['Mia', 'Jonas', 'Tim', 'Aylin', 'Luca', 'Emma', 'Noah'],
+    data:[['x', 'x', 'x', 'x', null, 18], ['x', null, 'x', null, null, 12], ['x', 'x', null, 'x', null, 'fehlt'], ['x', 'x', 'x', 'x', null, 20],
+          [null, 'x', null, null, null, 9], ['x', null, 'x', 'x', null, 'fehlt'], ['x', 'x', 'x', null, null, 15]],
+    g:{B:G.x(0.75), C:G.x(0.75), D:G.x(0.75), E:G.x(0.75), F:() => null, G:G.hole(0.2, ['fehlt'], G.n(5, 20))},
+    T:[
+      {id:'rcnt', k:'row', fn:'ANZAHL2', rng:'BE', out:'F', hdr:'Gemachte HA', q:p => `wie viele Hausaufgaben ${p.n} gemacht hat`},
+      {id:'cnt', k:'col', fn:'ANZAHL', cols:'G', lab:'Mitgeschrieben', q:() => 'wie viele beim Vokabeltest mitgeschrieben haben'},
+      {id:'cnta', k:'col', fn:'ANZAHL2', cols:'A', outCol:'B', lab:'Schülerinnen und Schüler', q:() => 'wie viele Schülerinnen und Schüler in der Liste stehen'},
+      {id:'hcnt', k:'col', fn:'ANZAHL2', cols:'BCDE', lab:'Gemacht von', q:p => `wie viele die ${p.h} gemacht haben`},
+      {id:'avg', k:'col', fn:'MITTELWERT', cols:'G', lab:'Durchschnitt', q:() => 'wie viele Punkte im Vokabeltest im Durchschnitt erreicht wurden'},
+      {id:'max', k:'col', fn:'MAX', cols:'G', lab:'Beste Punktzahl', q:() => 'welche Punktzahl im Vokabeltest die beste war'},
+      {id:'fehl', k:'x', rows:true, make:x => {
+        const r = x.p.r, t = 'F' + r;
+        x.cells['F' + x.top] = 'Fehlende HA';
+        return {target:t, ref:`=4-ANZAHL2(B${r}:E${r})`, text:`Es gab 4 Hausaufgaben. Ermittle in ${B(t)} mit einer Formel, wie viele Hausaufgaben ${x.p.n} <b>nicht</b> gemacht hat.`}; }}
+    ]},
+
+  lauf: {title:'Sponsorenlauf – Auswertung', intro:'Werte den Sponsorenlauf der 7. Klassen aus. Jede gelaufene Runde bringt 2 € für die Klassenfahrt.', top:3,
+    head:['Name', 'Klasse', 'Runden'], cols:'BC',
+    names:['Mia', 'Jonas', 'Tim', 'Aylin', 'Luca', 'Emma', 'Noah', 'Sophie', 'Ben', 'Lina', 'Paul', 'Zoe'],
+    data:[['7a', 12], ['7a', 15], ['7a', 'krank'], ['7b', 10], ['7b', 18], ['7b', 14], ['7c', 9], ['7c', 11], ['7c', 'krank'], ['7d', 16], ['7d', 13], ['7d', 17]],
+    g:{C:G.hole(0.25, ['krank', 'krank', null], G.n(6, 22))},
+    T:[
+      {id:'ang', k:'col', fn:'ANZAHL2', cols:'A', outCol:'C', lab:'Angemeldet', q:() => 'wie viele Schülerinnen und Schüler angemeldet sind', hint:'Tipp: In welcher Spalte hat wirklich jede Person einen Eintrag?'},
+      {id:'gel', k:'col', fn:'ANZAHL', cols:'C', lab:'Gelaufen', q:() => 'wie viele tatsächlich gelaufen sind'},
+      {id:'sum', k:'col', fn:'SUMME', cols:'C', lab:'Runden insgesamt', q:() => 'wie viele Runden insgesamt gelaufen wurden'},
+      {id:'avg', k:'col', fn:'MITTELWERT', cols:'C', lab:'Durchschnitt Runden', q:() => 'wie viele Runden im Durchschnitt gelaufen wurden'},
+      {id:'min', k:'col', fn:'MIN', cols:'C', lab:'Wenigste Runden', q:() => 'wie viele Runden am wenigsten gelaufen wurden'},
+      {id:'nicht', k:'x', noFn:true, make:x => {
+        const R = x.last + 2;
+        x.cells['A' + R] = 'Angemeldet'; x.cells['C' + R] = `=ANZAHL2(A${x.first}:A${x.last})`;
+        x.cells['A' + (R + 1)] = 'Gelaufen'; x.cells['C' + (R + 1)] = `=ANZAHL(C${x.first}:C${x.last})`;
+        x.cells['A' + (R + 2)] = 'Nicht gelaufen';
+        return {target:'C' + (R + 2), ref:`=C${R}-C${R + 1}`, noFn:true,
+          text:`Berechne in ${B('C' + (R + 2))}, wie viele nicht gelaufen sind – ohne Funktion, nur mit einem Rechenzeichen und den Zellen ${B('C' + R)} und ${B('C' + (R + 1))}.`}; }},
+      {id:'spende', k:'x', make:x => {
+        const R = x.last + 2;
+        x.cells['A' + R] = 'Runden insgesamt'; x.cells['C' + R] = `=SUMME(C${x.first}:C${x.last})`;
+        x.cells['A' + (R + 1)] = 'Spende pro Runde'; x.cells['C' + (R + 1)] = 2; x.fmt['C' + (R + 1)] = 'eur';
+        x.cells['A' + (R + 2)] = 'Gesamtspende'; x.fmt['C' + (R + 2)] = 'eur';
+        return {target:'C' + (R + 2), ref:`=C${R}*C${R + 1}`, text:`Berechne in ${B('C' + (R + 2))} die Gesamtspende. Benutze dafür die Zellen ${B('C' + R)} und ${B('C' + (R + 1))}.`}; }},
+      {id:'spende1', k:'x', make:x => {
+        const R = x.last + 2;
+        x.cells['A' + R] = 'Spende pro Runde'; x.cells['C' + R] = 2; x.fmt['C' + R] = 'eur';
+        x.cells['A' + (R + 1)] = 'Gesamtspende'; x.fmt['C' + (R + 1)] = 'eur';
+        return {target:'C' + (R + 1), ref:`=SUMME(C${x.first}:C${x.last})*C${R}`, text:`Berechne in ${B('C' + (R + 1))} mit einer einzigen Formel die Gesamtspende. Der Betrag pro Runde steht in ${B('C' + R)}.`}; }}
+    ]}
+};
+
+/* ---- Aufgabe aus Szenario + Vorlage bauen ---- */
+function genData(sc, r){ return sc.data.map(row => sc.cols.split('').map((c, j) => sc.g && sc.g[c] ? sc.g[c](r) : row[j])); }
+function baseCells(sc, data){
+  const cells = {};
+  sc.head.forEach((h, i) => { cells[ad(i, sc.top)] = h; });
+  sc.names.forEach((nm, i) => {
+    const r = sc.top + 1 + i; cells['A' + r] = nm;
+    sc.cols.split('').forEach((c, j) => { const v = data[i][j]; if (v != null) cells[c + r] = v; });
+  });
+  return cells;
+}
+const isSimpleTpl = t => t.k !== 'x' || !!(t.lv && t.lv.includes(1));
+function tplLevels(t){ return t.lv || (t.k === 'x' ? [5] : [1, 2, 3, 4]); }
+function buildCells(sc, t, p, data){
+  const cells = baseCells(sc, data), fmt = {}, first = sc.top + 1, last = sc.top + sc.names.length;
+  let o;
+  if (t.k === 'col'){ const R = last + 2; cells['A' + R] = t.lab; o = {target:(t.outCol || p.c) + R, rng:`${p.c}${first}:${p.c}${last}`}; }
+  else if (t.k === 'row'){ cells[t.out + sc.top] = t.hdr; o = {target:t.out + p.r, rng:`${t.rng[0]}${p.r}:${t.rng[1]}${p.r}`}; }
+  else if (t.k === 'block'){ const R = last + 2; cells['A' + R] = t.lab; o = {target:(t.outCol || 'B') + R, rng:`${t.rng[0]}${first}:${t.rng[1]}${last}`}; }
+  else o = t.make({cells, fmt, first, last, top:sc.top, p, c:p.c});
+  if (!o.fn && t.fn) o.fn = typeof t.fn === 'function' ? t.fn(p.c) : t.fn;
+  if (!o.ref) o.ref = `=${o.fn}(${o.rng})`;
+  if (!o.q && t.q) o.q = typeof t.q === 'function' ? t.q(p) : t.q[p.c];
+  o.cells = cells; o.fmt = fmt;
+  return o;
+}
+const VERB = ['Berechne', 'Ermittle', 'Bestimme'];
+function makeTask(scId, tid, p0, lv, seed, named){
+  const sc = SC[scId], t = sc.T.find(x => x.id === tid);
+  const r = rng(seed == null ? 4242 : seed);
+  const p = Object.assign({}, p0 || {});
+  if (t.cols && !p.c) p.c = pick1(r, t.cols.split(''));
+  if ((t.k === 'row' || t.rows) && !p.r) p.r = sc.top + 1 + Math.floor(r() * sc.names.length);
+  if (p.c) p.h = (sc.noun && sc.noun[p.c]) || sc.head[colN(p.c)];
+  if (p.r) p.n = sc.names[p.r - sc.top - 1];
+  const o = buildCells(sc, t, p, seed == null ? sc.data : genData(sc, r));
+  const variants = [];
+  for (let i = 0; i < 8; i++) variants.push(buildCells(sc, t, p, genData(sc, rng((seed == null ? 99 : seed) * 31 + i * 977 + 1))).cells);
+  const verb = VERB[(seed == null ? colN(o.target.match(/[A-Z]+/)[0]) + +o.target.match(/\d+/)[0] : Math.floor(r() * 3)) % 3];
+  // Aufgaben mit Rechenzeichen gehen erst ab Stufe 3 (Bausteine)
+  const simple = !!(o.fn && o.rng && o.ref === `=${o.fn}(${o.rng})`);
+  const eff = !simple && lv < 3 ? 3 : lv;
+  let text;
+  if (!simple) text = o.text;
+  else if (eff === 1) text = `In ${B(o.target)} soll mit ${C(o.fn)} berechnet werden, ${o.q}. Markiere dazu den passenden Bereich.`;
+  else if (eff === 2) text = `In ${B(o.target)} soll stehen, ${o.q}. Ziehe die passende Funktion in die Formel und markiere den Bereich.`;
+  else if (named) text = `${verb} in ${B(o.target)} mit der Funktion ${C(o.fn)}, ${o.q}.`;
+  else text = `${verb} in ${B(o.target)}, ${o.q}.`;
+  if (t.hint && !named && eff >= 2) text += `<br><span class="intro">${t.hint}</span>`;
+  const ops = [...new Set((o.ref.slice(1).replace(/"[^"]*"/g, '').match(/[+\-*/]/g) || []))];
+  return {scId, tid, p, lv:eff, wanted:lv, simple, named:!!named, sc, t, title:sc.title, intro:sc.intro, cells:o.cells, fmt:Object.assign({}, o.fmt), colFmt:sc.fmt || {},
+    target:o.target, ref:o.ref, fn:o.fn, rng:o.rng, text, need:named && simple && eff >= 3 ? [o.fn] : [], noFn:!!(o.noFn || t.noFn), variants, ops,
+    goal:t.goal, after:t.after ? t.after(p) : ''};
+}
+
+/* ---- Übungen: 25 Aufgaben in drei Gruppen; die Stufe (Flamme) bestimmt die Hilfen ---- */
+const GROUPS = [null, 'Funktion wird genannt', 'Funktion selbst finden', 'Mit Rechenzeichen kombinieren'];
+const STD = [
+  ['brezel', 'sum', {c:'B'}, 1], ['temp', 'min', {c:'C'}, 1], ['pfand', 'rsum', {r:5}, 1], ['vokabel', 'avg', {c:'B'}, 1], ['pfand', 'all', {}, 1],
+  ['brezel', 'avg', {c:'C'}, 1], ['screen', 'max', {c:'B'}, 1], ['ha', 'rcnt', {r:4}, 1], ['wetter', 'sum', {c:'C'}, 1], ['einkauf', 'ges', {}, 1],
+  ['screen', 'sum', {c:'C'}, 2], ['wetter', 'max', {c:'D'}, 2], ['bjs', 'min', {c:'C'}, 2], ['sport', 'ravg', {r:4}, 2], ['sponsor', 'cnt', {c:'B'}, 2],
+  ['temp', 'avg', {c:'B'}, 2], ['sport', 'max', {c:'D'}, 2], ['lauf', 'ang', {c:'A'}, 2], ['bjs', 'best', {c:'B'}, 2], ['ha', 'cnt', {c:'G'}, 2],
+  ['screen', 'std', {c:'B'}, 3], ['bjs', 'diff', {c:'D'}, 3], ['einkauf', 'rest', {}, 3], ['sponsor', 'nicht', {}, 3], ['lauf', 'spende', {}, 3]
+];
+
+const LEVELS = [null,
+  {name:'Bereich auswählen'},
+  {name:'Funktionsblock einsetzen'},
+  {name:'Formel aus Bausteinen bauen'},
+  {name:'Freie Eingabe mit Hinweisen'},
+  {name:'Freie Eingabe ohne Hinweise'}
+];
+
+/* ---- Erklärung: Themen mit Schritten ---- */
+const HELP_FN = `<details class="help"><summary>Hilfe: Die Funktionen</summary>
+<table class="tt"><tr><th>Funktion</th><th>macht …</th></tr>
+<tr><td><code>SUMME</code></td><td>addiert alle Zahlen</td></tr>
+<tr><td><code>MITTELWERT</code></td><td>berechnet den Durchschnitt</td></tr>
+<tr><td><code>MIN</code></td><td>liefert den kleinsten Wert</td></tr>
+<tr><td><code>MAX</code></td><td>liefert den größten Wert</td></tr>
+<tr><td><code>ANZAHL</code></td><td>zählt Zellen mit Zahlen</td></tr>
+<tr><td><code>ANZAHL2</code></td><td>zählt alle Zellen, die nicht leer sind</td></tr></table>
+<p class="howin">So gibst du eine Funktion ein: <code>=</code> tippen → Funktionsname und <code>(</code> tippen → Bereich mit der Maus markieren → <code>)</code> tippen → Enter ↵</p></details>`;
+
+const TOPICS = [
+  {id:'grund', name:'Formeln & Bereiche', desc:'Wie eine Funktion aufgebaut ist und was B4:B8 bedeutet.', steps:[
+    {type:'info', title:'Formeln in Excel', sheet:{sc:'brezel', extra:{A10:'Summe mit +', B10:'=B4+B5+B6+B7+B8'}, sel:'B10'},
+     html:`<p>Jede Formel beginnt mit <code>=</code>. Danach kommt die Rechnung, z. B. <code>=B4+B5</code>.</p>
+     <p>Statt Zahlen abzuschreiben, verwendest du <b>Zellbezüge</b> wie <code>B4</code>. Ändert sich eine Zahl, rechnet Excel automatisch neu.</p>
+     <p><b>Klicke</b> in der Tabelle auf verschiedene Zellen. Oben in der Bearbeitungsleiste siehst du, was in der Zelle steht – bei B10 die Formel.</p>`},
+    {type:'info', title:'Funktionen und Bereiche', sheet:{sc:'brezel', extra:{A10:'Summe mit +', B10:'=B4+B5+B6+B7+B8', A11:'Summe mit SUMME', B11:'=SUMME(B4:B8)'}, sel:'B11'},
+     html:`<p>Eine <b>Funktion</b> ist eine fertige Rechnung mit einem Namen. Sie ist immer gleich aufgebaut:</p>
+     <p class="formula-ex"><code>=NAME(Bereich)</code></p>
+     <p>Ein <b>Bereich</b> sind mehrere Zellen am Stück. Der Doppelpunkt bedeutet „bis“: <code>B4:B8</code> heißt „B4 bis B8“, also B4, B5, B6, B7 und B8. In der Tabelle ist der Bereich farbig markiert.</p>`},
+    {type:'choice', title:'Welche Zellen?', sheet:{sc:'brezel'},
+     html:'<p>Welche Zellen sind mit <code>C4:C7</code> gemeint?</p>',
+     options:['C4 und C7', 'C4, C5, C6 und C7', 'C4 bis C7 und B4 bis B7', 'nur C4'], correct:[1],
+     why:{0:'Mit dem Doppelpunkt sind auch alle Zellen <b>dazwischen</b> gemeint.', 2:'Spalte B gehört nicht dazu – der Bereich bleibt in Spalte C.', 3:'Der Doppelpunkt bedeutet „bis“ – es geht weiter bis C7.'}},
+    {type:'choice', title:'Einen Bereich schreiben', mono:true,
+     html:'<p>Du willst die Zellen B5, B6, B7 und B8 in einer Funktion verwenden. Wie schreibst du den Bereich?</p>',
+     options:['B5:B8', 'B5;B8', 'B5-B8', 'B5 bis B8'], correct:[0],
+     why:{1:'Das Semikolon ; trennt einzelne Teile: <code>B5;B8</code> sind nur die zwei Zellen B5 und B8.', 2:'Mit <code>-</code> würde Excel B5 minus B8 rechnen.', 3:'Excel versteht kein „bis“ – dafür gibt es den Doppelpunkt.'}},
+    {type:'choice', title:'Bereich über zwei Spalten', sheet:{sc:'brezel'},
+     html:'<p>Ein Bereich kann auch über mehrere Spalten gehen. Welche Zellen gehören zu <code>B4:C5</code>?</p>',
+     options:['B4 und C5', 'B4, B5, C4 und C5', 'B4, C4 und C5', 'B4 und B5'], correct:[1],
+     why:{0:'B4 und C5 sind nur die Ecken. Dazu gehören alle Zellen im Rechteck dazwischen.', 2:'B5 liegt auch im Rechteck zwischen B4 und C5.', 3:'Spalte C gehört auch dazu.'}},
+    {type:'task', title:'Bereich mit der Maus markieren', task:['brezel', 'sum', {c:'C'}, 1],
+     html:`<p>In Excel musst du Bereiche nicht abtippen – du markierst sie mit der Maus. Das geht hier auch:</p>
+     <ol><li>Klicke auf die erste Zelle (C4) und halte die Maustaste gedrückt,</li><li>ziehe bis zur letzten Zelle (C8),</li><li>lass los.</li></ol>
+     <p>Der Bereich wird in die Formel eingetragen. Du kannst ihn auch eintippen.</p>`},
+    {type:'task', title:'Eine ganze Formel eingeben', task:['brezel', 'sum', {c:'B'}, 4],
+     html:`<p>Jetzt schreibst du die ganze Formel selbst – so wie in Excel:</p>
+     <ol><li><code>=</code> tippen</li><li>Funktionsname und <code>(</code> tippen</li><li>Bereich mit der Maus markieren</li><li><code>)</code> tippen und Enter ↵ (oder „Prüfen“)</li></ol>`},
+    {type:'info', title:'Geschafft!', final:true,
+     html:`<p>Das Wichtigste:</p><ul><li>Eine Formel beginnt mit <code>=</code>.</li><li>Eine Funktion ist aufgebaut wie <code>=SUMME(B4:B8)</code>: Name, Klammer auf, Bereich, Klammer zu.</li>
+     <li>Der Doppelpunkt bedeutet „bis“. Das Semikolon <code>;</code> trennt einzelne Teile.</li></ul>`}
+  ]},
+  {id:'summe', name:'SUMME', desc:'Viele Zahlen auf einmal addieren.', steps:[
+    {type:'info', title:'Die Funktion SUMME', sheet:{sc:'brezel', extra:{A10:'Summe mit +', B10:'=B4+B5+B6+B7+B8', C10:'=C4+C5+C6+C7+C8', A11:'Summe mit SUMME', B11:'=SUMME(B4:B8)', C11:'=SUMME(C4:C8)'}, sel:'B11'},
+     html:`<p><code>SUMME</code> addiert alle Zahlen in einem Bereich.</p>
+     <p class="formula-ex"><code>=SUMME(B4:B8)</code></p>
+     <p>Das ergibt dasselbe wie <code>=B4+B5+B6+B7+B8</code>, ist aber viel kürzer. Bei einem ganzen Schuljahr mit 190 Verkaufstagen wäre die Formel mit + riesig – mit SUMME schreibst du einfach <code>=SUMME(B4:B193)</code>.</p>
+     <p><b>Klicke</b> auf B10 und B11 und vergleiche die Formeln.</p>`},
+    {type:'choice', title:'Was kommt heraus?', sheet:{sc:'brezel'},
+     html:'<p>Was ergibt <code>=SUMME(B4:B6)</code>?</p>',
+     options:['110', '38', '30', '80'], correct:[0],
+     why:{1:'38 steht nur in B4. SUMME addiert alle Zahlen von B4 bis B6.', 2:'30 steht nur in B6. SUMME addiert alle Zahlen von B4 bis B6.', 3:'80 = 38 + 42. B6 gehört aber auch zum Bereich.'},
+     after:'38 + 42 + 30 = 110.'},
+    {type:'choice', title:'Die richtige Formel', sheet:{sc:'brezel'}, mono:true,
+     html:'<p>Welche Formel berechnet, wie viele <b>Muffins</b> in der Woche verkauft wurden?</p>',
+     options:['=SUMME(C4:C8)', '=SUMME(C4;C8)', '=SUMME(B4:B8)', 'SUMME(C4:C8)'], correct:[0],
+     why:{1:'<code>C4;C8</code> sind nur zwei Zellen: C4 und C8. Für alle Zellen dazwischen brauchst du den Doppelpunkt.', 2:'In Spalte B stehen die Brezeln, nicht die Muffins.', 3:'Es fehlt das = am Anfang. Ohne = ist es für Excel nur Text.'}},
+    {type:'task', title:'SUMME nach rechts', task:['pfand', 'rsum', {r:4}, 4],
+     html:'<p>Die 7. Klassen sammeln Pfandflaschen. Diesmal geht der Bereich nach <b>rechts</b>: von Woche 1 bis Woche 4.</p>'},
+    {type:'task', title:'SUMME über einen Block', task:['pfand', 'all', {}, 4],
+     html:'<p>Ein Bereich kann auch ein ganzer Block sein. Markiere mit der Maus von B4 bis E7 – also alle Zahlen auf einmal.</p>'},
+    {type:'info', title:'Merkkasten SUMME', final:true,
+     html:`<p><code>=SUMME(B4:B8)</code> addiert alle Zahlen von B4 bis B8.</p><ul><li>Der Bereich kann nach unten, nach rechts oder ein ganzer Block sein.</li><li>Text und leere Zellen im Bereich werden nicht mitgerechnet.</li></ul>`}
+  ]},
+  {id:'mittel', name:'MITTELWERT', desc:'Den Durchschnitt berechnen.', steps:[
+    {type:'info', title:'Die Funktion MITTELWERT', sheet:{sc:'vokabel', extra:{B9:13, A11:'Summe', B11:'=SUMME(B4:B9)', A12:'Durchschnitt mit / 6', B12:'=B11/6', A13:'Durchschnitt mit MITTELWERT', B13:'=MITTELWERT(B4:B9)'}, sel:'B13'},
+     html:`<p>Den <b>Durchschnitt</b> berechnet man so: alle Zahlen zusammenzählen und durch die Anzahl teilen. <code>MITTELWERT</code> macht beides in einem Schritt:</p>
+     <p class="formula-ex"><code>=MITTELWERT(B4:B9)</code></p>
+     <p><b>Klicke</b> auf B11, B12 und B13 und vergleiche: B12 und B13 haben dasselbe Ergebnis.</p>`},
+    {type:'choice', title:'Was kommt heraus?',
+     html:'<p>Mia hat in drei Tests 10, 14 und 12 Punkte. Was ergibt <code>MITTELWERT</code>?</p>',
+     options:['12', '36', '14', '3'], correct:[0],
+     why:{1:'36 ist die Summe. Der Durchschnitt ist Summe geteilt durch Anzahl: 36 : 3.', 2:'14 ist der beste Test – das wäre MAX.', 3:'3 ist die Anzahl der Tests.'},
+     after:'(10 + 14 + 12) : 3 = 36 : 3 = 12.'},
+    {type:'info', title:'Leere Zellen', sheet:{sc:'vokabel', extra:{A11:'Summe', B11:'=SUMME(B4:B9)', A12:'Durchschnitt mit / 6', B12:'=B11/6', A13:'Durchschnitt mit MITTELWERT', B13:'=MITTELWERT(B4:B9)'}, sel:'B13'},
+     html:`<p>Lena war beim Test 6 krank – die Zelle B9 ist <b>leer</b>.</p>
+     <p><code>MITTELWERT</code> zählt leere Zellen nicht mit und teilt deshalb nur durch 5. Die Rechnung mit <code>/6</code> in B12 ist jetzt falsch, weil sie stur durch 6 teilt.</p>`},
+    {type:'choice', title:'Leer oder 0?', sheet:{sc:'vokabel'},
+     html:'<p>Was passiert mit dem Durchschnitt, wenn man bei Test 6 statt einer leeren Zelle eine <code>0</code> einträgt?</p>',
+     options:['Er wird kleiner, weil die 0 mitgezählt wird.', 'Nichts – eine 0 zählt MITTELWERT nicht mit.', 'Excel zeigt einen Fehler.'], correct:[0],
+     why:{1:'Eine 0 ist eine Zahl – MITTELWERT rechnet sie mit und teilt dann durch 6.', 2:'0 ist eine ganz normale Zahl, damit kann Excel rechnen.'},
+     after:'Deshalb: Wer krank war, bekommt eine leere Zelle – keine 0.'},
+    {type:'task', title:'MITTELWERT nach unten', task:['wetter', 'avg', {c:'B'}, 4], html:'<p>Die Wetter-AG will wissen, wie warm es im Halbjahr durchschnittlich war.</p>'},
+    {type:'task', title:'MITTELWERT nach rechts', task:['sport', 'ravg', {r:6}, 4], html:'<p>Diesmal geht der Bereich nach rechts. Achtung: Tim war beim Weitsprung krank.</p>',
+     after:'Tims Durchschnitt wurde nur aus zwei Zahlen berechnet – die leere Zelle zählt nicht mit.'},
+    {type:'info', title:'Merkkasten MITTELWERT', final:true,
+     html:`<p><code>=MITTELWERT(B4:B9)</code> berechnet den Durchschnitt der Zahlen von B4 bis B9.</p><ul><li>Leere Zellen und Text zählen nicht mit.</li><li>Eine 0 ist eine Zahl und zählt mit.</li></ul>`}
+  ]},
+  {id:'minmax', name:'MIN und MAX', desc:'Den kleinsten und den größten Wert finden.', steps:[
+    {type:'info', title:'Die Funktionen MIN und MAX', sheet:{sc:'temp', extra:{A10:'Niedrigste Temperatur', B10:'=MIN(B4:B8)', C10:'=MIN(C4:C8)', A11:'Höchste Temperatur', B11:'=MAX(B4:B8)', C11:'=MAX(C4:C8)'}, sel:'B10'},
+     html:`<p><code>MIN</code> liefert den <b>kleinsten</b> Wert eines Bereichs, <code>MAX</code> den <b>größten</b>.</p>
+     <p class="formula-ex"><code>=MIN(B4:B8)</code> &nbsp; <code>=MAX(B4:B8)</code></p>
+     <p><b>Klicke</b> auf B10 und B11 und vergleiche die Ergebnisse mit den Zahlen in Spalte B. Bei 365 Tagen im Jahr würdest du so den kältesten Tag sofort finden.</p>`},
+    {type:'choice', title:'Was kommt heraus?', sheet:{sc:'temp'},
+     html:'<p>Was ergibt <code>=MAX(C4:C8)</code>?</p>',
+     options:['17', '12', '73', '15'], correct:[0],
+     why:{1:'12 ist der kleinste Wert – das wäre MIN.', 2:'73 ist die Summe – das wäre SUMME.', 3:'15 steht nur in C4.'}},
+    {type:'choice', title:'Was ist das beste Ergebnis?', sheet:{sc:'bjs'},
+     html:'<p>Beim 50-m-Lauf wird die Zeit in Sekunden gemessen. Mit welcher Funktion findest du die <b>beste</b> Zeit?</p>',
+     options:['MIN', 'MAX', 'SUMME', 'MITTELWERT'], correct:[0],
+     why:{1:'MAX findet die größte Zeit – das ist beim Laufen die langsamste!', 2:'SUMME zählt alle Zeiten zusammen.', 3:'MITTELWERT liefert die durchschnittliche Zeit.'},
+     after:'Je kleiner die Zeit, desto schneller. Beim Weitsprung ist es umgekehrt: Da ist der größte Wert der beste.'},
+    {type:'task', title:'MIN anwenden', task:['temp', 'min', {c:'B'}, 4], html:'<p>Wie kalt war es am kältesten Morgen?</p>'},
+    {type:'task', title:'MAX anwenden', task:['bjs', 'max', {c:'C'}, 4], html:'<p>Wer ist am weitesten gesprungen?</p>'},
+    {type:'info', title:'Merkkasten MIN und MAX', final:true,
+     html:`<ul><li><code>=MIN(B4:B8)</code> liefert den kleinsten Wert von B4 bis B8.</li><li><code>=MAX(B4:B8)</code> liefert den größten Wert von B4 bis B8.</li></ul><p>Überlege immer, ob der kleinste oder der größte Wert gesucht ist – beim Laufen ist die kleinste Zeit die beste!</p>`}
+  ]},
+  {id:'anzahl', name:'ANZAHL und ANZAHL2', desc:'Zählen, wie viele Einträge es gibt.', steps:[
+    {type:'info', title:'ANZAHL und ANZAHL2', sheet:{sc:'sponsor', extra:{A13:'ANZAHL in Spalte B', B13:'=ANZAHL(B4:B11)', A14:'ANZAHL2 in Spalte B', B14:'=ANZAHL2(B4:B11)', A15:'ANZAHL2 in Spalte A', B15:'=ANZAHL2(A4:A11)'}, sel:'B13'},
+     html:`<p>Beide Funktionen <b>zählen</b> Zellen – sie rechnen nicht mit den Zahlen.</p>
+     <ul><li><code>ANZAHL</code> zählt nur Zellen, in denen eine <b>Zahl</b> steht.</li><li><code>ANZAHL2</code> zählt alle Zellen, die <b>nicht leer</b> sind – also auch Text wie „krank“.</li><li>Leere Zellen zählen bei beiden nicht.</li></ul>
+     <p><b>Klicke</b> auf B13, B14 und B15 und vergleiche.</p>`},
+    {type:'choice', title:'ANZAHL', sheet:{sc:'sponsor'},
+     html:'<p>Was ergibt <code>=ANZAHL(B4:B11)</code>?</p>',
+     options:['5', '7', '8', '62'], correct:[0],
+     why:{1:'7 wäre ANZAHL2. Die Wörter „krank“ zählt ANZAHL nicht mit.', 2:'B10 ist leer, und „krank“ ist keine Zahl.', 3:'62 ist die Summe der Runden – ANZAHL zählt nur, wie viele Zahlen es sind.'}},
+    {type:'choice', title:'ANZAHL2', sheet:{sc:'sponsor'},
+     html:'<p>Was ergibt <code>=ANZAHL2(B4:B11)</code>?</p>',
+     options:['7', '5', '8', '2'], correct:[0],
+     why:{1:'5 wäre ANZAHL. ANZAHL2 zählt auch Text wie „krank“.', 2:'B10 ist leer – leere Zellen zählt ANZAHL2 nicht.', 3:'2 ist nur die Zahl der Wörter „krank“.'}},
+    {type:'choice', title:'Namen zählen', sheet:{sc:'sponsor'},
+     html:'<p>Du willst zählen, wie viele Namen in <code>A4:A11</code> stehen. Welche Funktion brauchst du?</p>',
+     options:['ANZAHL2', 'ANZAHL'], correct:[0],
+     why:{1:'Namen sind Text – ANZAHL würde 0 ergeben.'}},
+    {type:'task', title:'Häkchen zählen', task:['ha', 'rcnt', {r:4}, 4], html:'<p>Herr Maier hat mit x abgehakt, wer die Hausaufgabe gemacht hat. Ein x ist Text!</p>'},
+    {type:'task', title:'Zahlen zählen', task:['ha', 'cnt', {c:'G'}, 4], html:'<p>Wer gefehlt hat, hat „fehlt“ statt Punkten. Gezählt werden sollen nur die Punktzahlen.</p>'},
+    {type:'info', title:'Merkkasten ANZAHL', final:true,
+     html:`<ul><li><code>=ANZAHL(B4:B11)</code> zählt die Zellen mit einer <b>Zahl</b>.</li><li><code>=ANZAHL2(B4:B11)</code> zählt alle Zellen, die <b>nicht leer</b> sind – Zahlen und Text.</li><li>Leere Zellen zählen bei beiden nicht.</li></ul>`}
+  ]}
+];
+const STEP_TOTAL = TOPICS.reduce((s, t) => s + t.steps.length, 0);
+</script>
+
+<!-- ===================== Oberfläche ===================== -->
+<script>
+const KEY = 'fn-';
+
+let mode = ['pfad', 'endlos', 'lernen'].includes(load('mode')) ? load('mode') : 'lernen';
+let level = clamp(parseInt(load('level')) || 1, 1, 5);
+let pfadIdx = clamp(parseInt(load('idx')) || 0, 0, STD.length - 1);
+let solved = {}; try { const x = JSON.parse(load('solved') || '{}'); solved = x && !Array.isArray(x) ? x : {}; } catch (e) {}
+let endPick = null, endSeed = 0, endCounted = false, streak = 0, best = parseInt(load('best')) || 0;
+let learn = {topic:null, prog:{}};
+try { const o = JSON.parse(load('learn') || '{}'); learn.prog = o.prog || {}; learn.topic = TOPICS.some(t => t.id === o.topic) ? o.topic : null; } catch (e) {}
+let CUR = null, S = {}, LS = null, pickerOpen = false, PT = null;
+
+/* gelöste Aufgabe bzw. erledigten Schritt an den Server melden (nur wenn die Seite über PocketBase läuft) */
+function logSolved(erstmals){
+  if (!window.TrainerSync) return;
+  if (mode === 'lernen'){
+    const tp = topic(), i = prog().idx, st = tp.steps[i];
+    TrainerSync.event({modus:'erarbeitung', stufe:st.task ? st.task[3] : 0, aufgabe:`${tp.id}-${i + 1}`, titel:`${tp.name}: ${st.title}`, gesamt:STEP_TOTAL, erstmals});
+  } else TrainerSync.event({modus:mode === 'pfad' ? 'uebungen' : 'endlos', stufe:level,
+    aufgabe:mode === 'pfad' ? String(pfadIdx + 1) : `${CUR.scId}-${CUR.tid}`, titel:CUR.title, gesamt:mode === 'pfad' ? STD.length : 0, erstmals});
+}
+
+/* ---------- Aufgaben- und Modussteuerung ---------- */
+function resetS(){ S = {text:'', gap:'', fnsel:'', row:[], made:[], mk:'', mkOpen:false, success:false, fb:null, result:null, inspect:null, sel:null, src:''}; }
+function loadTask(){
+  PT = null; resetS(); LS = null; CUR = null;
+  if (mode === 'lernen'){ if (learn.topic) loadStep(); else render(); return; }
+  if (mode === 'pfad'){ const e = STD[pfadIdx]; CUR = makeTask(e[0], e[1], e[2], level, null, e[3] === 1); }
+  else CUR = makeTask(endPick.sc, endPick.t, {}, level, endSeed, endPick.named);
+  render();
+}
+function loadStep(){
+  const p = prog(), tp = topic();
+  p.idx = clamp(p.idx, 0, tp.steps.length - 1); saveLearn();
+  const st = tp.steps[p.idx];
+  resetS(); CUR = null; LS = null;
+  if (st.type === 'task') CUR = makeTask(...st.task, null, true);
+  if (st.type === 'choice') LS = {sel:new Set(), checked:false};
+  if (st.sheet) S.inspect = st.sheet.sel || null;
+  if (st.type === 'info') markStep();
+  render();
+}
+function newEndless(){
+  const all = [];
+  Object.entries(SC).forEach(([sc, d]) => d.T.forEach(t => { if (level >= 3 || isSimpleTpl(t)) all.push({sc, t:t.id}); }));
+  const pool = all.filter(x => !endPick || x.sc !== endPick.sc);
+  endPick = pick1(Math.random, pool.length ? pool : all); endSeed = rand(); endCounted = false;
+  const t = SC[endPick.sc].T.find(x => x.id === endPick.t);
+  endPick.named = t.goal ? false : level === 1 ? true : level === 2 ? false : Math.random() < 0.4;
+}
+function setLevel(n){ level = n; store('level', n); if (mode === 'endlos') newEndless(); pickerOpen = false; loadTask(); }
+/* ---------- Rendering ---------- */
+function render(){
+  renderHeader();
+  const show = (id, on) => { $(id).style.display = on ? '' : 'none'; };
+  if (mode === 'lernen' && !learn.topic){ renderOverview(OV_INTRO); return; }
+  show('#actions', true);
+  const st = mode === 'lernen' ? curStep() : null;
+  if (st){
+    const tp = topic();
+    $('#lvlname').textContent = `${tp.name} · ${st.title}`;
+    $('#taskmeta').textContent = `Schritt ${prog().idx + 1} von ${tp.steps.length}`;
+    let h = st.html;
+    if (CUR) h += `<div class="assign"><div class="intro">${esc(CUR.intro)}</div><b>Aufgabe:</b> ${CUR.text}</div>${CUR.lv >= 4 ? HELP_FN : HELP_FN.replace(/<p class="howin">[\s\S]*?<\/p>/, '')}`;
+    if (st.final) h += finalButtons();
+    $('#tasktext').innerHTML = h;
+  } else {
+    $('#lvlname').textContent = `Stufe ${level}: ${LEVELS[level].name}` + (CUR.lv !== level ? ' – diese Aufgabe mit Bausteinen' : '');
+    $('#taskmeta').textContent = mode === 'pfad' ? `Übungen · Aufgabe ${pfadIdx + 1} von ${STD.length}` : `Endlos · ${CUR.title}`;
+    $('#tasktext').innerHTML = `<div class="intro"><b>${esc(CUR.title)}:</b> ${esc(CUR.intro)}</div><p>${CUR.text}</p>${CUR.lv >= 4 ? HELP_FN : HELP_FN.replace(/<p class="howin">[\s\S]*?<\/p>/, '')}`;
+  }
+  show('#sheetcard', !!(CUR || (st && st.sheet)));
+  show('#workcard', !!(st && st.type === 'choice'));
+  if (CUR || (st && st.sheet)){ renderFbar(); renderGrid(); }
+  if (st && st.type === 'choice') renderChoice(st);
+  renderFeedback(); renderNav();
+}
+
+function finalButtons(){
+  const i = TOPICS.findIndex(t => t.id === learn.topic), nx = TOPICS[i + 1];
+  return `<p style="margin-top:12px">${nx ? `<button class="btn primary" data-topic-go="${nx.id}">Weiter mit ${esc(nx.name)}</button> ` : ''}<button class="btn${nx ? '' : ' primary'}" data-ov="1">Zur Übersicht</button> <button class="btn" data-mode-go="pfad">Zu den Übungen</button></p>`;
+}
+
+const OV_INTRO = '<p>Wähle aus, was du dir ansehen möchtest. Jedes Thema erklärt eine Funktion an einem Beispiel, stellt dir ein paar einfache Fragen – und dann schreibst du die Funktion selbst.</p>';
+
+/* ---------- Tabelle & Bearbeitungsleiste ---------- */
+function curSheet(){
+  if (CUR) return {cells:CUR.cells, fmt:CUR.fmt, colFmt:CUR.colFmt, top:CUR.sc.top};
+  const st = mode === 'lernen' && learn.topic ? curStep() : null;
+  if (!st || !st.sheet) return null;
+  const sc = SC[st.sheet.sc];
+  return {cells:Object.assign(baseCells(sc, sc.data), st.sheet.extra || {}), fmt:{}, colFmt:sc.fmt || {}, top:sc.top};
+}
+function fmtOf(sh, a){ return sh.fmt[a] || sh.colFmt[a.match(/[A-Z]+/)[0]]; }
+function liveText(){
+  if (!CUR) return '';
+  if (CUR.lv === 1) return `=${CUR.fn}(${S.gap})`;
+  if (CUR.lv === 2) return S.fnsel ? `=${S.fnsel}(${S.gap})` : '=';
+  if (CUR.lv === 3) return S.row.map(x => x.lit).join('');
+  return S.text;
+}
+function curRefs(sh){
+  if (CUR) return refsInText(liveText());
+  const raw = S.inspect && sh.cells[S.inspect];
+  return typeof raw === 'string' && raw[0] === '=' ? refsInText(raw) : [];
+}
+
+function renderGrid(){
+  const sh = curSheet(); if (!sh) return;
+  const cells = sh.cells, keys = Object.keys(cells).concat(CUR ? [CUR.target] : []);
+  let maxC = 0, maxR = sh.top;
+  keys.forEach(a => { const x = addr(a); maxC = Math.max(maxC, x.c); maxR = Math.max(maxR, x.r); });
+  const book = new Sheet(cells), refs = curRefs(sh), col = {};
+  refs.forEach((rg, i) => rangeCells(rg.a, rg.b).forEach(c => { col[c] = i % 6; }));
+  let h = `<table class="xl${CUR ? ' pick' : ''}"><tr><th></th>`;
+  for (let c = 0; c <= maxC; c++) h += `<th>${colL(c)}</th>`;
+  h += '</tr>';
+  for (let r = sh.top; r <= maxR; r++){
+    h += `<tr><th>${r}</th>`;
+    for (let c = 0; c <= maxC; c++){
+      const a = ad(c, r), cls = [];
+      let content = '';
+      if (CUR && a === CUR.target){
+        cls.push('tgt');
+        if (S.success){ cls.push('done'); content = esc(fmtVal(S.result, fmtOf(sh, a))); }
+        else content = esc(liveText() === '=…()' ? '' : liveText());
+      } else {
+        const v = book.val(a);
+        content = esc(fmtVal(v, fmtOf(sh, a)));
+        if (r === sh.top) cls.push('hd');
+        else if (c === 0) cls.push('lbl');
+        if (v.t === 'num' || v.t === 'err') cls.push('num');
+      }
+      if (col[a] != null) cls.push('rc' + col[a]);
+      if (S.sel && S.sel.has(a)) cls.push('sel');
+      if (!CUR && S.inspect === a) cls.push('ins');
+      h += `<td data-c="${a}" class="${cls.join(' ')}">${content}</td>`;
+    }
+    h += '</tr>';
+  }
+  $('#grid').innerHTML = h + '</table>';
+  $('#sheetcard').classList.toggle('solved', !!S.success);
+  const chips = refs.map((rg, i) => `<span class="chip c${i % 6}">${rg.txt || rg.a}</span>`).join('');
+  $('#chips').innerHTML = CUR
+    ? (chips || '') + `<span class="howto">${chips ? '' : 'Tipp: '}Bereiche kannst du auch mit der Maus in der Tabelle markieren – klicken und ziehen.</span>`
+    : chips + '<span class="howto">Klicke auf eine Zelle, um oben zu sehen, was darin steht.</span>';
+}
+
+function renderFbar(){
+  const sh = curSheet(); if (!sh) return;
+  const ia = 'autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"';
+  let inner;
+  if (CUR){
+    if (CUR.lv === 1) inner = `<span>=${CUR.fn}(</span><input id="gap" class="gapin pin" ${ia} placeholder="Bereich" value="${esc(S.gap)}" aria-label="Bereich"><span>)</span>`;
+    else if (CUR.lv === 2) inner = `<span>=</span><div class="slot fnslot" data-drop="fnslot">${S.fnsel
+        ? `<div class="block fn" data-drag="1" data-kind="fn" data-val="${S.fnsel}" data-from="slot"><span class="fname">${S.fnsel}(</span><input id="gap" class="gapin pin" ${ia} placeholder="Bereich" value="${esc(S.gap)}" aria-label="Bereich"><span class="fname">)</span></div>`
+        : '<span class="ph">Funktion hierher ziehen</span>'}</div>`;
+    else if (CUR.lv === 3) inner = `<div class="row" data-drop="row">${S.row.map((x, i) => `<span class="iw">${blockHTML(x.lit, {kind:'rowitem', ri:i})}</span>`).join('') || '<span class="ph">Ziehe Zeichen und Bausteine hierher, um die Formel zu bauen.</span>'}</div>`;
+    else inner = `<input id="ft" class="ftin acin pin" ${ia} placeholder="Formel eingeben, z. B. =SUMME(…)" value="${esc(S.text)}" aria-label="Formel">`;
+    $('#fbar').innerHTML = `<div class="nbox" title="Namenfeld: Hier kommt deine Formel hin">${CUR.target}</div><span class="fxl">fx</span><div class="fin">${inner}</div>`;
+    renderPools();
+  } else {
+    const raw = S.inspect ? sh.cells[S.inspect] : null;
+    const txt = raw == null ? '' : typeof raw === 'number' ? fmtNum(raw) : raw;
+    $('#pools').innerHTML = '';
+    $('#fbar').innerHTML = `<div class="nbox">${S.inspect || ''}</div><span class="fxl">fx</span><div class="fshow${txt ? '' : ' empty'}">${txt ? esc(txt) : (S.inspect ? '(leer)' : 'Klicke auf eine Zelle')}</div>`;
+  }
+  $('#selhint').textContent = '';
+}
+
+/* ---------- Bereich mit der Maus markieren (wie in Excel) ---------- */
+function activeInput(){ return $('#ft') || $('#gap') || $('#mk'); }
+
+/* ---------- Blöcke (Stufe 2 und 3) ---------- */
+const blockKind = lit => FUNCS.includes(lit) ? 'fn' : /^[=();:+\-*/]$/.test(lit) ? 'sym' : 'val';
+function blockHTML(lit, o){
+  const k = blockKind(lit), attrs = `data-drag="1" data-kind="${o.kind}" data-val="${esc(lit)}"${o.ri != null ? ` data-ri="${o.ri}"` : ''}`;
+  return `<div class="block ${k}${o.ghost ? ' ghost' : ''}" ${attrs}>${esc(lit)}${o.del != null ? `<button class="bx" data-del="${o.del}" title="Baustein löschen" aria-label="Baustein löschen">×</button>` : ''}</div>`;
+}
+function renderPools(){
+  const P = $('#pools'), ia = 'autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"';
+  if (CUR.lv === 2){
+    P.innerHTML = `<div class="pool" data-drop="pool"><div class="pool-title">Funktionen</div><div class="pool-items">${FUNCS.map(f =>
+      `<div class="block fn${S.fnsel === f ? ' ghost' : ''}" data-drag="1" data-kind="fn" data-val="${f}">${f}( )</div>`).join('')}</div></div>`;
+    return;
+  }
+  if (CUR.lv !== 3){ P.innerHTML = ''; return; }
+  const syms = ['=', '(', ')', ';', ...CUR.ops];
+  const mk = S.mkOpen
+    ? `<div class="mkrow"><input id="mk" class="gapin pin" ${ia} placeholder="z. B. B4:B8" value="${esc(S.mk)}" aria-label="Neuer Baustein"><button class="btn small primary" id="mkOk">Übernehmen</button><button class="btn small" id="mkX">Abbrechen</button></div>
+       <div class="ohint">Markiere die Zellen in der Tabelle oder tippe den Bereich ein. Auch eine einzelne Zelle (B4) oder eine Zahl (60) geht.</div>`
+    : '<button class="btn small" id="mkBtn">＋ Bereich erstellen</button>';
+  P.innerHTML = `<div class="pool sympool" data-drop="pool"><div class="pool-title">Funktionen</div><div class="pool-items">${FUNCS.map(x => blockHTML(x, {kind:'sym'})).join('')}</div></div>
+    <div class="pool sympool" data-drop="pool"><div class="pool-title">Zeichen</div><div class="pool-items">${syms.map(x => blockHTML(x, {kind:'sym'})).join('')}</div></div>
+    <div class="pool" data-drop="pool"><div class="pool-title">Deine Bausteine</div><div class="pool-items">${S.made.map((x, i) => blockHTML(x, {kind:'sym', del:i})).join('')}${mk}</div></div>`;
+}
+function openMaker(){ S.mkOpen = true; S.mk = ''; renderPools(); const m = $('#mk'); if (m) m.focus(); }
+function makeBlock(){
+  const raw = (S.mk || '').trim().replace(/\s+/g, '').toUpperCase();
+  let lit = null;
+  if (/^\$?[A-Z]{1,3}\$?\d{1,5}$/.test(raw)) lit = normRef(raw);
+  else if (/^\$?[A-Z]{1,3}\$?\d{1,5}:\$?[A-Z]{1,3}\$?\d{1,5}$/.test(raw)){ const [a, b] = raw.split(':'); lit = normRange(a, b); }
+  else if (/^\d+(,\d+)?$/.test(raw)) lit = raw;
+  if (!lit){ hint(raw ? `„${S.mk}“ ist kein Bereich. Beispiele: B4:B8, B4 oder 60.` : 'Markiere zuerst Zellen in der Tabelle oder tippe einen Bereich ein.'); const m = $('#mk'); if (m) m.focus(); return; }
+  if (!S.made.includes(lit)) S.made.push(lit);
+  S.mkOpen = false; S.mk = ''; S.sel = null;
+  renderPools(); renderGrid();
+}
+
+/* Drag & Drop: Hooks für den Kern in basis.js */
+function dropOk(t){
+  const d = t.dataset.drop;
+  if (CUR.lv === 2) return d === 'fnslot' ? D.kind === 'fn' : d === 'pool' && D.from === 'slot';
+  if (d === 'row') return D.kind === 'sym' || D.kind === 'rowitem';
+  return d === 'pool' && D.kind === 'rowitem';
+}
+function dragData(b, e){
+  if (!CUR || e.target.closest('input,button') || b.classList.contains('ghost')) return null;
+  return {kind:b.dataset.kind, val:b.dataset.val, ri:b.dataset.ri != null ? +b.dataset.ri : null, from:b.dataset.from, src:b.dataset.kind !== 'sym'};
+}
+function dragGhost(g){ g.querySelectorAll('input').forEach(x => { x.value = S.gap; x.removeAttribute('id'); }); }
+// Antippen statt Ziehen: Funktion einsetzen bzw. Zeichen hinten anhängen
+function dragTap(d){
+  if (d.kind === 'fn' && d.from !== 'slot') applyDrop(d, 'fnslot', 0);
+  else if (d.kind === 'sym') applyDrop(d, 'row', S.row.length);
+}
+function applyDrop(d, type, idx){
+  if (type === 'fnslot'){ S.fnsel = d.val; }
+  else if (type === 'row'){
+    if (d.kind === 'rowitem'){ const [it] = S.row.splice(d.ri, 1); if (d.ri < idx) idx--; S.row.splice(idx, 0, it); }
+    else S.row.splice(idx, 0, {lit:d.val});
+  } else if (type === 'pool'){
+    if (d.from === 'slot') S.fnsel = '';
+    else if (d.kind === 'rowitem') S.row.splice(d.ri, 1);
+  }
+  S.sel = null; clearMarks(); renderFbar(); renderGrid();
+  if (type === 'fnslot'){ const g = $('#gap'); if (g){ g.focus(); const n = g.value.length; g.setSelectionRange(n, n); } }
+}
+function insertionPoint(inp){
+  if (inp.id === 'mk') return {start:0, end:inp.value.length};
+  const v = inp.value, [s, e] = caret(inp), before = v.slice(0, s), gap = inp.id === 'gap';
+  const okBefore = pc => gap ? /[;:(+\-*/]/.test(pc) : /[=(;+\-*/^:]/.test(pc);
+  // direkt davor steht schon ein Bezug: ersetzen (wie der Zeigemodus in Excel)
+  const m = before.match(/\$?[A-Za-z]{1,3}\$?\d{1,5}(?:\s*:\s*\$?[A-Za-z]{1,3}\$?\d{1,5})?$/);
+  if (m){
+    const st = s - m[0].length, pre = v.slice(0, st).replace(/\s+$/, '');
+    if ((gap && pre === '') || okBefore(pre.slice(-1))) return {start:st, end:Math.max(s, e)};
+  }
+  const pc = before.replace(/\s+$/, '').slice(-1);
+  if (gap){ if (!before.trim() || okBefore(pc)) return {start:s, end:e}; return {err:'Setze zuerst ein Semikolon ; – dann kannst du noch einen Bereich markieren.'}; }
+  if (!v.trim()) return {err:'Tippe zuerst = und den Funktionsnamen mit Klammer, z. B. =SUMME( – dann kannst du den Bereich mit der Maus markieren.'};
+  if (okBefore(pc)) return {start:s, end:e};
+  return {err:'Hier kann kein Bereich eingefügt werden. Setze den Cursor hinter „(“, „;“ oder ein Rechenzeichen.'};
+}
+function syncInput(inp, keepSel){
+  if (inp.id === 'ft') S.text = inp.value; else if (inp.id === 'gap') S.gap = inp.value; else if (inp.id === 'mk') S.mk = inp.value;
+  if (!keepSel) S.sel = null;
+  clearMarks(); renderGrid();
+  if (inp.id === 'ft') acUpdate(inp);
+}
+gridEl.addEventListener('pointerdown', e => {
+  const td = e.target.closest('td[data-c]'); if (!td || e.button > 0) return;
+  const a = td.dataset.c;
+  if (!CUR){ if (curSheet()){ S.inspect = a; renderFbar(); renderGrid(); } return; }
+  e.preventDefault();
+  if (CUR.lv === 3 && !$('#mk')) openMaker();
+  const inp = activeInput();
+  if (!inp){ hint('Ziehe zuerst eine Funktion in die Formel – dann kannst du den Bereich markieren.'); return; }
+  if (a === CUR.target){ hint(`In ${a} steht deine Formel selbst – diese Zelle darf nicht im Bereich vorkommen.`); focusInp(inp); return; }
+  const at = insertionPoint(inp);
+  if (at.err){ hint(at.err); focusInp(inp); return; }
+  $('#selhint').textContent = '';
+  PT = {inp, anchor:a, cur:a, start:at.start, end:at.end, base:inp.value};
+  applyPT();
+  try { gridEl.setPointerCapture(e.pointerId); } catch (x) {}
+});
+gridEl.addEventListener('pointermove', e => {
+  if (!PT) return;
+  const td = cellAt(e.clientX, e.clientY);
+  if (td && td.dataset.c !== PT.cur && td.dataset.c !== CUR.target){ PT.cur = td.dataset.c; applyPT(); }
+});
+/* ---------- Prüfen ---------- */
+function composed(){
+  const lv = CUR.lv;
+  if (lv === 1){ if (!S.gap.trim()) return {missing:'Markiere zuerst den Bereich in der Tabelle (oder tippe ihn ein).'}; return {src:`=${CUR.fn}(${S.gap})`}; }
+  if (lv === 2){
+    if (!S.fnsel) return {missing:'Ziehe zuerst eine Funktion in die Formel.'};
+    if (!S.gap.trim()) return {missing:'Klicke in das Feld in der Klammer und markiere den Bereich in der Tabelle (oder tippe ihn ein).'};
+    return {src:`=${S.fnsel}(${S.gap})`};
+  }
+  if (lv === 3){
+    if (!S.row.length) return {missing:'Ziehe Zeichen und Bausteine in die Formelzeile.'};
+    return {src:S.row.map(x => x.lit).join('')};
+  }
+  return {src:S.text};
+}
+function cellList(list){
+  if (!list.length) return '';
+  const xs = list.map(addr), c1 = Math.min(...xs.map(x => x.c)), c2 = Math.max(...xs.map(x => x.c)), r1 = Math.min(...xs.map(x => x.r)), r2 = Math.max(...xs.map(x => x.r));
+  if (list.length > 1 && (c2 - c1 + 1) * (r2 - r1 + 1) === list.length) return `${ad(c1, r1)} bis ${ad(c2, r2)}`;
+  return list.slice(0, 6).join(', ') + (list.length > 6 ? ' …' : '');
+}
+function diagnose(ast, refAst, T, book){
+  const out = [], a = topCall(ast), b = topCall(refAst);
+  if (a && b){
+    if (a.name !== b.name){
+      if (a.name === 'ANZAHL' && b.name === 'ANZAHL2') out.push('ANZAHL zählt nur Zellen mit Zahlen. Hier stehen aber Einträge mit Text (z. B. Namen oder x) – die zählt nur ANZAHL2.');
+      else if (a.name === 'ANZAHL2' && b.name === 'ANZAHL') out.push('ANZAHL2 zählt auch Zellen mit Text mit (z. B. „krank“ oder „fehlt“). Gezählt werden sollen hier nur die Zahlen.');
+      else out.push(`${C(a.name)} ${FDESC[a.name]}. Gesucht ist aber ${T.goal || GOAL[b.name]}.`);
+    }
+    const two = a.args.length === 2 && a.args.every(x => x.k === 'ref') && b.args.length === 1 && b.args[0].k === 'range';
+    if (two && new Set([a.args[0].v, a.args[1].v, b.args[0].a, b.args[0].b]).size === 2)
+      out.push(`${C(a.args[0].v + ';' + a.args[1].v)} sind nur die zwei Zellen ${a.args[0].v} und ${a.args[1].v}. Für alle Zellen dazwischen schreibst du einen Doppelpunkt: ${C(a.args[0].v + ':' + a.args[1].v)}.`);
+    else if (a.name === b.name || ['ANZAHL', 'ANZAHL2'].includes(a.name) && ['ANZAHL', 'ANZAHL2'].includes(b.name)){
+      const mine = cellsOfRefs(refsOf(a)), want = cellsOfRefs(refsOf(b));
+      const miss = [...want].filter(c => !mine.has(c)), moreAll = [...mine].filter(c => !want.has(c));
+      const more = moreAll.some(c => book.val(c).t !== 'empty') ? moreAll : [];
+      if (miss.length || more.length){
+        let s = 'Dein Bereich passt noch nicht.';
+        if (miss.length) s += ` Es fehlt noch: ${cellList(miss)}.`;
+        if (more.length){
+          const hd = more.filter(c => addr(c).r === T.sc.top);
+          s += ` Zu viel dabei: ${cellList(more)}${hd.length === more.length ? ' (Überschrift)' : ''}.`;
+        }
+        out.push(s);
+      }
+    }
+  }
+  const lits = numsOf(ast).filter(n => !numsOf(refAst).includes(n));
+  if (lits.length) out.push('Schreibe keine Zahlen aus der Tabelle ab – verwende Zellbezüge. Dann rechnet Excel automatisch neu, wenn sich eine Zahl ändert.');
+  return out;
+}
+function judge(src, T){
+  let ast;
+  try { ast = parseFormula(src); } catch (e){ if (!(e instanceof FErr)) throw e; return {err:esc(e.message)}; }
+  const refs = refsOf(ast), cells = cellsOfRefs(refs), refAst = parseFormula(T.ref);
+  const myFns = fnsOf(ast), refFns = fnsOf(refAst), f = c => fmtVal(c, fmtOf(T, T.target));
+  if (cells.has(T.target)) return {err:`Deine Formel steht in ${T.target} und verwendet ${T.target} selbst. Das nennt Excel einen <b>Zirkelbezug</b>. Nimm ${T.target} aus dem Bereich heraus.`};
+  for (const fn of T.need) if (!myFns.has(fn)) return {err:`Verwende hier die Funktion ${C(fn)}.`, task:true};
+  if (T.noFn && myFns.size) return {err:'Hier sollst du ohne Funktion rechnen – nur mit den Zellen und einem Rechenzeichen.', task:true};
+  const book = new Sheet(T.cells), got = book.with(T.target, src).val(T.target), exp = book.with(T.target, T.ref).val(T.target);
+  if (!refs.length) return {err:`Deine Formel ergibt ${C(esc(f(got)))}, enthält aber keinen einzigen Zellbezug. Schreibe keine Zahlen ab, sondern verwende Zellen bzw. Bereiche wie B4:B8. Dann rechnet Excel automatisch neu, wenn sich eine Zahl ändert.`};
+  if (refFns.size && !myFns.size && !T.noFn)
+    return {err:(same(got, exp) ? 'Das Ergebnis stimmt – aber ' : `Deine Formel ergibt ${C(esc(f(got)))}. Außerdem: `) + 'Verwende eine Funktion, statt alle Zellen einzeln zu verrechnen.', task:same(got, exp)};
+  if (!same(got, exp)){
+    let h = `Deine Formel ergibt ${C(esc(f(got)))} – das ist noch nicht das gesuchte Ergebnis.`;
+    if (got.t === 'err' && got.v === '#WERT!') h += '<br>#WERT! bedeutet: Es wird mit einer Zelle gerechnet, in der Text steht.';
+    if (got.t === 'err' && got.v === '#DIV/0!') h += '<br>#DIV/0! bedeutet: Es wird durch 0 geteilt – oder im Bereich steht gar keine Zahl.';
+    const d = diagnose(ast, refAst, T, book);
+    return {err:h + d.map(x => '<br>' + x).join('')};
+  }
+  for (const v of T.variants){
+    const sh = new Sheet(v);
+    if (!same(sh.with(T.target, src).val(T.target), sh.with(T.target, T.ref).val(T.target))){
+      const d = diagnose(ast, refAst, T, book);
+      return {err:'Deine Formel liefert hier zufällig das richtige Ergebnis – aber nicht mehr, wenn sich die Einträge in der Tabelle ändern.' + d.map(x => '<br>' + x).join('')};
+    }
+  }
+  const notes = [], a = topCall(ast), b = topCall(refAst);
+  if (a && b && a.name === b.name){
+    const want = cellsOfRefs(refsOf(b)), extra = [...cellsOfRefs(refsOf(a))].filter(c => !want.has(c));
+    if (extra.length) notes.push(`Dein Bereich enthält auch ${cellList(extra)}. Das klappt hier nur, weil dort keine Zahl steht. Genauer wäre ${C(b.args.map(x => x.k === 'range' ? x.a + ':' + x.b : fmtNode(x)).join(';'))}.`);
+  }
+  return {ok:true, ast, val:got, notes};
+}
+function fmtNode(n){ return n.k === 'ref' ? n.v : n.k === 'num' ? fmtNum(n.v) : '…'; }
+function colorFormula(src){
+  let i = 0;
+  return esc(src).replace(/(^|[^A-Za-z0-9_$ÄÖÜäöüß])(\$?[A-Za-z]{1,3}\$?\d{1,5}(?:\s*:\s*\$?[A-Za-z]{1,3}\$?\d{1,5})?)(?![A-Za-z0-9(])/g,
+    (m, pre, ref) => `${pre}<span class="c${(i++) % 6}">${ref}</span>`);
+}
+const normF = s => normQuotes(s).replace(/[\s$]/g, '').toUpperCase();
+
+function check(){
+  if (!CUR){ if (LS) checkChoice(); return; }
+  const cur = composed();
+  if (cur.missing){ S.fb = {type:'err', html:esc(cur.missing)}; S.success = false; renderFeedback(); return; }
+  const res = judge(cur.src, CUR);
+  if (!res.ok){
+    let html = res.err;
+    if (CUR.lv === 5 && !res.task){
+      let ok = true; try { parseFormula(cur.src); } catch (e){ ok = false; }
+      html = ok ? 'Die Formel ist gültig, liefert aber nicht das gesuchte Ergebnis.' : 'Die Formel enthält einen Fehler.';
+    }
+    S.success = false; S.fb = {type:'err', html}; renderFeedback(); renderGrid(); return;
+  }
+  S.success = true; S.result = res.val; S.src = cur.src;
+  let erstmals;
+  if (mode === 'lernen'){ erstmals = !stepDone(prog().idx); markStep(); }
+  else erstmals = countSolved();
+  logSolved(erstmals);
+  const fm = fmtOf(CUR, CUR.target);
+  let h = `<b>Richtig! 🎉</b> In ${B(CUR.target)} steht jetzt ${C(esc(fmtVal(res.val, fm)))}.<br><span class="fcol">${colorFormula(cur.src)}</span>`;
+  if (CUR.lv >= 3 && normF(cur.src) !== normF(CUR.ref)) h += `<span class="note">Deine Formel ist gleichwertig zur Musterlösung ${C(esc(CUR.ref))}.</span>`;
+  res.notes.forEach(n => { h += `<span class="note">${n}</span>`; });
+  if (CUR.after) h += `<span class="note">${CUR.after}</span>`;
+  const st = mode === 'lernen' ? curStep() : null;
+  if (st && st.after) h += `<span class="note">${st.after}</span>`;
+  if (canNext()) h += `<span class="note">Weiter geht es mit „${mode === 'lernen' ? 'Weiter' : 'Nächste Aufgabe'}“.</span>`;
+  S.fb = {type:'ok', html:h};
+  renderGrid(); renderFeedback(); renderNav();
+}
+
+function clearMarks(){
+  if (!S.success && !S.fb) return;
+  S.success = false; S.fb = null; S.result = null;
+  renderFeedback();
+}
+
+/* ---------- Autovervollständigung (basis.js): Funktionen dieser Seite ---------- */
+const AC_FN = [
+  {n:'ANZAHL',     v:'Wert',  d:'Zählt, wie viele Zellen in einem Bereich Zahlen enthalten.'},
+  {n:'ANZAHL2',    v:'Wert',  d:'Zählt, wie viele Zellen in einem Bereich nicht leer sind (Zahlen und Text).'},
+  {n:'MAX',        v:'Zahl',  d:'Gibt den größten Wert aus einer Reihe von Werten zurück.'},
+  {n:'MIN',        v:'Zahl',  d:'Gibt den kleinsten Wert aus einer Reihe von Werten zurück.'},
+  {n:'MITTELWERT', v:'Zahl',  d:'Berechnet den Durchschnitt (das arithmetische Mittel) der Argumente.'},
+  {n:'SUMME',      v:'Zahl',  d:'Addiert alle Zahlen.'}
+];
+AC.word = before => { const m = before.match(/[A-Za-zÄÖÜäöüß]+\d*$/); return m && (before.trimStart().startsWith('=') && !/\d$/.test(m[0]) || /^ANZAHL2$/i.test(m[0])) ? m[0] : null; };
+
+/* ---------- Ereignisse ---------- */
+document.addEventListener('change', e => {
+  if (e.target.id === 'fnsel'){ S.fnsel = e.target.value; clearMarks(); renderGrid(); }
+});
+document.addEventListener('click', e => {
+  if (e.target.closest('#mkBtn')){ openMaker(); return; }
+  if (e.target.closest('#mkOk')){ makeBlock(); return; }
+  if (e.target.closest('#mkX')){ S.mkOpen = false; S.sel = null; renderPools(); renderGrid(); return; }
+  const dl = e.target.closest('[data-del]'); if (dl){ S.made.splice(+dl.dataset.del, 1); renderPools(); return; }
+  topicClick(e);
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.target.matches && e.target.matches('.pin')){ e.preventDefault(); if (e.target.id === 'mk') makeBlock(); else check(); }
+  if (e.key === 'Escape' && e.target.id === 'mk'){ S.mkOpen = false; renderPools(); }
+});
+if (mode === 'endlos') newEndless();
+loadTask();
+</script>
+</body>
+</html>

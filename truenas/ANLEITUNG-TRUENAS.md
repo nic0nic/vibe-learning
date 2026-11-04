@@ -41,7 +41,7 @@ Beim ersten Start lädt der Container PocketBase 0.40.5 herunter. Das dauert ein
 
 ## 5. Später Tools aktualisieren
 
-Neue Dateien nach `/mnt/Software/it-tools/pb_public` (bzw. `pb_hooks`, `pb_migrations`) kopieren, dann *Apps* → `it-tools` → *Restart*. `pb_data` dabei **nicht** überschreiben, sonst sind Fortschritte und Codes weg.
+Neue Dateien nach `/mnt/Software/it-tools/pb_public` (bzw. `pb_hooks`, `pb_migrations`) kopieren, dann *Apps* → `it-tools` → *Restart*. Seit dem 04.11. liegen die IT-Seiten in `pb_public/IT/`: beim ersten Einspielen danach die alten Ordner `excel`, `python`, `datenbanken`, `tippen` und `tools` direkt in `pb_public` löschen (alte Adressen leitet `pb_hooks/weiterleitung.pb.js` weiter). `pb_data` dabei **nicht** überschreiben, sonst sind Fortschritte und Codes weg.
 
 ## Wenn etwas nicht klappt
 

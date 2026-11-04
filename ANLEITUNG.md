@@ -13,7 +13,8 @@ vibe-learning/
 ├── pb_hooks/              Server-Logik (Anmeldung, Speichern, Auswertung, Verwaltung)
 │   ├── trainer.pb.js
 │   ├── trainer_utils.js
-│   └── tippen.pb.js           Ergebnisse des Tipptrainers pockettype
+│   ├── tippen.pb.js           Ergebnisse des Tipptrainers pockettype
+│   └── weiterleitung.pb.js    alte Adressen (/excel/…) auf /IT/… weiterleiten
 ├── pb_migrations/         legt beim ersten Start automatisch die Tabellen an
 │   ├── 1760860000_trainer_init.js
 │   ├── 1760990000_konten_lehrkraefte.js
@@ -21,42 +22,50 @@ vibe-learning/
 │   ├── 1793710000_tippen_lektion.js  Feld lektion (Lektion üben)
 │   └── 1793720000_tippen_aufgaben.js Tabelle tipp_aufgaben, Felder aufgabe/vollstaendig
 ├── pb_public/             die Webseiten
-│   ├── index.html             Startseite: alle Bereiche mit ihren Übungen
-│   ├── katalog.js             Liste aller Bereiche und Tools (hier neue Tools eintragen)
-│   ├── nav.js                 Menüleiste oben auf jeder Seite
+│   ├── index.html             Startseite: Bereiche des zuletzt gewählten Fachs
+│   ├── katalog.js             Fächer, Bereiche und Tools (hier neue Tools eintragen)
+│   ├── nav.js                 Menüleiste oben auf jeder Seite (Fach-Menü und Bereiche)
 │   ├── seite.css              Aussehen der Übersichtsseiten
 │   ├── sync.js                Anmeldung und Speichern auf dem Server
 │   ├── lehrer.html            Verwaltung für Lehrkräfte und Admin
-│   ├── excel/                 ein Ordner pro Bereich
-│   │   ├── index.html             Übersicht des Bereichs
-│   │   ├── funktionen.html        SUMME, MITTELWERT, MIN, MAX, ANZAHL, ANZAHL2
-│   │   ├── wenn.html
-│   │   ├── und-oder.html
-│   │   └── bezuege.html           relative und absolute Zellbezüge ($)
-│   ├── python/
-│   │   ├── index.html             Übersicht des Bereichs
-│   │   ├── editor.html            Python-Editor mit Terminal (läuft im Browser)
-│   │   ├── bedingungen.html       geführte Übung if/elif/else; Aufgaben und Tests stehen in der Datei
-│   │   └── lib/                   Skulpt (Python), CodeMirror (Editor) und pykurs.js (Technik der
-│   │                              geführten Übungen, Aufbau einer Aufgabe dort oben beschrieben)
-│   ├── datenbanken/
-│   │   ├── index.html             Übersicht des Bereichs
-│   │   ├── filmdatenbank.html     freie Abfragen an die Filmdatenbank
-│   │   ├── abfragen.html          SQL-Abfragen in Stufen (Entwurf wie in Access bis SQL)
-│   │   ├── datenight.html         Kriterien mit UND/ODER (Access-Entwurf oder Blöcke/SQL)
-│   │   ├── abfragen.js/.css       Technik der Abfrage-Übungen, Aufbau oben in abfragen.js
-│   │   ├── filme.js               Daten der Filmdatenbank
-│   │   └── lib/                   sql.js (SQLite im Browser) und Autovervollständigung (CodeMirror)
-│   ├── tippen/                Tippen
-│   │   ├── index.html             Übersicht des Bereichs
-│   │   ├── lektionen.html         „Lektion üben“ (TIPP10-Lektionen, Daten in lektionen/, GPL-2.0)
-│   │   ├── aufgabe.html           „Aufgabe“: Text der Lehrkraft abschreiben (nur mit aktiver Aufgabe sichtbar)
-│   │   └── pockettype.html …      Tipptrainer pockettype, gebaut im eigenen Repo (GPL-3.0),
-│   │                              siehe LICENSE.txt und QUELLE.txt dort; nie von Hand ändern
-│   └── tools/                 Tools (ohne Aufgaben, nicht in der Auswertung)
-│       ├── struktogramm.html      Struktogramm-Editor (Ziehen und Ablegen, Export SVG/HTML/JPG)
-│       ├── python-struktogramm.html  Python-Code → Struktogramm, Übergabe an den Editor
-│       └── struktogramm.js/.css   Zeichnen und Export, Aufbau oben in struktogramm.js
+│   ├── IT/                    ein Ordner pro Fach, darin ein Ordner pro Bereich
+│   │   ├── index.html             Übersicht des Fachs
+│   │   ├── excel/                 ein Ordner pro Bereich
+│   │   │   ├── index.html             Übersicht des Bereichs
+│   │   │   ├── funktionen.html        SUMME, MITTELWERT, MIN, MAX, ANZAHL, ANZAHL2
+│   │   │   ├── wenn.html
+│   │   │   ├── und-oder.html
+│   │   │   └── bezuege.html           relative und absolute Zellbezüge ($)
+│   │   ├── python/
+│   │   │   ├── index.html             Übersicht des Bereichs
+│   │   │   ├── editor.html            Python-Editor mit Terminal (läuft im Browser)
+│   │   │   ├── bedingungen.html       geführte Übung if/elif/else; Aufgaben und Tests stehen in der Datei
+│   │   │   └── lib/                   Skulpt (Python), CodeMirror (Editor) und pykurs.js (Technik der
+│   │   │                              geführten Übungen, Aufbau einer Aufgabe dort oben beschrieben)
+│   │   ├── datenbanken/
+│   │   │   ├── index.html             Übersicht des Bereichs
+│   │   │   ├── filmdatenbank.html     freie Abfragen an die Filmdatenbank
+│   │   │   ├── abfragen.html          SQL-Abfragen in Stufen (Entwurf wie in Access bis SQL)
+│   │   │   ├── datenight.html         Kriterien mit UND/ODER (Access-Entwurf oder Blöcke/SQL)
+│   │   │   ├── abfragen.js/.css       Technik der Abfrage-Übungen, Aufbau oben in abfragen.js
+│   │   │   ├── filme.js               Daten der Filmdatenbank
+│   │   │   └── lib/                   sql.js (SQLite im Browser) und Autovervollständigung (CodeMirror)
+│   │   ├── tippen/                Tippen
+│   │   │   ├── index.html             Übersicht des Bereichs
+│   │   │   ├── lektionen.html         „Lektion üben“ (TIPP10-Lektionen, Daten in lektionen/, GPL-2.0)
+│   │   │   ├── aufgabe.html           „Aufgabe“: Text der Lehrkraft abschreiben (nur mit aktiver Aufgabe sichtbar)
+│   │   │   └── pockettype.html …      Tipptrainer pockettype, gebaut im eigenen Repo (GPL-3.0),
+│   │   │                              siehe LICENSE.txt und QUELLE.txt dort; nie von Hand ändern
+│   │   └── tools/                 Tools (ohne Aufgaben, nicht in der Auswertung)
+│   │       ├── struktogramm.html      Struktogramm-Editor (Ziehen und Ablegen, Export SVG/HTML/JPG)
+│   │       ├── python-struktogramm.html  Python-Code → Struktogramm, Übergabe an den Editor
+│   │       └── struktogramm.js/.css   Zeichnen und Export, Aufbau oben in struktogramm.js
+│   └── BWR/                   Fach mit Jahrgangsstufen
+│       ├── index.html             Auswahl der Jahrgangsstufe
+│       └── 9II/                   Jahrgangsstufe 9 (Wahlpflichtfächergruppe II)
+│           ├── index.html             Übersicht der Stufe
+│           └── unternehmensfuehrung/, anlagen/, finanzierung/, kapitalanlage/, forderungen/
+├── standalone/            jede Übung als Einzeldatei, gleiche Ordner wie in pb_public (IT/excel/…)
 └── ANLEITUNG.md
 ```
 
@@ -345,16 +354,16 @@ PocketBase ist noch in Version 0.x. Größere Sprünge (z. B. 0.40 → 0.41) kö
 
 **Neue Version einspielen** (z. B. aus einer neuen ZIP): vorher ein Backup machen (siehe unten), dann `pb_hooks`, `pb_migrations` und `pb_public` ersetzen und PocketBase **neu starten** (`sudo systemctl restart vibe-learning` bzw. Strg+C und neu starten). Neue Tabellen legt PocketBase beim Start selbst an, bestehende Klassen, Codes und Fortschritte bleiben erhalten.
 
-**Übungen ohne Server weitergeben:** Im Ordner `standalone/` liegt jede Übung als eine einzige HTML-Datei, sortiert wie auf der Webseite, z. B. `standalone/excel/wenn.html`. Sie läuft per Doppelklick, ohne Menü und ohne Anmeldung; der Fortschritt bleibt im Browser. Die Dateien werden mit `python3 werkzeuge/einzeldateien.py` erzeugt und nie von Hand geändert (siehe PRINZIPIEN.md).
+**Übungen ohne Server weitergeben:** Im Ordner `standalone/` liegt jede Übung als eine einzige HTML-Datei, sortiert wie auf der Webseite, z. B. `standalone/IT/excel/wenn.html`. Sie läuft per Doppelklick, ohne Menü und ohne Anmeldung; der Fortschritt bleibt im Browser. Die Dateien werden mit `python3 werkzeuge/einzeldateien.py` erzeugt und nie von Hand geändert (siehe PRINZIPIEN.md).
 
 **Umstieg vom alten Ordnernamen `excel-trainer`:** Der Ordner heißt jetzt `vibe-learning`. Bei einer Installation im Benutzerordner PocketBase beenden, `mv ~/excel-trainer ~/vibe-learning`, dann wie oben `pb_hooks`, `pb_migrations` und `pb_public` ersetzen und neu starten; `pb_data` wandert mit und bleibt erhalten. Läuft der Dienst unter `/srv/excel-trainer`, kann alles so bleiben, wie es ist: Name von Ordner, Dienst und Systembenutzer spielt für die Seite keine Rolle. In diesem Fall in den Befehlen dieser Anleitung `vibe-learning` durch `excel-trainer` ersetzen.
 
-**Tipptrainer pockettype aktualisieren:** pockettype ist ein eigenes Projekt (github.com/nic0nic/pockettype, auf Basis von Monkeytype, GPL-3.0). Im pockettype-Ordner `scripts/pockettype/nach-vibe-learning.sh ../vibe-learning` ausführen (braucht Node 24 und pnpm). Das Skript baut pockettype und ersetzt alles in `pb_public/tippen/` außer der Bereichsseite `index.html`. Danach wie unten `pb_public` auf den Server kopieren. Die Ergebnisse der Schüler liegen in den Tabellen `tipp_ergebnisse` und `tipp_stand` und werden mit dem Schüler bzw. der Klasse gelöscht; in der Verwaltung unter „Auswertung“ den Bereich *Tippen* wählen. Dort unter Übung *Aufgabe* gibt die Lehrkraft der Klasse einen Text zum Abschreiben auf und sieht, wer ihn wie oft, wie schnell und wie genau abgeschrieben hat.
+**Tipptrainer pockettype aktualisieren:** pockettype ist ein eigenes Projekt (github.com/nic0nic/pockettype, auf Basis von Monkeytype, GPL-3.0). Im pockettype-Ordner `scripts/pockettype/nach-vibe-learning.sh ../vibe-learning` ausführen (braucht Node 24 und pnpm). Das Skript baut pockettype und ersetzt alles in `pb_public/IT/tippen/` außer der Bereichsseite `index.html`. Danach wie unten `pb_public` auf den Server kopieren. Die Ergebnisse der Schüler liegen in den Tabellen `tipp_ergebnisse` und `tipp_stand` und werden mit dem Schüler bzw. der Klasse gelöscht; in der Verwaltung unter „Auswertung“ den Bereich *Tippen* wählen. Dort unter Übung *Aufgabe* gibt die Lehrkraft der Klasse einen Text zum Abschreiben auf und sieht, wer ihn wie oft, wie schnell und wie genau abgeschrieben hat.
 
 **Webseiten aktualisieren** (z. B. neue Version eines Trainers): einfach die Datei in `/srv/vibe-learning/pb_public/` ersetzen. Ein Neustart ist nicht nötig.
 
 ```bash
-sudo cp neue/und-oder.html /srv/vibe-learning/pb_public/excel/
+sudo cp neue/und-oder.html /srv/vibe-learning/pb_public/IT/excel/
 sudo chown -R vibe-learning:vibe-learning /srv/vibe-learning/pb_public
 ```
 
@@ -405,15 +414,17 @@ sudo chown -R vibe-learning:vibe-learning /srv/vibe-learning/pb_public
 
 - **Link zur Verwaltung im Menü:** in `pb_public/sync.js` oben bei `verwaltung`.
 - **Neues Tool hinzufügen** (z. B. eine Python-Übung):
-  1. Die HTML-Datei in den Ordner des Bereichs legen, z. B. `pb_public/python/schleifen.html`.
+  1. Die HTML-Datei in den Ordner des Bereichs legen, z. B. `pb_public/IT/python/schleifen.html` oder `pb_public/BWR/9II/anlagen/abschreibung.html`.
   2. Im `<html>`-Tag ein eindeutiges Kürzel setzen: `<html lang="de" data-trainer="py-schleifen">` (nur Kleinbuchstaben, Ziffern und `-`, höchstens 20 Zeichen; später nicht mehr ändern, sonst passt der gespeicherte Fortschritt nicht mehr).
   3. Im `<head>` einbinden:
      ```html
-     <script src="../katalog.js"></script>
-     <script src="../nav.js"></script>
-     <script src="../sync.js"></script>
+     <script src="../../katalog.js"></script>
+     <script src="../../nav.js"></script>
+     <script src="../../sync.js"></script>
      ```
+     Die Pfade führen zum Hauptordner `pb_public/`: bei IT-Seiten `../../`, bei BWR-Seiten (`BWR/9II/anlagen/…`) `../../../`.
   4. Bei Änderungen am gespeicherten Stand `TrainerSync.changed()` aufrufen, bei gelösten Aufgaben `TrainerSync.event({modus, stufe, aufgabe, titel, gesamt, erstmals})`. Gespeichert wird alles im `localStorage`, dessen Schlüssel mit dem Kürzel und `-` beginnen (z. B. `py-schleifen-stand`). `modus` ist `erarbeitung`, `uebungen` oder `endlos`.
-  5. Das Tool in `pb_public/katalog.js` beim passenden Bereich eintragen. Menüleiste, Startseite, Bereichsseite und Lehrerbereich übernehmen es von dort. Am Server muss nichts geändert werden.
-- **Neuen Bereich anlegen:** in `katalog.js` einen Eintrag bei `bereiche` ergänzen (mit `farbe`/`farbeHell` als Akzentfarbe, siehe Kommentar dort) und einen gleichnamigen Ordner mit einer `index.html` anlegen (am einfachsten `python/index.html` kopieren und dort `data-bereich` anpassen).
+  5. Das Tool in `pb_public/katalog.js` beim passenden Bereich des Fachs eintragen. Menüleiste, Startseite, Bereichsseite und Lehrerbereich übernehmen es von dort. Am Server muss nichts geändert werden.
+- **Neuen Bereich anlegen:** in `katalog.js` beim Fach (bzw. bei der Jahrgangsstufe) einen Eintrag bei `bereiche` ergänzen (mit `farbe`/`farbeHell` als Akzentfarbe, siehe Kommentar dort) und einen gleichnamigen Ordner mit einer `index.html` anlegen (am einfachsten `IT/python/index.html` kopieren und dort `data-bereich` auf den Ordner setzen, z. B. `BWR/9II/anlagen`, und die Pfade zum Hauptordner anpassen).
+- **Neues Fach oder neue Jahrgangsstufe:** in `katalog.js` bei `faecher` eintragen (Aufbau im Kommentar oben dort), Ordner anlegen und darin eine `index.html` mit `data-gruppe="Fach"` bzw. `data-gruppe="Fach/Stufe"` (Vorlage `IT/index.html`). Fach mit Stufen bekommt zusätzlich `Fach/index.html` mit `data-fach` (Vorlage `BWR/index.html`). Neue Fachordner in `werkzeuge/einzeldateien.py` bei `FAECHER` eintragen.
 - **Name der Plattform:** in `katalog.js` bei `name` und `untertitel`.
