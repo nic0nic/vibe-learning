@@ -15,9 +15,9 @@ Diese Datei wird von `werkzeuge/skill-bauen.py` aus den Kopfkommentaren der Bibl
 
 ## Regeln (aus PRINZIPIEN.md)
 
-1. Gemeinsamer Code steht in Bibliotheken. Was die Bibliothek des Bereichs kann, wird benutzt und nicht neu geschrieben.
+1. Gemeinsamer Code steht in Bibliotheken. Was `lib/aufgaben.js` oder die Bibliothek des Fachs bzw. Bereichs kann, wird benutzt und nicht neu geschrieben.
 2. Die Seite enthält nur ihr Eigenes. Aufgaben und Level stehen möglichst als Daten in der Seite.
-3. Neue Funktionen kommen erst in die Bibliothek, wenn mindestens zwei Seiten sie gleich brauchen. Dann auch den Kopfkommentar der Bibliothek ergänzen.
+3. Neue Funktionen kommen in eine Bibliothek, wenn mindestens zwei Seiten sie brauchen oder absehbar brauchen werden (allgemeine Aufgabenform, Hilfsfunktion). Ebene: ohne Fachbezug → `lib/`, für ein Fach → `<Fach>/`, Bedienung oder Fachlogik eines Bereichs → `<Fach>/<bereich>/`. Kopfkommentar ergänzen und die Seiten testen, die die Bibliothek schon nutzen.
 4. Kein Build-Schritt, keine Module, keine externen Adressen. Die Seite muss auch per Doppelklick (file://) laufen.
 5. Einzeldateien erzeugt `werkzeuge/einzeldateien.py`. Nie eine Einzeldatei von Hand bauen.
 
