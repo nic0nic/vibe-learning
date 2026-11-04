@@ -63,6 +63,9 @@ vibe-learning/
 │   └── BWR/                   Fach mit Jahrgangsstufen
 │       ├── index.html             Auswahl der Jahrgangsstufe
 │       ├── bwr.css                Grundlayout aller BWR-Seiten
+│       ├── 7II/                   Jahrgangsstufe 7 (Wahlpflichtfächergruppe II)
+│       │   ├── index.html             Übersicht der Stufe
+│       │   └── aufwand-ertrag/        Aufwendungen und Erträge; verkauf-uefe.html = Lern-Chat Verkauf (BK an UEFE, UST)
 │       └── 9II/                   Jahrgangsstufe 9 (Wahlpflichtfächergruppe II)
 │           ├── index.html             Übersicht der Stufe
 │           ├── finanzierung/

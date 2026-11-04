@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="de" data-trainer="chat-uefe">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lern-Chat: Verkauf eigener Erzeugnisse – vibe learning</title>
+<!--
+  Lern-Chat (Typ chat aus lib/aufgaben.js) für BWR Jgst. 7: Buchungssatz beim Verkauf eigener Erzeugnisse
+  mit Umsatzsteuer erarbeiten (BK an UEFE, UST). Jgst. 7: Konten nur mit Kürzel, ohne Kontonummer.
+  Gespeichert: chat-uefe-stand = {fertig}. Auswertung: TrainerSync.event, modus erarbeitung, wenn der Chat
+  einmal ganz durchlaufen ist.
+-->
+<script src="../../../katalog.js"></script>
+<script src="../../../nav.js"></script>
+<script src="../../../sync.js"></script>
+<script>
+(function(){var t=null;try{t=localStorage.getItem('wenn-theme');}catch(e){}
+document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');})();
+</script>
+<link rel="stylesheet" href="../../bwr.css">
+<link rel="stylesheet" href="../../../lib/aufgaben.css">
+<script src="../../../lib/aufgaben.js"></script>
+<style>
+.wrap{max-width:820px}
+.merk{border:2px solid var(--accent);border-radius:12px;padding:10px 14px;margin:0 0 14px;background:var(--panel)}
+.merk .mt{font-weight:800;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent-text,var(--accent));margin-bottom:4px}
+.merk p{margin:4px 0}
+.merk .konto{font:800 18px var(--mono)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="bar"><div class="brand">Lern-Chat<span>: Verkauf</span></div></div>
+  <div class="merk">
+    <div class="mt">Merkkasten · Neues Konto</div>
+    <p><span class="konto">UEFE</span> – <b>Umsatzerlöse für eigene Erzeugnisse</b></p>
+    <p>Auf UEFE bucht ein Industriebetrieb den <b>Verkauf seiner selbst hergestellten Erzeugnisse</b> – immer mit dem <b>Nettobetrag</b>.</p>
+    <p>UEFE ist ein <b>Ertragskonto</b>. Erträge <b>erhöhen das Eigenkapital</b> (Gewinn). Deshalb werden sie wie eine Mehrung des Eigenkapitals im <b>Haben</b> gebucht.</p>
+  </div>
+  <div id="chat"></div>
+</div>
+<script>
+'use strict';
+const {eur, bsText, esc} = Aufgaben;
+const BS = bsText([['BK', 11900]], [['UEFE', 10000], ['UST', 1900]]);
+
+const CHAT = {typ:'chat', name:'BWR-Coach', bild:'🧑‍🏫', nachrichten:[
+  'Hallo! 👋 Heute erarbeiten wir zusammen einen Buchungssatz für einen <b>Verkauf</b>.',
+  'Die <b>Holzmann Maschinenbau GmbH</b> stellt Maschinen her. Sie verkauft eine selbst gebaute Drehmaschine für <b>10.000,00 € netto</b> zuzüglich <b>19 % Umsatzsteuer</b>. Der Kunde überweist den Betrag sofort.',
+  'Wir gehen Schritt für Schritt vor. Zuerst das Geld.',
+  {bot:'Wird das Bankkonto bei diesem Vorgang mehr oder weniger?', antworten:[
+    {t:'mehr', ok:true, r:'Genau! Der Kunde überweist uns Geld, weil wir ihm die Maschine verkaufen.'},
+    {t:'weniger', r:'Nein, es wird mehr, da wir ja unsere Maschine verkaufen und der Kunde uns Geld überweist.'}]},
+  {bot:'Das Bankkonto (BK) ist ein Aktivkonto. Auf welcher Seite buchen wir einen Zugang bei einem Aktivkonto?', antworten:[
+    {t:'Soll', ok:true, r:'Genau! Sehr gut! Zugänge auf Aktivkonten stehen im Soll.'},
+    {t:'Haben', r:'Nicht ganz: Aktivkonten nehmen im <b>Soll</b> zu. Im Haben stehen bei Aktivkonten die Abgänge.'}]},
+  {bot:'Wie viel Euro kommen auf das Bankkonto? Rechne: 10.000,00 € netto + 19 % Umsatzsteuer.', zahl:{l:11900, e:'€'},
+    r:'Richtig! 10.000,00 € + 1.900,00 € = <b>11.900,00 €</b>. Der Kunde zahlt den Bruttobetrag.',
+    rFalsch:'Nicht ganz. Die Umsatzsteuer beträgt 10.000,00 € · 19 % = 1.900,00 €. Der Kunde zahlt also <b>11.900,00 €</b>.'},
+  'Jetzt kommt das neue Konto: Den Verkauf unserer eigenen Erzeugnisse buchen wir auf <b>UEFE</b> – Umsatzerlöse für eigene Erzeugnisse.',
+  {bot:'Ist UEFE ein Aufwandskonto oder ein Ertragskonto?', antworten:[
+    {t:'Aufwandskonto', r:'Nein. Aufwand ist, was wir verbrauchen, z. B. Rohstoffe oder Löhne. Ein Verkauf bringt uns Geld ein – UEFE ist ein <b>Ertragskonto</b>.'},
+    {t:'Ertragskonto', ok:true, r:'Richtig! Durch den Verkauf erzielen wir einen Ertrag.'}]},
+  {bot:'Welcher Betrag kommt auf UEFE?', antworten:[
+    {t:'10.000,00 €', ok:true, r:'Richtig! Auf UEFE buchen wir immer den <b>Nettobetrag</b>.'},
+    {t:'11.900,00 €', r:'Nein. Auf UEFE kommt nur der <b>Nettobetrag</b> von 10.000,00 €. Die Umsatzsteuer gehört nicht uns.'},
+    {t:'1.900,00 €', r:'Nein, das ist die Umsatzsteuer. Auf UEFE kommt der <b>Nettobetrag</b> von 10.000,00 €.'}]},
+  'Moment – da fehlt noch etwas! Der Kunde hat 11.900,00 € überwiesen, auf UEFE stehen aber nur 10.000,00 €.',
+  {bot:'Auf welches Konto kommen die restlichen 1.900,00 €?', antworten:[
+    {t:'VORST', r:'Nein – VORST brauchen wir beim <b>Einkauf</b>. Beim Verkauf berechnen wir dem Kunden <b>Umsatzsteuer</b>: Konto <b>UST</b>.'},
+    {t:'UST', ok:true, r:'Genau! Beim Verkauf berechnen wir dem Kunden Umsatzsteuer.'},
+    {t:'auch auf UEFE', r:'Nein. Die 1.900,00 € sind <b>Umsatzsteuer</b>. Sie gehört dem Finanzamt und kommt auf das Konto <b>UST</b>.'}]},
+  {bot:'Die Umsatzsteuer müssen wir an das Finanzamt weiterleiten – sie ist eine Schuld. Auf welcher Seite steht UST?', antworten:[
+    {t:'Soll', r:'Nicht ganz. Schulden sind Passivposten und nehmen im <b>Haben</b> zu. UST steht also im Haben.'},
+    {t:'Haben', ok:true, r:'Richtig! Unsere Schuld beim Finanzamt nimmt zu – das steht im Haben.'}]},
+  `Super, geschafft! 🎉 Hier ist der vollständige Buchungssatz:<pre>${esc(BS)}</pre>`,
+  'Merke: Zuerst die Soll-Seite, dann „an“, dann die Haben-Seite. Beide Seiten sind gleich groß: 11.900,00 € = 10.000,00 € + 1.900,00 €.'
+]};
+
+let stand = {}; try { stand = JSON.parse(localStorage.getItem('chat-uefe-stand')) || {}; } catch (e) {}
+Aufgaben.baue(document.getElementById('chat'), CHAT, {fertig(){
+  const erstmals = !stand.fertig;
+  stand.fertig = true;
+  try { localStorage.setItem('chat-uefe-stand', JSON.stringify(stand)); } catch (e) {}
+  if (window.TrainerSync){ TrainerSync.changed(); TrainerSync.event({modus:'erarbeitung', stufe:0, aufgabe:'chat', titel:'Lern-Chat: Verkauf eigener Erzeugnisse', gesamt:1, erstmals}); }
+}});
+</script>
+</body>
+</html>

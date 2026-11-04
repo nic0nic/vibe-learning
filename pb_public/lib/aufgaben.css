@@ -74,3 +74,27 @@ pre.af-bs{font:13px/1.5 var(--mono,monospace);background:var(--panel2);border:1p
 .af-zaehler{color:var(--muted);font-size:14px}
 .af-erledigt{font-size:13px;color:var(--ok,#5e8a45);font-weight:700;margin:0 0 8px}
 .af-unten{display:flex;justify-content:space-between;gap:8px;margin-top:16px;border-top:1px solid var(--border);padding-top:12px}
+/* Lern-Chat */
+.af-chat{border:1px solid var(--border);border-radius:14px;background:var(--panel2);overflow:hidden;max-width:720px}
+.af-chatkopf{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--panel);border-bottom:1px solid var(--border)}
+.af-verlauf{display:flex;flex-direction:column;gap:8px;padding:12px;max-height:62vh;overflow-y:auto;scroll-behavior:smooth}
+.af-msg{display:flex;align-items:flex-end;gap:8px;max-width:88%}
+.af-msg.ich{align-self:flex-end;flex-direction:row-reverse}
+.af-ava{flex:none;width:30px;height:30px;border-radius:50%;background:var(--panel);border:1px solid var(--border);display:grid;place-items:center;font-size:17px}
+.af-blase{background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:14px 14px 14px 4px;padding:8px 12px;font-size:15px;line-height:1.4;animation:af-rein .25s ease-out}
+.af-msg.ich .af-blase{background:var(--accent);border-color:var(--accent);color:#fff;border-radius:14px 14px 4px 14px}
+[data-theme=dark] .af-msg.ich .af-blase{color:#2e3440}
+.af-blase.ok{background:var(--af-ok-bg)}
+.af-blase.falsch{background:var(--af-err-bg)}
+.af-blase pre{font:13px/1.5 var(--mono,monospace);margin:6px 0 2px;white-space:pre;overflow-x:auto}
+.af-tippt{display:flex;gap:4px;padding:12px 14px}
+.af-tippt i{width:7px;height:7px;border-radius:50%;background:var(--muted);animation:af-punkt 1s infinite}
+.af-tippt i:nth-child(2){animation-delay:.15s}.af-tippt i:nth-child(3){animation-delay:.3s}
+@keyframes af-punkt{0%,60%,100%{opacity:.25;transform:none}30%{opacity:1;transform:translateY(-3px)}}
+@keyframes af-rein{from{opacity:0;transform:translateY(6px)}}
+.af-chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;padding:10px 12px;border-top:1px solid var(--border);background:var(--panel)}
+.af-chip{font:600 15px system-ui,sans-serif;background:var(--panel);color:var(--accent-text,var(--accent));border:2px solid var(--accent);border-radius:999px;padding:6px 14px;cursor:pointer}
+.af-chip:hover{background:var(--accent);color:#fff}
+.af-chatein{display:flex;gap:6px;align-items:center;padding:10px 12px;border-top:1px solid var(--border);background:var(--panel)}
+.af-chattext{flex:1;min-width:0}
+.af-chatende{padding:10px 12px;border-top:1px solid var(--border);background:var(--panel)}

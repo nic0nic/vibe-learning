@@ -94,6 +94,14 @@ window.KATALOG = {
     },
     {id: 'BWR', titel: 'BWR', text: 'Betriebswirtschaftslehre/Rechnungswesen.',
       stufen: [
+        {id: '7II', titel: 'Jahrgangsstufe 7', kurz: '7', text: 'BWR, Jahrgangsstufe 7 (Wahlpflichtfächergruppe II).',
+          bereiche: [
+            {id: 'aufwand-ertrag', titel: 'Aufwendungen und Erträge', farbe: '#88c0d0', farbeHell: '#3b7f8c', text: 'Aufwands- und Ertragskonten: Einkauf und Verkauf buchen.',
+              tools: [
+                {id: 'chat-uefe', datei: 'verkauf-uefe.html', titel: 'Lern-Chat: Verkauf eigener Erzeugnisse', text: 'Im Chat Schritt für Schritt den Buchungssatz für einen Verkauf erarbeiten: BK an UEFE, UST.'}
+              ]}
+          ]
+        },
         {id: '9II', titel: 'Jahrgangsstufe 9', kurz: '9', text: 'BWR, Jahrgangsstufe 9 (Wahlpflichtfächergruppe II).',
           bereiche: [
             {id: 'unternehmensfuehrung', titel: 'Unternehmensführung', farbe: '#81a1c1', farbeHell: '#4f73a3', text: 'Übungen zur Unternehmensführung.', tools: []},
@@ -899,6 +907,30 @@ pre.af-bs{font:13px/1.5 var(--mono,monospace);background:var(--panel2);border:1p
 .af-zaehler{color:var(--muted);font-size:14px}
 .af-erledigt{font-size:13px;color:var(--ok,#5e8a45);font-weight:700;margin:0 0 8px}
 .af-unten{display:flex;justify-content:space-between;gap:8px;margin-top:16px;border-top:1px solid var(--border);padding-top:12px}
+/* Lern-Chat */
+.af-chat{border:1px solid var(--border);border-radius:14px;background:var(--panel2);overflow:hidden;max-width:720px}
+.af-chatkopf{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--panel);border-bottom:1px solid var(--border)}
+.af-verlauf{display:flex;flex-direction:column;gap:8px;padding:12px;max-height:62vh;overflow-y:auto;scroll-behavior:smooth}
+.af-msg{display:flex;align-items:flex-end;gap:8px;max-width:88%}
+.af-msg.ich{align-self:flex-end;flex-direction:row-reverse}
+.af-ava{flex:none;width:30px;height:30px;border-radius:50%;background:var(--panel);border:1px solid var(--border);display:grid;place-items:center;font-size:17px}
+.af-blase{background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:14px 14px 14px 4px;padding:8px 12px;font-size:15px;line-height:1.4;animation:af-rein .25s ease-out}
+.af-msg.ich .af-blase{background:var(--accent);border-color:var(--accent);color:#fff;border-radius:14px 14px 4px 14px}
+[data-theme=dark] .af-msg.ich .af-blase{color:#2e3440}
+.af-blase.ok{background:var(--af-ok-bg)}
+.af-blase.falsch{background:var(--af-err-bg)}
+.af-blase pre{font:13px/1.5 var(--mono,monospace);margin:6px 0 2px;white-space:pre;overflow-x:auto}
+.af-tippt{display:flex;gap:4px;padding:12px 14px}
+.af-tippt i{width:7px;height:7px;border-radius:50%;background:var(--muted);animation:af-punkt 1s infinite}
+.af-tippt i:nth-child(2){animation-delay:.15s}.af-tippt i:nth-child(3){animation-delay:.3s}
+@keyframes af-punkt{0%,60%,100%{opacity:.25;transform:none}30%{opacity:1;transform:translateY(-3px)}}
+@keyframes af-rein{from{opacity:0;transform:translateY(6px)}}
+.af-chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;padding:10px 12px;border-top:1px solid var(--border);background:var(--panel)}
+.af-chip{font:600 15px system-ui,sans-serif;background:var(--panel);color:var(--accent-text,var(--accent));border:2px solid var(--accent);border-radius:999px;padding:6px 14px;cursor:pointer}
+.af-chip:hover{background:var(--accent);color:#fff}
+.af-chatein{display:flex;gap:6px;align-items:center;padding:10px 12px;border-top:1px solid var(--border);background:var(--panel)}
+.af-chattext{flex:1;min-width:0}
+.af-chatende{padding:10px 12px;border-top:1px solid var(--border);background:var(--panel)}
 
 </style>
 <script>/* ../../../lib/aufgaben.js */
@@ -925,6 +957,13 @@ pre.af-bs{font:13px/1.5 var(--mono,monospace);background:var(--panel2);border:1p
  *                ein Feld ist richtig, wenn ein Begriff darin vorkommt (Groß/klein, ä/ae egal), jedes Feld braucht
  *                einen anderen Eintrag. Tippfehler (Abstand bis 45 % bei langen, 30 % bei kurzen Wörtern) gelten als
  *                „fast richtig“ mit Hinweis auf die Schreibweise; tippfehler:'ok' zählt sie als richtig.
+ *   chat         Lern-Chat wie bei LearningSnacks: name, bild (Emoji), nachrichten:[…], jede Nachricht ist
+ *                'Text des Bots' (HTML erlaubt) oder eine Frage {bot:'Frage', …} mit einer Antwortform:
+ *                  antworten:[{t:'mehr', ok:true, r:'Genau! …'}, {t:'weniger', r:'Nein, …'}]   (Knöpfe)
+ *                  zahl:{l:11900, e:'€', tol}   oder   freitext:{antworten:[…]} (wie Typ freitext)
+ *                  dazu r (Antwort des Bots bei richtig) und rFalsch (Erklärung bei falsch)
+ *                Bei Fehlern erklärt der Bot und macht weiter; am Ende Punkte und „Noch einmal“.
+ *                Gilt als gelöst (fertig), sobald der Chat einmal ganz durchlaufen ist.
  *   buchungssatz konten:['2800 BK', …] (Auswahlliste), soll:[['0700 MA', 40000], …], haben:[…],
  *                steuer:['2600 VORST', '4800 UST'] (für den Hinweis), nebenrechnung (HTML nach Lösung)
  *                prüft: Konten, Soll/Haben vertauscht, fehlende Steuer, Beträge; Lösung im Skill-Format
@@ -1093,6 +1132,25 @@ const TYPEN = {
       return a.felder.every((f, i) => z.st[i] === 'ok') ? {ok:true, t:'✓ ' + (a.ok || 'Alles richtig!')} : {ok:false, t:'Noch nicht alles richtig.'};
     }
   },
+  chat:{
+    zustand:() => ({i:0, log:[], warte:null, punkte:0, fragen:0, tippt:false, ende:false}),
+    sofort:() => true,
+    html(a, z){
+      const ava = `<span class="af-ava" aria-hidden="true">${a.bild || '🤖'}</span>`;
+      const blase = m => m.wer === 'ich' ? `<div class="af-msg ich"><div class="af-blase">${esc(m.text)}</div></div>`
+        : `<div class="af-msg bot">${ava}<div class="af-blase${m.art ? ' ' + m.art : ''}">${m.html}</div></div>`;
+      let ein = '';
+      const q = z.warte != null ? a.nachrichten[z.warte] : null;
+      if (q && q.antworten) ein = `<div class="af-chips">${q.antworten.map((x, j) => `<button class="af-chip" type="button" data-ca="${j}">${esc(x.t)}</button>`).join('')}</div>`;
+      else if (q) ein = `<div class="af-chatein"><input class="feld af-chattext" ${q.zahl ? 'inputmode="decimal"' : ''} autocomplete="off" placeholder="${q.zahl ? 'Zahl eingeben' : 'Antwort eingeben'}" aria-label="Deine Antwort">${q.zahl && q.zahl.e ? `<span>${q.zahl.e}</span>` : ''}<button class="btn haupt af-senden" type="button">Senden</button></div>`;
+      else if (z.ende) ein = `<div class="af-chatende"><b>Geschafft!</b> Du hast ${z.punkte} von ${z.fragen} Fragen auf Anhieb richtig beantwortet. <button class="btn klein af-neu" type="button">Noch einmal</button></div>`;
+      return `<div class="af-chat"><div class="af-chatkopf">${ava}<b>${esc(a.name || 'Lern-Chat')}</b></div><div class="af-verlauf" aria-live="polite">${z.log.map(blase).join('')}`
+        + (z.tippt ? `<div class="af-msg bot">${ava}<div class="af-blase af-tippt" aria-label="schreibt …"><i></i><i></i><i></i></div></div>` : '') + `</div>${ein}</div>`;
+    },
+    start(ctx){ const z = ctx.z; z.ctx = ctx; if (!z.log.length && !z.tippt) chatWeiter(z, ctx.a); },
+    nach(el){ const v = el.querySelector('.af-verlauf'); if (v) v.scrollTop = v.scrollHeight; const i = el.querySelector('.af-chattext'); if (i && document.activeElement && el.contains(document.activeElement) === false && el.dataset.fokus) i.focus(); },
+    pruefen:() => ({ok:false, t:''})
+  },
   buchungssatz:{
     zustand:() => ({soll:[{k:'', b:''}], haben:[{k:'', b:''}]}),
     html(a, z){
@@ -1127,6 +1185,38 @@ const TYPEN = {
   }
 };
 
+/* ---------- Lern-Chat: Ablauf ---------- */
+const textVon = m => typeof m === 'string' ? m : m.bot;
+function chatSage(z, html, art, dann){
+  z.tippt = true; z.ctx.zeichne();
+  const fertig = () => { z.tippt = false; z.weiter = null; z.log.push({wer:'bot', html, art}); dann(); };
+  z.weiter = fertig;
+  z.timer = setTimeout(fertig, Math.min(1600, 350 + String(html).replace(/<[^>]+>/g, '').length * 12));
+}
+function chatWeiter(z, a){
+  if (z.i >= a.nachrichten.length){
+    z.ende = true; z.ctx.zeichne();
+    if (!z.geloest){ z.geloest = true; if (z.ctx.opt.fertig) z.ctx.opt.fertig(a); }
+    return;
+  }
+  const m = a.nachrichten[z.i];
+  chatSage(z, textVon(m), null, () => {
+    if (typeof m === 'object' && (m.antworten || m.zahl || m.freitext)){ z.warte = z.i; z.ctx.zeichne(); return; }
+    z.i++; z.ctx.zeichne(); chatWeiter(z, a);
+  });
+}
+function chatAntwort(ctx, wert, j){
+  const {a, z} = ctx, q = a.nachrichten[z.warte];
+  if (!q) return;
+  let ok, text, r;
+  if (q.antworten){ const x = q.antworten[j]; ok = !!x.ok; text = x.t; r = x.r; }
+  else if (q.zahl){ if (!String(wert).trim()) return; ok = Math.abs(zahl(wert) - q.zahl.l) <= (q.zahl.tol == null ? 0.005 : q.zahl.tol); text = wert + (q.zahl.e && !/€|%/.test(wert) ? ' ' + q.zahl.e : ''); }
+  else { if (!String(wert).trim()) return; const f = finde(q.freitext.antworten, wert); ok = !!f; text = wert; if (f && f.fast) r = (q.r || 'Richtig!') + ` (Schreibweise: „${esc(f.wort)}“)`; }
+  z.fragen++; if (ok) z.punkte++;
+  z.log.push({wer:'ich', text}); z.warte = null; z.i++;
+  chatSage(z, r || (ok ? q.r || '👍 Richtig!' : q.rFalsch || 'Das stimmt leider nicht.'), ok ? 'ok' : 'falsch', () => chatWeiter(z, a));
+}
+
 /* ---------- Baustein zeichnen und bedienen ---------- */
 function baue(el, a, opt){
   opt = opt || {};
@@ -1142,8 +1232,11 @@ function baue(el, a, opt){
       + (!z.geloest && !sofort ? `<div class="af-knoepfe"><button class="btn haupt af-pruefen" type="button">${a.knopf || 'Prüfen'}</button></div>` : '')
       + fbHTML(z.fb) + (z.geloest && a.danach ? '<div class="af-danach"></div>' : '');
     if (z.geloest && a.danach) baue(el.querySelector('.af-danach'), a.danach, opt);
+    if (typ.nach) typ.nach(el, a, z);
   }};
-  el.classList.add('af'); el._af = ctx; ctx.zeichne();
+  el.classList.add('af'); el._af = ctx;
+  if (typ.start) typ.start(ctx); else ctx.zeichne();
+  if (typ.start && !el.innerHTML) ctx.zeichne();
   return ctx;
 }
 function pruefe(ctx){
@@ -1159,6 +1252,14 @@ document.addEventListener('click', e => {
   const ctx = ctxVon(e.target); if (!ctx || zieht) return;
   const {a, z} = ctx, t = e.target;
   if (t.closest('.af-pruefen')) return pruefe(ctx);
+  if (a.typ === 'chat'){
+    const c = t.closest('[data-ca]');
+    if (c) return chatAntwort(ctx, null, +c.dataset.ca);
+    if (t.closest('.af-senden')){ const i = ctx.el.querySelector('.af-chattext'); ctx.el.dataset.fokus = '1'; return chatAntwort(ctx, i ? i.value : ''); }
+    if (t.closest('.af-neu')){ clearTimeout(z.timer); Object.assign(z, TYPEN.chat.zustand(), {geloest:z.geloest, ctx}); return chatWeiter(z, a); }
+    if (z.tippt && z.weiter && t.closest('.af-verlauf')){ clearTimeout(z.timer); return z.weiter(); }
+    return;
+  }
   const o = t.closest('[data-opt]');
   if (o && a.typ === 'mc'){
     if (z.geloest) return;
@@ -1191,7 +1292,8 @@ document.addEventListener('change', e => {
 document.addEventListener('keydown', e => {
   if (e.key !== 'Enter') return;
   const ctx = ctxVon(e.target); if (!ctx) return;
-  if (e.target.matches('input')){ e.preventDefault(); pruefe(ctx); }
+  if (e.target.matches('.af-chattext')){ e.preventDefault(); ctx.el.dataset.fokus = '1'; chatAntwort(ctx, e.target.value); }
+  else if (e.target.matches('input')){ e.preventDefault(); pruefe(ctx); }
   else if (e.target.matches('[data-karte]')){ e.preventDefault(); e.target.click(); }
 });
 

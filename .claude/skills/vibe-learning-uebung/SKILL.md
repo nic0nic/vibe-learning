@@ -57,7 +57,7 @@ Farbvariablen (aus seite.css):
 
 ## Aufgaben aus Daten (lib/aufgaben.js)
 
-Standardaufgaben nicht neu programmieren, sondern als Daten an `Aufgaben.baue` bzw. `Aufgaben.sequenz` geben (Typen und Felder: Kopfkommentar unten). Eigener Code nur für Besonderes (Grafiken, Simulationen) als `html`/`nach` eines Schritts. Beispiel einer Erarbeitungsseite (Vorbild: `BWR/9II/finanzierung/kurzfristige-kredite.html`):
+Standardaufgaben nicht neu programmieren, sondern als Daten an `Aufgaben.baue` bzw. `Aufgaben.sequenz` geben (Typen und Felder: Kopfkommentar unten). Eigener Code nur für Besonderes (Grafiken, Simulationen) als `html`/`nach` eines Schritts. Beispiel einer Erarbeitungsseite (Vorbilder: `BWR/9II/finanzierung/kurzfristige-kredite.html`, Lern-Chat allein: `BWR/7II/aufwand-ertrag/verkauf-uefe.html`):
 
 ```js
 Aufgaben.sequenz({el:'#app', key:'TOOL-ID', schritte:[
@@ -67,7 +67,11 @@ Aufgaben.sequenz({el:'#app', key:'TOOL-ID', schritte:[
     {typ:'zahlen', frage:'…', felder:[{t:'Bruttoskonto', l:238, e:'€', h:'Hinweis'}], danach:{typ:'mc', …}},
     {typ:'luecken', text:'Der Kredit ist [[kurzfristig|langfristig]].'},
     {typ:'zuordnen', felder:[['a', 'Feld A'], ['b', 'Feld B']], karten:[{t:'…', z:'a'}]},
-    {typ:'buchungssatz', konten:['2800 BK', '4250 LBKV'], soll:[['2800 BK', 80000]], haben:[['4250 LBKV', 80000]]}]}
+    {typ:'buchungssatz', konten:['2800 BK', '4250 LBKV'], soll:[['2800 BK', 80000]], haben:[['4250 LBKV', 80000]]},
+    {typ:'freitext', felder:['1. Sicherheit', '2. Sicherheit'], antworten:[['Grundschuld'], ['Zession', 'Abtretung von Forderungen']]}]},
+  {id:'chat', kurz:'Chat', aufgaben:[{typ:'chat', name:'BWR-Coach', nachrichten:['Hallo!',
+    {bot:'Wird das Bankkonto mehr oder weniger?', antworten:[{t:'mehr', ok:true, r:'Genau!'}, {t:'weniger', r:'Nein, …'}]},
+    {bot:'Welcher Betrag?', zahl:{l:11900, e:'€'}, r:'Richtig!', rFalsch:'Erklärung …'}]}]}
 ]});
 ```
 
@@ -164,6 +168,13 @@ danach (weitere Aufgabe, erscheint erst nach richtiger Lösung, z. B. Handlungse
                ein Feld ist richtig, wenn ein Begriff darin vorkommt (Groß/klein, ä/ae egal), jedes Feld braucht
                einen anderen Eintrag. Tippfehler (Abstand bis 45 % bei langen, 30 % bei kurzen Wörtern) gelten als
                „fast richtig“ mit Hinweis auf die Schreibweise; tippfehler:'ok' zählt sie als richtig.
+  chat         Lern-Chat wie bei LearningSnacks: name, bild (Emoji), nachrichten:[…], jede Nachricht ist
+               'Text des Bots' (HTML erlaubt) oder eine Frage {bot:'Frage', …} mit einer Antwortform:
+                 antworten:[{t:'mehr', ok:true, r:'Genau! …'}, {t:'weniger', r:'Nein, …'}]   (Knöpfe)
+                 zahl:{l:11900, e:'€', tol}   oder   freitext:{antworten:[…]} (wie Typ freitext)
+                 dazu r (Antwort des Bots bei richtig) und rFalsch (Erklärung bei falsch)
+               Bei Fehlern erklärt der Bot und macht weiter; am Ende Punkte und „Noch einmal“.
+               Gilt als gelöst (fertig), sobald der Chat einmal ganz durchlaufen ist.
   buchungssatz konten:['2800 BK', …] (Auswahlliste), soll:[['0700 MA', 40000], …], haben:[…],
                steuer:['2600 VORST', '4800 UST'] (für den Hinweis), nebenrechnung (HTML nach Lösung)
                prüft: Konten, Soll/Haben vertauscht, fehlende Steuer, Beträge; Lösung im Skill-Format

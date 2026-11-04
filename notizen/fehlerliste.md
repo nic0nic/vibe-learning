@@ -13,6 +13,10 @@ Gesammelt im Thread „Aufbau der Seite“. Umgesetzt wird erst, wenn die Lehrkr
 
 ### Version vom 04.11.
 
+36. **Lern-Chat nach dem Vorbild von LearningSnacks** (gewünscht 04.11.)
+    - Neuer Aufgabentyp `chat` in `lib/aufgaben.js`: Bot-Nachrichten mit Tipp-Animation (Klick überspringt), Antwortknöpfe, Zahl oder Freitext; bei Fehlern erklärt der Bot und macht weiter; am Ende Punkte und „Noch einmal“.
+    - Neue Jahrgangsstufe BWR 7 (`BWR/7II/`) mit Bereich „Aufwendungen und Erträge“ und erstem Chat `verkauf-uefe.html`: Merkkasten UEFE, Buchungssatz BK an UEFE, UST ohne Kontonummern (Jgst. 7).
+
 35. **BWR Finanzierung: Kredite bei der Bank** (gewünscht 04.11., Heft Kap. 5)
     - `BWR/9II/finanzierung/kredite-bank.html`: Kredit (Grafik Kreditablauf), Kreditprüfung, 5.1 Beispiele Kreditfähigkeit/-würdigkeit zuordnen, Sicherheiten, 5.2 zwei Sicherheiten als Freitext, Disagio, 5.3 Disagio und Auszahlungsbetrag, 5.4 Tilgungsbetrag, Überblick als Lückentext mit Auswahllisten.
     - Neuer Aufgabentyp `freitext` in `lib/aufgaben.js`: Begriff muss im Feld vorkommen (Groß/klein und ä/ae egal), jedes Feld ein anderer Begriff, Tippfehler (Damerau-Levenshtein, bis 45 % bei langen Wörtern) gelten als „fast richtig“ mit Hinweis; `tippfehler:'ok'` zählt sie als richtig. Dazu `erinnerungZu` (Erinnerung startet zugeklappt).
