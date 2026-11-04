@@ -14,8 +14,8 @@ Gesammelt im Thread „Aufbau der Seite“. Umgesetzt wird erst, wenn die Lehrkr
 
 32. **BWR Finanzierung: Bilanz-Modell** (gewünscht 04.11.)
     - `BWR/9II/finanzierung/bilanz.html`: Bilanz von Saitgig (Selbstlernheft Finanzierung, Kap. 2) verändert sich mit jeder Buchung, Tabelle mit +/− und maßstäbliches Bild.
-    - 22 Geschäftsfälle: 7 Aktiv-Passiv-Mehrungen (Schwerpunkt), 3 Minderungen, 4 Aktivtausch, 2 Passivtausch, teils mit Vorsteuer.
-    - „Komplexere Buchungen“ (nur Bestandskonten, keine Aufwand/Ertrag): Maschine bar verkaufen (mit 4800 UST), Maschine mit Anzahlung, Lieferwagen mit Eigenanteil und Darlehen, Darlehen teils an Lieferer, Einlage Transporter und Bargeld, Kunde zahlt bar und per Bank. In b) werden alle beteiligten Arten gewählt (z. B. Aktivtausch und Aktiv-Passiv-Mehrung). 4800 UST steht als kurzfristiges FK in der Bilanz.
+    - 19 Geschäftsfälle: 7 Aktiv-Passiv-Mehrungen (Schwerpunkt), 3 Minderungen, 4 Aktivtausch, 2 Passivtausch, teils mit Vorsteuer.
+    - „Komplexere Buchungen“: Verkauf von Anlagegütern zum Buchwert mit Umsatzsteuer (Maschine bar, Maschine auf Ziel, Lieferwagen per Bank), z. B. 2880 KA an 0700 MA, 4800 UST. In b) werden beide Arten gewählt (Aktivtausch und Aktiv-Passiv-Mehrung). 4800 UST steht als kurzfristiges FK in der Bilanz. Keine Aufwand/Ertrag, keine Teilzahlungen (Wunsch der Lehrkraft).
     - Einteilungen: Bilanzposten, AV/UV · EK/FK (mit Eigenkapitalquote), Goldene Regel (langfristig/kurzfristig, Prüfung AV ≤ EK + langfr. FK).
     - Erkunden (buchen, zurücknehmen) und Üben: a) Buchungssatz bilden, b) Art der Bilanzveränderung angeben, c) je nach Einteilung Bilanzsumme, Eigenkapitalquote oder Goldene Regel.
     - Offen zur Prüfung durch die Lehrkraft: Kontennummer 0530 BVG, Einlage des Inhabers direkt auf 3000 EK (ohne 3001 P).
