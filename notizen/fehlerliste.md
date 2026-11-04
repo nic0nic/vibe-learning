@@ -8,19 +8,20 @@ Gesammelt im Thread „Aufbau der Seite“. Umgesetzt wird erst, wenn die Lehrkr
     - Zuerst nur die MITTELWERT-Funktion bilden.
     - Danach erst den Teil „leere Zellen zählen nicht mit“.
     - Dort in der Excel-Tabelle eine Extrazeile mit =SUMME(…)/5 neben =MITTELWERT(…) zeigen, damit man den Unterschied sieht. Bisher steht das nur im Erklärtext.
-    Betrifft excel/funktionen.html.
+    Betrifft IT/excel/funktionen.html.
 
 14. **Funktionen: Aufgabe 24 akzeptiert =8-ANZAHL(B4:B11)** (gefunden 20.10., Thread „Funktionen-Trainer“)
     Die abgeschriebene 8 fällt nicht auf, weil die Prüftabellen die Länge der Namensliste nicht verändern. Prüfvarianten so ändern, dass die Zahl der Namen variiert.
-    Betrifft excel/funktionen.html.
+    Betrifft IT/excel/funktionen.html.
 
 15. **Verknüpfte Aufgaben mit Funktionen** (gewünscht 22.10., Thread „Funktionen-Trainer“)
     - Funktionen, Übungen am Ende: Funktionen in einer Formel verknüpfen, z. B. Spannweite =MAX(B4:B10)-MIN(B4:B10) oder Abweichung vom Mittelwert für eine einzelne Zeile =B4-MITTELWERT(B4:B10), ohne $. Bisher rechnen die Kombi-Aufgaben nur mit Zellen, in denen das Ergebnis schon steht (z. B. =D14-D13).
     - Zellbezüge, späte Übung: dieselbe Abweichung, aber zum Übertragen, also Funktion mit festem Bereich in der Formel, z. B. =B5-MITTELWERT($B$5:$B$10). Bisher steht der Mittelwert dort immer schon in einer eigenen Zelle (=B5-$B$12).
-    Betrifft excel/funktionen.html und excel/bezuege.html.
+    - Stand 04.11.: In funktionen.html gibt es schon =20-MITTELWERT(…) (Abstand zur vollen Punktzahl). Spannweite und Abweichung einer Zeile fehlen noch, in bezuege.html fehlt beides.
+    Betrifft IT/excel/funktionen.html und IT/excel/bezuege.html.
 
 18. **Vorschlag: gemeinsame Teile in einen Ordner für alle Bereiche** (vorgeschlagen 02.11.)
-    datenbanken/abfragen.html bindet `../excel/basis.js`/`basis.css` (Stufen, Modi, Dock) und `../python/lib/codemirror.*` ein. Sauberer wäre z. B. `pb_public/lib/` für alles, was mehrere Bereiche nutzen. Betrifft alle Excel-, Python- und Datenbank-Seiten.
+    Die Datenbank-Seiten (abfragen.html, datenight.html, filmdatenbank.html in `IT/datenbanken/`) binden `../excel/basis.js`/`basis.css` (Stufen, Modi, Dock) und `../python/lib/codemirror.*` ein. Sauberer wäre z. B. `pb_public/lib/` für alles, was mehrere Bereiche nutzen. Seit dem 04.11. gibt es mehrere Fächer: Der Ordner gälte dann auch für BWR-Übungen (z. B. basis.js für Stufen und Modi). Betrifft alle Excel-, Python- und Datenbank-Seiten unter `IT/`.
 
 
 ## Erledigt
