@@ -12,7 +12,7 @@ Vorne kommt window.PF_EINZELDATEI = true dazu: nav.js zeigt dann kein Menü,
 sync.js keine Anmeldung, der Fortschritt bleibt im Browser.
 Die Dateien in standalone/ nie von Hand ändern, sondern dieses Skript neu laufen lassen.
 """
-import pathlib, re, shutil, sys
+import os, pathlib, re, shutil, sys
 
 WURZEL = pathlib.Path(__file__).resolve().parent.parent
 PUBLIC = WURZEL / "pb_public"
@@ -63,6 +63,7 @@ def seiten():
 
 
 def main():
+    os.umask(0o002)   # neue Ordner und Dateien gruppenbeschreibbar: Lehrkraft und Claude arbeiten mit verschiedenen Konten
     if ZIEL.exists():
         shutil.rmtree(ZIEL)
     ZIEL.mkdir()
