@@ -8,7 +8,8 @@
   Bilanz-Modell (BWR 9, Finanzierung): Die Bilanz von Saitgig (Selbstlernheft „Möglichkeiten der Finanzierung“,
   Kapitel 2) verändert sich mit jeder Buchung. Rechts Bilanz als Tabelle und als maßstäbliches Bild.
   Modus Erkunden: Geschäftsfall wählen, Buchungssatz ansehen, buchen, zurücknehmen.
-  Modus Üben:    a) Buchungssatz bilden → Bilanz ändert sich, b) Art der Bilanzveränderung angeben,
+  Modus Üben:    a) Buchungssatz bilden → Bilanz ändert sich, b) Art der Bilanzveränderung angeben
+                 (bei „Komplexere Buchungen“ alle beteiligten Arten),
                  c) je nach Einteilung neue Bilanzsumme, Eigenkapitalquote oder Goldene Finanzierungsregel prüfen.
   Einteilung:    konten (Bilanzposten) · struktur (AV/UV, EK/FK) · fristen (Goldene Finanzierungsregel).
   Daten:         KONTEN, START, FAELLE (Faktor 1 bzw. UST/1 + UST am Nettobetrag). Neuer Geschäftsfall = neuer Eintrag in FAELLE.
@@ -65,7 +66,6 @@ body{background:var(--bg);color:var(--text);font:15px/1.45 system-ui,-apple-syst
 .fall:hover{border-color:var(--accent)}
 .fall.on{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
 .fall .n{color:var(--muted);font-weight:400}
-.unter{font-size:13px;font-weight:700;color:var(--muted);margin:8px 0 4px!important}
 .fallkarte{border-top:1px solid var(--border);margin-top:14px;padding-top:4px}
 pre.bsatz{font:12.5px/1.5 var(--mono);background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin:6px 0 10px;overflow-x:auto}
 .nr{font-size:13px;color:var(--muted);margin:-2px 0 8px}
@@ -200,8 +200,10 @@ const ART = {
   PT:   {name:'Passivtausch', text:'Nur die Passivseite ändert sich: Was ein Posten zunimmt, nimmt ein anderer ab. Die Bilanzsumme bleibt gleich.'}
 };
 const ART_FOLGE = ['APM', 'APMI', 'AT', 'PT'];
+const GRUPPEN = [...ART_FOLGE, 'KOMPLEX'], KOMPLEX_NAME = 'Komplexere Buchungen';
 // Betrag = Nettobetrag (bei ust) bzw. Betrag; von/bis/schritt für Übungen, std für Erkunden;
-// unter = Unterpunkt in der Liste, artText = eigene Erklärung statt ART[art].text
+// artText = eigene Erklärung statt ART[art].text; art 'KOMPLEX': arten = alle beteiligten Arten,
+// posten(b) = {soll, haben} mit Beträgen statt Faktoren, nr(b) = Nebenrechnung
 const FAELLE = [
   {id:'darlehen', art:'APM', titel:'Darlehen aufnehmen', von:40000, bis:120000, schritt:10000, std:80000,
     text:b => `Die Hausbank zahlt Saitgig ein Darlehen über ${eur(b)} mit einer Laufzeit von 8 Jahren auf das Bankkonto aus.`,
@@ -245,16 +247,42 @@ const FAELLE = [
   {id:'maschine-bank', art:'AT', titel:'Maschine per Bank kaufen', ust:true, von:5000, bis:30000, schritt:5000, std:15000,
     text:b => `Saitgig kauft eine Schleifmaschine für ${eur(b)} netto zuzüglich 19 % Umsatzsteuer und bezahlt sofort per Banküberweisung.`,
     soll:[['MA', 1], ['VORST', UST]], haben:[['BK', 1 + UST]]},
-  {id:'maschine-verkauf', art:'AT', unter:'mit Umsatzsteuer', titel:'Maschine bar verkaufen', ust:true, von:2000, bis:12000, schritt:1000, std:5000,
-    text:b => `Saitgig verkauft eine gebrauchte Maschine zum Buchwert von ${eur(b)} netto zuzüglich 19 % Umsatzsteuer gegen Barzahlung.`,
-    artText:'Im Kern ein Aktivtausch: Die Maschinen nehmen ab, die Kasse nimmt zu. Zusätzlich schuldet Saitgig dem Finanzamt die Umsatzsteuer. Sie steht als Passivposten in der Bilanz – um diesen Betrag steigt die Bilanzsumme.',
-    soll:[['KA', 1 + UST]], haben:[['MA', 1], ['UST', UST]]},
   {id:'umschuldung', art:'PT', titel:'Kredit in Darlehen umwandeln', von:20000, bis:60000, schritt:10000, std:40000,
     text:b => `Die Bank wandelt einen kurzfristigen Kredit von Saitgig über ${eur(b)} in ein Darlehen mit 5 Jahren Laufzeit um.`,
     soll:[['KBKV', 1]], haben:[['LBKV', 1]]},
   {id:'ve-kredit', art:'PT', titel:'Liefererschuld mit Kredit bezahlen', von:5000, bis:30000, schritt:5000, std:15000,
     text:b => `Saitgig begleicht eine Liefererrechnung über ${eur(b)}. Die Bank überweist den Betrag direkt an den Lieferer und gewährt Saitgig dafür einen Kredit mit 6 Monaten Laufzeit.`,
-    soll:[['VE', 1]], haben:[['KBKV', 1]]}
+    soll:[['VE', 1]], haben:[['KBKV', 1]]},
+  // Komplexere Buchungen: mehrere Konten, oft mehrere Arten der Bilanzveränderung zugleich (arten)
+  {id:'maschine-verkauf', art:'KOMPLEX', arten:['AT', 'APM'], titel:'Maschine bar verkaufen', ust:true, von:2000, bis:12000, schritt:1000, std:5000,
+    text:b => `Saitgig verkauft eine gebrauchte Maschine zum Buchwert von ${eur(b)} netto zuzüglich 19 % Umsatzsteuer gegen Barzahlung.`,
+    artText:'Maschinen nehmen ab, die Kasse nimmt zu (Aktivtausch). Zusätzlich schuldet Saitgig dem Finanzamt die Umsatzsteuer: Kasse und Umsatzsteuer nehmen um diesen Betrag zu (Aktiv-Passiv-Mehrung). Die Bilanzsumme steigt um die Umsatzsteuer.',
+    soll:[['KA', 1 + UST]], haben:[['MA', 1], ['UST', UST]]},
+  {id:'anzahlung', art:'KOMPLEX', arten:['AT', 'APM'], titel:'Maschine mit Anzahlung kaufen', ust:true, von:10000, bis:50000, schritt:5000, std:20000,
+    text:b => `Saitgig kauft eine Bandsäge für ${eur(b)} netto zuzüglich 19 % Umsatzsteuer. 20 % des Rechnungsbetrags überweist Saitgig sofort als Anzahlung, der Rest ist in 30 Tagen fällig.`,
+    nr:b => `Vorsteuer ${eur(b)} · 19 % = ${eur(b * UST)}; Rechnungsbetrag ${eur(b * (1 + UST))}; Anzahlung ${eur(b * (1 + UST))} · 20 % = ${eur(b * (1 + UST) * 0.2)}; Rest ${eur(b * (1 + UST) * 0.8)}`,
+    artText:'Ein Teil wird sofort von der Bank bezahlt (Aktivtausch), für den Rest entsteht eine Liefererschuld (Aktiv-Passiv-Mehrung). Die Bilanzsumme steigt um den noch offenen Betrag.',
+    posten:b => ({soll:[['MA', b], ['VORST', b * UST]], haben:[['BK', b * (1 + UST) * 0.2], ['VE', b * (1 + UST) * 0.8]]})},
+  {id:'lieferwagen', art:'KOMPLEX', arten:['AT', 'APM'], titel:'Lieferwagen mit Eigenanteil und Darlehen', ust:true, von:30000, bis:60000, schritt:5000, std:40000,
+    text:b => `Saitgig kauft einen Lieferwagen für ${eur(b)} netto zuzüglich 19 % Umsatzsteuer. 10.000,00 € überweist Saitgig vom Bankkonto, den Rest finanziert die Bank mit einem Darlehen (Laufzeit 5 Jahre) und zahlt ihn direkt an das Autohaus.`,
+    nr:b => `Vorsteuer ${eur(b)} · 19 % = ${eur(b * UST)}; Rechnungsbetrag ${eur(b * (1 + UST))}; Darlehen ${eur(b * (1 + UST))} – 10.000,00 € = ${eur(b * (1 + UST) - 10000)}`,
+    artText:'Der Eigenanteil vom Bankkonto ist ein Aktivtausch, der mit dem Darlehen finanzierte Teil eine Aktiv-Passiv-Mehrung. Die Bilanzsumme steigt um den Darlehensbetrag.',
+    posten:b => ({soll:[['FP', b], ['VORST', b * UST]], haben:[['BK', 10000], ['LBKV', b * (1 + UST) - 10000]]})},
+  {id:'darlehen-lieferer', art:'KOMPLEX', arten:['APM', 'PT'], titel:'Darlehen teils an Lieferer', von:50000, bis:100000, schritt:10000, std:60000,
+    text:b => `Die Bank gewährt Saitgig ein Darlehen über ${eur(b)} mit 6 Jahren Laufzeit. 20.000,00 € davon überweist sie direkt an einen Lieferer, um eine offene Rechnung zu begleichen. Den Rest schreibt sie dem Bankkonto gut.`,
+    nr:b => `Gutschrift auf dem Bankkonto: ${eur(b)} – 20.000,00 € = ${eur(b - 20000)}`,
+    artText:'Die Gutschrift auf dem Bankkonto ist eine Aktiv-Passiv-Mehrung. Mit dem Rest wird eine Liefererschuld durch das Darlehen ersetzt (Passivtausch). Die Bilanzsumme steigt nur um die Gutschrift.',
+    posten:b => ({soll:[['BK', b - 20000], ['VE', 20000]], haben:[['LBKV', b]]})},
+  {id:'sacheinlage', art:'KOMPLEX', arten:['APM'], titel:'Einlage: Transporter und Bargeld', von:8000, bis:20000, schritt:1000, std:12000,
+    text:b => `Jakob Seite bringt seinen privaten Transporter im Wert von ${eur(b)} und 2.000,00 € Bargeld in das Unternehmen ein.`,
+    nr:b => `Einlage insgesamt: ${eur(b)} + 2.000,00 € = ${eur(b + 2000)}`,
+    artText:'Zwei Aktivposten (Fuhrpark und Kasse) und das Eigenkapital nehmen zu: Aktiv-Passiv-Mehrung, auch wenn mehrere Konten beteiligt sind.',
+    posten:b => ({soll:[['FP', b], ['KA', 2000]], haben:[['EK', b + 2000]]})},
+  {id:'kunde-bar-bank', art:'KOMPLEX', arten:['AT'], titel:'Kunde zahlt bar und per Bank', von:5000, bis:20000, schritt:1000, std:8000,
+    text:b => `Ein Kunde begleicht eine Rechnung über ${eur(b)}: 1.500,00 € zahlt er bar, den Rest überweist er.`,
+    nr:b => `Überweisung: ${eur(b)} – 1.500,00 € = ${eur(b - 1500)}`,
+    artText:'Forderungen nehmen ab, Bank und Kasse nehmen zu – alles auf der Aktivseite: Aktivtausch. Die Bilanzsumme bleibt gleich.',
+    posten:b => ({soll:[['BK', b - 1500], ['KA', 1500]], haben:[['FO', b]]})}
 ];
 const ANSICHTEN = ['konten', 'struktur', 'fristen'];
 
@@ -281,7 +309,10 @@ function parseBetrag(s){
   else if (/^\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, '');
   return /^\d+(\.\d+)?$/.test(s) ? +s : NaN;
 }
-function buchung(f, b){ const z = ([k, fa]) => ({k, b:r2(b * fa)}); return {soll:f.soll.map(z), haben:f.haben.map(z)}; }
+function buchung(f, b){
+  if (f.posten){ const p = f.posten(b), z = ([k, v]) => ({k, b:r2(v)}); return {soll:p.soll.map(z), haben:p.haben.map(z)}; }
+  const z = ([k, fa]) => ({k, b:r2(b * fa)}); return {soll:f.soll.map(z), haben:f.haben.map(z)};
+}
 function deltas(bs){
   const d = {}, add = (k, v) => { d[k] = r2((d[k] || 0) + v); };
   bs.soll.forEach(x => add(x.k, aktiv(x.k) ? x.b : -x.b));
@@ -300,11 +331,12 @@ function bsText(bs){
   return zeilen.join('\n');
 }
 function nebenrechnung(f, b){
+  if (f.nr) return `<div class="nr">Nebenrechnung: ${f.nr(b)}</div>`;
   if (!f.ust) return '';
   const st = [...f.soll, ...f.haben].some(([k]) => k === 'UST') ? 'Umsatzsteuer' : 'Vorsteuer';
   return `<div class="nr">Nebenrechnung: ${st} ${eur(b)} · 19 % = ${eur(b * UST)}; Rechnungsbetrag ${eur(b)} + ${eur(b * UST)} = ${eur(b * (1 + UST))}</div>`;
 }
-const artName = f => ART[f.art].name + (f.unter ? ' ' + f.unter : '');
+const artName = f => f.arten ? f.arten.map(a => ART[a].name).join(' und ') : ART[f.art].name;
 const artText = f => f.artText || ART[f.art].text;
 const fbHTML = fb => fb ? `<div class="fb ${fb.ok ? 'ok' : 'falsch'}">${fb.t}</div>` : '';
 
@@ -343,16 +375,13 @@ function erklaerung(d, s0, s1){
 function htmlErkunden(){
   const knopf = f => `<button class="fall${f.id === sel ? ' on' : ''}" type="button" data-fall="${f.id}">${esc(f.titel)}</button>`;
   let h = '<h2>Geschäftsfälle</h2><p class="muted">Wähle einen Geschäftsfall, lies den Buchungssatz und buche ihn. Rechts siehst du, wie sich die Bilanz verändert.</p>';
-  ART_FOLGE.forEach(a => {
-    h += `<h3>${ART[a].name}${a === 'APM' ? ' <span class="tag">Schwerpunkt</span>' : ''}</h3><div class="faelle">`
-      + FAELLE.filter(f => f.art === a && !f.unter).map(knopf).join('') + '</div>';
-    [...new Set(FAELLE.filter(f => f.art === a && f.unter).map(f => f.unter))].forEach(u => {
-      h += `<p class="unter">${ART[a].name} ${u}</p><div class="faelle">` + FAELLE.filter(f => f.art === a && f.unter === u).map(knopf).join('') + '</div>';
-    });
+  GRUPPEN.forEach(a => {
+    h += `<h3>${a === 'KOMPLEX' ? KOMPLEX_NAME : ART[a].name}${a === 'APM' ? ' <span class="tag">Schwerpunkt</span>' : ''}</h3><div class="faelle">`
+      + FAELLE.filter(f => f.art === a).map(knopf).join('') + '</div>';
   });
   const f = fall(sel), b = selBetrag || f.std, bs = buchung(f, b), d = deltas(bs), fehlt = fehlend(S.werte, d);
   h += `<div class="fallkarte"><h3>${esc(f.titel)}</h3><p>${f.text(b)}</p>
-    <p><label class="muted">Betrag${f.ust ? ' (netto)' : ''} in € <input class="feld" id="selBetrag" type="number" min="${f.schritt}" step="${f.schritt}" value="${b}" style="width:130px"></label></p>
+    <p><label class="muted">Betrag${f.ust ? ' (netto)' : ''} in € <input class="feld" id="selBetrag" type="number" min="${f.von}" step="${f.schritt}" value="${b}" style="width:130px"></label></p>
     ${nebenrechnung(f, b)}<pre class="bsatz" aria-label="Buchungssatz">${esc(bsText(bs))}</pre>
     <p><b>${artName(f)}:</b> ${artText(f)}</p>
     <div class="knoepfe"><button class="btn haupt" type="button" id="buchen"${fehlt.length ? ' disabled' : ''}>Buchen</button></div>
@@ -365,7 +394,7 @@ function htmlErkunden(){
 
 /* ---------- Üben ---------- */
 function neueAufgabe(nr){
-  const gewicht = FAELLE.map(f => f.art === 'APM' ? 3 : 1), ges = gewicht.reduce((a, b) => a + b, 0);
+  const gewicht = FAELLE.map(f => f.art === 'APM' ? 3 : f.art === 'KOMPLEX' ? 2 : 1), ges = gewicht.reduce((a, b) => a + b, 0);
   for (let v = 0; v < 60; v++){
     let r = Math.random() * ges, i = 0;
     while (r >= gewicht[i]) r -= gewicht[i++];
@@ -400,8 +429,12 @@ function htmlUeben(){
   h += `<div class="teil"><p><b>a)</b> Bilde den Buchungssatz.</p>`;
   if (A.teil === 'a') h += builderHTML() + `<div class="knoepfe"><button class="btn haupt" type="button" id="pruefenA">Prüfen</button><button class="btn" type="button" id="andere">Andere Aufgabe</button></div>` + fbHTML(A.fb.a);
   else h += nebenrechnung(f, A.b) + `<pre class="bsatz">${esc(bsText(bs))}</pre>` + fbHTML(A.fb.a);
-  h += '</div><div class="teil' + (A.teil === 'a' ? ' zu' : '') + '"><p><b>b)</b> Gib die Art der Bilanzveränderung an.</p>';
-  if (A.teil === 'b') h += `<div class="wahl">${ART_FOLGE.map(a => `<button class="btn" type="button" data-art="${a}">${ART[a].name}</button>`).join('')}</div>` + fbHTML(A.fb.b);
+  h += '</div><div class="teil' + (A.teil === 'a' ? ' zu' : '') + `"><p><b>b)</b> ${f.arten ? 'Gib an, welche Arten der Bilanzveränderung in diesem Geschäftsfall zusammenkommen.' : 'Gib die Art der Bilanzveränderung an.'}</p>`;
+  if (A.teil === 'b' && f.arten){
+    const w = A.bWahl || [];
+    h += `<p class="muted" style="margin-top:-4px">Hier können mehrere Arten zusammenkommen. Wähle alle aus, die zutreffen.</p><div class="wahl">${ART_FOLGE.map(a => `<button class="btn${w.includes(a) ? ' on' : ''}" type="button" data-artm="${a}" aria-pressed="${w.includes(a)}">${ART[a].name}</button>`).join('')}</div>`
+      + `<div class="knoepfe"><button class="btn haupt" type="button" id="pruefenB">Prüfen</button></div>` + fbHTML(A.fb.b);
+  } else if (A.teil === 'b') h += `<div class="wahl">${ART_FOLGE.map(a => `<button class="btn" type="button" data-art="${a}">${ART[a].name}</button>`).join('')}</div>` + fbHTML(A.fb.b);
   else if (A.teil !== 'a') h += `<div class="fb ok">✓ <b>${artName(f)}:</b> ${artText(f)}</div>`;
   h += '</div><div class="teil' + (A.teil === 'a' || A.teil === 'b' ? ' zu' : '') + `"><p><b>c)</b> ${A.teil === 'fertig' ? A.cFrage : AUFGABE_C[ansicht]}</p>`;
   if (A.teil === 'c'){
@@ -441,8 +474,13 @@ function pruefeA(){
   st('aufgabe', A); render();
 }
 function pruefeB(a){
-  const f = fall(A.id);
-  if (a !== f.art){ A.fb.b = {ok:false, t:(f.unter && a === 'APM' ? 'Fast: Die Bilanzsumme steigt zwar um die Umsatzsteuer, im Kern ist der Verkauf aber ein Tausch auf der Aktivseite. ' : '') + 'Noch nicht. Schau rechts in die Bilanz: Welche Seiten haben sich verändert, und hat sich die Bilanzsumme verändert?'}; st('aufgabe', A); render(); return; }
+  const f = fall(A.id), ok = f.arten ? [...(A.bWahl || [])].sort().join() === [...f.arten].sort().join() : a === f.art;
+  if (!ok){
+    const t = f.arten && !(A.bWahl || []).length ? 'Wähle mindestens eine Art aus.'
+      : f.arten ? 'Noch nicht. Zerlege den Buchungssatz in Teile: Welcher Teil ändert nur eine Seite, welcher Teil beide Seiten? Schau dazu rechts in die Bilanz.'
+      : 'Noch nicht. Schau rechts in die Bilanz: Welche Seiten haben sich verändert, und hat sich die Bilanzsumme verändert?';
+    A.fb.b = {ok:false, t}; st('aufgabe', A); render(); return;
+  }
   A.teil = 'c'; A.fb.b = null; st('aufgabe', A); render();
 }
 function pruefeC(antwort){
@@ -598,6 +636,8 @@ document.addEventListener('click', e => {
   else if (ds.plus){ A[ds.plus].push({k:'', b:''}); st('aufgabe', A); }
   else if (ds.weg){ A[ds.weg].splice(+ds.i, 1); st('aufgabe', A); }
   else if (ds.art) return pruefeB(ds.art);
+  else if (ds.artm){ const w = A.bWahl || (A.bWahl = []), i = w.indexOf(ds.artm); if (i < 0) w.push(ds.artm); else w.splice(i, 1); st('aufgabe', A); }
+  else if (b.id === 'pruefenB') return pruefeB();
   else if (ds.gr) return pruefeC(ds.gr);
   else if (b.id === 'pruefenC') return pruefeC($('#antwortC').value);
   else if (b.id === 'weiter'){ neueAufgabe(A.nr + 1); mark = null; }
@@ -609,7 +649,7 @@ document.addEventListener('input', e => {
   if (t.dataset.seite && A){ A[t.dataset.seite][+t.dataset.i][t.dataset.f] = t.value; st('aufgabe', A); }
 });
 document.addEventListener('change', e => {
-  if (e.target.id === 'selBetrag'){ const v = Math.round(+e.target.value * 100) / 100; selBetrag = v > 0 ? v : null; erklaert = null; render(); }
+  if (e.target.id === 'selBetrag'){ const v = Math.round(+e.target.value * 100) / 100; selBetrag = v >= fall(sel).von ? v : fall(sel).von; erklaert = null; render(); }
 });
 document.addEventListener('keydown', e => {
   if (e.key !== 'Enter') return;
