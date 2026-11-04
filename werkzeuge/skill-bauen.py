@@ -11,6 +11,7 @@ PUBLIC = WURZEL / "pb_public"
 BIBLIOTHEKEN = [
     ("katalog.js", "Inhaltsverzeichnis: hier wird jede Übung eingetragen"),
     ("sync.js", "Anmeldung und Speichern"),
+    ("lib/aufgaben.js", "Aufgabenbausteine für alle Fächer: Multiple Choice, Zahlen, Lückentext, Zuordnen, Buchungssatz, Erarbeitung (dazu aufgaben.css)"),
     ("IT/excel/basis.js", "Excel: Grundlage aller Excel-Übungen (dazu basis.css)"),
     ("IT/excel/bausteine.js", "Excel: Formeln aus Bausteinen (wie WENN, UND/ODER; dazu bausteine.css)"),
     ("IT/excel/tabelle.js", "Excel: Tabellen-Übungen mit Rechenkern (wie Funktionen, Bezüge; dazu tabelle.css)"),

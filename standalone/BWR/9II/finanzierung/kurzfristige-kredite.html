@@ -7,10 +7,10 @@
 <title>Kurzfristige Kredite – vibe learning</title>
 <!--
   Erarbeitung zu Kapitel 7 der Ergänzung zum Selbstlernheft Finanzierung (Saitgig):
-  Kontokorrent-, Dispositions- und Lieferantenkredit. Schritte in SCHRITTE (Info oder Aufgabe 7.1–7.5),
-  jede Seite enthält alle Werte, die man für ihre Aufgabe braucht (Material wird wiederholt).
-  Lieferantenkredit: Zahlungsdatum eingeben → Zeitleiste zeigt Dauer von Lieferanten- und Kontokorrentkredit.
-  Gespeichert: kurzkredit-stand = {schritt, erledigt:{id:true}}. Auswertung: TrainerSync.event, modus erarbeitung.
+  Kontokorrent-, Dispositions- und Lieferantenkredit. Ablauf und Aufgaben: lib/aufgaben.js (Aufgaben.sequenz),
+  hier nur Texte, Daten und die zwei eigenen Grafiken (Kontostand, Zeitleiste des Lieferantenkredits).
+  Jede Seite enthält alle Werte, die man für ihre Aufgabe braucht (Material wird wiederholt).
+  Gespeichert: kurzkredit-stand = {schritt, erledigt}.
 -->
 <script>/* ../../../katalog.js */
 /* Inhaltsverzeichnis der Übungsplattform
@@ -778,9 +778,8 @@ document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: da
  * Gerüst:   .wrap > .bar (.brand mit <span>, .gruppe, .hint, .spacer) und darunter .karte (h2, h3, p)
  * Knöpfe:   .btn, .btn.on (gewählt), .btn.haupt (Hauptaktion), .btn.klein; Eingaben .feld
  * Texte:    .muted, .tag (kleines Etikett), .nr (Nebenrechnung, klein und grau)
- * Rückmeldung: <div class="fb ok|falsch">…</div>; Knopfzeile .knoepfe
- * Material: <div class="material"><div class="mt">Titel</div>…</div>, Tabelle darin .beleg
- * Erinnerung: <details class="erinnerung" open><summary>Erinnerung</summary>…</details>
+ * Rückmeldung: <div class="fb ok|falsch">…</div>; Knopfzeile .knoepfe; Beleg-Tabelle .beleg (tr.summe)
+ * Erinnerung, Material und Aufgabenbausteine: lib/aufgaben.css und lib/aufgaben.js
  */
 :root{--bg:#e5e9f0;--panel:#f6f8fb;--panel2:#eceff4;--text:#2e3440;--muted:#5b6578;--border:#cdd3de;--accent:#5e81ac;--err:#a8434d;--ok:#5e8a45;
   --mono:ui-monospace,Consolas,"Liberation Mono",monospace;
@@ -817,33 +816,419 @@ body{background:var(--bg);color:var(--text);font:15px/1.45 system-ui,-apple-syst
 .fb.ok{background:var(--plus-bg);color:var(--text)}
 .fb.falsch{background:var(--minus-bg);color:var(--text)}
 .knoepfe{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
-.material{border:1px solid var(--border);background:var(--panel2);border-radius:10px;padding:10px 12px;margin:0 0 12px}
-.material .mt{font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:6px}
 .beleg{border-collapse:collapse;width:100%;max-width:520px;font-size:14px}
 .beleg td{padding:3px 6px;border-bottom:1px solid var(--border)}
 .beleg td:last-child{text-align:right;font-family:var(--mono);white-space:nowrap}
 .beleg tr.summe td{font-weight:700;border-bottom:none;border-top:1.5px solid var(--text)}
+
+</style>
+<style>/* ../../../lib/aufgaben.css */
+/* aufgaben.css – Aussehen der Aufgabenbausteine aus aufgaben.js (alle Fächer, hell und dunkel über die Variablen der Seite) */
+.af{--af-ok:var(--ok,#5e8a45);--af-err:var(--err,#a8434d);--af-ok-bg:var(--plus-bg,#dfeccf);--af-err-bg:var(--minus-bg,#f3d9dc)}
+[data-theme=dark] .af{--af-ok-bg:var(--plus-bg,#3f4d3a);--af-err-bg:var(--minus-bg,#553c42)}
+.af-frage{font-weight:600;margin:4px 0 10px}
+.af-nr{display:inline-block;min-width:36px;font-family:var(--mono,monospace)}
+.af-fb{border-radius:8px;padding:7px 10px;margin:8px 0 0;font-size:14px;color:var(--text)}
+.af-fb.ok{background:var(--af-ok-bg)}
+.af-fb.falsch{background:var(--af-err-bg)}
+.af-knoepfe{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.af-hinweis{font-size:13px;color:var(--muted);margin:0 0 4px 2px}
+.af-danach{margin-top:14px}
+.af-aufgabe+.af-aufgabe{margin-top:18px;padding-top:12px;border-top:1px solid var(--border)}
 .erinnerung{border-left:4px solid var(--accent);background:var(--panel2);border-radius:0 10px 10px 0;padding:6px 12px;margin:0 0 12px}
 .erinnerung summary{cursor:pointer;font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);padding:2px 0}
 .erinnerung>*:not(summary){margin:6px 0}
+.material{border:1px solid var(--border);background:var(--panel2);border-radius:10px;padding:10px 12px;margin:0 0 12px}
+.material .mt{font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:6px}
+.material p:last-child{margin-bottom:0}
+/* Multiple Choice (dieselben Klassen wie in den Excel-Erklärungen) */
+.af .opts{display:flex;flex-direction:column;gap:6px}
+.af .opt{text-align:left;font:15px system-ui,sans-serif;background:var(--panel2);color:var(--text);border:2px solid var(--border);border-radius:10px;padding:8px 12px;cursor:pointer}
+.af .opt:hover{border-color:var(--accent)}
+.af .opts.mono .opt{font-family:var(--mono,monospace)}
+.af .opt.sel{border-color:var(--accent)}
+.af .opt.good{border-color:var(--af-ok);background:var(--af-ok-bg)}
+.af .opt.bad{border-color:var(--af-err);background:var(--af-err-bg)}
+.af .ohint{font-size:13px;color:var(--muted);margin-top:6px}
+/* Zahlen */
+.af-felder{display:flex;flex-direction:column;gap:8px;margin:8px 0}
+.af-zeile{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}
+.af-t{flex:1 1 300px}
+.af-zahl{width:130px;text-align:right;font-family:var(--mono,monospace)}
+.af-m{min-width:14px;font-weight:700}
+.af .richtig{border-color:var(--af-ok)!important;background:var(--af-ok-bg)!important}
+.af .falsch:not(.af-fb){border-color:var(--af-err)!important;background:var(--af-err-bg)!important}
+/* Lückentext */
+.af-luecken{line-height:2.4;font-size:16px;margin:0}
+.af-luecken select{font:15px system-ui,sans-serif;background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:3px 6px;max-width:100%}
+/* Zuordnen */
+.af-pool{display:flex;flex-wrap:wrap;gap:8px;min-height:56px;padding:10px;border:2px dashed var(--border);border-radius:12px;margin-bottom:12px}
+.af-leer{color:var(--muted)}
+.af-zonen{display:grid;grid-template-columns:repeat(var(--n,3),minmax(0,1fr));gap:10px}
+@media (max-width:760px){.af-zonen{grid-template-columns:minmax(0,1fr)}}
+.af-zone{border:2px solid var(--border);border-radius:12px;padding:8px;min-height:140px;display:flex;flex-direction:column;gap:6px;background:var(--panel2)}
+.af-zt{text-align:center;font-weight:700;font-size:14px;margin-bottom:2px}
+.af-zone.ziel{border-color:var(--accent)}
+.af-karte{background:var(--panel);color:var(--text);border:1px solid var(--border);border-left:5px solid var(--accent);border-radius:8px;padding:7px 10px;font-size:14px;cursor:grab;touch-action:none;user-select:none}
+.af-pool .af-karte{flex:1 1 210px}
+.af-karte.gewaehlt{outline:3px solid var(--accent)}
+.af-karte.quelle{opacity:.35}
+.af-karte.fix{border-left-color:var(--af-ok);background:var(--af-ok-bg);cursor:default}
+.af-karte.weg{animation:af-wackeln .5s;border-left-color:var(--af-err);background:var(--af-err-bg)}
+@keyframes af-wackeln{20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+.af-geist{position:fixed;z-index:100;pointer-events:none;width:220px;box-shadow:0 8px 20px rgba(0,0,0,.25);transform:rotate(-2deg)}
+/* Buchungssatz */
+.af-builder{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:6px 10px;align-items:start}
+@media (max-width:600px){.af-builder{grid-template-columns:minmax(0,1fr)}}
+.af-an{font:700 14px var(--mono,monospace);align-self:end;padding-bottom:10px}
+.af-spalte{display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.af-sk{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.af-bz{display:flex;flex-wrap:wrap;gap:4px;align-items:center;width:100%}
+.af-bz select{flex:1 1 130px;min-width:0}
+.af-bz .af-zahl{flex:1 1 100px;width:auto}
+.af-x{background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:0 4px}
+pre.af-bs{font:13px/1.5 var(--mono,monospace);background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin:6px 0;overflow-x:auto}
+/* Sequenz */
+.af-kopf{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:12px}
+.af-schritte{display:flex;flex-wrap:wrap;gap:6px;flex:1}
+.af-schritte .btn{font-size:13px;padding:5px 10px}
+.af-schritte .btn.erl::after{content:" ✓";color:var(--ok,#5e8a45)}
+.af-schritte .btn.on.erl::after{color:inherit}
+.af-zaehler{color:var(--muted);font-size:14px}
+.af-erledigt{font-size:13px;color:var(--ok,#5e8a45);font-weight:700;margin:0 0 8px}
+.af-unten{display:flex;justify-content:space-between;gap:8px;margin-top:16px;border-top:1px solid var(--border);padding-top:12px}
 
 </style>
+<script>/* ../../../lib/aufgaben.js */
+/* aufgaben.js – Aufgabenbausteine für alle Fächer: Aufgaben als Daten, Prüfung und Rückmeldung eingebaut
+ *
+ * Einbinden (Pfad zum Ordner pb_public/lib/, z. B. aus BWR/9II/finanzierung/ ../../../lib/):
+ *   <link rel="stylesheet" href="../../../lib/aufgaben.css">   <script src="../../../lib/aufgaben.js"><\/script>
+ * Farben kommen aus den Variablen der Seite (--panel, --panel2, --border, --accent, --text, --muted).
+ *
+ * Aufgabe = Objekt mit typ. Für alle Typen: nr (z. B. '7.1'), frage (Aufgabenstellung, HTML),
+ * erinnerung und material (HTML, stehen über der Aufgabe), ok (Text bei Erfolg),
+ * danach (weitere Aufgabe, erscheint erst nach richtiger Lösung, z. B. Handlungsempfehlung).
+ *   mc           options:[Texte], correct:[Indizes] (mehrere = Mehrfachauswahl, oder multi:true), why:{Index: Erklärung},
+ *                after (Text nach Erfolg), mono, mischen:false (Reihenfolge behalten), sofort:false
+ *                (bei genau einer richtigen Antwort wird sonst beim Antippen sofort geprüft).
+ *                Dasselbe Format wie type:'choice' in den Excel-Erklärungen.
+ *   zahlen       felder:[{t (Text), l (Lösung), e (Einheit), h (Hinweis bei Fehler), tol (Toleranz, Std. 0,005)}]
+ *                Eingabe im deutschen Format (1.234,50 €), Knopftext über knopf:'…'
+ *   luecken      text:'… [[richtig|falsch|falsch]] …' → Auswahllisten (erste Antwort richtig, wird gemischt)
+ *   zuordnen     felder:[[id, Titel]], karten:[{t (Text), z (Feld-id)}]; Ziehen mit Maus/Finger oder
+ *                erst Karte, dann Feld antippen. Richtige bleiben liegen, falsche gehen zurück.
+ *   buchungssatz konten:['2800 BK', …] (Auswahlliste), soll:[['0700 MA', 40000], …], haben:[…],
+ *                steuer:['2600 VORST', '4800 UST'] (für den Hinweis), nebenrechnung (HTML nach Lösung)
+ *                prüft: Konten, Soll/Haben vertauscht, fehlende Steuer, Beträge; Lösung im Skill-Format
+ *
+ * API
+ *   Aufgaben.baue(el, a, {fertig})  Baustein in Element el; fertig(a) nach richtiger Lösung (inkl. danach)
+ *   Aufgaben.sequenz({el, key, schritte})  Erarbeitung aus Schritten mit Knöpfen, ✓, Zähler, Zurück/Weiter:
+ *       schritt = {id, kurz (Knopf), titel, html (String oder Funktion), erinnerung, material,
+ *                  aufgaben:[…], nach(el) (nach dem Zeichnen, für eigene Grafiken)}
+ *       Schritte mit Aufgaben melden TrainerSync.event (modus 'erarbeitung', aufgabe = schritt.id),
+ *       Info-Schritte gelten beim Weitergehen als erledigt. Gespeichert: <key>-stand {schritt, erledigt}.
+ *   Aufgaben.mc.html(a, auswahl:Set, geprueft, reihenfolge?) / Aufgaben.mc.pruefen(a, auswahl) → {ok, gruende}
+ *       für Seiten mit eigenem Ablauf (Excel-Erklärungen: tabelle.js, und-oder.html)
+ *   Helfer: zahl('1.234,50 €') → 1234.5, eur(n) → '1.234,50 €', mischen(liste), esc(text), bsText(soll, haben)
+ */
+(function(){
+'use strict';
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;'}[c]));
+const r2 = n => Math.round(n * 100) / 100;
+const eur = n => r2(n).toLocaleString('de-DE', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' €';
+function zahl(s){
+  s = String(s == null ? '' : s).replace(/€|%|Tage?|\s/g, '');
+  if (!s) return NaN;
+  if (s.includes(',')) s = s.replace(/\./g, '').replace(',', '.');
+  else if (/^-?\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, '');
+  return /^-?\d+(\.\d+)?$/.test(s) ? +s : NaN;
+}
+function mischen(a){ a = a.slice(); for (let i = a.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+const fbHTML = fb => fb ? `<div class="af-fb ${fb.ok ? 'ok' : 'falsch'}">${fb.t}</div>` : '';
+const nummern = n => [...Array(n).keys()];
+// Buchungssatz im Format des BWR-Skills: „an“ auf der letzten Soll-Zeile, weitere Haben-Konten bündig darunter
+function bsText(soll, haben){
+  const w1 = Math.max(...soll.map(x => x[0].length)), b1 = Math.max(...soll.map(x => eur(x[1]).length));
+  const w2 = Math.max(...haben.map(x => x[0].length)), b2 = Math.max(...haben.map(x => eur(x[1]).length));
+  const z = (x, w, b) => x[0].padEnd(w) + '  ' + eur(x[1]).padStart(b);
+  const zeilen = soll.map((x, i) => z(x, w1, b1) + (i === soll.length - 1 ? '   an   ' + z(haben[0], w2, b2) : ''));
+  haben.slice(1).forEach(x => zeilen.push(' '.repeat(w1 + b1 + 10) + z(x, w2, b2)));
+  return zeilen.join('\n');
+}
+
+/* ---------- Typen: zustand(a), html(a, z), pruefen(a, z) → {ok, t} ---------- */
+const mehrfach = a => !!a.multi || a.correct.length > 1;
+const mc = {
+  html(a, sel, geprueft, ord){
+    return `<div class="opts${a.mono ? ' mono' : ''}">` + (ord || nummern(a.options.length)).map(i => {
+      let c = sel.has(i) ? ' sel' : '';
+      if (geprueft && sel.has(i)) c += a.correct.includes(i) ? ' good' : ' bad';
+      return `<button class="opt${c}" type="button" data-opt="${i}">${esc(a.options[i])}</button>`;
+    }).join('') + `</div><div class="ohint">${mehrfach(a) ? 'Mehrere Antworten möglich.' : 'Genau eine Antwort ist richtig.'}</div>`;
+  },
+  pruefen(a, sel){
+    const falsch = [...sel].filter(i => !a.correct.includes(i)), fehlt = a.correct.filter(i => !sel.has(i));
+    const gruende = falsch.map(i => (a.why && a.why[i]) || `„${esc(a.options[i])}“ passt nicht.`);
+    if (!falsch.length && fehlt.length) gruende.push(fehlt.length === 1 ? 'Es fehlt noch eine richtige Antwort.' : `Es fehlen noch ${fehlt.length} richtige Antworten.`);
+    return {ok:!falsch.length && !fehlt.length, gruende};
+  }
+};
+const TYPEN = {
+  mc:{
+    zustand:a => ({sel:new Set(), ord:a.mischen === false ? null : mischen(nummern(a.options.length))}),
+    sofort:a => a.sofort !== false && !mehrfach(a),
+    html:(a, z) => mc.html(a, z.sel, z.geprueft, z.ord),
+    pruefen(a, z){
+      if (!z.sel.size) return {ok:false, t:'Wähle zuerst eine Antwort aus.'};
+      z.geprueft = true;
+      const r = mc.pruefen(a, z.sel);
+      return r.ok ? {ok:true, t:'✓ <b>Richtig!</b>' + (a.after ? ' ' + a.after : '')} : {ok:false, t:'Noch nicht ganz.<br>' + r.gruende.join('<br>')};
+    }
+  },
+  zahlen:{
+    zustand:() => ({ein:{}, ok:{}}),
+    html:(a, z) => '<div class="af-felder">' + a.felder.map((f, i) => {
+      const r = z.ok[i];
+      return `<div class="af-zeile"><span class="af-t">${f.t}</span><input class="feld af-zahl${r === true ? ' richtig' : r === false ? ' falsch' : ''}" data-f="${i}" value="${esc(z.ein[i] || '')}" inputmode="decimal" autocomplete="off" aria-label="${esc(String(f.t).replace(/<[^>]+>/g, ''))}"${r === true ? ' readonly' : ''}>`
+        + `<span class="af-e">${f.e || ''}</span><span class="af-m">${r === true ? '✓' : r === false ? '✗' : ''}</span></div>`
+        + (r === false && f.h ? `<div class="af-hinweis">${f.h}</div>` : '');
+    }).join('') + '</div>',
+    pruefen(a, z){
+      a.felder.forEach((f, i) => { z.ok[i] = Math.abs(zahl(z.ein[i]) - f.l) <= (f.tol == null ? 0.005 : f.tol); });
+      return a.felder.every((f, i) => z.ok[i]) ? {ok:true, t:'✓ ' + (a.ok || 'Alles richtig!')} : {ok:false, t:'Noch nicht alles richtig. Die rot markierten Felder stimmen nicht.'};
+    }
+  },
+  luecken:{
+    zustand(a){
+      const teile = String(a.text).split(/\[\[(.*?)\]\]/).map((s, i) => i % 2 ? s.split('|') : s);
+      return {teile, wahl:{}, ok:{}, ord:teile.map(t => Array.isArray(t) ? mischen(nummern(t.length)) : null)};
+    },
+    html(a, z){
+      let n = 0;
+      return '<p class="af-luecken">' + z.teile.map((t, j) => {
+        if (!Array.isArray(t)) return t;
+        const i = n++, r = z.ok[i];
+        return `<select data-l="${i}" class="${r === true ? 'richtig' : r === false ? 'falsch' : ''}" aria-label="Lücke ${i + 1}"><option value="">– wählen –</option>`
+          + z.ord[j].map(k => `<option value="${k}"${String(z.wahl[i]) === String(k) ? ' selected' : ''}>${esc(t[k])}</option>`).join('') + '</select>';
+      }).join('') + '</p>';
+    },
+    pruefen(a, z){
+      const n = z.teile.filter(Array.isArray).length;
+      for (let i = 0; i < n; i++) z.ok[i] = String(z.wahl[i]) === '0';
+      return nummern(n).every(i => z.ok[i]) ? {ok:true, t:'✓ ' + (a.ok || 'Alles richtig!')} : {ok:false, t:'Noch nicht alles richtig. Die rot markierten Lücken stimmen nicht.'};
+    }
+  },
+  zuordnen:{
+    zustand:a => ({platz:{}, fix:{}, ord:mischen(nummern(a.karten.length)), wahl:null, weg:[]}),
+    html(a, z){
+      const karte = i => `<div class="af-karte${z.fix[i] ? ' fix' : ''}${z.wahl === i ? ' gewaehlt' : ''}${z.weg.includes(i) ? ' weg' : ''}" data-karte="${i}" tabindex="0" role="button">${a.karten[i].t}</div>`;
+      const frei = z.ord.filter(i => z.platz[i] == null);
+      return `<div class="af-pool" data-zone="">${frei.map(karte).join('') || '<span class="af-leer">Alle Karten sind verteilt.</span>'}</div>`
+        + `<div class="af-zonen" style="--n:${a.felder.length}">${a.felder.map(([id, t]) => `<div class="af-zone" data-zone="${esc(id)}"><div class="af-zt">${t}</div>${z.ord.filter(i => z.platz[i] === id).map(karte).join('')}</div>`).join('')}</div>`;
+    },
+    pruefen(a, z){
+      z.weg = []; z.wahl = null;
+      a.karten.forEach((k, i) => { if (z.platz[i] != null){ if (z.platz[i] === k.z) z.fix[i] = true; else { z.weg.push(i); delete z.platz[i]; } } });
+      const n = a.karten.filter((k, i) => z.fix[i]).length;
+      if (n === a.karten.length) return {ok:true, t:`✓ ${a.ok || `Alle ${n} Karten richtig zugeordnet!`}`};
+      if (!n && !z.weg.length) return {ok:false, t:'Ziehe zuerst Karten in die Felder.'};
+      return {ok:false, t:`${n} von ${a.karten.length} richtig. ${z.weg.length ? `${z.weg.length} ${z.weg.length === 1 ? 'Karte ist' : 'Karten sind'} zurück in den Stapel gewandert. ` : ''}Ordne die übrigen Karten zu.`};
+    }
+  },
+  buchungssatz:{
+    zustand:() => ({soll:[{k:'', b:''}], haben:[{k:'', b:''}]}),
+    html(a, z){
+      if (z.geloest) return `<pre class="af-bs">${esc(bsText(a.soll, a.haben))}</pre>` + (a.nebenrechnung ? `<div class="af-hinweis">${a.nebenrechnung}</div>` : '');
+      const opt = k => '<option value="">Konto …</option>' + a.konten.map(x => `<option${x === k ? ' selected' : ''}>${esc(x)}</option>`).join('');
+      const zeile = (s, x, i) => `<div class="af-bz"><select class="feld" data-seite="${s}" data-i="${i}" data-w="k" aria-label="${s === 'soll' ? 'Soll' : 'Haben'}-Konto ${i + 1}">${opt(x.k)}</select>`
+        + `<input class="feld af-zahl" data-seite="${s}" data-i="${i}" data-w="b" value="${esc(x.b)}" placeholder="Betrag" inputmode="decimal" autocomplete="off" aria-label="Betrag in €">`
+        + (z[s].length > 1 ? `<button class="af-x" type="button" data-weg="${s}" data-i="${i}" aria-label="Zeile entfernen">×</button>` : '') + '</div>';
+      const spalte = (s, t) => `<div class="af-spalte"><div class="af-sk">${t}</div>${z[s].map((x, i) => zeile(s, x, i)).join('')}<button class="btn klein" type="button" data-plus="${s}">+ Konto</button></div>`;
+      return `<div class="af-builder">${spalte('soll', 'Soll')}<div class="af-an">an</div>${spalte('haben', 'Haben')}</div>`;
+    },
+    pruefen(a, z){
+      const ein = s => z[s].filter(x => x.k || String(x.b).trim()).map(x => ({k:x.k, b:zahl(x.b)}));
+      const s = ein('soll'), h = ein('haben'), alle = [...s, ...h], ks = l => l.map(x => x.k || x[0]).sort().join('|');
+      const los = [...a.soll, ...a.haben], n = los.length;
+      let t = null;
+      if (!s.length || !h.length) t = 'Trage mindestens ein Soll-Konto und ein Haben-Konto ein.';
+      else if (alle.some(x => !x.k)) t = 'Wähle zu jedem Betrag ein Konto aus.';
+      else if (alle.some(x => isNaN(x.b))) t = 'Trage zu jedem Konto einen Betrag ein, z. B. 12.500,00.';
+      else if (new Set(alle.map(x => x.k)).size !== alle.length) t = 'Jedes Konto darf nur einmal im Buchungssatz stehen.';
+      else if (ks(s) === ks(a.haben) && ks(h) === ks(a.soll)) t = 'Soll und Haben sind vertauscht. Überlege bei jedem Konto: Nimmt es zu oder ab, und auf welcher Seite steht es?';
+      else if (ks(s) !== ks(a.soll) || ks(h) !== ks(a.haben)){
+        const st = los.find(x => (a.steuer || []).includes(x[0]) && !alle.some(y => y.k === x[0]));
+        t = 'Die Konten stimmen noch nicht. ' + (st ? `Denke an das Konto ${st[0]}.` : alle.length > n ? 'Es sind zu viele Konten.' : alle.length < n ? 'Es fehlt ein Konto.' : 'Überlege, welche Konten sich durch den Geschäftsfall verändern.');
+      } else {
+        const soll = (l, k) => l.find(x => x[0] === k)[1];
+        const falsch = [...s.filter(x => Math.abs(x.b - soll(a.soll, x.k)) > 0.005), ...h.filter(x => Math.abs(x.b - soll(a.haben, x.k)) > 0.005)];
+        if (falsch.length) t = `Die Konten stimmen. Prüfe den Betrag bei ${falsch.map(x => x.k).join(', ')}.`;
+      }
+      return t ? {ok:false, t} : {ok:true, t:'✓ ' + (a.ok || 'Richtig!')};
+    }
+  }
+};
+
+/* ---------- Baustein zeichnen und bedienen ---------- */
+function baue(el, a, opt){
+  opt = opt || {};
+  const typ = TYPEN[a.typ];
+  if (!typ) throw new Error('aufgaben.js: unbekannter typ ' + a.typ);
+  const z = a._z || (a._z = typ.zustand(a));
+  const ctx = {a, z, typ, opt, el, zeichne(){
+    const sofort = typ.sofort && typ.sofort(a);
+    el.innerHTML = (a.erinnerung ? `<details class="erinnerung" open><summary>Erinnerung</summary>${a.erinnerung}</details>` : '')
+      + (a.material ? `<div class="material">${a.material}</div>` : '')
+      + (a.frage ? `<p class="af-frage">${a.nr ? `<span class="af-nr">${a.nr}</span>` : ''}${a.frage}</p>` : '')
+      + typ.html(a, z)
+      + (!z.geloest && !sofort ? `<div class="af-knoepfe"><button class="btn haupt af-pruefen" type="button">${a.knopf || 'Prüfen'}</button></div>` : '')
+      + fbHTML(z.fb) + (z.geloest && a.danach ? '<div class="af-danach"></div>' : '');
+    if (z.geloest && a.danach) baue(el.querySelector('.af-danach'), a.danach, opt);
+  }};
+  el.classList.add('af'); el._af = ctx; ctx.zeichne();
+  return ctx;
+}
+function pruefe(ctx){
+  const {a, z, typ, opt} = ctx, r = typ.pruefen(a, z);
+  z.fb = {ok:r.ok, t:r.t};
+  if (r.ok && !z.geloest){ z.geloest = true; if (!a.danach && opt.fertig) opt.fertig(a); }
+  ctx.zeichne();
+  if (r.ok && a.danach && a.danach._z && a.danach._z.geloest && opt.fertig) opt.fertig(a);
+}
+const ctxVon = t => { const w = t.closest && t.closest('.af'); return w && w._af; };
+
+document.addEventListener('click', e => {
+  const ctx = ctxVon(e.target); if (!ctx || zieht) return;
+  const {a, z} = ctx, t = e.target;
+  if (t.closest('.af-pruefen')) return pruefe(ctx);
+  const o = t.closest('[data-opt]');
+  if (o && a.typ === 'mc'){
+    if (z.geloest) return;
+    const i = +o.dataset.opt;
+    if (mehrfach(a)){ z.sel.has(i) ? z.sel.delete(i) : z.sel.add(i); } else z.sel = new Set([i]);
+    z.geprueft = false; z.fb = null;
+    return ctx.typ.sofort(a) ? pruefe(ctx) : ctx.zeichne();
+  }
+  if (a.typ === 'zuordnen'){
+    const k = t.closest('[data-karte]'), zo = t.closest('[data-zone]');
+    if (k && !z.fix[+k.dataset.karte]){ z.wahl = z.wahl === +k.dataset.karte ? null : +k.dataset.karte; z.weg = []; return ctx.zeichne(); }
+    if (zo && z.wahl != null){ legen(ctx, z.wahl, zo.dataset.zone); z.wahl = null; return ctx.zeichne(); }
+  }
+  if (a.typ === 'buchungssatz'){
+    const p = t.closest('[data-plus]'), w = t.closest('[data-weg]');
+    if (p){ z[p.dataset.plus].push({k:'', b:''}); return ctx.zeichne(); }
+    if (w){ z[w.dataset.weg].splice(+w.dataset.i, 1); return ctx.zeichne(); }
+  }
+});
+document.addEventListener('input', e => {
+  const ctx = ctxVon(e.target); if (!ctx) return;
+  const t = e.target, d = t.dataset;
+  if (d.f != null) ctx.z.ein[d.f] = t.value;
+  else if (d.seite) ctx.z[d.seite][+d.i][d.w] = t.value;
+});
+document.addEventListener('change', e => {
+  const ctx = ctxVon(e.target); if (!ctx || e.target.dataset.l == null) return;
+  ctx.z.wahl[e.target.dataset.l] = e.target.value; delete ctx.z.ok[e.target.dataset.l]; e.target.className = '';
+});
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  const ctx = ctxVon(e.target); if (!ctx) return;
+  if (e.target.matches('input')){ e.preventDefault(); pruefe(ctx); }
+  else if (e.target.matches('[data-karte]')){ e.preventDefault(); e.target.click(); }
+});
+
+/* Zuordnen: Ziehen mit Maus, Stift oder Finger */
+let zieht = false, zug = null;
+function legen(ctx, i, zone){ const z = ctx.z; if (z.fix[i]) return; if (!zone) delete z.platz[i]; else z.platz[i] = zone; z.weg = []; z.fb = null; }
+document.addEventListener('pointerdown', e => {
+  const k = e.target.closest && e.target.closest('.af-karte'); if (!k || k.classList.contains('fix')) return;
+  zug = {ctx:ctxVon(k), i:+k.dataset.karte, el:k, x:e.clientX, y:e.clientY, geist:null};
+});
+document.addEventListener('pointermove', e => {
+  if (!zug) return;
+  if (!zug.geist){
+    if (Math.hypot(e.clientX - zug.x, e.clientY - zug.y) < 6) return;
+    zug.geist = zug.el.cloneNode(true); zug.geist.className = 'af-karte af-geist'; document.body.appendChild(zug.geist);
+    zug.el.classList.add('quelle'); zieht = true;
+  }
+  e.preventDefault();
+  zug.geist.style.left = (e.clientX - 110) + 'px'; zug.geist.style.top = (e.clientY - 18) + 'px';
+  zug.ctx.el.querySelectorAll('.ziel').forEach(x => x.classList.remove('ziel'));
+  const ziel = document.elementFromPoint(e.clientX, e.clientY), zo = ziel && ziel.closest('.af-zone');
+  if (zo && zug.ctx.el.contains(zo)) zo.classList.add('ziel');
+});
+document.addEventListener('pointerup', e => {
+  if (!zug) return;
+  const g = zug; zug = null;
+  if (!g.geist) return;
+  g.geist.remove();
+  const ziel = document.elementFromPoint(e.clientX, e.clientY), zo = ziel && ziel.closest('[data-zone]');
+  if (zo && g.ctx.el.contains(zo)) legen(g.ctx, g.i, zo.dataset.zone);
+  g.ctx.zeichne(); setTimeout(() => { zieht = false; }, 0);
+});
+document.addEventListener('pointercancel', () => { if (zug && zug.geist){ zug.geist.remove(); zug.ctx.zeichne(); } zug = null; zieht = false; });
+
+/* ---------- Sequenz (Erarbeitung aus Schritten) ---------- */
+function sequenz(cfg){
+  const root = typeof cfg.el === 'string' ? document.querySelector(cfg.el) : cfg.el, S = cfg.schritte, KEY = cfg.key + '-stand';
+  let stand = {}; try { stand = JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) {}
+  if (!stand.erledigt) stand.erledigt = {};
+  const speichern = () => { try { localStorage.setItem(KEY, JSON.stringify(stand)); } catch (e) {} if (window.TrainerSync) TrainerSync.changed(); };
+  const istAufgabe = s => !!(s.aufgaben && s.aufgaben.length), anzahl = S.filter(istAufgabe).length;
+  let akt = Math.min(Math.max(stand.schritt || 0, 0), S.length - 1);
+  root.innerHTML = '<div class="af-kopf"><nav class="af-schritte" aria-label="Schritte"></nav><span class="af-zaehler"></span></div><main class="karte af-inhalt" aria-live="polite"></main>';
+  const nav = root.querySelector('.af-schritte'), inhalt = root.querySelector('.af-inhalt'), zaehler = root.querySelector('.af-zaehler');
+  function erledigt(s){
+    const erstmals = !stand.erledigt[s.id];
+    stand.erledigt[s.id] = true; speichern();
+    if (istAufgabe(s) && window.TrainerSync) TrainerSync.event({modus:'erarbeitung', stufe:0, aufgabe:s.id, titel:s.titel || s.kurz, gesamt:anzahl, erstmals});
+    leiste();
+  }
+  function leiste(){
+    nav.innerHTML = S.map((x, i) => `<button class="btn${i === akt ? ' on' : ''}${stand.erledigt[x.id] ? ' erl' : ''}" type="button" data-schritt="${i}"${i === akt ? ' aria-current="step"' : ''}>${x.kurz}</button>`).join('');
+    zaehler.textContent = anzahl ? `${S.filter(x => istAufgabe(x) && stand.erledigt[x.id]).length} von ${anzahl} Aufgaben gelöst` : '';
+  }
+  function zeichne(oben){
+    const s = S[akt];
+    leiste();
+    inhalt.innerHTML = (istAufgabe(s) && stand.erledigt[s.id] ? '<p class="af-erledigt">✓ Diesen Schritt hast du schon gelöst. Du kannst ihn noch einmal bearbeiten.</p>' : '')
+      + (typeof s.html === 'function' ? s.html() : s.html || '')
+      + (s.erinnerung ? `<details class="erinnerung" open><summary>Erinnerung</summary>${s.erinnerung}</details>` : '')
+      + (s.material ? `<div class="material">${s.material}</div>` : '')
+      + (s.aufgaben || []).map(() => '<div class="af-aufgabe"></div>').join('')
+      + `<div class="af-unten"><button class="btn" type="button" data-weiter="-1"${akt ? '' : ' disabled'}>◀ Zurück</button><button class="btn haupt" type="button" data-weiter="1"${akt < S.length - 1 ? '' : ' disabled'}>Weiter ▶</button></div>`;
+    const plaetze = inhalt.querySelectorAll(':scope > .af-aufgabe');
+    (s.aufgaben || []).forEach((a, i) => baue(plaetze[i], a, {fertig:() => { if (s.aufgaben.every(x => geloest(x))) erledigt(s); }}));
+    if (s.nach) s.nach(inhalt);
+    if (oben) window.scrollTo(0, 0);
+  }
+  const geloest = a => !!(a._z && a._z.geloest && (!a.danach || geloest(a.danach)));
+  function gehe(i){
+    if (!istAufgabe(S[akt]) && i > akt && !stand.erledigt[S[akt].id]) erledigt(S[akt]);
+    akt = Math.min(Math.max(i, 0), S.length - 1); stand.schritt = akt; speichern(); zeichne(true);
+  }
+  root.addEventListener('click', e => {
+    const b = e.target.closest('[data-schritt], [data-weiter]'); if (!b || !root.contains(b)) return;
+    if (b.dataset.schritt != null) gehe(+b.dataset.schritt); else gehe(akt + +b.dataset.weiter);
+  });
+  zeichne();
+  return {gehe, get schritt(){ return akt; }, stand};
+}
+
+window.Aufgaben = {baue, sequenz, mc, mehrfach, zahl, eur, mischen, esc, bsText, TYPEN};
+})();
+
+</script>
 <style>
 .wrap{max-width:1000px}
-.schritte{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
-.schritte .btn{font-size:13px;padding:5px 10px}
-.schritte .btn.erl::after{content:" ✓";color:var(--ok)}
-.schritte .btn.on.erl::after{color:inherit}
 .info{border-left:4px solid var(--accent);padding:2px 0 2px 12px;margin:0 0 12px}
 .alltag{background:var(--panel2);border-radius:10px;padding:8px 12px;margin:0 0 12px}
 .alltag b:first-child{display:block;font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
-.unten{display:flex;justify-content:space-between;gap:8px;margin-top:16px;border-top:1px solid var(--border);padding-top:12px}
-.aufgabe{font-weight:600;margin:4px 0 10px}
-.aufgabe .nrk{display:inline-block;min-width:36px;font-family:var(--mono)}
-.erledigt{font-size:13px;color:var(--ok);font-weight:700;margin:0 0 8px}
 ul.merk{margin:0 0 12px;padding-left:20px}
 ul.merk li{margin-bottom:3px}
-/* Grafiken */
+.vergleich td{text-align:left!important;font-family:inherit!important}
 .grafik{width:100%;height:auto;display:block;margin:4px 0 10px}
 .grafik text{fill:var(--text);font:12px system-ui,sans-serif}
 .grafik .achse{stroke:var(--text);stroke-width:1.5}
@@ -866,88 +1251,24 @@ ul.merk li{margin-bottom:3px}
 .datum input[type=text]{width:90px;font-family:var(--mono);text-align:center}
 .datum input[type=range]{flex:1 1 220px;accent-color:var(--accent)}
 .stand{background:var(--panel2);border-radius:10px;padding:8px 12px;margin:0 0 12px}
-/* Fragen mit Eingabe */
-.fragen{display:flex;flex-direction:column;gap:8px;margin:8px 0}
-.frage{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}
-.frage .ft{flex:1 1 320px}
-.frage input{width:120px;text-align:right;font-family:var(--mono)}
-.frage .ok{color:var(--ok);font-weight:700}.frage .nein{color:var(--err);font-weight:700}
-.frage input.richtig{border-color:var(--ok);background:var(--plus-bg)}
-.frage input.falsch{border-color:var(--err);background:var(--minus-bg)}
-/* Zuordnen (Drag and Drop) */
-.pool{display:flex;flex-wrap:wrap;gap:8px;min-height:56px;padding:10px;border:2px dashed var(--border);border-radius:12px;margin-bottom:12px}
-.zonen{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
-@media (max-width:760px){.zonen{grid-template-columns:minmax(0,1fr)}}
-.zone{border:2px solid var(--border);border-radius:12px;padding:8px;min-height:150px;display:flex;flex-direction:column;gap:6px;background:var(--panel2)}
-.zone h3{margin:0 0 4px!important;text-align:center;font-size:14px}
-.zone.ziel{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 30%,transparent)}
-.kk-karte{background:var(--panel);border:1px solid var(--border);border-left:5px solid var(--accent);border-radius:8px;padding:7px 10px;font-size:14px;cursor:grab;touch-action:none;user-select:none;max-width:100%}
-.pool .kk-karte{flex:1 1 220px}
-.kk-karte.gewaehlt{outline:3px solid var(--accent)}
-.kk-karte.quelle{opacity:.35}
-.kk-karte.fix{border-left-color:var(--ok);background:var(--plus-bg);cursor:default}
-.kk-karte.weg{animation:wackeln .5s;border-left-color:var(--err);background:var(--minus-bg)}
-@keyframes wackeln{20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
-.geist{position:fixed;z-index:100;pointer-events:none;box-shadow:0 8px 20px rgba(0,0,0,.25);transform:rotate(-2deg);width:240px}
-/* Multiple Choice */
-.mc{margin:0 0 14px}
-.mc .q{font-weight:600;margin:0 0 6px}
-.mc .opts{display:flex;flex-direction:column;gap:6px}
-.mc .opt{text-align:left;font:15px system-ui,sans-serif;background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:8px 12px;cursor:pointer}
-.mc .opt:hover{border-color:var(--accent)}
-.mc .opt.richtig{background:var(--plus-bg);border-color:var(--ok)}
-.mc .opt.falsch{background:var(--minus-bg);border-color:var(--err)}
-.mc .opt:disabled{cursor:default}
-/* Lückentext */
-.lueckentext{line-height:2.4;font-size:16px}
-.lueckentext select{font:15px system-ui,sans-serif;background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:3px 6px}
-.lueckentext select.richtig{border-color:var(--ok);background:var(--plus-bg)}
-.lueckentext select.falsch{border-color:var(--err);background:var(--minus-bg)}
-.ueberblick p{margin:0 0 8px}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="bar"><div class="brand">Kurzfristige<span> Kredite</span></div><span class="spacer"></span><span class="muted" id="zaehler"></span></div>
-  <nav class="schritte" id="schritte" aria-label="Schritte"></nav>
-  <main class="karte" id="inhalt" aria-live="polite"></main>
+  <div class="bar"><div class="brand">Kurzfristige<span> Kredite</span></div></div>
+  <div id="app"></div>
 </div>
 <script>
 'use strict';
-/* ---------- Helfer ---------- */
-const KEY = 'kurzkredit-';
-const ldJ = (k, d) => { try { const x = JSON.parse(localStorage.getItem(KEY + k)); return x == null ? d : x; } catch (e) { return d; } };
-function st(k, v){ try { localStorage.setItem(KEY + k, JSON.stringify(v)); } catch (e) {} if (window.TrainerSync) TrainerSync.changed(); }
-const $ = s => document.querySelector(s);
-const r2 = n => Math.round(n * 100) / 100;
-const eur = n => r2(n).toLocaleString('de-DE', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' €';
-function zahl(s){
-  s = String(s).replace(/€|%|Tage?|\s/g, '');
-  if (!s) return NaN;
-  if (s.includes(',')) s = s.replace(/\./g, '').replace(',', '.');
-  else if (/^\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, '');
-  return /^-?\d+(\.\d+)?$/.test(s) ? +s : NaN;
-}
-function mischen(a){ a = a.slice(); for (let i = a.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+const {eur} = Aufgaben, $ = s => document.querySelector(s);
 
 /* ---------- Material (Werte aus dem Heft, Kapitel 7) ---------- */
-const R = {netto:10000, ust:1900, brutto:11900, skonto:2, tageSkonto:10, tageZiel:30, zinsenKK:58.31};
-R.bruttoSkonto = r2(R.brutto * R.skonto / 100); R.nettoSkonto = r2(R.bruttoSkonto / 1.19); R.ueberweisung = r2(R.brutto - R.bruttoSkonto);
-const rechnungHTML = () => `<div class="material"><div class="mt">Material: Eingangsrechnung eines Holzlieferanten (Auszug)</div>
+const R = {netto:10000, ust:1900, brutto:11900, zinsenKK:58.31, bruttoSkonto:238, nettoSkonto:200, ueberweisung:11662};
+const RECHNUNG = `<div class="mt">Material: Eingangsrechnung eines Holzlieferanten (Auszug)</div>
   <table class="beleg"><tr><td>Rechnungsdatum</td><td>02.11.</td></tr><tr><td>20 Hälse aus Ahorn, Warenwert netto</td><td>${eur(R.netto)}</td></tr>
   <tr><td>+ 19 % Umsatzsteuer</td><td>${eur(R.ust)}</td></tr><tr class="summe"><td>Rechnungsbetrag</td><td>${eur(R.brutto)}</td></tr></table>
-  <p style="margin:8px 0 0">Zahlungsbedingungen: Zahlbar innerhalb von 30 Tagen ohne Abzug; bei Zahlung innerhalb von 10 Tagen 2 % Skonto.</p></div>`;
-const kkTextHTML = () => `<p style="margin:8px 0 0">Saitgig hat zurzeit kein Guthaben. Nutzt Jakob das Skonto, muss er den Überweisungsbetrag mit dem Kontokorrentkredit bezahlen. Die Bank verlangt dafür für die 20 Tage <b>${eur(R.zinsenKK)}</b> Zinsen.</p>`;
-
-/* ---------- Zustand ---------- */
-let stand = ldJ('stand', {});
-if (!stand.erledigt) stand.erledigt = {};
-const Z = {};   // Zustand der Aufgaben in dieser Sitzung (Eingaben, Rückmeldungen)
-function erledigt(s){
-  const erstmals = !stand.erledigt[s.id];
-  stand.erledigt[s.id] = true; st('stand', stand);
-  if (s.aufgabe && window.TrainerSync) TrainerSync.event({modus:'erarbeitung', stufe:0, aufgabe:s.id, titel:s.titel, gesamt:SCHRITTE.filter(x => x.aufgabe).length, erstmals});
-}
+  <p style="margin:8px 0 0">Zahlungsbedingungen: Zahlbar innerhalb von 30 Tagen ohne Abzug; bei Zahlung innerhalb von 10 Tagen 2 % Skonto.</p>`;
+const KK_TEXT = `<p style="margin:8px 0 0">Saitgig hat zurzeit kein Guthaben. Nutzt Jakob das Skonto, muss er den Überweisungsbetrag mit dem Kontokorrentkredit bezahlen. Die Bank verlangt dafür für die 20 Tage <b>${eur(R.zinsenKK)}</b> Zinsen.</p>`;
 
 /* ---------- Grafik Kontokorrentkredit ---------- */
 function kkGrafik(){
@@ -957,30 +1278,27 @@ function kkGrafik(){
   return `<svg class="grafik" viewBox="0 0 640 280" role="img" aria-label="Kontostand eines Geschäftsbankkontos im Zeitverlauf mit Kreditlinie">
     <defs><pattern id="kkSchr" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="8" class="schr"/></pattern>
     <clipPath id="kkU0"><rect x="0" y="${Y(0)}" width="640" height="300"/></clipPath><clipPath id="kkUL"><rect x="0" y="${Y(-70)}" width="640" height="300"/></clipPath></defs>
-    <polygon points="${flaeche}" fill="url(#kkSchr)" clip-path="url(#kkU0)"/>
-    <polygon points="${flaeche}" class="ueberzogen" clip-path="url(#kkUL)"/>
+    <polygon points="${flaeche}" fill="url(#kkSchr)" clip-path="url(#kkU0)"/><polygon points="${flaeche}" class="ueberzogen" clip-path="url(#kkUL)"/>
     <line class="achse" x1="62" x2="632" y1="${Y(0)}" y2="${Y(0)}"/><line class="achse" x1="62" x2="62" y1="22" y2="256"/>
-    <line class="limit" x1="62" x2="632" y1="${Y(-70)}" y2="${Y(-70)}"/>
-    <polyline class="kurve" points="${pts}"/>
+    <line class="limit" x1="62" x2="632" y1="${Y(-70)}" y2="${Y(-70)}"/><polyline class="kurve" points="${pts}"/>
     <text x="6" y="18">Kontostand</text><text x="56" y="${Y(0) + 4}" text-anchor="end">0 €</text><text x="632" y="${Y(0) + 18}" text-anchor="end">Zeit</text>
     <text x="70" y="${Y(-70) - 7}" class="rotT">Kreditlinie (Limit) – 70.000 €</text>
-    <text x="${X(0) + 4}" y="${Y(20) - 10}">Guthaben</text>
-    <text x="${X(5)}" y="${Y(10) - 10}" text-anchor="middle">Kunde zahlt ein</text>
+    <text x="${X(0) + 4}" y="${Y(20) - 10}">Guthaben</text><text x="${X(5)}" y="${Y(10) - 10}" text-anchor="middle">Kunde zahlt ein</text>
     <text x="${X(8) - 14}" y="${Y(-70) + 19}" text-anchor="end" class="rotT">geduldete Überziehung (noch teurer!) →</text>
     <text x="62" y="276">schraffiert = Kontokorrentkredit beansprucht → Zinsen</text></svg>`;
 }
 
-/* ---------- Zeitleiste Lieferantenkredit ---------- */
+/* ---------- Zeitleiste Lieferantenkredit: Zahlungsdatum → Dauer der Kredite ---------- */
+let lkTag = 10;
 const datum = d => { const n = 2 + d; return n <= 30 ? String(n).padStart(2, '0') + '.11.' : String(n - 30).padStart(2, '0') + '.12.'; };
 function tagAus(s){
   const m = String(s).trim().match(/^(\d{1,2})\.(\d{1,2})\.?(\d{2,4})?$/);
   if (!m) return null;
-  const tag = +m[1], monat = +m[2];
-  const d = monat === 11 ? tag - 2 : monat === 12 ? 28 + tag : NaN;
+  const tag = +m[1], monat = +m[2], d = monat === 11 ? tag - 2 : monat === 12 ? 28 + tag : NaN;
   return d >= 0 && d <= 40 && tag >= 1 && tag <= (monat === 11 ? 30 : 31) ? d : null;
 }
 function zeitleiste(d){
-  const X = t => 30 + t * 15, mitte = (a, b) => (X(a) + X(b)) / 2;
+  const X = t => 30 + t * 15, mitte = (a, b) => (X(a) + X(b)) / 2, lx = Math.min(Math.max(X(d), 60), 600);
   let h = `<svg class="grafik" viewBox="0 0 660 230" role="img" aria-label="Zeitleiste des Lieferantenkredits mit Zahlung am ${datum(d)}">
     <defs><pattern id="tlSchr" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="8" height="8" fill="#ebcb8b" fill-opacity=".35"/><line x1="0" y1="0" x2="0" y2="8" class="schr"/></pattern></defs>
     <rect class="gruen" x="${X(0)}" y="34" width="${X(10) - X(0)}" height="38"/><rect class="orange" x="${X(10)}" y="34" width="${X(30) - X(10)}" height="38"/><rect class="rot" x="${X(30)}" y="34" width="${X(40) - X(30)}" height="38"/>
@@ -990,14 +1308,10 @@ function zeitleiste(d){
   for (let t = 0; t <= 40; t++) h += `<line class="tick" x1="${X(t)}" x2="${X(t)}" y1="72" y2="${t % 5 ? 76 : 80}"/>`;
   [[0, 'Rechnung'], [10, 'Ende Skontofrist'], [30, 'Zahlungsziel']].forEach(([t, s]) => { h += `<text class="key" x="${X(t)}" y="94">${datum(t)}</text><text class="dt" x="${X(t)}" y="107">${s}</text>`; });
   [5, 15, 20, 25, 35, 40].forEach(t => { h += `<text class="dt" x="${X(t)}" y="94">${datum(t)}</text>`; });
-  const lx = Math.min(Math.max(X(d), 60), 600);
-  h += `<path class="marke" d="M${X(d) - 6},24 L${X(d) + 6},24 L${X(d)},33 z" style="fill:var(--text)"/><line class="marke" x1="${X(d)}" x2="${X(d)}" y1="76" y2="214"/><text class="mt" x="${lx}" y="18" text-anchor="middle">Zahlung am ${datum(d)}</text>`;
+  h += `<path d="M${X(d) - 6},24 L${X(d) + 6},24 L${X(d)},33 z" style="fill:var(--text)"/><line class="marke" x1="${X(d)}" x2="${X(d)}" y1="76" y2="214"/><text class="mt" x="${lx}" y="18" text-anchor="middle">Zahlung am ${datum(d)}</text>`;
   if (d > 0) h += `<rect class="lk" x="${X(0)}" y="136" width="${X(d) - X(0)}" height="16" rx="3"/>`;
   h += `<text x="${X(0)}" y="130">${d > 0 ? `Lieferantenkredit: ${d} ${d === 1 ? 'Tag' : 'Tage'} (02.11. bis ${datum(d)})` : 'Sofortige Zahlung: kein Lieferantenkredit'}</text>`;
-  if (d <= 10){
-    const tx = Math.min(X(d), 330);
-    h += `<rect class="kk" x="${X(d)}" y="186" width="${X(30) - X(d)}" height="16" rx="3"/><text x="${tx}" y="180">Kontokorrentkredit: ${30 - d} Tage (${datum(d)} bis 02.12.)</text>`;
-  }
+  if (d <= 10) h += `<rect class="kk" x="${X(d)}" y="186" width="${X(30) - X(d)}" height="16" rx="3"/><text x="${Math.min(X(d), 330)}" y="180">Kontokorrentkredit: ${30 - d} Tage (${datum(d)} bis 02.12.)</text>`;
   return h + '</svg>';
 }
 function standText(d){
@@ -1005,91 +1319,22 @@ function standText(d){
   if (d <= 30) return `<b>Zahlung ohne Abzug.</b> Jakob überweist ${eur(R.brutto)}. Der Lieferantenkredit dauert ${d} Tage – die Tage nach dem 12.11. bezahlt Jakob mit dem entgangenen Skonto.`;
   return `<b>Zu spät!</b> Das Zahlungsziel (02.12.) ist um ${d - 30} ${d - 30 === 1 ? 'Tag' : 'Tage'} überschritten. Saitgig gerät in Zahlungsverzug – der Lieferer kann mahnen und Verzugszinsen verlangen.`;
 }
-
-/* ---------- Bausteine für Aufgaben ---------- */
-// Fragen mit Zahleneingabe: [{id, t (Frage), l (Lösung), e (Einheit), h (Hinweis bei Fehler)}]
-function fragenHTML(z, fr){
-  return '<div class="fragen">' + fr.map(f => {
-    const r = z.ok && z.ok[f.id];
-    return `<div class="frage"><span class="ft">${f.t}</span><input class="feld${r === true ? ' richtig' : r === false ? ' falsch' : ''}" data-frage="${f.id}" value="${z.ein && z.ein[f.id] || ''}" inputmode="decimal" autocomplete="off" aria-label="Antwort"${r === true ? ' readonly' : ''}><span>${f.e}</span>${r === true ? '<span class="ok">✓</span>' : r === false ? '<span class="nein">✗</span>' : ''}</div>`
-      + (r === false && f.h ? `<div class="nr" style="margin:0 0 0 2px">${f.h}</div>` : '');
-  }).join('') + '</div>';
+function setzeTag(d, vomRegler){
+  lkTag = d; $('#lkBild').innerHTML = zeitleiste(d); $('#lkStand').innerHTML = standText(d);
+  if (vomRegler) $('#lkDatum').value = datum(d); else $('#lkRegler').value = d;
 }
-function fragenPruefen(z, fr){
-  z.ok = z.ok || {};
-  fr.forEach(f => { const v = zahl(z.ein && z.ein[f.id]); z.ok[f.id] = Math.abs(v - f.l) < 0.005; });
-  return fr.every(f => z.ok[f.id]);
-}
-// Multiple Choice: q = {id, q, o:[Antworten], r (Index richtig), w:{Index: Erklärung}}
-function mcHTML(z, qs){
-  return qs.map(q => {
-    const g = z.mc && z.mc[q.id], ord = z.ord[q.id] || (z.ord[q.id] = mischen(q.o.map((_, i) => i)));
-    return `<div class="mc"><p class="q">${q.q}</p><div class="opts">${ord.map(i => `<button class="opt${g && g.ok && i === q.r ? ' richtig' : g && !g.ok && g.i === i ? ' falsch' : ''}" type="button" data-mc="${q.id}" data-i="${i}"${g && g.ok ? ' disabled' : ''}>${q.o[i]}</button>`).join('')}</div>`
-      + (g ? `<div class="fb ${g.ok ? 'ok' : 'falsch'}">${g.ok ? '✓ Richtig.' + (q.e ? ' ' + q.e : '') : (q.w && q.w[g.i]) || 'Das stimmt nicht. Versuche es noch einmal.'}</div>` : '') + '</div>';
-  }).join('');
-}
+document.addEventListener('input', e => {
+  if (e.target.id === 'lkRegler') setzeTag(+e.target.value, true);
+  if (e.target.id === 'lkDatum'){
+    const d = tagAus(e.target.value);
+    $('#lkHinweis').textContent = d == null ? 'Gib ein Datum zwischen 02.11. und 12.12. ein, z. B. 20.11.' : 'Gib ein Datum ein (z. B. 20.11.) oder verschiebe den Regler.';
+    if (d != null) setzeTag(d, false);
+  }
+});
+document.addEventListener('change', e => { if (e.target.id === 'lkDatum' && tagAus(e.target.value) != null) e.target.value = datum(tagAus(e.target.value)); });
 
 /* ---------- Schritte ---------- */
-const KARTEN = [
-  {id:'k1', t:'Das Geschäftsbankkonto darf bis zur Kreditlinie überzogen werden.', z:'kk'},
-  {id:'k2', t:'Er sichert die Liquidität eines Unternehmens im laufenden Geschäftsverkehr.', z:'kk'},
-  {id:'k3', t:'Zahlungseingänge von Kunden tilgen ihn automatisch.', z:'kk'},
-  {id:'k4', t:'Kontoführungsgebühren dafür bucht das Unternehmen auf 6750 KGV.', z:'kk'},
-  {id:'d1', t:'Die Bank räumt ihn Privatkunden ein.', z:'dispo'},
-  {id:'d2', t:'Man überzieht damit sein privates Girokonto.', z:'dispo'},
-  {id:'d3', t:'Seine Höhe hängt von regelmäßigen Geldeingängen wie dem Gehalt ab.', z:'dispo'},
-  {id:'d4', t:'Die Bank bietet ihn dir vielleicht mit deinem ersten Ausbildungsgehalt an.', z:'dispo'},
-  {id:'l1', t:'Der Lieferer gewährt ein Zahlungsziel, z. B. 30 Tage.', z:'lk'},
-  {id:'l2', t:'Bis zum Ende der Skontofrist ist er kostenlos.', z:'lk'},
-  {id:'l3', t:'Sein Preis ist das entgangene Skonto.', z:'lk'},
-  {id:'l4', t:'Auf ein Jahr hochgerechnet entspricht er oft einem Zinssatz von rund 36 %.', z:'lk'}
-];
-const ZONEN = [['kk', 'Kontokorrentkredit'], ['dispo', 'Dispositionskredit'], ['lk', 'Lieferantenkredit']];
-const MC72 = [
-  {id:'a', q:'Welche Aussage unterscheidet Kontokorrent- und Dispositionskredit richtig?',
-    o:['Kontokorrentkredit: Unternehmen auf dem Geschäftsbankkonto – Dispositionskredit: Privatkunden auf dem Girokonto',
-       'Kontokorrentkredit: Privatkunden auf dem Girokonto – Dispositionskredit: Unternehmen auf dem Geschäftsbankkonto',
-       'Der Kontokorrentkredit ist zinslos, der Dispositionskredit nicht.',
-       'Der Dispositionskredit ist langfristig, der Kontokorrentkredit kurzfristig.'], r:0,
-    w:{1:'Genau vertauscht: Unternehmen haben ein Geschäftsbankkonto, Privatkunden ein Girokonto.', 2:'Für beide Kredite verlangt die Bank Zinsen.', 3:'Beide Kredite sind kurzfristig.'}},
-  {id:'b', q:'Wovon hängt die Höhe eines Dispositionskredits vor allem ab?',
-    o:['von der Kreditwürdigkeit und den regelmäßigen Geldeingängen, z. B. dem Gehalt', 'vom Skontosatz der Lieferer', 'von der Zahl der Maschinen im Unternehmen', 'von der Laufzeit eines Darlehens'], r:0,
-    w:{1:'Skonto gehört zum Lieferantenkredit.', 2:'Den Dispo bekommen Privatkunden, nicht Unternehmen.', 3:'Der Dispo hat keine feste Laufzeit wie ein Darlehen.'}},
-  {id:'c', q:'Was haben Kontokorrent- und Dispositionskredit gemeinsam?',
-    o:['Das Konto darf bis zu einer Obergrenze überzogen werden; Zinsen fallen nur für die beanspruchte Höhe und Dauer an.',
-       'Beide sind bis zum Ende einer Frist kostenlos.', 'Beide dienen zur langfristigen Finanzierung von Maschinen.', 'Beide gewährt ein Lieferer.'], r:0,
-    w:{1:'Kostenlos bis zum Ende einer Frist ist nur der Lieferantenkredit (Skontofrist).', 2:'Beide sind kurzfristig – Maschinen finanziert man langfristig (Goldene Finanzierungsregel).', 3:'Beide gewährt die Bank.'}}
-];
-const MC74 = [{id:'empf', q:'Welche Handlungsempfehlung leitet sich daraus für Jakob ab?',
-  o:['Jakob sollte innerhalb der Skontofrist (bis 12.11.) mit dem Kontokorrentkredit zahlen und Skonto abziehen.',
-     'Jakob sollte bis zum 02.12. warten und ohne Abzug zahlen, weil dann keine Zinsen anfallen.',
-     'Jakob sollte für die Rechnung ein langfristiges Darlehen aufnehmen.',
-     'Jakob sollte die Rechnung erst nach dem 02.12. bezahlen.'], r:0,
-  e:'Der Kontokorrentkredit kostet nur 58,31 €, das Skonto bringt 200,00 € – Jakob spart 141,69 €.',
-  w:{1:'Dann zahlt er zwar keine Bankzinsen, verliert aber 200,00 € Skonto – das ist teurer als 58,31 € Zinsen.', 2:'Ein Darlehen passt nicht zu einer kurzfristigen Rechnung über 20 Tage (Goldene Finanzierungsregel).', 3:'Dann gerät Saitgig in Zahlungsverzug.'}}];
-const LUECKEN = [
-  'Der Kontokorrentkredit ist eine ', ['teure', 'günstige', 'zinslose'], ' und ', ['kurzfristige', 'langfristige'], ' Kreditart. Er soll nur ',
-  ['kurzfristige Zahlungsengpässe', 'langfristige Investitionen', 'fehlendes Eigenkapital'], ' überbrücken. Wird er dauerhaft beansprucht, kosten die ',
-  ['Zinsen', 'Skonti', 'Tilgungen'], ' viel Geld, und die ', ['Kreditlinie', 'Skontofrist', 'Eigenkapitalquote'], ' fehlt für andere Zahlungen.'
-];
-const F_LK = [
-  {id:'f1', t:'Lies ab: Wie viele Tage ist der Lieferantenkredit kostenlos?', l:10, e:'Tage', h:'Schau auf den grünen Abschnitt der Zeitleiste.'},
-  {id:'f2', t:'Jakob zahlt am letzten Tag der Skontofrist (12.11.) mit dem Kontokorrentkredit. Lies ab: Wie viele Tage müsste der Kontokorrentkredit bis zum Zahlungsziel laufen?', l:20, e:'Tage', h:'Stelle das Datum 12.11. ein und lies den schraffierten Balken ab.'},
-  {id:'f3', t:'Jakob zahlt schon am 06.11. mit Skonto. Stelle das Datum ein und lies ab: Wie viele Tage müsste der Kontokorrentkredit dann laufen?', l:26, e:'Tage', h:'Stelle das Datum 06.11. ein und lies den schraffierten Balken ab.'}
-];
-const F73 = [
-  {id:'bs', t:'Bruttoskonto', l:R.bruttoSkonto, e:'€', h:'Bruttoskonto = Rechnungsbetrag · Skontosatz : 100'},
-  {id:'ns', t:'Nettoskonto', l:R.nettoSkonto, e:'€', h:'Nettoskonto = Bruttoskonto : 1,19'},
-  {id:'ub', t:'Überweisungsbetrag', l:R.ueberweisung, e:'€', h:'Überweisungsbetrag = Rechnungsbetrag – Bruttoskonto'}
-];
-const F74 = [
-  {id:'klk', t:'Kosten des Lieferantenkredits', l:R.nettoSkonto, e:'€', h:'Die Kosten des Lieferantenkredits sind der entgangene Nettoskonto.'},
-  {id:'kkk', t:'Kosten des Kontokorrentkredits', l:R.zinsenKK, e:'€', h:'Die Kosten des Kontokorrentkredits sind die Zinsen der Bank (siehe Material).'},
-  {id:'vor', t:'Kostenvorteil bei Aufnahme des Kontokorrentkredits', l:r2(R.nettoSkonto - R.zinsenKK), e:'€', h:'Kostenvorteil = Kosten des Lieferantenkredits – Kosten des Kontokorrentkredits'}
-];
-const aufgabe = (nr, t) => `<p class="aufgabe">${nr ? `<span class="nrk">${nr}</span>` : ''}${t}</p>`;
-
-const SCHRITTE = [
+Aufgaben.sequenz({el:'#app', key:'kurzkredit', schritte:[
   {id:'kontokorrent', kurz:'Kontokorrentkredit', titel:'Kontokorrentkredit', html:() => `<h2>Kontokorrentkredit</h2>
     <p>Nicht jeder Kredit ist ein großes Darlehen. Für den laufenden Geschäftsverkehr nutzen Unternehmen kurzfristige Kredite.</p>
     <div class="info"><p><b>Kontokorrentkredit</b> (ital. <i>conto corrente</i> = laufendes Konto): Die Bank erlaubt dem Unternehmen, sein <b>Geschäftsbankkonto</b> bis zu einer <b>Kreditlinie</b> (Kreditlimit = Obergrenze) zu überziehen – ohne weitere Rücksprache. Er dient zur Finanzierung des laufenden Geschäftsverkehrs, zur <b>Sicherung der Liquidität</b> und zur Überbrückung kurzfristiger Zahlungsengpässe.</p></div>
@@ -1098,208 +1343,105 @@ const SCHRITTE = [
     <li>vergleichsweise <b>teure</b> Kreditart; wird das Limit überschritten (geduldete Überziehung), fallen noch höhere Überziehungszinsen an</li>
     <li><b>Tilgung automatisch</b> durch Zahlungseingänge (z. B. Kunden überweisen); die Bank kann die Kreditlinie jederzeit anpassen</li>
     <li>zusätzlich können Kontoführungsgebühren anfallen → Konto <b>6750 KGV</b> (Kosten des Geldverkehrs); Zinsen → <b>7510 ZAW</b></li></ul>`},
-  {id:'dispo', kurz:'Dispositionskredit', titel:'Dispositionskredit', html:() => `<h2>Dispositionskredit („Dispo“)</h2>
+
+  {id:'dispo', kurz:'Dispositionskredit', titel:'Dispositionskredit', html:`<h2>Dispositionskredit („Dispo“)</h2>
     <div class="info"><p>Der <b>Dispositionskredit</b> funktioniert genauso wie der Kontokorrentkredit, wird aber <b>Privatkunden</b> auf dem <b>Girokonto</b> eingeräumt. Die Höhe hängt von der <b>Kreditwürdigkeit</b> und den <b>regelmäßigen Geldeingängen</b> (z. B. Gehalt) ab.</p>
     <p>Vorteil: hohe Flexibilität. Nachteil: sehr hohe Zinsen → nur in Ausnahmefällen nutzen!</p></div>
     <div class="alltag"><b>Aus dem Alltag · Der Dispo auf deinem ersten Girokonto</b>Mit dem ersten Ausbildungsgehalt bietet dir die Bank vielleicht einen Dispo von 1.000 € an. Bequem – aber teuer: Dispozinsen liegen oft bei über 10 % im Jahr. Wer dauerhaft „im Minus“ lebt, zahlt jeden Monat drauf.</div>
-    <table class="beleg" style="max-width:none"><tr><td></td><td style="text-align:left;font-family:inherit"><b>Kontokorrentkredit</b></td><td style="text-align:left;font-family:inherit"><b>Dispositionskredit</b></td></tr>
-    <tr><td>für wen?</td><td style="text-align:left;font-family:inherit">Unternehmen</td><td style="text-align:left;font-family:inherit">Privatkunden</td></tr>
-    <tr><td>welches Konto?</td><td style="text-align:left;font-family:inherit">Geschäftsbankkonto</td><td style="text-align:left;font-family:inherit">Girokonto</td></tr></table>`},
-  {id:'lieferantenkredit', aufgabe:true, kurz:'Lieferantenkredit', titel:'Lieferantenkredit auf der Zeitleiste', html:() => {
-    const z = Z.lk || (Z.lk = {d:10, ein:{}});
-    return `<h2>Lieferantenkredit</h2>
+    <table class="beleg vergleich" style="max-width:none"><tr><td></td><td><b>Kontokorrentkredit</b></td><td><b>Dispositionskredit</b></td></tr>
+    <tr><td>für wen?</td><td>Unternehmen</td><td>Privatkunden</td></tr><tr><td>welches Konto?</td><td>Geschäftsbankkonto</td><td>Girokonto</td></tr></table>`},
+
+  {id:'lieferantenkredit', kurz:'Lieferantenkredit', titel:'Lieferantenkredit auf der Zeitleiste', html:() => `<h2>Lieferantenkredit</h2>
     <div class="info"><p>Gibt ein Lieferer ein <b>Zahlungsziel</b> (z. B. „zahlbar innerhalb von 30 Tagen“), gewährt er seinem Kunden einen <b>Kredit</b>. Bietet er zusätzlich <b>Skonto</b> an (z. B. „2 % Skonto bei Zahlung innerhalb von 10 Tagen“), gilt: Bis zum Ende der <b>Skontofrist</b> ist der Lieferantenkredit <b>zinslos</b>. Wer später zahlt, verzichtet auf das Skonto – der entgangene <b>Nettoskonto</b> ist der Preis für die restlichen Tage.</p>
     <p>Rechnet man 2 % für 20 Tage auf ein ganzes Jahr hoch, entspricht das einem Zinssatz von etwa <b>36 %</b>! Ein Kontokorrentkredit kostet meist nur 8–12 %. Deshalb gilt: <b>Skonto nutzen – notfalls mit dem Kontokorrentkredit.</b></p></div>
-    ${rechnungHTML()}
+    <div class="material">${RECHNUNG}</div>
     <h3>Probiere aus: Wann bezahlt Jakob die Rechnung?</h3>
-    <div class="datum"><label>Zahlungsdatum <input class="feld" type="text" id="lkDatum" value="${datum(z.d)}" autocomplete="off" aria-describedby="lkHinweis"></label>
-      <input type="range" id="lkRegler" min="0" max="40" step="1" value="${z.d}" aria-label="Zahlungsdatum verschieben"></div>
+    <div class="datum"><label>Zahlungsdatum <input class="feld" type="text" id="lkDatum" value="${datum(lkTag)}" autocomplete="off" aria-describedby="lkHinweis"></label>
+      <input type="range" id="lkRegler" min="0" max="40" step="1" value="${lkTag}" aria-label="Zahlungsdatum verschieben"></div>
     <div class="nr" id="lkHinweis">Gib ein Datum ein (z. B. 20.11.) oder verschiebe den Regler.</div>
-    <div id="lkBild">${zeitleiste(z.d)}</div><div class="stand" id="lkStand">${standText(z.d)}</div>
-    ${aufgabe('', 'Beantworte die Fragen mithilfe der Zeitleiste.')}${fragenHTML(z, F_LK)}
-    <div class="knoepfe"><button class="btn haupt" type="button" data-pruefen="lieferantenkredit">Prüfen</button></div>${z.fb ? `<div class="fb ${z.fb.ok ? 'ok' : 'falsch'}">${z.fb.t}</div>` : ''}`;
-  }},
-  {id:'a71', aufgabe:true, kurz:'7.1', titel:'7.1 Merkmale zuordnen', html:() => {
-    const z = Z.a71 || (Z.a71 = {platz:{}, fix:{}, ord:mischen(KARTEN.map(k => k.id))});
-    const karte = id => { const k = KARTEN.find(x => x.id === id); return `<div class="kk-karte${z.fix[id] ? ' fix' : ''}${z.wahl === id ? ' gewaehlt' : ''}${z.weg && z.weg.includes(id) ? ' weg' : ''}" data-karte="${id}" tabindex="0" role="button" aria-label="${k.t}">${k.t}</div>`; };
-    return `<details class="erinnerung" open><summary>Erinnerung</summary>
-      <p><b>Kontokorrentkredit:</b> Unternehmen überziehen ihr Geschäftsbankkonto bis zur Kreditlinie. <b>Dispositionskredit:</b> dasselbe für Privatkunden auf dem Girokonto. <b>Lieferantenkredit:</b> der Lieferer gewährt ein Zahlungsziel; bis zum Ende der Skontofrist kostenlos.</p></details>
-      ${aufgabe('7.1', 'Ordne die Merkmale dem passenden Kredit zu. Ziehe jede Karte in ein Feld (oder tippe erst die Karte, dann das Feld an).')}
-      <div class="pool" data-zone="pool">${z.ord.filter(id => !z.platz[id]).map(karte).join('') || '<span class="muted">Alle Karten sind verteilt.</span>'}</div>
-      <div class="zonen">${ZONEN.map(([id, t]) => `<div class="zone" data-zone="${id}"><h3>${t}</h3>${z.ord.filter(k => z.platz[k] === id).map(karte).join('')}</div>`).join('')}</div>
-      <div class="knoepfe"><button class="btn haupt" type="button" data-pruefen="a71">Prüfen</button></div>${z.fb ? `<div class="fb ${z.fb.ok ? 'ok' : 'falsch'}">${z.fb.t}</div>` : ''}`;
-  }},
-  {id:'a72', aufgabe:true, kurz:'7.2', titel:'7.2 Kontokorrent- und Dispositionskredit', html:() => {
-    const z = Z.a72 || (Z.a72 = {mc:{}, ord:{}});
-    return `<details class="erinnerung" open><summary>Erinnerung</summary>
-      <p>Beide Kredite erlauben es, ein Konto bis zu einer Obergrenze zu überziehen; Zinsen fallen nur für die beanspruchte Höhe und Dauer an. Der <b>Kontokorrentkredit</b> ist für Unternehmen, der <b>Dispositionskredit</b> für Privatkunden.</p></details>
-      ${aufgabe('7.2', 'Unterscheide Kontokorrentkredit und Dispositionskredit. Wähle jeweils die richtige Antwort.')}${mcHTML(z, MC72)}`;
-  }},
-  {id:'a73', aufgabe:true, kurz:'7.3', titel:'7.3 Skonto berechnen', html:() => {
-    const z = Z.a73 || (Z.a73 = {ein:{}});
-    return `<details class="erinnerung" open><summary>Erinnerung</summary>
-      <p>Bruttoskonto = Rechnungsbetrag · Skontosatz : 100 &nbsp;·&nbsp; Nettoskonto = Bruttoskonto : 1,19 &nbsp;·&nbsp; Überweisungsbetrag = Rechnungsbetrag – Bruttoskonto</p></details>
-      ${rechnungHTML()}
-      ${aufgabe('7.3', 'Berechne den Bruttoskonto, den Nettoskonto und den Überweisungsbetrag, wenn Jakob innerhalb der Skontofrist zahlt. Trage deine Ergebnisse ein und überprüfe sie.')}${fragenHTML(z, F73)}
-      <div class="knoepfe"><button class="btn haupt" type="button" data-pruefen="a73">Ergebnisse überprüfen</button></div>${z.fb ? `<div class="fb ${z.fb.ok ? 'ok' : 'falsch'}">${z.fb.t}</div>` : ''}`;
-  }},
-  {id:'a74', aufgabe:true, kurz:'7.4', titel:'7.4 Kostenvergleich', html:() => {
-    const z = Z.a74 || (Z.a74 = {ein:{}, mc:{}, ord:{}});
-    return `<details class="erinnerung" open><summary>Erinnerung</summary>
-      <p><b>Kosten des Lieferantenkredits</b> = entgangener Nettoskonto (siehe 7.3: Nettoskonto = Rechnungsbetrag · 2 % : 1,19). <b>Kosten des Kontokorrentkredits</b> = Zinsen der Bank. <b>Kostenvorteil</b> = Differenz beider Kosten.</p></details>
-      <div class="material"><div class="mt">Material</div><table class="beleg"><tr><td>Rechnungsdatum</td><td>02.11.</td></tr><tr><td>Warenwert netto</td><td>${eur(R.netto)}</td></tr><tr><td>+ 19 % Umsatzsteuer</td><td>${eur(R.ust)}</td></tr><tr class="summe"><td>Rechnungsbetrag</td><td>${eur(R.brutto)}</td></tr></table>
-      <p style="margin:8px 0 0">Zahlungsbedingungen: Zahlbar innerhalb von 30 Tagen ohne Abzug; bei Zahlung innerhalb von 10 Tagen 2 % Skonto.</p>${kkTextHTML()}</div>
-      ${aufgabe('7.4', 'Gib die Kosten des Lieferantenkredits, die Kosten des Kontokorrentkredits und den Kostenvorteil bei der Aufnahme des Kontokorrentkredits an.')}${fragenHTML(z, F74)}
-      <div class="knoepfe"><button class="btn haupt" type="button" data-pruefen="a74">Prüfen</button></div>${z.fb ? `<div class="fb ${z.fb.ok ? 'ok' : 'falsch'}">${z.fb.t}</div>` : ''}
-      ${z.rechnungOk ? '<h3>Und jetzt?</h3>' + mcHTML(z, MC74) : ''}`;
-  }},
-  {id:'a75', aufgabe:true, kurz:'7.5', titel:'7.5 Lückentext Kontokorrentkredit', html:() => {
-    const z = Z.a75 || (Z.a75 = {wahl:{}, ord:{}});
-    let n = 0;
-    const text = LUECKEN.map(teil => {
-      if (typeof teil === 'string') return teil;
-      const i = n++, ord = z.ord[i] || (z.ord[i] = mischen(teil.map((_, j) => j))), w = z.wahl[i], r = z.ok && z.ok[i];
-      return `<select data-luecke="${i}" class="${r === true ? 'richtig' : r === false ? 'falsch' : ''}" aria-label="Lücke ${i + 1}"><option value="">– wählen –</option>${ord.map(j => `<option value="${j}"${String(w) === String(j) ? ' selected' : ''}>${teil[j]}</option>`).join('')}</select>`;
-    }).join('');
-    return `<details class="erinnerung" open><summary>Erinnerung</summary>
-      <p>Der Kontokorrentkredit ist ein <b>kurzfristiger</b> Kredit und eine vergleichsweise <b>teure</b> Kreditart. Er dient zur Sicherung der Liquidität und zur Überbrückung kurzfristiger Zahlungsengpässe – bis zur <b>Kreditlinie</b>.</p></details>
-      ${aufgabe('7.5', 'Begründe, warum Jakob die Rechnung nicht dauerhaft über den Kontokorrentkredit finanzieren sollte. Vervollständige dazu den Text.')}
-      <p class="lueckentext">${text}</p>
-      <div class="knoepfe"><button class="btn haupt" type="button" data-pruefen="a75">Prüfen</button></div>${z.fb ? `<div class="fb ${z.fb.ok ? 'ok' : 'falsch'}">${z.fb.t}</div>` : ''}`;
-  }},
-  {id:'ueberblick', kurz:'Überblick', titel:'Überblick', html:() => `<h2>Überblick · Kurzfristige Kredite</h2>
-    <div class="ueberblick info"><p><b>Kontokorrentkredit:</b> Überziehung des Geschäftsbankkontos bis zur Kreditlinie; Zinsen nur für beanspruchte Höhe und Dauer; Tilgung durch Zahlungseingänge.</p>
+    <div id="lkBild">${zeitleiste(lkTag)}</div><div class="stand" id="lkStand">${standText(lkTag)}</div>`,
+    aufgaben:[{typ:'zahlen', frage:'Beantworte die Fragen mithilfe der Zeitleiste.',
+      ok:'Alles richtig! Je früher Jakob mit Skonto zahlt, desto länger muss der Kontokorrentkredit laufen – bis zum Zahlungsziel.',
+      felder:[
+        {t:'Lies ab: Wie viele Tage ist der Lieferantenkredit kostenlos?', l:10, e:'Tage', h:'Schau auf den grünen Abschnitt der Zeitleiste.'},
+        {t:'Jakob zahlt am letzten Tag der Skontofrist (12.11.) mit dem Kontokorrentkredit. Lies ab: Wie viele Tage müsste der Kontokorrentkredit bis zum Zahlungsziel laufen?', l:20, e:'Tage', h:'Stelle das Datum 12.11. ein und lies den schraffierten Balken ab.'},
+        {t:'Jakob zahlt schon am 06.11. mit Skonto. Stelle das Datum ein und lies ab: Wie viele Tage müsste der Kontokorrentkredit dann laufen?', l:26, e:'Tage', h:'Stelle das Datum 06.11. ein und lies den schraffierten Balken ab.'}]}]},
+
+  {id:'a71', kurz:'7.1', titel:'7.1 Merkmale zuordnen',
+    erinnerung:'<p><b>Kontokorrentkredit:</b> Unternehmen überziehen ihr Geschäftsbankkonto bis zur Kreditlinie. <b>Dispositionskredit:</b> dasselbe für Privatkunden auf dem Girokonto. <b>Lieferantenkredit:</b> der Lieferer gewährt ein Zahlungsziel; bis zum Ende der Skontofrist kostenlos.</p>',
+    aufgaben:[{typ:'zuordnen', nr:'7.1', frage:'Ordne die Merkmale dem passenden Kredit zu. Ziehe jede Karte in ein Feld (oder tippe erst die Karte, dann das Feld an).',
+      ok:'Alle 12 Merkmale richtig zugeordnet!',
+      felder:[['kk', 'Kontokorrentkredit'], ['dispo', 'Dispositionskredit'], ['lk', 'Lieferantenkredit']],
+      karten:[
+        {t:'Das Geschäftsbankkonto darf bis zur Kreditlinie überzogen werden.', z:'kk'},
+        {t:'Er sichert die Liquidität eines Unternehmens im laufenden Geschäftsverkehr.', z:'kk'},
+        {t:'Zahlungseingänge von Kunden tilgen ihn automatisch.', z:'kk'},
+        {t:'Kontoführungsgebühren dafür bucht das Unternehmen auf 6750 KGV.', z:'kk'},
+        {t:'Die Bank räumt ihn Privatkunden ein.', z:'dispo'},
+        {t:'Man überzieht damit sein privates Girokonto.', z:'dispo'},
+        {t:'Seine Höhe hängt von regelmäßigen Geldeingängen wie dem Gehalt ab.', z:'dispo'},
+        {t:'Die Bank bietet ihn dir vielleicht mit deinem ersten Ausbildungsgehalt an.', z:'dispo'},
+        {t:'Der Lieferer gewährt ein Zahlungsziel, z. B. 30 Tage.', z:'lk'},
+        {t:'Bis zum Ende der Skontofrist ist er kostenlos.', z:'lk'},
+        {t:'Sein Preis ist das entgangene Skonto.', z:'lk'},
+        {t:'Auf ein Jahr hochgerechnet entspricht er oft einem Zinssatz von rund 36 %.', z:'lk'}]}]},
+
+  {id:'a72', kurz:'7.2', titel:'7.2 Kontokorrent- und Dispositionskredit',
+    erinnerung:'<p>Beide Kredite erlauben es, ein Konto bis zu einer Obergrenze zu überziehen; Zinsen fallen nur für die beanspruchte Höhe und Dauer an. Der <b>Kontokorrentkredit</b> ist für Unternehmen, der <b>Dispositionskredit</b> für Privatkunden.</p>',
+    aufgaben:[
+      {typ:'mc', nr:'7.2', frage:'Unterscheide Kontokorrentkredit und Dispositionskredit: Welche Aussage unterscheidet beide richtig?',
+        options:['Kontokorrentkredit: Unternehmen auf dem Geschäftsbankkonto – Dispositionskredit: Privatkunden auf dem Girokonto',
+          'Kontokorrentkredit: Privatkunden auf dem Girokonto – Dispositionskredit: Unternehmen auf dem Geschäftsbankkonto',
+          'Der Kontokorrentkredit ist zinslos, der Dispositionskredit nicht.', 'Der Dispositionskredit ist langfristig, der Kontokorrentkredit kurzfristig.'], correct:[0],
+        why:{1:'Genau vertauscht: Unternehmen haben ein Geschäftsbankkonto, Privatkunden ein Girokonto.', 2:'Für beide Kredite verlangt die Bank Zinsen.', 3:'Beide Kredite sind kurzfristig.'}},
+      {typ:'mc', frage:'Wovon hängt die Höhe eines Dispositionskredits vor allem ab?',
+        options:['von der Kreditwürdigkeit und den regelmäßigen Geldeingängen, z. B. dem Gehalt', 'vom Skontosatz der Lieferer', 'von der Zahl der Maschinen im Unternehmen', 'von der Laufzeit eines Darlehens'], correct:[0],
+        why:{1:'Skonto gehört zum Lieferantenkredit.', 2:'Den Dispo bekommen Privatkunden, nicht Unternehmen.', 3:'Der Dispo hat keine feste Laufzeit wie ein Darlehen.'}},
+      {typ:'mc', frage:'Was haben Kontokorrent- und Dispositionskredit gemeinsam?',
+        options:['Das Konto darf bis zu einer Obergrenze überzogen werden; Zinsen fallen nur für die beanspruchte Höhe und Dauer an.',
+          'Beide sind bis zum Ende einer Frist kostenlos.', 'Beide dienen zur langfristigen Finanzierung von Maschinen.', 'Beide gewährt ein Lieferer.'], correct:[0],
+        why:{1:'Kostenlos bis zum Ende einer Frist ist nur der Lieferantenkredit (Skontofrist).', 2:'Beide sind kurzfristig – Maschinen finanziert man langfristig (Goldene Finanzierungsregel).', 3:'Beide gewährt die Bank.'}}]},
+
+  {id:'a73', kurz:'7.3', titel:'7.3 Skonto berechnen',
+    erinnerung:'<p>Bruttoskonto = Rechnungsbetrag · Skontosatz : 100 &nbsp;·&nbsp; Nettoskonto = Bruttoskonto : 1,19 &nbsp;·&nbsp; Überweisungsbetrag = Rechnungsbetrag – Bruttoskonto</p>',
+    material:RECHNUNG,
+    aufgaben:[{typ:'zahlen', nr:'7.3', knopf:'Ergebnisse überprüfen',
+      frage:'Berechne den Bruttoskonto, den Nettoskonto und den Überweisungsbetrag, wenn Jakob innerhalb der Skontofrist zahlt. Trage deine Ergebnisse ein und überprüfe sie.',
+      ok:`Richtig! Bruttoskonto ${eur(R.bruttoSkonto)}, Nettoskonto ${eur(R.nettoSkonto)} (Steuerberichtigung ${eur(R.bruttoSkonto - R.nettoSkonto)}), Überweisungsbetrag ${eur(R.ueberweisung)}.`,
+      felder:[
+        {t:'Bruttoskonto', l:R.bruttoSkonto, e:'€', h:'Bruttoskonto = Rechnungsbetrag · Skontosatz : 100'},
+        {t:'Nettoskonto', l:R.nettoSkonto, e:'€', h:'Nettoskonto = Bruttoskonto : 1,19'},
+        {t:'Überweisungsbetrag', l:R.ueberweisung, e:'€', h:'Überweisungsbetrag = Rechnungsbetrag – Bruttoskonto'}]}]},
+
+  {id:'a74', kurz:'7.4', titel:'7.4 Kostenvergleich',
+    erinnerung:'<p><b>Kosten des Lieferantenkredits</b> = entgangener Nettoskonto (siehe 7.3: Nettoskonto = Rechnungsbetrag · 2 % : 1,19). <b>Kosten des Kontokorrentkredits</b> = Zinsen der Bank. <b>Kostenvorteil</b> = Differenz beider Kosten.</p>',
+    material:RECHNUNG + KK_TEXT,
+    aufgaben:[{typ:'zahlen', nr:'7.4',
+      frage:'Gib die Kosten des Lieferantenkredits, die Kosten des Kontokorrentkredits und den Kostenvorteil bei der Aufnahme des Kontokorrentkredits an.',
+      ok:`Richtig! Lieferantenkredit ${eur(R.nettoSkonto)} – Kontokorrentkredit ${eur(R.zinsenKK)} = Vorteil ${eur(R.nettoSkonto - R.zinsenKK)}.`,
+      felder:[
+        {t:'Kosten des Lieferantenkredits', l:R.nettoSkonto, e:'€', h:'Die Kosten des Lieferantenkredits sind der entgangene Nettoskonto.'},
+        {t:'Kosten des Kontokorrentkredits', l:R.zinsenKK, e:'€', h:'Die Kosten des Kontokorrentkredits sind die Zinsen der Bank (siehe Material).'},
+        {t:'Kostenvorteil bei Aufnahme des Kontokorrentkredits', l:R.nettoSkonto - R.zinsenKK, e:'€', h:'Kostenvorteil = Kosten des Lieferantenkredits – Kosten des Kontokorrentkredits'}],
+      danach:{typ:'mc', frage:'Welche Handlungsempfehlung leitet sich daraus für Jakob ab?',
+        options:['Jakob sollte innerhalb der Skontofrist (bis 12.11.) mit dem Kontokorrentkredit zahlen und Skonto abziehen.',
+          'Jakob sollte bis zum 02.12. warten und ohne Abzug zahlen, weil dann keine Zinsen anfallen.',
+          'Jakob sollte für die Rechnung ein langfristiges Darlehen aufnehmen.', 'Jakob sollte die Rechnung erst nach dem 02.12. bezahlen.'], correct:[0],
+        after:'Der Kontokorrentkredit kostet nur 58,31 €, das Skonto bringt 200,00 € – Jakob spart 141,69 €.',
+        why:{1:'Dann zahlt er zwar keine Bankzinsen, verliert aber 200,00 € Skonto – das ist teurer als 58,31 € Zinsen.', 2:'Ein Darlehen passt nicht zu einer kurzfristigen Rechnung über 20 Tage (Goldene Finanzierungsregel).', 3:'Dann gerät Saitgig in Zahlungsverzug.'}}}]},
+
+  {id:'a75', kurz:'7.5', titel:'7.5 Lückentext Kontokorrentkredit',
+    erinnerung:'<p>Der Kontokorrentkredit ist ein <b>kurzfristiger</b> Kredit und eine vergleichsweise <b>teure</b> Kreditart. Er dient zur Sicherung der Liquidität und zur Überbrückung kurzfristiger Zahlungsengpässe – bis zur <b>Kreditlinie</b>.</p>',
+    aufgaben:[{typ:'luecken', nr:'7.5', frage:'Begründe, warum Jakob die Rechnung nicht dauerhaft über den Kontokorrentkredit finanzieren sollte. Vervollständige dazu den Text.',
+      ok:'Richtig! Der Kontokorrentkredit ist nur für kurzfristige Engpässe gedacht.',
+      text:'Der Kontokorrentkredit ist eine [[teure|günstige|zinslose]] und [[kurzfristige|langfristige]] Kreditart. Er soll nur [[kurzfristige Zahlungsengpässe|langfristige Investitionen|fehlendes Eigenkapital]] überbrücken. Wird er dauerhaft beansprucht, kosten die [[Zinsen|Skonti|Tilgungen]] viel Geld, und die [[Kreditlinie|Skontofrist|Eigenkapitalquote]] fehlt für andere Zahlungen.'}]},
+
+  {id:'ueberblick', kurz:'Überblick', titel:'Überblick', html:`<h2>Überblick · Kurzfristige Kredite</h2>
+    <div class="info"><p><b>Kontokorrentkredit:</b> Überziehung des Geschäftsbankkontos bis zur Kreditlinie; Zinsen nur für beanspruchte Höhe und Dauer; Tilgung durch Zahlungseingänge.</p>
     <p><b>Dispositionskredit:</b> wie Kontokorrentkredit, aber für Privatkunden auf dem Girokonto.</p>
     <p><b>Lieferantenkredit:</b> bis zum Ende der Skontofrist kostenlos, danach sehr teuer, weil der Nettoskonto verloren geht → Skonto ausnutzen.</p></div>
     <p class="muted">Übertrage den Überblick in dein Heft (Seite 2, Kapitel 7) und vergleiche mit dem Lösungsblatt L7.</p>`}
-];
-
-/* ---------- Prüfen ---------- */
-const PRUEFEN = {
-  lieferantenkredit(){
-    const z = Z.lk, ok = fragenPruefen(z, F_LK);
-    z.fb = ok ? {ok:true, t:'✓ Alles richtig! Je früher Jakob mit Skonto zahlt, desto länger muss der Kontokorrentkredit laufen – bis zum Zahlungsziel.'} : {ok:false, t:'Noch nicht alles richtig. Nutze die Zeitleiste und lies die Balken ab.'};
-    if (ok) erledigt(schritt('lieferantenkredit'));
-  },
-  a71(){
-    const z = Z.a71, falsch = [];
-    KARTEN.forEach(k => { if (z.platz[k.id]){ if (z.platz[k.id] === k.z) z.fix[k.id] = true; else { falsch.push(k.id); delete z.platz[k.id]; } } });
-    z.weg = falsch; z.wahl = null;
-    const fertig = KARTEN.filter(k => z.fix[k.id]).length, offen = KARTEN.length - fertig;
-    if (!offen){ z.fb = {ok:true, t:'✓ Alle 12 Merkmale richtig zugeordnet!'}; erledigt(schritt('a71')); }
-    else z.fb = {ok:false, t:`${fertig} von ${KARTEN.length} richtig. ${falsch.length ? `${falsch.length} ${falsch.length === 1 ? 'Karte ist' : 'Karten sind'} zurück in den Stapel gewandert. ` : ''}Ordne die übrigen Karten zu.`};
-  },
-  a73(){
-    const z = Z.a73, ok = fragenPruefen(z, F73);
-    z.fb = ok ? {ok:true, t:`✓ Richtig! Bruttoskonto ${eur(R.bruttoSkonto)}, Nettoskonto ${eur(R.nettoSkonto)} (Steuerberichtigung ${eur(R.bruttoSkonto - R.nettoSkonto)}), Überweisungsbetrag ${eur(R.ueberweisung)}.`} : {ok:false, t:'Noch nicht alles richtig. Die Erinnerung oben zeigt dir den Rechenweg.'};
-    if (ok) erledigt(schritt('a73'));
-  },
-  a74(){
-    const z = Z.a74, ok = fragenPruefen(z, F74);
-    z.fb = ok ? {ok:true, t:`✓ Richtig! Lieferantenkredit ${eur(R.nettoSkonto)} – Kontokorrentkredit ${eur(R.zinsenKK)} = Vorteil ${eur(R.nettoSkonto - R.zinsenKK)}.`} : {ok:false, t:'Noch nicht alles richtig. Lies die Erinnerung und das Material genau.'};
-    z.rechnungOk = ok;
-  },
-  a75(){
-    const z = Z.a75; z.ok = {};
-    let i = 0, alle = true;
-    LUECKEN.forEach(teil => { if (typeof teil !== 'string'){ z.ok[i] = String(z.wahl[i]) === '0'; alle = alle && z.ok[i]; i++; } });
-    z.fb = alle ? {ok:true, t:'✓ Richtig! Der Kontokorrentkredit ist nur für kurzfristige Engpässe gedacht.'} : {ok:false, t:'Noch nicht alles richtig. Die rot markierten Lücken stimmen nicht.'};
-    if (alle) erledigt(schritt('a75'));
-  }
-};
-const schritt = id => SCHRITTE.find(s => s.id === id);
-
-/* ---------- Darstellung ---------- */
-let akt = Math.min(Math.max(stand.schritt || 0, 0), SCHRITTE.length - 1);
-function render(oben){
-  const s = SCHRITTE[akt];
-  $('#schritte').innerHTML = SCHRITTE.map((x, i) => `<button class="btn${i === akt ? ' on' : ''}${stand.erledigt[x.id] ? ' erl' : ''}" type="button" data-schritt="${i}"${i === akt ? ' aria-current="step"' : ''}>${x.kurz}</button>`).join('');
-  const n = SCHRITTE.filter(x => x.aufgabe && stand.erledigt[x.id]).length, m = SCHRITTE.filter(x => x.aufgabe).length;
-  $('#zaehler').textContent = `${n} von ${m} Aufgaben gelöst`;
-  $('#inhalt').innerHTML = (s.aufgabe && stand.erledigt[s.id] ? '<p class="erledigt">✓ Diese Aufgabe hast du schon gelöst. Du kannst sie noch einmal bearbeiten.</p>' : '') + s.html()
-    + `<div class="unten"><button class="btn" type="button" data-weiter="-1"${akt ? '' : ' disabled'}>◀ Zurück</button><button class="btn haupt" type="button" data-weiter="1"${akt < SCHRITTE.length - 1 ? '' : ' disabled'}>Weiter ▶</button></div>`;
-  if (oben) window.scrollTo(0, 0);
-}
-function gehe(i){
-  const s = SCHRITTE[akt];
-  if (!s.aufgabe && i > akt) erledigt(s);
-  akt = Math.min(Math.max(i, 0), SCHRITTE.length - 1); stand.schritt = akt; st('stand', stand); render(true);
-}
-
-/* ---------- Ereignisse ---------- */
-document.addEventListener('click', e => {
-  const b = e.target.closest('button, .zone, .kk-karte'); if (!b) return;
-  const ds = b.dataset;
-  if (ds.schritt) return gehe(+ds.schritt);
-  if (ds.weiter) return gehe(akt + +ds.weiter);
-  if (ds.pruefen){ PRUEFEN[ds.pruefen](); render(); return; }
-  if (ds.mc){
-    const z = Z[SCHRITTE[akt].id], q = [...MC72, ...MC74].find(x => x.id === ds.mc), i = +ds.i;
-    z.mc[q.id] = {i, ok:i === q.r};
-    if (MC72.every(x => z.mc[x.id] && z.mc[x.id].ok) && SCHRITTE[akt].id === 'a72') erledigt(schritt('a72'));
-    if (q.id === 'empf' && i === q.r) erledigt(schritt('a74'));
-    return render();
-  }
-  // Zuordnen per Antippen: erst Karte, dann Feld
-  const z = Z.a71; if (!z || SCHRITTE[akt].id !== 'a71' || zieht) return;
-  if (ds.karte && !z.fix[ds.karte]){ z.wahl = z.wahl === ds.karte ? null : ds.karte; z.weg = null; return render(); }
-  if (ds.zone && z.wahl){ legen(z.wahl, ds.zone); z.wahl = null; render(); }
-});
-function legen(id, zone){ const z = Z.a71; if (z.fix[id]) return; if (zone === 'pool') delete z.platz[id]; else z.platz[id] = zone; z.weg = null; z.fb = null; }
-document.addEventListener('input', e => {
-  const t = e.target, z = Z[SCHRITTE[akt].id === 'lieferantenkredit' ? 'lk' : SCHRITTE[akt].id];
-  if (t.dataset.frage){ z.ein[t.dataset.frage] = t.value; return; }
-  if (t.id === 'lkRegler') setzeTag(+t.value, true);
-  if (t.id === 'lkDatum'){ const d = tagAus(t.value); $('#lkHinweis').textContent = d == null ? 'Gib ein Datum zwischen 02.11. und 12.12. ein, z. B. 20.11.' : 'Gib ein Datum ein (z. B. 20.11.) oder verschiebe den Regler.'; if (d != null) setzeTag(d, false); }
-});
-document.addEventListener('change', e => {
-  const t = e.target;
-  if (t.dataset.luecke != null){ Z.a75.wahl[t.dataset.luecke] = t.value; Z.a75.ok = null; Z.a75.fb = null; t.className = ''; }
-  if (t.id === 'lkDatum' && tagAus(t.value) != null) t.value = datum(tagAus(t.value));
-});
-document.addEventListener('keydown', e => {
-  if (e.key !== 'Enter') return;
-  const t = e.target;
-  if (t.dataset && t.dataset.frage){ e.preventDefault(); const b = document.querySelector('[data-pruefen]'); if (b) b.click(); }
-  else if (t.classList && t.classList.contains('kk-karte')){ e.preventDefault(); t.click(); }
-});
-function setzeTag(d, vomRegler){
-  Z.lk.d = d;
-  $('#lkBild').innerHTML = zeitleiste(d); $('#lkStand').innerHTML = standText(d);
-  if (vomRegler) $('#lkDatum').value = datum(d); else $('#lkRegler').value = d;
-}
-
-/* Ziehen mit Maus, Stift oder Finger */
-let zieht = false, zug = null;
-document.addEventListener('pointerdown', e => {
-  const k = e.target.closest('.kk-karte'); if (!k || k.classList.contains('fix')) return;
-  zug = {id:k.dataset.karte, el:k, x:e.clientX, y:e.clientY, geist:null};
-});
-document.addEventListener('pointermove', e => {
-  if (!zug) return;
-  if (!zug.geist){
-    if (Math.hypot(e.clientX - zug.x, e.clientY - zug.y) < 6) return;
-    zug.geist = zug.el.cloneNode(true); zug.geist.classList.add('geist'); zug.geist.classList.remove('gewaehlt'); document.body.appendChild(zug.geist);
-    zug.el.classList.add('quelle'); zieht = true;
-  }
-  e.preventDefault();
-  zug.geist.style.left = (e.clientX - 120) + 'px'; zug.geist.style.top = (e.clientY - 20) + 'px';
-  document.querySelectorAll('.zone.ziel').forEach(x => x.classList.remove('ziel'));
-  const ziel = document.elementFromPoint(e.clientX, e.clientY);
-  const zo = ziel && ziel.closest('.zone'); if (zo) zo.classList.add('ziel');
-});
-document.addEventListener('pointerup', e => {
-  if (!zug) return;
-  const g = zug; zug = null;
-  if (!g.geist) return;
-  g.geist.remove();
-  const ziel = document.elementFromPoint(e.clientX, e.clientY), zo = ziel && ziel.closest('[data-zone]');
-  if (zo) legen(g.id, zo.dataset.zone);
-  render(); setTimeout(() => { zieht = false; }, 0);
-});
-document.addEventListener('pointercancel', () => { if (zug && zug.geist) zug.geist.remove(); zug = null; zieht = false; render(); });
-
-render();
+]});
 </script>
 </body>
 </html>

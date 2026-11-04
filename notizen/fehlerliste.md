@@ -6,11 +6,16 @@ Gesammelt im Thread „Aufbau der Seite“. Umgesetzt wird erst, wenn die Lehrkr
 
 18. **Vorschlag: gemeinsame Teile in einen Ordner für alle Bereiche** (vorgeschlagen 02.11.)
     Die Datenbank-Seiten (abfragen.html, datenight.html, filmdatenbank.html in `IT/datenbanken/`) binden `../excel/basis.js`/`basis.css` (Stufen, Modi, Dock) und `../python/lib/codemirror.*` ein. Sauberer wäre z. B. `pb_public/lib/` für alles, was mehrere Bereiche nutzen. Seit dem 04.11. gibt es mehrere Fächer: Der Ordner gälte dann auch für BWR-Übungen (z. B. basis.js für Stufen und Modi). Betrifft alle Excel-, Python- und Datenbank-Seiten unter `IT/`.
+    Stand 04.11.: `pb_public/lib/` gibt es jetzt (aufgaben.js/.css). basis.js und codemirror liegen noch in den Bereichen.
 
 
 ## Erledigt
 
 ### Version vom 04.11.
+
+34. **Aufgabenbausteine für alle Fächer** (gewünscht 04.11.)
+    - `pb_public/lib/aufgaben.js` + `aufgaben.css`: Multiple Choice (Format der Excel-Erklärungen), Zahlenfelder, Lückentext mit Auswahllisten, Zuordnen per Ziehen/Antippen, Buchungssatz mit Prüfung (Drehfehler, fehlende Steuer, Betrag), Erarbeitung aus Schritten. Aufgaben stehen als Daten in der Seite.
+    - kurzfristige-kredite.html darauf umgestellt (496 → 247 Zeilen, Verhalten gleich). Excel funktionen/bezuege/und-oder zeichnen und prüfen Multiple Choice über `Aufgaben.mc` (Daten unverändert). bilanz.html noch mit eigenem Buchungssatz-Baukasten.
 
 33. **BWR Finanzierung: Erarbeitung kurzfristige Kredite** (gewünscht 04.11., Ergänzung zum Heft Kap. 7)
     - `BWR/9II/finanzierung/kurzfristige-kredite.html`: Kontokorrentkredit (Grafik Kontostand mit Kreditlinie), Dispositionskredit, Lieferantenkredit mit interaktiver Zeitleiste (Zahlungsdatum eingeben oder Regler → Dauer von Lieferanten- und Kontokorrentkredit, drei Ablesefragen).

@@ -13,6 +13,8 @@
  *   caret, setCaret, focusInp, applyPT, cellAt, endPT, gridEl, trackCaret   Bezüge mit der Maus einfügen
  *   Verdrahtet: #ovBtn, #prevBtn, #resetBtn, Eingabe in .pin → syncInput, Maus-Ende im #grid
  *
+ * Braucht ../../lib/aufgaben.js (Multiple Choice: Aufgaben.mc), vor basis.js einbinden.
+ *
  * Die Seite liefert
  *   TOPICS, GROUPS, AC_FN; let learn, endPick, CUR, S, LS, PT
  *   render, resetS, loadStep, newEndless, setLevel, clearMarks, syncInput(inp, keepSel), logSolved
@@ -342,24 +344,18 @@ function hint(msg){ const el = $('#selhint'); el.textContent = msg; clearTimeout
 
 /* ---- Fragen in der Erklärung (LS = {sel, checked}) ---- */
 function renderChoice(st){
-  $('#work').innerHTML = `<div class="opts${st.mono ? ' mono' : ''}">` + st.options.map((o, i) => {
-    let c = LS.sel.has(i) ? ' sel' : '';
-    if (LS.checked && LS.sel.has(i)) c += st.correct.includes(i) ? ' good' : ' bad';
-    return `<button class="opt${c}" data-opt="${i}">${esc(o)}</button>`;
-  }).join('') + `</div><div class="ohint">${st.correct.length > 1 ? 'Mehrere Antworten möglich.' : 'Genau eine Antwort ist richtig.'}</div>`;
+  $('#work').innerHTML = Aufgaben.mc.html(st, LS.sel, LS.checked);
 }
 function checkChoice(){
   const st = curStep();
   if (!LS.sel.size){ S.fb = {type:'err', html:'Wähle zuerst eine Antwort aus.'}; renderFeedback(); return; }
   LS.checked = true;
-  const wrong = [...LS.sel].filter(i => !st.correct.includes(i)), missing = st.correct.filter(i => !LS.sel.has(i));
-  if (!wrong.length && !missing.length){
+  const r = Aufgaben.mc.pruefen(st, LS.sel);
+  if (r.ok){
     const erstmals = !stepDone(prog().idx); markStep(); logSolved(erstmals);
     S.fb = {type:'ok', html:'<b>Richtig! 🎉</b>' + (st.after ? `<span class="note">${st.after}</span>` : '') + (canNext() ? '<span class="note">Weiter geht es mit „Weiter“.</span>' : '')};
   } else {
-    const lines = wrong.map(i => (st.why && st.why[i]) || `„${esc(st.options[i])}“ passt nicht.`);
-    if (!wrong.length) lines.push('Es fehlt noch eine richtige Antwort.');
-    S.fb = {type:'err', html:'Noch nicht ganz.<br>' + lines.join('<br>')};
+    S.fb = {type:'err', html:'Noch nicht ganz.<br>' + r.gruende.join('<br>')};
   }
   renderChoice(st); renderFeedback(); renderNav();
 }
@@ -367,7 +363,7 @@ function checkChoice(){
 function topicClick(e){
   const o = e.target.closest('[data-opt]');
   if (o && LS){ const st = curStep(), i = +o.dataset.opt;
-    if (st.correct.length > 1){ LS.sel.has(i) ? LS.sel.delete(i) : LS.sel.add(i); } else LS.sel = new Set([i]);
+    if (Aufgaben.mehrfach(st)){ LS.sel.has(i) ? LS.sel.delete(i) : LS.sel.add(i); } else LS.sel = new Set([i]);
     LS.checked = false; S.fb = null; renderChoice(st); renderFeedback(); return; }
   const tp = e.target.closest('[data-topic]'); if (tp){ openTopic(tp.dataset.topic); return; }
   const tg = e.target.closest('[data-topic-go]'); if (tg){ openTopic(tg.dataset.topicGo); return; }

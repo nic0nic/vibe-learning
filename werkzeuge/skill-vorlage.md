@@ -54,6 +54,24 @@ Farbvariablen (aus seite.css):
 {{SEITE_CSS_VARS}}
 ```
 
+## Aufgaben aus Daten (lib/aufgaben.js)
+
+Standardaufgaben nicht neu programmieren, sondern als Daten an `Aufgaben.baue` bzw. `Aufgaben.sequenz` geben (Typen und Felder: Kopfkommentar unten). Eigener Code nur für Besonderes (Grafiken, Simulationen) als `html`/`nach` eines Schritts. Beispiel einer Erarbeitungsseite (Vorbild: `BWR/9II/finanzierung/kurzfristige-kredite.html`):
+
+```js
+Aufgaben.sequenz({el:'#app', key:'TOOL-ID', schritte:[
+  {id:'info', kurz:'Einführung', html:'<h2>…</h2><p>…</p>'},
+  {id:'a1', kurz:'1.1', erinnerung:'<p>…</p>', material:'<div class="mt">Material</div>…', aufgaben:[
+    {typ:'mc', nr:'1.1', frage:'…', options:['richtig', 'falsch'], correct:[0], why:{1:'Warum falsch'}},
+    {typ:'zahlen', frage:'…', felder:[{t:'Bruttoskonto', l:238, e:'€', h:'Hinweis'}], danach:{typ:'mc', …}},
+    {typ:'luecken', text:'Der Kredit ist [[kurzfristig|langfristig]].'},
+    {typ:'zuordnen', felder:[['a', 'Feld A'], ['b', 'Feld B']], karten:[{t:'…', z:'a'}]},
+    {typ:'buchungssatz', konten:['2800 BK', '4250 LBKV'], soll:[['2800 BK', 80000]], haben:[['4250 LBKV', 80000]]}]}
+]});
+```
+
+Einbinden: `<link rel="stylesheet" href="…/lib/aufgaben.css">` und `<script src="…/lib/aufgaben.js"></script>` (Pfad zum Ordner `pb_public/lib/`). Excel-Erklärungen nutzen davon nur `Aufgaben.mc` (Multiple Choice in `tabelle.js` und `und-oder.html`).
+
 ## Bibliotheken
 
 {{BIBLIOTHEKEN}}

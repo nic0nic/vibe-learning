@@ -55,6 +55,24 @@ Farbvariablen (aus seite.css):
 [data-theme=dark]{--bg:#2e3440;--panel:#3b4252;--panel2:#434c5e;--text:#eceff4;--muted:#a9b3c4;--border:#4c566a;--slot:#434c5e;--slot-border:#616e88;--accent:#88c0d0;--then:#a3be8c;--else:#bf616a;--err:#d4848b}
 ```
 
+## Aufgaben aus Daten (lib/aufgaben.js)
+
+Standardaufgaben nicht neu programmieren, sondern als Daten an `Aufgaben.baue` bzw. `Aufgaben.sequenz` geben (Typen und Felder: Kopfkommentar unten). Eigener Code nur für Besonderes (Grafiken, Simulationen) als `html`/`nach` eines Schritts. Beispiel einer Erarbeitungsseite (Vorbild: `BWR/9II/finanzierung/kurzfristige-kredite.html`):
+
+```js
+Aufgaben.sequenz({el:'#app', key:'TOOL-ID', schritte:[
+  {id:'info', kurz:'Einführung', html:'<h2>…</h2><p>…</p>'},
+  {id:'a1', kurz:'1.1', erinnerung:'<p>…</p>', material:'<div class="mt">Material</div>…', aufgaben:[
+    {typ:'mc', nr:'1.1', frage:'…', options:['richtig', 'falsch'], correct:[0], why:{1:'Warum falsch'}},
+    {typ:'zahlen', frage:'…', felder:[{t:'Bruttoskonto', l:238, e:'€', h:'Hinweis'}], danach:{typ:'mc', …}},
+    {typ:'luecken', text:'Der Kredit ist [[kurzfristig|langfristig]].'},
+    {typ:'zuordnen', felder:[['a', 'Feld A'], ['b', 'Feld B']], karten:[{t:'…', z:'a'}]},
+    {typ:'buchungssatz', konten:['2800 BK', '4250 LBKV'], soll:[['2800 BK', 80000]], haben:[['4250 LBKV', 80000]]}]}
+]});
+```
+
+Einbinden: `<link rel="stylesheet" href="…/lib/aufgaben.css">` und `<script src="…/lib/aufgaben.js"></script>` (Pfad zum Ordner `pb_public/lib/`). Excel-Erklärungen nutzen davon nur `Aufgaben.mc` (Multiple Choice in `tabelle.js` und `und-oder.html`).
+
 ## Bibliotheken
 
 ### katalog.js – Inhaltsverzeichnis: hier wird jede Übung eingetragen
@@ -118,6 +136,43 @@ wenn der Server sie für diesen Schüler freigibt (/api/trainer/sichtbar).
 Die Seite ruft auf:
   TrainerSync.changed()      nach jeder Änderung am gespeicherten Stand
   TrainerSync.event({...})   wenn eine Aufgabe richtig gelöst wurde
+```
+
+### lib/aufgaben.js – Aufgabenbausteine für alle Fächer: Multiple Choice, Zahlen, Lückentext, Zuordnen, Buchungssatz, Erarbeitung (dazu aufgaben.css)
+
+```text
+aufgaben.js – Aufgabenbausteine für alle Fächer: Aufgaben als Daten, Prüfung und Rückmeldung eingebaut
+
+Einbinden (Pfad zum Ordner pb_public/lib/, z. B. aus BWR/9II/finanzierung/ ../../../lib/):
+  <link rel="stylesheet" href="../../../lib/aufgaben.css">   <script src="../../../lib/aufgaben.js"></script>
+Farben kommen aus den Variablen der Seite (--panel, --panel2, --border, --accent, --text, --muted).
+
+Aufgabe = Objekt mit typ. Für alle Typen: nr (z. B. '7.1'), frage (Aufgabenstellung, HTML),
+erinnerung und material (HTML, stehen über der Aufgabe), ok (Text bei Erfolg),
+danach (weitere Aufgabe, erscheint erst nach richtiger Lösung, z. B. Handlungsempfehlung).
+  mc           options:[Texte], correct:[Indizes] (mehrere = Mehrfachauswahl, oder multi:true), why:{Index: Erklärung},
+               after (Text nach Erfolg), mono, mischen:false (Reihenfolge behalten), sofort:false
+               (bei genau einer richtigen Antwort wird sonst beim Antippen sofort geprüft).
+               Dasselbe Format wie type:'choice' in den Excel-Erklärungen.
+  zahlen       felder:[{t (Text), l (Lösung), e (Einheit), h (Hinweis bei Fehler), tol (Toleranz, Std. 0,005)}]
+               Eingabe im deutschen Format (1.234,50 €), Knopftext über knopf:'…'
+  luecken      text:'… [[richtig|falsch|falsch]] …' → Auswahllisten (erste Antwort richtig, wird gemischt)
+  zuordnen     felder:[[id, Titel]], karten:[{t (Text), z (Feld-id)}]; Ziehen mit Maus/Finger oder
+               erst Karte, dann Feld antippen. Richtige bleiben liegen, falsche gehen zurück.
+  buchungssatz konten:['2800 BK', …] (Auswahlliste), soll:[['0700 MA', 40000], …], haben:[…],
+               steuer:['2600 VORST', '4800 UST'] (für den Hinweis), nebenrechnung (HTML nach Lösung)
+               prüft: Konten, Soll/Haben vertauscht, fehlende Steuer, Beträge; Lösung im Skill-Format
+
+API
+  Aufgaben.baue(el, a, {fertig})  Baustein in Element el; fertig(a) nach richtiger Lösung (inkl. danach)
+  Aufgaben.sequenz({el, key, schritte})  Erarbeitung aus Schritten mit Knöpfen, ✓, Zähler, Zurück/Weiter:
+      schritt = {id, kurz (Knopf), titel, html (String oder Funktion), erinnerung, material,
+                 aufgaben:[…], nach(el) (nach dem Zeichnen, für eigene Grafiken)}
+      Schritte mit Aufgaben melden TrainerSync.event (modus 'erarbeitung', aufgabe = schritt.id),
+      Info-Schritte gelten beim Weitergehen als erledigt. Gespeichert: <key>-stand {schritt, erledigt}.
+  Aufgaben.mc.html(a, auswahl:Set, geprueft, reihenfolge?) / Aufgaben.mc.pruefen(a, auswahl) → {ok, gruende}
+      für Seiten mit eigenem Ablauf (Excel-Erklärungen: tabelle.js, und-oder.html)
+  Helfer: zahl('1.234,50 €') → 1234.5, eur(n) → '1.234,50 €', mischen(liste), esc(text), bsText(soll, haben)
 ```
 
 ### IT/excel/basis.js – Excel: Grundlage aller Excel-Übungen (dazu basis.css)
@@ -202,6 +257,8 @@ API
   topicClick(e)   Antworten, Themen, Schritte, Übersicht, dann navClick – am Ende des Klick-Handlers
   caret, setCaret, focusInp, applyPT, cellAt, endPT, gridEl, trackCaret   Bezüge mit der Maus einfügen
   Verdrahtet: #ovBtn, #prevBtn, #resetBtn, Eingabe in .pin → syncInput, Maus-Ende im #grid
+
+Braucht ../../lib/aufgaben.js (Multiple Choice: Aufgaben.mc), vor basis.js einbinden.
 
 Die Seite liefert
   TOPICS, GROUPS, AC_FN; let learn, endPick, CUR, S, LS, PT
@@ -343,7 +400,6 @@ Farben:   --bg --panel --panel2 --text --muted --border --accent --err --ok --mo
 Gerüst:   .wrap > .bar (.brand mit <span>, .gruppe, .hint, .spacer) und darunter .karte (h2, h3, p)
 Knöpfe:   .btn, .btn.on (gewählt), .btn.haupt (Hauptaktion), .btn.klein; Eingaben .feld
 Texte:    .muted, .tag (kleines Etikett), .nr (Nebenrechnung, klein und grau)
-Rückmeldung: <div class="fb ok|falsch">…</div>; Knopfzeile .knoepfe
-Material: <div class="material"><div class="mt">Titel</div>…</div>, Tabelle darin .beleg
-Erinnerung: <details class="erinnerung" open><summary>Erinnerung</summary>…</details>
+Rückmeldung: <div class="fb ok|falsch">…</div>; Knopfzeile .knoepfe; Beleg-Tabelle .beleg (tr.summe)
+Erinnerung, Material und Aufgabenbausteine: lib/aufgaben.css und lib/aufgaben.js
 ```

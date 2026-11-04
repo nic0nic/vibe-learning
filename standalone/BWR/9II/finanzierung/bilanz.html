@@ -783,9 +783,8 @@ document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: da
  * Gerüst:   .wrap > .bar (.brand mit <span>, .gruppe, .hint, .spacer) und darunter .karte (h2, h3, p)
  * Knöpfe:   .btn, .btn.on (gewählt), .btn.haupt (Hauptaktion), .btn.klein; Eingaben .feld
  * Texte:    .muted, .tag (kleines Etikett), .nr (Nebenrechnung, klein und grau)
- * Rückmeldung: <div class="fb ok|falsch">…</div>; Knopfzeile .knoepfe
- * Material: <div class="material"><div class="mt">Titel</div>…</div>, Tabelle darin .beleg
- * Erinnerung: <details class="erinnerung" open><summary>Erinnerung</summary>…</details>
+ * Rückmeldung: <div class="fb ok|falsch">…</div>; Knopfzeile .knoepfe; Beleg-Tabelle .beleg (tr.summe)
+ * Erinnerung, Material und Aufgabenbausteine: lib/aufgaben.css und lib/aufgaben.js
  */
 :root{--bg:#e5e9f0;--panel:#f6f8fb;--panel2:#eceff4;--text:#2e3440;--muted:#5b6578;--border:#cdd3de;--accent:#5e81ac;--err:#a8434d;--ok:#5e8a45;
   --mono:ui-monospace,Consolas,"Liberation Mono",monospace;
@@ -822,15 +821,10 @@ body{background:var(--bg);color:var(--text);font:15px/1.45 system-ui,-apple-syst
 .fb.ok{background:var(--plus-bg);color:var(--text)}
 .fb.falsch{background:var(--minus-bg);color:var(--text)}
 .knoepfe{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
-.material{border:1px solid var(--border);background:var(--panel2);border-radius:10px;padding:10px 12px;margin:0 0 12px}
-.material .mt{font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:6px}
 .beleg{border-collapse:collapse;width:100%;max-width:520px;font-size:14px}
 .beleg td{padding:3px 6px;border-bottom:1px solid var(--border)}
 .beleg td:last-child{text-align:right;font-family:var(--mono);white-space:nowrap}
 .beleg tr.summe td{font-weight:700;border-bottom:none;border-top:1.5px solid var(--text)}
-.erinnerung{border-left:4px solid var(--accent);background:var(--panel2);border-radius:0 10px 10px 0;padding:6px 12px;margin:0 0 12px}
-.erinnerung summary{cursor:pointer;font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);padding:2px 0}
-.erinnerung>*:not(summary){margin:6px 0}
 
 </style>
 <style>
