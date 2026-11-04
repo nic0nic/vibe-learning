@@ -13,6 +13,10 @@ Gesammelt im Thread „Aufbau der Seite“. Umgesetzt wird erst, wenn die Lehrkr
 
 ### Version vom 04.11.
 
+35. **BWR Finanzierung: Kredite bei der Bank** (gewünscht 04.11., Heft Kap. 5)
+    - `BWR/9II/finanzierung/kredite-bank.html`: Kredit (Grafik Kreditablauf), Kreditprüfung, 5.1 Beispiele Kreditfähigkeit/-würdigkeit zuordnen, Sicherheiten, 5.2 zwei Sicherheiten als Freitext, Disagio, 5.3 Disagio und Auszahlungsbetrag, 5.4 Tilgungsbetrag, Überblick als Lückentext mit Auswahllisten.
+    - Neuer Aufgabentyp `freitext` in `lib/aufgaben.js`: Begriff muss im Feld vorkommen (Groß/klein und ä/ae egal), jedes Feld ein anderer Begriff, Tippfehler (Damerau-Levenshtein, bis 45 % bei langen Wörtern) gelten als „fast richtig“ mit Hinweis; `tippfehler:'ok'` zählt sie als richtig. Dazu `erinnerungZu` (Erinnerung startet zugeklappt).
+
 34. **Aufgabenbausteine für alle Fächer** (gewünscht 04.11.)
     - `pb_public/lib/aufgaben.js` + `aufgaben.css`: Multiple Choice (Format der Excel-Erklärungen), Zahlenfelder, Lückentext mit Auswahllisten, Zuordnen per Ziehen/Antippen, Buchungssatz mit Prüfung (Drehfehler, fehlende Steuer, Betrag), Erarbeitung aus Schritten. Aufgaben stehen als Daten in der Seite.
     - kurzfristige-kredite.html darauf umgestellt (496 → 247 Zeilen, Verhalten gleich). Excel funktionen/bezuege/und-oder zeichnen und prüfen Multiple Choice über `Aufgaben.mc` (Daten unverändert). bilanz.html noch mit eigenem Buchungssatz-Baukasten.

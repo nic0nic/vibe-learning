@@ -95,6 +95,7 @@ window.KATALOG = {
             {id: 'finanzierung', titel: 'Finanzierung', farbe: '#ebcb8b', farbeHell: '#8a6d1f', text: 'Übungen zur Finanzierung.',
               tools: [
                 {id: 'bilanz', stufen: ['Bilanzposten', 'AV/UV · EK/FK', 'Goldene Regel'], datei: 'bilanz.html', titel: 'Bilanz-Modell', text: 'Wie Buchungen die Bilanz verändern: Aktivtausch, Passivtausch, Aktiv-Passiv-Mehrung und -Minderung – eingeteilt nach Bilanzposten, nach AV/UV und EK/FK oder nach der Goldenen Finanzierungsregel.'},
+                {id: 'bankkredit', datei: 'kredite-bank.html', titel: 'Kredite bei der Bank', text: 'Erarbeitung (Heft Kap. 5): Kreditfähigkeit und Kreditwürdigkeit zuordnen, Sicherheiten nennen, Disagio und Auszahlungsbetrag berechnen.'},
                 {id: 'kurzkredit', datei: 'kurzfristige-kredite.html', titel: 'Kontokorrent-, Dispo- und Lieferantenkredit', text: 'Erarbeitung zu kurzfristigen Krediten (Heft Kap. 7): Lieferantenkredit auf der Zeitleiste ausprobieren, Merkmale zuordnen, Skonto berechnen und Kosten vergleichen.'}
               ]},
             {id: 'kapitalanlage', titel: 'Kapitalanlage', farbe: '#b48ead', farbeHell: '#8a5f84', text: 'Übungen zur Kapitalanlage.', tools: []},
@@ -1060,7 +1061,7 @@ main{max-width:1020px;margin:0 auto;padding:18px 16px}
  * Farben kommen aus den Variablen der Seite (--panel, --panel2, --border, --accent, --text, --muted).
  *
  * Aufgabe = Objekt mit typ. Für alle Typen: nr (z. B. '7.1'), frage (Aufgabenstellung, HTML),
- * erinnerung und material (HTML, stehen über der Aufgabe), ok (Text bei Erfolg),
+ * erinnerung und material (HTML, stehen über der Aufgabe; erinnerungZu:true = Erinnerung startet zugeklappt), ok (Text bei Erfolg),
  * danach (weitere Aufgabe, erscheint erst nach richtiger Lösung, z. B. Handlungsempfehlung).
  *   mc           options:[Texte], correct:[Indizes] (mehrere = Mehrfachauswahl, oder multi:true), why:{Index: Erklärung},
  *                after (Text nach Erfolg), mono, mischen:false (Reihenfolge behalten), sofort:false
@@ -1071,6 +1072,11 @@ main{max-width:1020px;margin:0 auto;padding:18px 16px}
  *   luecken      text:'… [[richtig|falsch|falsch]] …' → Auswahllisten (erste Antwort richtig, wird gemischt)
  *   zuordnen     felder:[[id, Titel]], karten:[{t (Text), z (Feld-id)}]; Ziehen mit Maus/Finger oder
  *                erst Karte, dann Feld antippen. Richtige bleiben liegen, falsche gehen zurück.
+ *   freitext     felder:['1. Sicherheit', '2. Sicherheit'] (Beschriftungen, je ein Eingabefeld),
+ *                antworten:[['Grundschuld'], ['Zession', 'Abtretung von Forderungen'], …] (je Eintrag Schreibweisen);
+ *                ein Feld ist richtig, wenn ein Begriff darin vorkommt (Groß/klein, ä/ae egal), jedes Feld braucht
+ *                einen anderen Eintrag. Tippfehler (Abstand bis 45 % bei langen, 30 % bei kurzen Wörtern) gelten als
+ *                „fast richtig“ mit Hinweis auf die Schreibweise; tippfehler:'ok' zählt sie als richtig.
  *   buchungssatz konten:['2800 BK', …] (Auswahlliste), soll:[['0700 MA', 40000], …], haben:[…],
  *                steuer:['2600 VORST', '4800 UST'] (für den Hinweis), nebenrechnung (HTML nach Lösung)
  *                prüft: Konten, Soll/Haben vertauscht, fehlende Steuer, Beträge; Lösung im Skill-Format
@@ -1078,12 +1084,13 @@ main{max-width:1020px;margin:0 auto;padding:18px 16px}
  * API
  *   Aufgaben.baue(el, a, {fertig})  Baustein in Element el; fertig(a) nach richtiger Lösung (inkl. danach)
  *   Aufgaben.sequenz({el, key, schritte})  Erarbeitung aus Schritten mit Knöpfen, ✓, Zähler, Zurück/Weiter:
- *       schritt = {id, kurz (Knopf), titel, html (String oder Funktion), erinnerung, material,
+ *       schritt = {id, kurz (Knopf), titel, html (String oder Funktion), erinnerung, erinnerungZu, material,
  *                  aufgaben:[…], nach(el) (nach dem Zeichnen, für eigene Grafiken)}
  *       Schritte mit Aufgaben melden TrainerSync.event (modus 'erarbeitung', aufgabe = schritt.id),
  *       Info-Schritte gelten beim Weitergehen als erledigt. Gespeichert: <key>-stand {schritt, erledigt}.
  *   Aufgaben.mc.html(a, auswahl:Set, geprueft, reihenfolge?) / Aufgaben.mc.pruefen(a, auswahl) → {ok, gruende}
  *       für Seiten mit eigenem Ablauf (Excel-Erklärungen: tabelle.js, und-oder.html)
+ *   Aufgaben.finde(antworten, text) → {i (Eintrag), wort, fast} oder null   (Freitext-Abgleich, auch einzeln nutzbar)
  *   Helfer: zahl('1.234,50 €') → 1234.5, eur(n) → '1.234,50 €', mischen(liste), esc(text), bsText(soll, haben)
  */
 (function(){
@@ -1099,6 +1106,7 @@ function zahl(s){
   return /^-?\d+(\.\d+)?$/.test(s) ? +s : NaN;
 }
 function mischen(a){ a = a.slice(); for (let i = a.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+const erinnerungHTML = x => x.erinnerung ? `<details class="erinnerung"${x.erinnerungZu ? '' : ' open'}><summary>Erinnerung${x.erinnerungZu ? ' (zum Aufklappen)' : ''}</summary>${x.erinnerung}</details>` : '';
 const fbHTML = fb => fb ? `<div class="af-fb ${fb.ok ? 'ok' : 'falsch'}">${fb.t}</div>` : '';
 const nummern = n => [...Array(n).keys()];
 // Buchungssatz im Format des BWR-Skills: „an“ auf der letzten Soll-Zeile, weitere Haben-Konten bündig darunter
@@ -1109,6 +1117,32 @@ function bsText(soll, haben){
   const zeilen = soll.map((x, i) => z(x, w1, b1) + (i === soll.length - 1 ? '   an   ' + z(haben[0], w2, b2) : ''));
   haben.slice(1).forEach(x => zeilen.push(' '.repeat(w1 + b1 + 10) + z(x, w2, b2)));
   return zeilen.join('\n');
+}
+
+/* ---------- Freitext-Abgleich mit Tippfehlern ---------- */
+const norm = s => String(s || '').toLowerCase().replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss').replace(/[^a-z0-9]+/g, ' ').trim();
+function abstand(a, b){   // Damerau-Levenshtein (vertauschte Nachbarn zählen 1)
+  const d = [];
+  for (let i = 0; i <= a.length; i++){ d[i] = [i]; }
+  for (let j = 1; j <= b.length; j++) d[0][j] = j;
+  for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++){
+    d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) d[i][j] = Math.min(d[i][j], d[i - 2][j - 2] + 1);
+  }
+  return d[a.length][b.length];
+}
+function finde(antworten, text){
+  const t = norm(text); if (!t) return null;
+  const woerter = t.split(' '), stuecke = [];
+  for (let n = 1; n <= 3; n++) for (let i = 0; i + n <= woerter.length; i++) stuecke.push(woerter.slice(i, i + n).join(''));
+  let best = null;
+  antworten.forEach((eintrag, i) => [].concat(eintrag).forEach(wort => {
+    const v = norm(wort), vz = v.replace(/ /g, '');
+    if ((' ' + t + ' ').includes(v) || t.replace(/ /g, '').includes(vz)){ if (!best || best.fast) best = {i, wort:[].concat(eintrag)[0], fast:false, d:0}; return; }
+    const tol = Math.max(1, Math.floor(vz.length * (vz.length >= 10 ? 0.45 : 0.3)));
+    stuecke.forEach(s => { const d = abstand(s, vz); if (d <= tol && (!best || (best.fast && d < best.d))) best = {i, wort:[].concat(eintrag)[0], fast:true, d}; });
+  }));
+  return best;
 }
 
 /* ---------- Typen: zustand(a), html(a, z), pruefen(a, z) → {ok, t} ---------- */
@@ -1190,6 +1224,27 @@ const TYPEN = {
       return {ok:false, t:`${n} von ${a.karten.length} richtig. ${z.weg.length ? `${z.weg.length} ${z.weg.length === 1 ? 'Karte ist' : 'Karten sind'} zurück in den Stapel gewandert. ` : ''}Ordne die übrigen Karten zu.`};
     }
   },
+  freitext:{
+    zustand:() => ({ein:{}, st:{}, msg:{}}),
+    html:(a, z) => '<div class="af-felder">' + a.felder.map((f, i) => {
+      const s = z.st[i];
+      return `<div class="af-zeile"><label class="af-t" for="af-ft-${i}">${f}</label><input class="feld af-text${s === 'ok' ? ' richtig' : s === 'fast' ? ' fast' : s ? ' falsch' : ''}" id="af-ft-${i}" data-f="${i}" value="${esc(z.ein[i] || '')}" autocomplete="off" spellcheck="false"${s === 'ok' ? ' readonly' : ''}>`
+        + `<span class="af-m">${s === 'ok' ? '✓' : s === 'fast' ? '≈' : s ? '✗' : ''}</span></div>` + (z.msg[i] ? `<div class="af-hinweis">${z.msg[i]}</div>` : '');
+    }).join('') + '</div>',
+    pruefen(a, z){
+      const belegt = {};
+      z.st = {}; z.msg = {};
+      a.felder.forEach((f, i) => {
+        const r = finde(a.antworten, z.ein[i]);
+        if (!norm(z.ein[i])){ z.st[i] = 'leer'; z.msg[i] = 'Dieses Feld ist noch leer.'; }
+        else if (!r){ z.st[i] = 'falsch'; z.msg[i] = a.h || 'Das passt nicht. Schau noch einmal in die Erklärung.'; }
+        else if (belegt[r.i] != null){ z.st[i] = 'falsch'; z.msg[i] = 'Das hast du schon in einem anderen Feld genannt. Nenne etwas anderes.'; }
+        else if (r.fast && a.tippfehler !== 'ok'){ z.st[i] = 'fast'; z.msg[i] = `Fast richtig – meinst du „${esc(r.wort)}“? Prüfe die Schreibweise.`; belegt[r.i] = i; }
+        else { z.st[i] = 'ok'; if (r.fast) z.msg[i] = `Richtig. Schreibweise: „${esc(r.wort)}“.`; belegt[r.i] = i; }
+      });
+      return a.felder.every((f, i) => z.st[i] === 'ok') ? {ok:true, t:'✓ ' + (a.ok || 'Alles richtig!')} : {ok:false, t:'Noch nicht alles richtig.'};
+    }
+  },
   buchungssatz:{
     zustand:() => ({soll:[{k:'', b:''}], haben:[{k:'', b:''}]}),
     html(a, z){
@@ -1232,7 +1287,7 @@ function baue(el, a, opt){
   const z = a._z || (a._z = typ.zustand(a));
   const ctx = {a, z, typ, opt, el, zeichne(){
     const sofort = typ.sofort && typ.sofort(a);
-    el.innerHTML = (a.erinnerung ? `<details class="erinnerung" open><summary>Erinnerung</summary>${a.erinnerung}</details>` : '')
+    el.innerHTML = erinnerungHTML(a)
       + (a.material ? `<div class="material">${a.material}</div>` : '')
       + (a.frage ? `<p class="af-frage">${a.nr ? `<span class="af-nr">${a.nr}</span>` : ''}${a.frage}</p>` : '')
       + typ.html(a, z)
@@ -1348,7 +1403,7 @@ function sequenz(cfg){
     leiste();
     inhalt.innerHTML = (istAufgabe(s) && stand.erledigt[s.id] ? '<p class="af-erledigt">✓ Diesen Schritt hast du schon gelöst. Du kannst ihn noch einmal bearbeiten.</p>' : '')
       + (typeof s.html === 'function' ? s.html() : s.html || '')
-      + (s.erinnerung ? `<details class="erinnerung" open><summary>Erinnerung</summary>${s.erinnerung}</details>` : '')
+      + erinnerungHTML(s)
       + (s.material ? `<div class="material">${s.material}</div>` : '')
       + (s.aufgaben || []).map(() => '<div class="af-aufgabe"></div>').join('')
       + `<div class="af-unten"><button class="btn" type="button" data-weiter="-1"${akt ? '' : ' disabled'}>◀ Zurück</button><button class="btn haupt" type="button" data-weiter="1"${akt < S.length - 1 ? '' : ' disabled'}>Weiter ▶</button></div>`;
@@ -1370,7 +1425,7 @@ function sequenz(cfg){
   return {gehe, get schritt(){ return akt; }, stand};
 }
 
-window.Aufgaben = {baue, sequenz, mc, mehrfach, zahl, eur, mischen, esc, bsText, TYPEN};
+window.Aufgaben = {baue, sequenz, mc, mehrfach, finde, zahl, eur, mischen, esc, bsText, TYPEN};
 })();
 
 </script>

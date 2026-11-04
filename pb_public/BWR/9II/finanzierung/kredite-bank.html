@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="de" data-trainer="bankkredit">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kredite bei der Bank – vibe learning</title>
+<!--
+  Erarbeitung zu Kapitel 5 des Selbstlernhefts Finanzierung (Saitgig): Kredit, Kreditfähigkeit und
+  Kreditwürdigkeit, Sicherheiten, Disagio. Ablauf und Aufgaben: lib/aufgaben.js (Aufgaben.sequenz),
+  hier nur Texte, Daten und die Grafik zum Kreditablauf. Aufgabennummern wie im Heft (5.1–5.4).
+  Gespeichert: bankkredit-stand = {schritt, erledigt}.
+-->
+<script src="../../../katalog.js"></script>
+<script src="../../../nav.js"></script>
+<script src="../../../sync.js"></script>
+<script>
+(function(){var t=null;try{t=localStorage.getItem('wenn-theme');}catch(e){}
+document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');})();
+</script>
+<link rel="stylesheet" href="../../bwr.css">
+<link rel="stylesheet" href="../../../lib/aufgaben.css">
+<script src="../../../lib/aufgaben.js"></script>
+<style>
+.wrap{max-width:1000px}
+.info{border-left:4px solid var(--accent);padding:2px 0 2px 12px;margin:0 0 12px}
+.alltag{background:var(--panel2);border-radius:10px;padding:8px 12px;margin:0 0 12px}
+.alltag b:first-child{display:block;font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.zwei{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:0 0 12px}
+.vier{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:0 0 12px}
+@media (max-width:700px){.zwei,.vier{grid-template-columns:minmax(0,1fr)}}
+.kasten{border:1px solid var(--border);background:var(--panel2);border-radius:10px;padding:10px 12px}
+.kasten h3{margin:0 0 4px!important}
+.kasten p{margin:0}
+.schema td{padding:3px 8px}.schema td+td{text-align:right;font-family:var(--mono)}
+.grafik{width:100%;height:auto;display:block;margin:4px 0 12px}
+.grafik text{fill:var(--text);font:12px system-ui,sans-serif;text-anchor:middle}
+.grafik text.f{font-weight:700;font-size:14px}
+.grafik text.k{font-size:11.5px;fill:var(--muted)}
+.grafik rect{fill:var(--panel);stroke:var(--text);stroke-width:2}
+.grafik rect.bank{fill:var(--panel2)}
+.grafik rect.schufa{stroke-dasharray:5 3;stroke-width:1}
+.grafik line{stroke:var(--text)}
+.grafik .pfeil{fill:var(--text)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="bar"><div class="brand">Kredite<span> bei der Bank</span></div></div>
+  <div id="app"></div>
+</div>
+<script>
+'use strict';
+const {eur} = Aufgaben;
+const DARLEHEN = `<div class="mt">Material</div><p>Saitgig nimmt ein Darlehen über <b>50.000,00 €</b> auf. Die Bank behält <b>2 % Disagio</b> ein.</p>`;
+
+function kreditGrafik(){
+  const p = (x1, y1, x2, y2, w) => `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke-width="${w || 2}" marker-end="url(#kbPfeil)"/>`;
+  return `<svg class="grafik" viewBox="0 0 620 255" role="img" aria-label="Ablauf eines Kredits zwischen Kreditnehmer und Bank">
+    <defs><marker id="kbPfeil" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="pfeil" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+    <rect x="10" y="70" width="170" height="120" rx="8"/><text class="f" x="95" y="95">Kreditnehmer</text><text class="k" x="95" y="112">(Schuldner, z. B. Saitgig)</text>
+    <text x="95" y="140">stellt Kreditantrag,</text><text x="95" y="156">legt Unterlagen vor,</text><text x="95" y="172">bietet Sicherheiten</text>
+    <rect class="bank" x="390" y="70" width="220" height="120" rx="8"/><text class="f" x="500" y="95">Kreditgeber (Bank)</text><text class="k" x="500" y="112">(Gläubiger)</text>
+    <text x="500" y="140">prüft Kreditfähigkeit</text><text x="500" y="156">und Kreditwürdigkeit,</text><text x="500" y="172">verlangt Sicherheiten</text>
+    <rect class="schufa" x="395" y="2" width="210" height="40" rx="6"/><text x="500" y="19" style="font-weight:700">Auskunftei (z. B. SCHUFA)</text><text class="k" x="500" y="35">sammelt Daten zur Zahlungsmoral</text>
+    <line x1="500" y1="44" x2="500" y2="68" stroke-dasharray="4 3" marker-end="url(#kbPfeil)"/>
+    ${p(182, 90, 388, 90)}<text x="285" y="83">① Kreditantrag</text>
+    ${p(388, 130, 182, 130, 3)}<text x="285" y="123" style="font-weight:700">② Kredit (Geld)</text>
+    ${p(182, 172, 388, 172, 3)}<text x="285" y="165" style="font-weight:700">③ Zinsen + Tilgung</text>
+    <rect x="160" y="200" width="250" height="48" rx="6" style="stroke-width:1.5"/><line x1="285" y1="176" x2="285" y2="198"/>
+    <text x="285" y="220" style="font-weight:700;font-size:13px">= Schuldendienst</text><text class="k" x="285" y="238">Zinsen = Preis · Tilgung = Rückzahlung</text></svg>`;
+}
+
+Aufgaben.sequenz({el:'#app', key:'bankkredit', schritte:[
+  {id:'kredit', kurz:'Kredit', titel:'Was ist ein Kredit?', html:() => `<h2>Kredite bei der Bank</h2>
+    <div class="info"><p><b>Kredit</b> kommt vom lateinischen <i>credere</i> = vertrauen. Ein Kredit ist die <b>zeitweilige Überlassung von Geld</b> durch den <b>Kreditgeber</b> (Gläubiger) an den <b>Kreditnehmer</b> (Schuldner) gegen die Zahlung von <b>Zinsen</b> – sie sind der Preis für das geliehene Geld. Kredite mit hohen Beträgen und langen Laufzeiten nennt man <b>Darlehen</b>.</p></div>
+    ${kreditGrafik()}
+    <p>Der Kreditnehmer zahlt <b>Zinsen</b> (Preis) und <b>Tilgung</b> (Rückzahlung). Beides zusammen heißt <b>Schuldendienst</b>.</p>`},
+
+  {id:'pruefung', kurz:'Kreditprüfung', titel:'Kreditfähigkeit und Kreditwürdigkeit', html:`<h2>Die Bank prüft vor der Kreditvergabe</h2>
+    <div class="zwei"><div class="kasten"><h3>Kreditfähigkeit</h3><p>= <b>rechtliche</b> Fähigkeit, einen Kreditvertrag abzuschließen (z. B. volljährig, Firma im Handelsregister).</p></div>
+    <div class="kasten"><h3>Kreditwürdigkeit</h3><p>= Fähigkeit, den Kredit <b>zurückzuzahlen</b> (Gewinn, Eigenkapitalquote, bisherige Zahlungsmoral).</p></div></div>
+    <div class="alltag"><b>Aus dem Alltag · SCHUFA und Handyvertrag</b>Wenn du mit 18 deinen ersten Handyvertrag abschließt, fragt der Anbieter bei der <b>SCHUFA</b> nach, ob du bisher Rechnungen pünktlich bezahlt hast. Mit 17 bekommst du ohne Eltern gar keinen Vertrag – dir fehlt die <b>Kreditfähigkeit</b>. Wer ständig Rechnungen offen lässt, gilt als nicht <b>kreditwürdig</b> und bekommt später schwerer einen Kredit, eine Wohnung oder einen Vertrag.</div>`},
+
+  {id:'a51', kurz:'5.1', titel:'5.1 Kreditfähigkeit oder Kreditwürdigkeit',
+    erinnerung:'<p><b>Kreditfähigkeit</b> = rechtliche Fähigkeit, einen Kreditvertrag abzuschließen. <b>Kreditwürdigkeit</b> = wirtschaftliche Fähigkeit, Zinsen und Tilgung zu zahlen.</p>',
+    aufgaben:[{typ:'zuordnen', nr:'5.1', frage:'Grenze Kreditfähigkeit und Kreditwürdigkeit voneinander ab: Woran scheitert der Kredit jeweils? Ordne die Beispiele zu.',
+      ok:'Alle Beispiele richtig zugeordnet!',
+      felder:[['f', 'Problem mit der Kreditfähigkeit'], ['w', 'Problem mit der Kreditwürdigkeit']],
+      karten:[
+        {t:'Die 17-jährige Lea möchte ohne Zustimmung ihrer Eltern einen Kredit für ein Moped aufnehmen.', z:'f'},
+        {t:'Ein 15-Jähriger will beim Elektromarkt eine Spielekonsole auf Raten kaufen.', z:'f'},
+        {t:'Ein 17-Jähriger möchte einen Handyvertrag mit Ratenzahlung für ein neues Smartphone abschließen.', z:'f'},
+        {t:'Die Bank verlangt einen Handelsregisterauszug – die angebliche Firma ist dort gar nicht eingetragen.', z:'f'},
+        {t:'Die SCHUFA meldet, dass Herr Maier mehrere Rechnungen nicht pünktlich bezahlt hat.', z:'w'},
+        {t:'Ein Unternehmen hat in den letzten drei Jahren nur Verluste gemacht.', z:'w'},
+        {t:'Die Eigenkapitalquote eines Unternehmens liegt weit unter dem Branchendurchschnitt.', z:'w'},
+        {t:'Eine Kundin ohne regelmäßiges Einkommen beantragt einen Kredit über 20.000,00 €.', z:'w'}]}]},
+
+  {id:'sicherheiten', kurz:'Sicherheiten', titel:'Sicherheiten', html:`<h2>Sicherheiten</h2>
+    <div class="info"><p><b>Sicherheiten</b> schützen die Bank, falls der Kredit nicht zurückgezahlt wird.</p></div>
+    <div class="vier">
+      <div class="kasten"><h3>Bürgschaft</h3><p>Eine andere Person haftet, wenn der Kreditnehmer nicht zahlt.</p></div>
+      <div class="kasten"><h3>Sicherungsübereignung</h3><p>Ein beweglicher Gegenstand, z. B. ein Lieferwagen, wird der Bank übereignet. Der Kreditnehmer darf ihn weiter nutzen.</p></div>
+      <div class="kasten"><h3>Grundschuld</h3><p>Die Bank erhält ein Recht an einem Grundstück und darf es notfalls verwerten.</p></div>
+      <div class="kasten"><h3>Zession</h3><p>Forderungen gegenüber Kunden werden an die Bank abgetreten.</p></div></div>`},
+
+  {id:'a52', kurz:'5.2', titel:'5.2 Sicherheiten nennen',
+    erinnerung:'<p>Sicherheiten: Bürgschaft, Sicherungsübereignung, Grundschuld, Zession.</p>', erinnerungZu:true,
+    aufgaben:[{typ:'freitext', nr:'5.2', frage:'Nenne zwei Sicherheiten, die Saitgig der Bank anbieten könnte.',
+      ok:'Richtig! Saitgig könnte z. B. eine Grundschuld auf das Betriebsgrundstück oder die Sicherungsübereignung des Lieferwagens anbieten.',
+      h:'Das ist keine der Sicherheiten aus der Erklärung. Schau dir den Schritt „Sicherheiten“ noch einmal an.',
+      felder:['1. Sicherheit', '2. Sicherheit'],
+      antworten:[['Bürgschaft'], ['Sicherungsübereignung'], ['Grundschuld'], ['Zession', 'Abtretung von Forderungen', 'Forderungsabtretung']]}]},
+
+  {id:'disagio', kurz:'Disagio', titel:'Disagio', html:`<h2>Disagio – ein Abzug vorab</h2>
+    <div class="info"><p>Manche Banken zahlen nicht den vollen Kreditbetrag aus, sondern behalten einen Prozentsatz ein (<b>Disagio</b> = Abschlag, „vorausbezahlter Zins“). Der Kreditnehmer erhält nur den <b>Auszahlungsbetrag</b>, muss aber den <b>vollen Kreditbetrag</b> verzinsen und zurückzahlen.</p></div>
+    <table class="beleg schema"><tr><td>Kreditbetrag</td><td>40.000,00 €</td><td>100,0 %</td></tr><tr><td>– Disagio</td><td>200,00 €</td><td>0,5 %</td></tr><tr class="summe"><td>= Auszahlungsbetrag</td><td>39.800,00 €</td><td>99,5 %</td></tr></table>
+    <p style="margin-top:12px">Ein Angebot mit niedrigem Zinssatz ist deshalb nicht automatisch das günstigste: Ein hohes Disagio oder zusätzliche Gebühren können es teurer machen.</p>`},
+
+  {id:'a53', kurz:'5.3', titel:'5.3 Auszahlungsbetrag berechnen',
+    erinnerung:'<p>Disagio = Kreditbetrag · Disagiosatz : 100 &nbsp;·&nbsp; Auszahlungsbetrag = Kreditbetrag – Disagio</p>', material:DARLEHEN,
+    aufgaben:[{typ:'zahlen', nr:'5.3', frage:'Berechne den Auszahlungsbetrag. Trage dazu das Disagio und den Auszahlungsbetrag ein.', knopf:'Ergebnisse überprüfen',
+      ok:'Richtig! Disagio: 50.000,00 · 2 : 100 = 1.000,00 €; Auszahlungsbetrag: 50.000,00 – 1.000,00 = 49.000,00 €.',
+      felder:[{t:'Disagio', l:1000, e:'€', h:'Disagio = Kreditbetrag · Disagiosatz : 100'}, {t:'Auszahlungsbetrag', l:49000, e:'€', h:'Auszahlungsbetrag = Kreditbetrag – Disagio'}]}]},
+
+  {id:'a54', kurz:'5.4', titel:'5.4 Tilgungsbetrag',
+    erinnerung:'<p>Der Kreditnehmer erhält nur den Auszahlungsbetrag, muss aber den <b>vollen Kreditbetrag</b> verzinsen und zurückzahlen.</p>', erinnerungZu:true, material:DARLEHEN,
+    aufgaben:[{typ:'zahlen', nr:'5.4', frage:'Gib den Betrag an, den Saitgig bei diesem Darlehen insgesamt tilgen muss.',
+      ok:'Richtig! Getilgt wird der volle Kreditbetrag von 50.000,00 € – obwohl nur 49.000,00 € ausgezahlt wurden.',
+      felder:[{t:'Tilgungsbetrag', l:50000, e:'€', h:'Getilgt wird nicht der Auszahlungsbetrag. Lies die Erinnerung.'}]}]},
+
+  {id:'ueberblick', kurz:'Überblick', titel:'Überblick Kredite bei der Bank',
+    aufgaben:[{typ:'luecken', frage:'Vervollständige den Überblick. Wähle in jeder Lücke den passenden Begriff.',
+      ok:'Richtig! Übertrage den Überblick in dein Heft und vergleiche mit dem Lösungsblatt L5.',
+      text:`<b>Kredit</b> = [[zeitweilige Überlassung von Geld|dauerhafte Schenkung von Geld|Kauf auf Raten]] gegen Zahlung von [[Zinsen|Skonto|Dividenden]]<br>
+        <b>Kreditfähigkeit</b> = [[rechtliche Fähigkeit, einen Kreditvertrag abzuschließen|Fähigkeit, den Kredit zurückzuzahlen|Höhe des Eigenkapitals]]<br>
+        <b>Kreditwürdigkeit</b> = [[Fähigkeit, den Kredit zurückzuzahlen|rechtliche Fähigkeit, einen Kreditvertrag abzuschließen|Eintrag im Handelsregister]]<br>
+        <b>Sicherheiten:</b> eine andere Person haftet: [[Bürgschaft|Grundschuld|Zession]]; ein Lieferwagen wird übereignet: [[Sicherungsübereignung|Bürgschaft|Disagio]];
+        Recht an einem Grundstück: [[Grundschuld|Zession|Sicherungsübereignung]]; Forderungen werden abgetreten: [[Zession|Grundschuld|Bürgschaft]]<br>
+        <b>Schuldendienst</b> = [[Zinsen|Skonto|Disagio]] + [[Tilgung|Kreditlinie|Sicherheit]]<br>
+        <b>Disagio</b> = [[Abzug vom Kreditbetrag bei der Auszahlung (vorausbezahlter Zins)|Zuschlag auf den Kreditbetrag am Ende|Gebühr für die Kontoführung]]`}]}
+]});
+</script>
+</body>
+</html>

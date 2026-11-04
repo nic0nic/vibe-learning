@@ -68,6 +68,7 @@ vibe-learning/
 │           ├── finanzierung/
 │           │   ├── index.html         Übersicht des Bereichs
 │           │   ├── bilanz.html        Bilanz-Modell: Buchungen verändern die Bilanz (Bilanz von Saitgig)
+│           │   ├── kredite-bank.html  Erarbeitung Kredite bei der Bank (Heft Kap. 5)
 │           │   └── kurzfristige-kredite.html  Erarbeitung Kontokorrent-, Dispo- und Lieferantenkredit (Heft Kap. 7)
 │           └── unternehmensfuehrung/, anlagen/, kapitalanlage/, forderungen/
 ├── standalone/            jede Übung als Einzeldatei, gleiche Ordner wie in pb_public (IT/excel/…)

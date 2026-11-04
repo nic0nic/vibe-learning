@@ -148,7 +148,7 @@ Einbinden (Pfad zum Ordner pb_public/lib/, z. B. aus BWR/9II/finanzierung/ ../..
 Farben kommen aus den Variablen der Seite (--panel, --panel2, --border, --accent, --text, --muted).
 
 Aufgabe = Objekt mit typ. Für alle Typen: nr (z. B. '7.1'), frage (Aufgabenstellung, HTML),
-erinnerung und material (HTML, stehen über der Aufgabe), ok (Text bei Erfolg),
+erinnerung und material (HTML, stehen über der Aufgabe; erinnerungZu:true = Erinnerung startet zugeklappt), ok (Text bei Erfolg),
 danach (weitere Aufgabe, erscheint erst nach richtiger Lösung, z. B. Handlungsempfehlung).
   mc           options:[Texte], correct:[Indizes] (mehrere = Mehrfachauswahl, oder multi:true), why:{Index: Erklärung},
                after (Text nach Erfolg), mono, mischen:false (Reihenfolge behalten), sofort:false
@@ -159,6 +159,11 @@ danach (weitere Aufgabe, erscheint erst nach richtiger Lösung, z. B. Handlungse
   luecken      text:'… [[richtig|falsch|falsch]] …' → Auswahllisten (erste Antwort richtig, wird gemischt)
   zuordnen     felder:[[id, Titel]], karten:[{t (Text), z (Feld-id)}]; Ziehen mit Maus/Finger oder
                erst Karte, dann Feld antippen. Richtige bleiben liegen, falsche gehen zurück.
+  freitext     felder:['1. Sicherheit', '2. Sicherheit'] (Beschriftungen, je ein Eingabefeld),
+               antworten:[['Grundschuld'], ['Zession', 'Abtretung von Forderungen'], …] (je Eintrag Schreibweisen);
+               ein Feld ist richtig, wenn ein Begriff darin vorkommt (Groß/klein, ä/ae egal), jedes Feld braucht
+               einen anderen Eintrag. Tippfehler (Abstand bis 45 % bei langen, 30 % bei kurzen Wörtern) gelten als
+               „fast richtig“ mit Hinweis auf die Schreibweise; tippfehler:'ok' zählt sie als richtig.
   buchungssatz konten:['2800 BK', …] (Auswahlliste), soll:[['0700 MA', 40000], …], haben:[…],
                steuer:['2600 VORST', '4800 UST'] (für den Hinweis), nebenrechnung (HTML nach Lösung)
                prüft: Konten, Soll/Haben vertauscht, fehlende Steuer, Beträge; Lösung im Skill-Format
@@ -166,12 +171,13 @@ danach (weitere Aufgabe, erscheint erst nach richtiger Lösung, z. B. Handlungse
 API
   Aufgaben.baue(el, a, {fertig})  Baustein in Element el; fertig(a) nach richtiger Lösung (inkl. danach)
   Aufgaben.sequenz({el, key, schritte})  Erarbeitung aus Schritten mit Knöpfen, ✓, Zähler, Zurück/Weiter:
-      schritt = {id, kurz (Knopf), titel, html (String oder Funktion), erinnerung, material,
+      schritt = {id, kurz (Knopf), titel, html (String oder Funktion), erinnerung, erinnerungZu, material,
                  aufgaben:[…], nach(el) (nach dem Zeichnen, für eigene Grafiken)}
       Schritte mit Aufgaben melden TrainerSync.event (modus 'erarbeitung', aufgabe = schritt.id),
       Info-Schritte gelten beim Weitergehen als erledigt. Gespeichert: <key>-stand {schritt, erledigt}.
   Aufgaben.mc.html(a, auswahl:Set, geprueft, reihenfolge?) / Aufgaben.mc.pruefen(a, auswahl) → {ok, gruende}
       für Seiten mit eigenem Ablauf (Excel-Erklärungen: tabelle.js, und-oder.html)
+  Aufgaben.finde(antworten, text) → {i (Eintrag), wort, fast} oder null   (Freitext-Abgleich, auch einzeln nutzbar)
   Helfer: zahl('1.234,50 €') → 1234.5, eur(n) → '1.234,50 €', mischen(liste), esc(text), bsText(soll, haben)
 ```
 
