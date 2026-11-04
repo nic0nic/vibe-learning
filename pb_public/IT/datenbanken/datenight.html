@@ -81,7 +81,7 @@ const sagt = (i, w, text) => `<b>${P[i]}</b>${w > 1 ? ` (${w}. Date)` : ''} sagt
 const NULLTIPP = 'Noch nicht gesehen heißt: keine eigene Bewertung – in SQL <code>eigene_bewertung IS NULL</code>, in Access <code>Ist Null</code>.';
 const KUBRICK = s => s.replace(/regie = 'Stanley Kubrick'/g, "regie LIKE '%Kubrick%'");
 const AUFGABEN = [
-  // Woche 1: die Wünsche aus datenight.md
+  // Woche 1: die Wünsche vom Access-Arbeitsblatt der Lehrkraft
   {frage:sagt(0, 1, 'Ich will etwas ansehen, das du entweder sehr gut (9 oder besser) oder eher schlecht (4 oder schlechter) fandest.'),
    felder:['titel', 'imdb_bewertung', 'jahr', 'eigene_bewertung'], where:'eigene_bewertung >= 9 OR eigene_bewertung <= 4',
    tipp:'Zwei Bedingungen, von denen <b>eine</b> reichen soll: in SQL <code>OR</code>, in Access zwei verschiedene Zeilen.'},

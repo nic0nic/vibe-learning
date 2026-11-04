@@ -99,7 +99,7 @@ Gesammelt im Thread „Aufbau der Seite“. Umgesetzt wird erst, wenn die Lehrkr
     Betrifft pb_public/, ANLEITUNG.md.
 
 17. **Datenight: SQL mit UND/ODER** (gewünscht 02.11., erweitert 03.11.)
-    - Drei Wochen Dates: jeden Tag dieselbe Person wie in `notizen/datenight.md`, Woche 1 sind die Originalwünsche, Woche 2 und 3 werden schwieriger und absurder. Auswahl der Tage in einem Kalender. Dazu Endlos.
+    - Drei Wochen Dates: jeden Tag dieselbe Person wie im Access-Arbeitsblatt der Lehrkraft, Woche 1 sind die Originalwünsche, Woche 2 und 3 werden schwieriger und absurder. Auswahl der Tage in einem Kalender. Dazu Endlos.
     - Zwei Ansichten neben Übungen | Endlos: **Access** (Feld, Tabelle, Sortierung, Anzeigen, Kriterien/oder; gleiche Zeile = UND, verschiedene Zeilen = ODER; Stufe 1 nur nötige Kriterien als Bausteine mit Feldname, 2 mit falschen Bausteinen, 3 eintippen in deutscher Access-Schreibweise) und **Blöcke/SQL** (Stufe 1 UND/ODER-Blöcke spitz wie in Scratch verschachteln, 2–5 wie in der SQL-Übung). Stand je Ansicht getrennt.
     - Tabelle `filme` um die IMDb-Merkliste ergänzt (888 Einträge, ungesehen = keine eigene Bewertung). Texte der SQL-Übung angepasst („in der Sammlung“), Aufgabe 4 jetzt David Fincher.
     - Gleichwertige Lösungen zählen (`auch:`), z. B. Ko-Regie bei Kubrick (Spartacus) und „dieses Jahrtausend“ ab 2000 oder 2001.
