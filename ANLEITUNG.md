@@ -64,7 +64,10 @@ vibe-learning/
 │       ├── index.html             Auswahl der Jahrgangsstufe
 │       └── 9II/                   Jahrgangsstufe 9 (Wahlpflichtfächergruppe II)
 │           ├── index.html             Übersicht der Stufe
-│           └── unternehmensfuehrung/, anlagen/, finanzierung/, kapitalanlage/, forderungen/
+│           ├── finanzierung/
+│           │   ├── index.html         Übersicht des Bereichs
+│           │   └── bilanz.html        Bilanz-Modell: Buchungen verändern die Bilanz (Bilanz von Saitgig)
+│           └── unternehmensfuehrung/, anlagen/, kapitalanlage/, forderungen/
 ├── standalone/            jede Übung als Einzeldatei, gleiche Ordner wie in pb_public (IT/excel/…)
 └── ANLEITUNG.md
 ```

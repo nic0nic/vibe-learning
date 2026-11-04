@@ -1,0 +1,1353 @@
+<!doctype html>
+<html lang="de" data-trainer="bilanz">
+<head>
+<script>window.PF_EINZELDATEI = true;</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bilanz-Modell – vibe learning</title>
+<!--
+  Bilanz-Modell (BWR 9, Finanzierung): Die Bilanz von Saitgig (Selbstlernheft „Möglichkeiten der Finanzierung“,
+  Kapitel 2) verändert sich mit jeder Buchung. Rechts Bilanz als Tabelle und als maßstäbliches Bild.
+  Modus Erkunden: Geschäftsfall wählen, Buchungssatz ansehen, buchen, zurücknehmen.
+  Modus Üben:    a) Buchungssatz bilden → Bilanz ändert sich, b) Art der Bilanzveränderung angeben,
+                 c) je nach Einteilung neue Bilanzsumme, Eigenkapitalquote oder Goldene Finanzierungsregel prüfen.
+  Einteilung:    konten (Bilanzposten) · struktur (AV/UV, EK/FK) · fristen (Goldene Finanzierungsregel).
+  Daten:         KONTEN, START, FAELLE (Faktor 1 bzw. UST/1 + UST am Nettobetrag). Neuer Geschäftsfall = neuer Eintrag in FAELLE.
+  Gespeichert:   bilanz-stand (Bilanz und Buchungen), bilanz-aufgabe, bilanz-geloest, bilanz-modus, bilanz-ansicht.
+  Auswertung:    TrainerSync.event mit stufe = Einteilung (1–3), aufgabe = id des Geschäftsfalls.
+-->
+<script>/* ../../../katalog.js */
+/* Inhaltsverzeichnis der Übungsplattform
+ *
+ * Das ist die einzige Stelle, an der ein neues Tool eingetragen werden muss.
+ * Menüleiste, Startseite, Bereichsseiten, Speichern und Lehrerbereich lesen von hier.
+ *
+ * Aufbau:   Fach → (Jahrgangsstufe) → Bereich → Tool. Ordner in pb_public: <Fach>/<Bereich>/
+ *           bzw. <Fach>/<Stufe>/<Bereich>/, z. B. IT/excel/wenn.html, BWR/9II/anlagen/…
+ * Fach:     id      = Ordnername (z. B. IT, BWR), titel = Anzeige im Fach-Menü, text = Untertitel der Startseite
+ *           bereiche = [Bereich] oder stufen = [{id (Ordner, z. B. 9II), titel (Fach-Menü), kurz (oben in der
+ *           Leiste, z. B. 9), text, bereiche}] für Fächer mit Jahrgangsstufen
+ * Bereich:  id      = Name des Unterordners (nur a–z, 0–9, -), über alle Fächer eindeutig
+ *           titel   = Text in der Menüleiste
+ *           farbe   = Akzentfarbe im dunklen Design (Nord-Farben, nordtheme.com),
+ *           farbeHell = dunklerer Ton derselben Farbe für das helle Design (sonst schlecht lesbar)
+ *           farbeSchrift = optional: hellerer Ton für Schrift im dunklen Design, wenn farbe dort zu wenig Kontrast hat
+ *           Ohne farbe bekommt der Bereich das neutrale Nord-Blau.
+ * Tool:     id      = Kürzel für Speicherstand und Auswertung, über alle Fächer eindeutig (nie mehr ändern,
+ *                     sonst geht der gespeicherte Fortschritt verloren)
+ *           datei   = HTML-Datei im Ordner des Bereichs
+ *           titel, text = Anzeige im Menü und auf den Übersichtsseiten
+ *           bedingt = true: nur sichtbar, wenn der Server es für den angemeldeten Schüler freigibt
+ *                     (z. B. Tipp-Aufgabe, siehe /api/trainer/sichtbar in pb_hooks/tippen.pb.js)
+ *           stufen  = Stufen der Übungen für die Auswertung (lehrer.html): Anzahl oder Liste
+ *                     mit Kurznamen, wenn die Nummern allein missverständlich wären
+ *           gruppe  = optional: Untermenü im Menü (aufklappen beim Darüberfahren) und
+ *                     Zwischenüberschrift auf der Bereichsseite (Tools derselben Gruppe direkt hintereinander)
+ * Bereich mit auswertung: false (z. B. Tools ohne Aufgaben) erscheint nicht im Lehrerbereich.
+ *
+ * In der HTML-Datei eines Tools steht dieselbe id: <html lang="de" data-trainer="…">.
+ * Übersichtsseiten: Bereich <html data-bereich="IT/excel">, Fach bzw. Stufe <html data-gruppe="IT">
+ * bzw. data-gruppe="BWR/9II" mit <div id="pf-start">, Fach mit Stufen <html data-fach="BWR"> mit <div id="pf-fach">.
+ *
+ * Am Ende berechnet: KATALOG.gruppen = [{pfad, fach, stufe, titel, text, bereiche}] (Fach bzw. Fach + Stufe)
+ * und KATALOG.bereiche = alle Bereiche aller Fächer, jeweils mit pfad (Ordner) und gruppe.
+ */
+window.KATALOG = {
+  name: 'vibe learning',
+  untertitel: 'Übungen für den Unterricht. Wähle oben Fach und Bereich aus.',
+  faecher: [
+    {id: 'IT', titel: 'IT', text: 'Informationstechnologie: Tabellenkalkulation, Programmieren, Datenbanken, Tippen und Werkzeuge.',
+      bereiche: [
+        {
+          id: 'excel', titel: 'Excel', farbe: '#a3be8c', farbeHell: '#5e8a45',
+          text: 'Tabellenkalkulation: Funktionen, Bedingungen und Verknüpfungen.',
+          tools: [
+            {id: 'fn',   stufen: 5, datei: 'funktionen.html', titel: 'SUMME, MIN, MAX …', text: 'SUMME, MITTELWERT, MIN, MAX, ANZAHL und ANZAHL2 – mit Erklärung, Übungen und Endlos-Modus.'},
+            {id: 'wenn', stufen: 9, datei: 'wenn.html',       titel: 'WENN-Funktion',     text: 'Die WENN-Funktion üben – von Bausteinen bis zur eigenen Formel.'},
+            {id: 'uo',   stufen: 9, datei: 'und-oder.html',   titel: 'UND / ODER',        text: 'Bedingungen verknüpfen – mit Erarbeitung, Übungen und Endlos-Modus.'},
+            {id: 'bz',   stufen: 6, datei: 'bezuege.html',    titel: 'Zellbezüge $',      text: 'Relative und absolute Bezüge: Formeln übertragen und $-Zeichen richtig setzen.'}
+          ]
+        },
+        {id: 'python',      titel: 'Python', farbe: '#b48ead', farbeHell: '#8a5f84', text: 'Programmieren mit Python.',
+          tools: [
+            {id: 'py', datei: 'editor.html', titel: 'Python-Editor', text: 'Python direkt im Browser schreiben und ausführen – mit Terminal für Ein- und Ausgabe.'},
+            {id: 'pyif', stufen: 3, datei: 'bedingungen.html', titel: 'Bedingte Anweisung', text: 'if, elif und else: 10 Aufgaben mit Erklärung und automatischer Prüfung.'}
+          ]
+        },
+        {id: 'datenbanken', titel: 'Datenbanken', farbe: '#bf616a', farbeHell: '#a3434c', farbeSchrift: '#e0959b', text: 'Tabellen, Beziehungen und SQL-Abfragen.',
+          tools: [
+            {id: 'sqlfrei', datei: 'filmdatenbank.html', titel: 'Film-Datenbank', text: 'Eigene Abfragen an die Filmdatenbank stellen, ohne Aufgaben – mit Entwurfsansicht oder in SQL.'},
+            {id: 'sql', stufen: 5, datei: 'abfragen.html', titel: 'SQL-Abfragen', text: 'SELECT, FROM, WHERE und ORDER BY an einer Filmdatenbank – vom Entwurf wie in Access bis zur eigenen SQL-Abfrage.'},
+            {id: 'sqluo', stufen: ['Access 1', 'Access 2', 'Access 3', 'SQL 1', 'SQL 2', 'SQL 3', 'SQL 4', 'SQL 5'], datei: 'datenight.html', titel: 'Datenight: UND / ODER', text: 'Drei Wochen Dates mit immer verrückteren Filmwünschen: Kriterien mit UND und ODER – im Access-Entwurf oder mit Blöcken und SQL.'},
+            {id: 'bericht', datei: 'bericht.html', titel: 'Bericht (Versuch)', text: 'Berichte aus einer Abfrage entwerfen wie in Access: als Liste oder eine Seite je Datensatz, mit Seitenansicht als PDF.'}
+          ]
+        },
+        {id: 'tippen', titel: 'Tippen', farbe: '#8db3ee', farbeHell: '#2b579a', text: 'Schnell und sicher tippen mit zehn Fingern.',
+          tools: [
+            {id: 'tippen', datei: 'pockettype.html', titel: 'pockettype', text: 'Tipptrainer: Wörter und Anschläge pro Minute, Genauigkeit, Bestwerte und Verlauf. Eigenes Projekt auf Basis von Monkeytype (GPL-3.0).'},
+            {id: 'lektionen', datei: 'lektionen.html', titel: 'Lektion üben', text: 'Die 17 Lektionen aus TIPP10 in fester Reihenfolge: von der Grundreihe asdf jklö bis zu Ziffern und Sonderzeichen.'},
+            {id: 'tippaufgabe', bedingt: true, datei: 'aufgabe.html', titel: 'Aufgabe', text: 'Den Text abschreiben, den deine Lehrkraft aufgegeben hat – so oft du willst.'}
+          ]
+        },
+        {id: 'tools', titel: 'Tools', farbe: '#b4bdcc', farbeHell: '#4c566a', auswertung: false, text: 'Werkzeuge für den Unterricht, ohne Aufgaben.',
+          tools: [
+            {id: 'strukto', gruppe: 'Struktogramm', datei: 'struktogramm.html', titel: 'Struktogramm-Editor', text: 'Struktogramme mit der Maus zusammensetzen und als SVG, HTML oder JPG exportieren.'},
+            {id: 'pystrukto', gruppe: 'Struktogramm', datei: 'python-struktogramm.html', titel: 'Python → Struktogramm', text: 'Python-Code eingeben, das Struktogramm entsteht sofort daneben – zum Export oder zum Weiterbearbeiten im Editor.'}
+          ]
+        }
+      ]
+    },
+    {id: 'BWR', titel: 'BWR', text: 'Betriebswirtschaftslehre/Rechnungswesen.',
+      stufen: [
+        {id: '9II', titel: 'Jahrgangsstufe 9', kurz: '9', text: 'BWR, Jahrgangsstufe 9 (Wahlpflichtfächergruppe II).',
+          bereiche: [
+            {id: 'unternehmensfuehrung', titel: 'Unternehmensführung', farbe: '#81a1c1', farbeHell: '#4f73a3', text: 'Übungen zur Unternehmensführung.', tools: []},
+            {id: 'anlagen', titel: 'Anlagen', farbe: '#a3be8c', farbeHell: '#5e8a45', text: 'Übungen zu Anlagen.', tools: []},
+            {id: 'finanzierung', titel: 'Finanzierung', farbe: '#ebcb8b', farbeHell: '#8a6d1f', text: 'Übungen zur Finanzierung.',
+              tools: [
+                {id: 'bilanz', stufen: ['Bilanzposten', 'AV/UV · EK/FK', 'Goldene Regel'], datei: 'bilanz.html', titel: 'Bilanz-Modell', text: 'Wie Buchungen die Bilanz verändern: Aktivtausch, Passivtausch, Aktiv-Passiv-Mehrung und -Minderung – eingeteilt nach Bilanzposten, nach AV/UV und EK/FK oder nach der Goldenen Finanzierungsregel.'}
+              ]},
+            {id: 'kapitalanlage', titel: 'Kapitalanlage', farbe: '#b48ead', farbeHell: '#8a5f84', text: 'Übungen zur Kapitalanlage.', tools: []},
+            {id: 'forderungen', titel: 'Forderungen', farbe: '#bf616a', farbeHell: '#a3434c', farbeSchrift: '#e0959b', text: 'Übungen zu Forderungen.', tools: []}
+          ]
+        }
+      ]
+    }
+  ]
+};
+
+// Gruppen (Fach bzw. Fach + Jahrgangsstufe) und alle Bereiche mit Ordner, für nav.js, sync.js und lehrer.html
+(function (K) {
+  K.gruppen = [];
+  K.faecher.forEach(f => (f.stufen
+    ? f.stufen.map(s => ({pfad: f.id + '/' + s.id, fach: f, stufe: s, titel: f.titel + ' ' + (s.kurz || s.titel), text: s.text || f.text, bereiche: s.bereiche}))
+    : [{pfad: f.id, fach: f, stufe: null, titel: f.titel, text: f.text, bereiche: f.bereiche}]).forEach(g => K.gruppen.push(g)));
+  K.bereiche = [].concat(...K.gruppen.map(g => g.bereiche.map(b => Object.assign(b, {pfad: g.pfad + '/' + b.id, gruppe: g}))));
+})(window.KATALOG);
+
+</script>
+<script>/* ../../../nav.js */
+/* Menüleiste der Übungsplattform
+ *
+ * Baut oben auf jeder Seite die Leiste: vorne das Fach-Menü (IT, BWR › Jahrgangsstufe 9 …),
+ * dahinter die Bereiche des gewählten Fachs aus katalog.js.
+ * Fährt man mit der Maus über einen Bereich (am Handy: antippen), klappen
+ * dessen Übungen auf. Außerdem füllt das Skript die Startseite bzw. Fachseite (#pf-start),
+ * die Auswahl der Jahrgangsstufe (#pf-fach) und die Übersichtsseite eines Bereichs (#pf-bereich).
+ * Das zuletzt gewählte Fach merkt sich der Browser (localStorage pf-fach) für die Startseite.
+ *
+ * Fehlt katalog.js oder nav.js, läuft das Tool trotzdem – nur ohne Menüleiste.
+ * Tools mit gruppe (katalog.js) stehen im Menü in einem Untermenü (klappt beim Darüberfahren auf)
+ * und auf der Bereichsseite unter einer Zwischenüberschrift.
+ * Tools mit bedingt: true (katalog.js) sind zunächst ausgeblendet; sync.js blendet sie ein,
+ * wenn der Server sie für den angemeldeten Schüler freigibt (Klasse pf-sichtbar).
+ * In Einzeldateien (werkzeuge/einzeldateien.py, window.PF_EINZELDATEI) zeigt die
+ * Leiste nur Name und Hell/Dunkel-Knopf, weil es keine anderen Seiten gibt.
+ */
+(function () {
+  'use strict';
+  const K = window.KATALOG;
+  if (!K) return;
+
+  // Wurzel der Plattform = Ordner, in dem nav.js liegt (funktioniert auch per Doppelklick)
+  const me = document.currentScript && document.currentScript.src;
+  const BASE = me ? me.replace(/[^/]*$/, '') : '';
+  const root = document.documentElement;
+  const TOOL = root.dataset.trainer || '';
+  // Aktueller Bereich: über das Tool oder <html data-bereich="IT/excel">.
+  // Aktuelle Gruppe (Fach bzw. Fach + Jahrgangsstufe): über den Bereich, <html data-gruppe="BWR/9II">
+  // oder <html data-fach="BWR">, sonst die zuletzt gewählte (localStorage pf-fach), sonst die erste.
+  const BER = K.bereiche.find(b => b.tools.some(t => t.id === TOOL)) || K.bereiche.find(b => b.pfad === root.dataset.bereich) || null;
+  const BEREICH = BER ? BER.id : '';
+  const FACHSEITE = K.faecher.find(f => f.id === root.dataset.fach) || null;
+  let GRUPPE = BER ? BER.gruppe : K.gruppen.find(g => g.pfad === root.dataset.gruppe) || (FACHSEITE && K.gruppen.find(g => g.fach === FACHSEITE));
+  if (GRUPPE){ try { localStorage.setItem('pf-fach', GRUPPE.pfad); } catch (e) {} }
+  else {
+    let zuletzt = null;
+    try { zuletzt = localStorage.getItem('pf-fach'); } catch (e) {}
+    GRUPPE = K.gruppen.find(g => g.pfad === zuletzt) || K.gruppen[0];
+  }
+
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+  const bereichUrl = b => BASE + b.pfad + '/index.html';
+  const toolUrl = (b, t) => BASE + b.pfad + '/' + t.datei;
+  const gruppeUrl = g => BASE + g.pfad + '/index.html';
+  const fachUrl = f => BASE + f.id + '/index.html';
+
+  const CSS = `
+.pf-nav{background:var(--panel,#f6f8fb);color:var(--text,#2e3440);border-bottom:1px solid var(--border,#cdd3de);position:relative;z-index:60;font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.pf-in{max-width:1400px;margin:0 auto;display:flex;align-items:center;gap:6px;padding:0 16px;min-height:50px}
+.pf-brand{font:800 18px ui-monospace,Consolas,"Liberation Mono",monospace;color:inherit;text-decoration:none;margin-right:14px;white-space:nowrap}
+.pf-brand span{color:var(--accent-text,var(--accent,#5e81ac))}
+.pf-menu{display:flex;gap:2px;list-style:none;margin:0;padding:0}
+.pf-item{position:relative;--bc:#5e81ac}
+html[data-theme=dark] .pf-item{--bc:#88c0d0}
+.pf-item>a{display:flex;align-items:center;gap:5px;padding:14px 11px;color:inherit;text-decoration:none;font-weight:600;border-bottom:3px solid transparent;white-space:nowrap}
+.pf-item>a::after{content:"";width:6px;height:6px;border:solid currentColor;border-width:0 2px 2px 0;transform:rotate(45deg) translateY(-2px);opacity:.5}
+.pf-item:hover>a,.pf-item.open>a{color:var(--bc)}
+.pf-item>a[aria-current]{border-bottom-color:var(--bc)}
+.pf-drop{display:none;position:absolute;top:100%;left:0;min-width:280px;background:var(--panel,#f6f8fb);border:1px solid var(--border,#cdd3de);border-radius:0 0 12px 12px;box-shadow:0 14px 30px rgba(0,0,0,.18);padding:6px;list-style:none;margin:0}
+.pf-item:hover .pf-drop,.pf-item:focus-within .pf-drop,.pf-item.open .pf-drop{display:block}
+.pf-drop a{display:block;padding:8px 10px;border-radius:8px;color:inherit;text-decoration:none}
+.pf-drop a:hover,.pf-drop a:focus{background:var(--panel2,#eceff4);outline:none}
+.pf-drop a[aria-current]{color:var(--bc);font-weight:600}
+.pf-drop small{display:block;color:var(--muted,#5b6578);font-size:13px}
+.pf-drop .pf-all{font-size:13px;color:var(--muted,#5b6578);border-top:1px solid var(--border,#cdd3de);border-radius:0 0 8px 8px;margin-top:4px}
+.pf-fach{margin-right:8px}
+.pf-fach>a{border:1px solid var(--border,#cdd3de);border-radius:10px;background:var(--panel2,#eceff4);padding:6px 10px!important;margin:6px 0}
+.pf-fach>a small{font-weight:500;color:var(--muted,#5b6578);margin-right:2px}
+.pf-sub{position:relative}
+.pf-sub>a{display:flex!important;align-items:center;justify-content:space-between;gap:12px}
+.pf-sub>a::after{content:"";width:6px;height:6px;border:solid currentColor;border-width:0 2px 2px 0;transform:rotate(-45deg);opacity:.5;flex:none}
+.pf-drop2{display:none;position:absolute;left:100%;top:-7px;min-width:250px;background:var(--panel,#f6f8fb);border:1px solid var(--border,#cdd3de);border-radius:12px;box-shadow:0 14px 30px rgba(0,0,0,.18);padding:6px;list-style:none;margin:0}
+.pf-sub.links>.pf-drop2{left:auto;right:100%}
+.pf-sub:hover>.pf-drop2,.pf-sub:focus-within>.pf-drop2,.pf-sub.open>.pf-drop2{display:block}
+.pf-drop .pf-leer{padding:8px 10px;color:var(--muted,#5b6578);font-style:italic}
+.pf-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.pf-btn{background:var(--panel2,#eceff4);border:1px solid var(--border,#cdd3de);color:inherit;border-radius:10px;width:38px;height:38px;display:grid;place-items:center;cursor:pointer;font-size:17px;padding:0}
+.pf-burger{display:none}
+.pf-einzeln .pf-menu{display:none!important}
+.pf-bedingt:not(.pf-sichtbar){display:none!important}
+@media (max-width:760px){
+  .pf-burger{display:grid}
+  .pf-menu{display:none;position:absolute;top:100%;left:0;right:0;flex-direction:column;background:var(--panel,#f6f8fb);border-bottom:1px solid var(--border,#cdd3de);box-shadow:0 14px 30px rgba(0,0,0,.18);padding:6px 16px 12px;max-height:80vh;overflow:auto}
+  .pf-nav.open .pf-menu{display:flex}
+  .pf-item>a{padding:10px 0 4px;border:0}
+  .pf-item>a::after{display:none}
+  .pf-drop{display:block;position:static;min-width:0;border:0;box-shadow:none;padding:0 0 4px 10px}
+  .pf-drop2{display:block;position:static;min-width:0;border:0;box-shadow:none;padding:0 0 0 12px}
+  .pf-sub>a::after{display:none}
+}
+.pf-knapp .ts-badge.gast .ts-lang{display:none}
+/* dasselbe, wenn die Leiste zu voll ist (nav.js setzt pf-eng) */
+.pf-eng .pf-burger{display:grid}
+.pf-eng .pf-menu{display:none;position:absolute;top:100%;left:0;right:0;flex-direction:column;background:var(--panel,#f6f8fb);border-bottom:1px solid var(--border,#cdd3de);box-shadow:0 14px 30px rgba(0,0,0,.18);padding:6px 16px 12px;max-height:80vh;overflow:auto}
+.pf-eng.open .pf-menu{display:flex}
+.pf-eng .pf-item>a{padding:10px 0 4px;border:0}
+.pf-eng .pf-item>a::after{display:none}
+.pf-eng .pf-drop{display:block;position:static;min-width:0;border:0;box-shadow:none;padding:0 0 4px 10px}
+.pf-eng .pf-drop2{display:block;position:static;min-width:0;border:0;box-shadow:none;padding:0 0 0 12px}
+.pf-eng .pf-sub>a::after{display:none}
+.pf-fade,.pf-fade *{transition:background-color .35s,color .35s,border-color .35s,fill .35s!important}
+.pf-gesperrt{opacity:.5;cursor:default!important}
+@media print{.pf-nav{display:none}}`;
+
+  // Farben der Bereiche (katalog.js: farbe = dunkles Design, farbeHell = helles Design,
+  // farbeSchrift = optional hellerer Ton für Schrift im dunklen Design).
+  // --accent gilt für die ganze Seite des aktuellen Bereichs, --bc nur für den eigenen Menüpunkt.
+  function akzentCss(){
+    let css = '';
+    K.bereiche.forEach(b => {
+      if (!b.farbe) return;
+      const dunkel = b.farbeSchrift || b.farbe;
+      css += `\n.pf-item[data-b="${b.id}"]{--bc:${b.farbeHell || b.farbe}}\nhtml[data-theme=dark] .pf-item[data-b="${b.id}"]{--bc:${dunkel}}`;
+      if (b.id === BEREICH) css += `\nhtml[data-theme]{--accent:${b.farbeHell || b.farbe};--accent-text:${b.farbeHell || b.farbe}}\nhtml[data-theme=dark]{--accent:${b.farbe};--accent-text:${dunkel}}`;
+    });
+    return css;
+  }
+
+  const SONNE = '☀', MOND = '☾';
+  function theme(){ return root.dataset.theme === 'dark' ? 'dark' : 'light'; }
+
+  // Tools derselben gruppe (katalog.js) hintereinander → [{name, tools}], ohne gruppe: name ''
+  function gruppen(b){
+    const out = [];
+    b.tools.forEach(t => {
+      const g = out[out.length - 1];
+      if (g && g.name === (t.gruppe || '')) g.tools.push(t); else out.push({name: t.gruppe || '', tools: [t]});
+    });
+    return out;
+  }
+  const toolLi = (b, t) => `<li${t.bedingt ? ` class="pf-bedingt" data-tool="${esc(t.id)}"` : ''}><a href="${toolUrl(b, t)}"${t.id === TOOL ? ' aria-current="page"' : ''}>${esc(t.titel)}</a></li>`;
+
+  // Fach-Menü: Fächer ohne Stufen direkt, Fächer mit Jahrgangsstufen als Untermenü (wie gruppe bei Tools)
+  function fachMenue(){
+    const eintrag = (g, text) => `<li><a href="${gruppeUrl(g)}"${g === GRUPPE ? ' aria-current="page"' : ''}>${esc(text)}</a></li>`;
+    return `<li class="pf-item pf-fach"><a href="${gruppeUrl(GRUPPE)}" aria-haspopup="true" title="Fach wechseln"><small>Fach</small> ${esc(GRUPPE.titel)}</a>
+      <ul class="pf-drop">${K.faecher.map(f => f.stufen
+        ? `<li class="pf-sub"><a href="${fachUrl(f)}"${GRUPPE.fach === f ? ' aria-current="true"' : ''} aria-haspopup="true">${esc(f.titel)}</a><ul class="pf-drop2">${f.stufen.map(st => eintrag(K.gruppen.find(g => g.stufe === st), st.titel)).join('')}</ul></li>`
+        : eintrag(K.gruppen.find(g => g.fach === f), f.titel)).join('')}</ul></li>`;
+  }
+
+  function buildNav(){
+    const s = document.createElement('style'); s.textContent = CSS + akzentCss(); document.head.appendChild(s);
+    const nav = document.createElement('nav');
+    nav.className = 'pf-nav' + (window.PF_EINZELDATEI ? ' pf-einzeln' : '');
+    nav.setAttribute('aria-label', 'Bereiche');
+    const name = esc(K.name).replace(/^(\S+)/, '<span>$1</span>');
+    const EINZELN = !!window.PF_EINZELDATEI;
+    nav.innerHTML = `<div class="pf-in">
+      ${EINZELN ? `<span class="pf-brand">${name}</span>` : `<a class="pf-brand" href="${BASE}index.html">${name}</a>`}
+      <ul class="pf-menu">${fachMenue()}${GRUPPE.bereiche.map(b => `
+        <li class="pf-item" data-b="${esc(b.id)}">
+          <a href="${bereichUrl(b)}"${b.id === BEREICH ? ' aria-current="true"' : ''}>${esc(b.titel)}</a>
+          <ul class="pf-drop">${b.tools.length
+            ? gruppen(b).map(g => g.name
+              ? `<li class="pf-sub"><a href="${bereichUrl(b)}"${g.tools.some(t => t.id === TOOL) ? ' aria-current="true"' : ''} aria-haspopup="true">${esc(g.name)}</a><ul class="pf-drop2">${g.tools.map(t => toolLi(b, t)).join('')}</ul></li>`
+              : g.tools.map(t => toolLi(b, t)).join('')).join('')
+              + `<li><a class="pf-all" href="${bereichUrl(b)}">Alle Übungen zu ${esc(b.titel)}</a></li>`
+            : '<li class="pf-leer">Hier entstehen bald Übungen.</li>'}
+          </ul>
+        </li>`).join('')}
+      </ul>
+      <div class="pf-right">
+        ${document.getElementById('themeBtn') ? '' : `<button class="pf-btn" id="pfTheme" type="button" aria-label="Hell/Dunkel umschalten">${theme() === 'dark' ? SONNE : MOND}</button>`}
+        ${EINZELN ? '' : '<button class="pf-btn pf-burger" type="button" aria-label="Menü">☰</button>'}
+      </div>
+    </div>`;
+    document.body.insertBefore(nav, document.body.firstChild);
+
+    // Passt die Leiste nicht in die Breite (Fach-Menü, lange Bereichsnamen, Anmeldung), kommt das Menü hinter ☰
+    const innen = nav.querySelector('.pf-in');
+    // Erst den Zusatz „– Fortschritt wird nicht gespeichert“ weglassen (pf-knapp), erst dann ☰ (pf-eng)
+    const voll = () => innen.scrollWidth > innen.clientWidth + 1;
+    const platz = () => {
+      nav.classList.remove('pf-eng', 'pf-knapp');
+      if (EINZELN || !voll()) return;
+      nav.classList.add('pf-knapp');
+      if (voll()) nav.classList.add('pf-eng');
+    };
+    platz();
+    addEventListener('resize', platz);
+    new MutationObserver(platz).observe(nav.querySelector('.pf-right'), {childList: true, subtree: true, characterData: true});
+    if (document.fonts) document.fonts.ready.then(platz);
+    const schmal = () => matchMedia('(max-width:760px)').matches || nav.classList.contains('pf-eng');
+
+    const burger = nav.querySelector('.pf-burger');
+    if (burger) burger.addEventListener('click', () => nav.classList.toggle('open'));
+    const tb = nav.querySelector('#pfTheme');
+    if (tb) tb.addEventListener('click', () => {
+      const t = theme() === 'dark' ? 'light' : 'dark';
+      root.dataset.theme = t; tb.textContent = t === 'dark' ? SONNE : MOND;
+      try { localStorage.setItem('wenn-theme', t); } catch (e) {}
+    });
+
+    // Geräte ohne Maus: erstes Antippen klappt auf, zweites öffnet die Bereichsseite
+    const items = [...nav.querySelectorAll('.pf-item')];
+    if (matchMedia('(hover: none)').matches) items.forEach(li => li.firstElementChild.addEventListener('click', e => {
+      if (schmal() || li.classList.contains('open')) return;
+      e.preventDefault();
+      items.forEach(x => x.classList.toggle('open', x === li));
+    }));
+    // Untermenüs (gruppe): nach links aufklappen, wenn rechts kein Platz ist; ohne Maus erst antippen
+    nav.querySelectorAll('.pf-sub').forEach(sub => {
+      sub.addEventListener('mouseenter', () => {
+        const r = sub.getBoundingClientRect();
+        sub.classList.toggle('links', r.right + 260 > innerWidth);
+      });
+      if (matchMedia('(hover: none)').matches) sub.firstElementChild.addEventListener('click', e => {
+        if (schmal() || sub.classList.contains('open')) return;
+        e.preventDefault();
+        const r = sub.getBoundingClientRect();
+        sub.classList.toggle('links', r.right + 260 > innerWidth);
+        sub.classList.add('open');
+      });
+    });
+    document.addEventListener('click', e => { if (!nav.contains(e.target)){ nav.querySelectorAll('.pf-sub.open').forEach(x => x.classList.remove('open')); items.forEach(x => x.classList.remove('open')); nav.classList.remove('open'); } });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape'){ items.forEach(x => x.classList.remove('open')); nav.classList.remove('open'); } });
+  }
+
+  /* ---------- Übersichtsseiten ---------- */
+  // Tools mit gruppe (katalog.js) stehen unter einer gemeinsamen Zwischenüberschrift
+  function kacheln(b){
+    if (!b.tools.length) return '<p class="pf-hinweis">Hier entstehen bald Übungen.</p>';
+    const kachel = t => `<a class="pf-tile${t.bedingt ? ' pf-bedingt' : ''}"${t.bedingt ? ` data-tool="${esc(t.id)}"` : ''} href="${toolUrl(b, t)}"><b>${esc(t.titel)}</b><span>${esc(t.text)}</span></a>`;
+    return gruppen(b).map(g => (g.name ? `<h3 class="pf-gruppe">${esc(g.name)}</h3>` : '') + `<div class="pf-grid">${g.tools.map(kachel).join('')}</div>`).join('');
+  }
+  function buildPages(){
+    const start = document.getElementById('pf-start');
+    if (start){
+      const gruppenseite = !!root.dataset.gruppe;
+      if (gruppenseite) document.title = GRUPPE.titel + ' – ' + K.name;
+      start.innerHTML = `<h1>${esc(gruppenseite ? GRUPPE.titel : K.name)}</h1><p class="pf-lead">${esc(GRUPPE.text)}${gruppenseite ? '' : ' ' + esc(K.untertitel)}</p>`
+        + GRUPPE.bereiche.map(b => `<section class="pf-sec"><h2><a href="${bereichUrl(b)}">${esc(b.titel)}</a></h2><p class="pf-text">${esc(b.text)}</p>${kacheln(b)}</section>`).join('');
+    }
+    // Fach mit Jahrgangsstufen: Auswahl der Stufe
+    const fach = document.getElementById('pf-fach');
+    if (fach && FACHSEITE){
+      document.title = FACHSEITE.titel + ' – ' + K.name;
+      fach.innerHTML = `<h1>${esc(FACHSEITE.titel)}</h1><p class="pf-lead">${esc(FACHSEITE.text)} Wähle die Jahrgangsstufe.</p><div class="pf-grid">`
+        + K.gruppen.filter(g => g.fach === FACHSEITE).map(g => `<a class="pf-tile" href="${gruppeUrl(g)}"><b>${esc(g.stufe.titel)}</b><span>${esc(g.text)}</span></a>`).join('') + '</div>';
+    }
+    const be = document.getElementById('pf-bereich');
+    const b = BER;
+    if (be && b){
+      document.title = b.titel + ' – ' + K.name;
+      be.innerHTML = `<h1>${esc(b.titel)}</h1><p class="pf-lead">${esc(b.text)}</p>${kacheln(b)}`;
+    }
+  }
+
+  // Hell/Dunkel höchstens einmal pro Sekunde umschalten und weich überblenden – kein Flackern beim schnellen Klicken
+  let themeSperre = 0;
+  document.addEventListener('click', e => {
+    const btn = e.target.closest('#themeBtn,#pfTheme');
+    if (!btn) return;
+    if (Date.now() < themeSperre){ e.stopImmediatePropagation(); e.preventDefault(); return; }
+    themeSperre = Date.now() + 1000;
+    root.classList.add('pf-fade'); btn.classList.add('pf-gesperrt');
+    setTimeout(() => root.classList.remove('pf-fade'), 400);
+    setTimeout(() => btn.classList.remove('pf-gesperrt'), 1000);
+  }, true);
+
+  function init(){ buildNav(); buildPages(); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();
+
+</script>
+<script>/* ../../../sync.js */
+/* vibe learning – Anmeldung und Anbindung an PocketBase
+ *
+ * Läuft die Seite über den PocketBase-Server, erscheint beim ersten Öffnen ein
+ * Anmeldefenster: ein Feld für Code oder Benutzername (bei Benutzernamen folgt das
+ * Passwort), alternativ „Seite ohne Anmeldung nutzen“. Oben rechts in der Leiste
+ * steht danach, wer angemeldet ist; dort meldet man sich auch an und ab.
+ *
+ * Schüler: Fortschritt wird auf dem Server gespeichert, jede gelöste Aufgabe protokolliert.
+ * Lehrkraft/Admin: Anmeldung gilt bis zum Schließen des Browsers, im Menü steht
+ * der Link zur Verwaltung (lehrer.html).
+ * Wird die HTML-Datei direkt geöffnet (oder läuft kein PocketBase dahinter),
+ * passiert nichts davon – die Seite speichert dann wie bisher nur im Browser.
+ *
+ * Bedingte Menüpunkte (katalog.js: bedingt) blendet das Skript nach der Anmeldung ein,
+ * wenn der Server sie für diesen Schüler freigibt (/api/trainer/sichtbar).
+ *
+ * Die Seite ruft auf:
+ *   TrainerSync.changed()      nach jeder Änderung am gespeicherten Stand
+ *   TrainerSync.event({...})   wenn eine Aufgabe richtig gelöst wurde
+ */
+(function () {
+  'use strict';
+
+  const CONFIG = {
+    api: '/api/trainer',
+    verwaltung: 'lehrer.html'   // relativ zum Ordner von sync.js
+  };
+
+  const me = document.currentScript && document.currentScript.src;
+  const BASE = me ? me.replace(/[^/]*$/, '') : '';
+  const PAGE = document.documentElement.dataset.trainer || '';          // Tool-id aus katalog.js, leer auf Übersichtsseiten
+  const TOOL_IDS = window.KATALOG ? [].concat(...window.KATALOG.bereiche.map(b => b.tools.map(t => t.id))) : [];
+  const ALL_PREFIXES = [...new Set(['wenn', 'uo', 'fn', PAGE].concat(TOOL_IDS))].filter(Boolean).map(id => id + '-');
+  const OWN = PAGE + '-';
+  const SKIP = ['wenn-theme'];                                             // Hell/Dunkel bleibt pro Gerät
+  const K = {code: 'ts-code', anzeige: 'ts-anzeige', klasse: 'ts-klasse', queue: 'ts-queue', stand: 'ts-stand-' + PAGE};
+  const SS = {gast: 'ts-gast', lehrer: 'ts-lehrer'};                      // gilt nur bis zum Schließen des Browsers
+
+  const ls = {
+    get(k){ try { return localStorage.getItem(k); } catch (e) { return null; } },
+    set(k, v){ try { localStorage.setItem(k, v); } catch (e) {} },
+    del(k){ try { localStorage.removeItem(k); } catch (e) {} },
+    keys(){ try { return Object.keys(localStorage); } catch (e) { return []; } }
+  };
+  const ss = {
+    get(k){ try { return sessionStorage.getItem(k); } catch (e) { return null; } },
+    set(k, v){ try { sessionStorage.setItem(k, v); } catch (e) {} },
+    del(k){ try { sessionStorage.removeItem(k); } catch (e) {} }
+  };
+  function lehrerSitzung(){ try { return JSON.parse(ss.get(SS.lehrer) || 'null'); } catch (e) { return null; } }
+
+  const hosted = /^https?:$/.test(location.protocol);
+  let aktiv = false, pushTimer = null, pushPending = false, menuEl = null, lastSnap = '';
+
+  /* ---------- Hilfen ---------- */
+  function api(path, opt){
+    opt = opt || {};
+    return fetch(CONFIG.api + path, {
+      method: opt.method || 'GET',
+      keepalive: !!opt.keepalive,
+      headers: {'Content-Type': 'application/json', 'X-Trainer-Code': ls.get(K.code) || ''},
+      body: opt.body ? JSON.stringify(opt.body) : undefined
+    }).then(async r => {
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok){ const err = new Error(j.message || ('HTTP ' + r.status)); err.status = r.status; err.data = j; throw err; }
+      return j;
+    });
+  }
+  const trainerKeys = prefix => ls.keys().filter(k => k.startsWith(prefix) && !SKIP.includes(k));
+  function snapshot(prefix){ prefix = prefix || OWN; const d = {}; trainerKeys(prefix).sort().forEach(k => { d[k] = ls.get(k); }); return d; }
+  function applySnapshot(d, prefix){
+    prefix = prefix || OWN;
+    trainerKeys(prefix).forEach(k => ls.del(k));
+    Object.keys(d || {}).forEach(k => { if (k.startsWith(prefix) && !SKIP.includes(k) && typeof d[k] === 'string') ls.set(k, d[k]); });
+  }
+  function wipeLocal(){
+    ALL_PREFIXES.forEach(p => trainerKeys(p).forEach(k => ls.del(k)));
+    ls.keys().filter(k => k.startsWith('ts-stand-')).forEach(k => ls.del(k));
+    [K.queue, K.code, K.klasse, K.anzeige].forEach(k => ls.del(k));
+  }
+  function reloadOnce(){
+    let last = 0; try { last = +sessionStorage.getItem('ts-reload') || 0; } catch (e) {}
+    if (Date.now() - last < 8000) return;
+    try { sessionStorage.setItem('ts-reload', Date.now()); } catch (e) {}
+    location.reload();
+  }
+
+  /* ---------- Fortschritt abgleichen ---------- */
+  async function pull(){
+    if (!PAGE){ setStatus('ok'); return; }
+    const r = await api('/state?seite=' + PAGE);
+    const local = +ls.get(K.stand) || 0, server = +r.stand || 0;
+    if (r.daten && server > local){
+      const before = JSON.stringify(snapshot());
+      applySnapshot(r.daten);
+      ls.set(K.stand, server);
+      lastSnap = JSON.stringify(snapshot());
+      if (lastSnap !== before) reloadOnce();
+    } else if (local > server) await push();
+    setStatus('ok');
+  }
+
+  async function push(keepalive){
+    clearTimeout(pushTimer); pushPending = false;
+    if (!aktiv || !PAGE) return;
+    const stand = +ls.get(K.stand) || Date.now();
+    setStatus('saving');
+    try {
+      await api('/state', {method: 'POST', body: {seite: PAGE, daten: snapshot(), stand}, keepalive});
+      setStatus('ok');
+    } catch (err){
+      if (err.status === 409){ await pull().catch(() => setStatus('offline')); }
+      else if (err.status === 401) abgelaufen();
+      else { pushPending = true; setStatus('offline'); }
+    }
+  }
+
+  function changed(){
+    if (!PAGE) return;
+    // Seiten schreiben ihren Stand auch beim Öffnen neu – nur echte Änderungen zählen,
+    // sonst würde ein frisch geöffnetes Gerät einen neueren Stand vom Server überschreiben.
+    const snap = JSON.stringify(snapshot());
+    if (snap === lastSnap) return;
+    lastSnap = snap;
+    ls.set(K.stand, Date.now());
+    if (!aktiv) return;
+    pushPending = true;
+    clearTimeout(pushTimer);
+    pushTimer = setTimeout(push, 700);
+  }
+
+  /* ---------- Protokoll gelöster Aufgaben ---------- */
+  function queue(){ try { return JSON.parse(ls.get(K.queue) || '[]'); } catch (e) { return []; } }
+  function event(ev){
+    if (!aktiv || !PAGE) return;
+    const q = queue(); q.push(Object.assign({seite: PAGE}, ev)); ls.set(K.queue, JSON.stringify(q.slice(-500)));
+    flush();
+  }
+  let flushing = false;
+  async function flush(keepalive){
+    if (!aktiv || flushing) return;
+    const q = queue(); if (!q.length) return;
+    flushing = true;
+    try {
+      await api('/events', {method: 'POST', body: {events: q.slice(0, 200)}, keepalive});
+      ls.set(K.queue, JSON.stringify(queue().slice(Math.min(q.length, 200))));
+    } catch (err){
+      if (err.status === 401) abgelaufen(); else setStatus('offline');
+    } finally { flushing = false; }
+    if (queue().length && !keepalive) setTimeout(flush, 2000);
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden' && aktiv){ if (pushPending) push(true); flush(true); }
+  });
+  window.addEventListener('online', () => { if (aktiv){ flush(); if (pushPending) push(); else pull().catch(() => {}); } });
+
+
+  /* ---------- Gast-Fortschritt beim Anmelden übernehmen ---------- */
+  // Für jede Übung: Ist das Konto dort noch leer, wird der Stand dieses Geräts hochgeladen,
+  // sonst gilt der Stand vom Server.
+  async function uebernehmen(){
+    for (const p of ALL_PREFIXES){
+      const id = p.slice(0, -1), lokal = snapshot(p);
+      const st = await api('/state?seite=' + id);
+      const leer = !st.daten || !Object.keys(st.daten).length;
+      if (leer){
+        if (!Object.keys(lokal).length) continue;
+        const stand = Date.now();
+        await api('/state', {method: 'POST', body: {seite: id, daten: lokal, stand}});
+        ls.set('ts-stand-' + id, stand);
+      } else {
+        applySnapshot(st.daten, p);
+        ls.set('ts-stand-' + id, +st.stand || 0);
+      }
+    }
+  }
+
+  /* ---------- Oberfläche: Anmeldefenster + Menü oben rechts ---------- */
+  const CSS = `
+.ts-ov{position:fixed;inset:0;z-index:2000;background:rgba(20,24,32,.6);backdrop-filter:blur(3px);display:grid;place-items:center;padding:16px}
+.ts-box{position:relative;background:var(--panel,#f6f8fb);color:var(--text,#2e3440);border:1px solid var(--border,#cdd3de);border-radius:16px;padding:24px;width:min(420px,100%);box-shadow:0 20px 50px rgba(0,0,0,.3);font:16px/1.5 system-ui,sans-serif}
+.ts-box h2{margin:0 0 6px;font-size:21px}
+.ts-box p{margin:0 0 14px;color:var(--muted,#5b6578)}
+.ts-x{position:absolute;top:10px;right:10px;width:34px;height:34px;border-radius:9px;border:0;background:none;color:var(--muted,#5b6578);font-size:22px;line-height:1;cursor:pointer}
+.ts-x:hover{background:var(--panel2,#eceff4);color:var(--text,#2e3440)}
+.ts-in{width:100%;box-sizing:border-box;font:700 20px ui-monospace,Consolas,monospace;letter-spacing:.03em;padding:12px 14px;border-radius:10px;border:2px solid var(--slot-border,var(--border,#a7b1c2));background:var(--slot,var(--panel2,#eceff4));color:var(--text,#2e3440);outline:none}
+.ts-in:focus{border-color:var(--accent,#5e81ac)}
+.ts-btn{margin-top:12px;width:100%;font:600 17px system-ui,sans-serif;padding:12px;border-radius:10px;border:1px solid color-mix(in srgb,var(--accent,#5e81ac) 50%,var(--panel,#f6f8fb));background:color-mix(in srgb,var(--accent,#5e81ac) 22%,var(--panel,#f6f8fb));color:color-mix(in srgb,var(--accent,#5e81ac) 60%,var(--text,#2e3440));cursor:pointer}
+.ts-btn:disabled{opacity:.6;cursor:wait}
+.ts-err{color:var(--err,#a8434d);min-height:1.4em;margin-top:8px;font-size:14px}
+.ts-zurueck{background:none;border:0;padding:0;margin-top:10px;color:var(--muted,#5b6578);text-decoration:underline;cursor:pointer;font-size:14px}
+.ts-gast{display:block;width:100%;margin-top:18px;padding:12px;border-radius:10px;border:1px solid var(--border,#cdd3de);background:var(--panel2,#eceff4);color:var(--text,#2e3440);font:600 16px system-ui,sans-serif;cursor:pointer}
+.ts-gast small{display:block;font-weight:400;font-size:13px;color:var(--muted,#5b6578)}
+.ts-wrap{position:relative}
+.ts-badge{display:inline-flex;align-items:center;gap:6px;font:600 13px system-ui,sans-serif;padding:7px 11px;border-radius:999px;border:1px solid var(--border,#cdd3de);background:var(--panel2,#eceff4);color:var(--text,#2e3440);cursor:pointer;white-space:nowrap}
+.ts-badge .ts-dot{width:8px;height:8px;border-radius:50%;background:#8a95ab}
+.ts-badge.ok .ts-dot{background:var(--then,#a3be8c)}
+.ts-badge.saving .ts-dot{background:#ebcb8b}
+.ts-badge.offline .ts-dot{background:var(--else,#bf616a)}
+.ts-badge.gast{border-color:color-mix(in srgb,#d08770 60%,var(--border,#cdd3de));background:color-mix(in srgb,#d08770 16%,var(--panel,#f6f8fb))}
+.ts-badge.gast .ts-dot{background:#d08770}
+.ts-dd{display:none;position:absolute;right:0;top:calc(100% + 6px);min-width:240px;z-index:70;background:var(--panel,#f6f8fb);color:var(--text,#2e3440);border:1px solid var(--border,#cdd3de);border-radius:12px;box-shadow:0 14px 30px rgba(0,0,0,.18);padding:6px;font:14px/1.4 system-ui,sans-serif}
+.ts-wrap.open .ts-dd{display:block}
+.ts-dd .ts-info{padding:8px 10px;color:var(--muted,#5b6578);border-bottom:1px solid var(--border,#cdd3de);margin-bottom:4px}
+.ts-dd .ts-info b{color:var(--text,#2e3440)}
+.ts-dd a,.ts-dd button{display:block;width:100%;text-align:left;padding:8px 10px;border-radius:8px;border:0;background:none;color:inherit;font:inherit;text-decoration:none;cursor:pointer}
+.ts-dd a:hover,.ts-dd button:hover{background:var(--panel2,#eceff4)}
+@media (max-width:640px){.ts-badge .ts-lang{display:none}}`;
+
+  function injectCss(){ const s = document.createElement('style'); s.textContent = CSS; document.head.appendChild(s); }
+  const escH = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+
+  function setStatus(st){
+    const b = menuEl && menuEl.querySelector('.ts-badge');
+    if (!b || !aktiv) return;
+    b.className = 'ts-badge ' + st;
+    const t = {ok: 'Fortschritt gespeichert', saving: 'Wird gespeichert …', offline: 'Keine Verbindung – wird später gespeichert'}[st] || '';
+    b.title = t;
+    const i = menuEl.querySelector('.ts-status'); if (i) i.textContent = t;
+  }
+
+  // Menü oben rechts: angemeldet (Dropdown mit Abmelden) oder Gast (Klick öffnet die Anmeldung)
+  function showMenu(){
+    if (menuEl) menuEl.remove();
+    const host = document.querySelector('.pf-right') || document.querySelector('.hdr-right') || document.querySelector('header') || document.body;
+    const L = lehrerSitzung();
+    menuEl = document.createElement('div');
+    menuEl.className = 'ts-wrap';
+    if (aktiv){
+      const klasse = ls.get(K.klasse);
+      menuEl.innerHTML = `<button class="ts-badge saving" type="button"><span class="ts-dot"></span>👤 <span class="ts-lang">${escH(ls.get(K.anzeige) || ls.get(K.code))}</span></button>
+        <div class="ts-dd"><div class="ts-info">Angemeldet als <b>${escH(ls.get(K.anzeige) || ls.get(K.code))}</b>${klasse ? ' (Klasse ' + escH(klasse) + ')' : ''}<br><span class="ts-status"></span></div>
+        <button type="button" data-a="ab">Abmelden</button></div>`;
+    } else if (L){
+      menuEl.innerHTML = `<button class="ts-badge" type="button">👤 <span class="ts-lang">${escH(L.name)}</span></button>
+        <div class="ts-dd"><div class="ts-info">Angemeldet als <b>${escH(L.name)}</b> (${L.rolle === 'admin' ? 'Admin' : 'Lehrkraft'})</div>
+        <a href="${BASE + CONFIG.verwaltung}">Verwaltung: Klassen und Auswertung</a>
+        <button type="button" data-a="ab">Abmelden</button></div>`;
+    } else {
+      menuEl.innerHTML = `<button class="ts-badge gast" type="button" title="Fortschritt wird nicht gespeichert. Klicken zum Anmelden."><span class="ts-dot"></span>Nicht angemeldet<span class="ts-lang">&nbsp;– Fortschritt wird nicht gespeichert</span></button>`;
+    }
+    host.insertBefore(menuEl, host.firstChild);
+    menuEl.querySelector('.ts-badge').addEventListener('click', () => {
+      if (!aktiv && !L){ showLogin(); return; }
+      menuEl.classList.toggle('open');
+    });
+    const ab = menuEl.querySelector('[data-a="ab"]');
+    if (ab) ab.addEventListener('click', abmelden);
+    document.addEventListener('click', e => { if (menuEl && !menuEl.contains(e.target)) menuEl.classList.remove('open'); });
+  }
+
+  function showLogin(msg){
+    if (document.querySelector('.ts-ov')) return;
+    const ov = document.createElement('div');
+    ov.className = 'ts-ov';
+    ov.innerHTML = `<div class="ts-box" role="dialog" aria-modal="true" aria-label="Anmelden">
+      <button class="ts-x" type="button" aria-label="Schließen und ohne Anmeldung nutzen" title="Ohne Anmeldung nutzen">×</button>
+      <form class="ts-f1" autocomplete="off">
+        <h2>Anmelden</h2>
+        <p>Gib deinen Zugangscode oder deinen Benutzernamen ein.</p>
+        <input class="ts-in" name="kennung" placeholder="Code oder Benutzername" autocapitalize="none" spellcheck="false" aria-label="Code oder Benutzername">
+        <button class="ts-btn" type="submit">Weiter</button>
+      </form>
+      <form class="ts-f2" hidden>
+        <h2>Passwort</h2>
+        <p>für <b class="ts-wer"></b></p>
+        <input class="ts-in" name="passwort" type="password" autocomplete="current-password" aria-label="Passwort">
+        <button class="ts-btn" type="submit">Anmelden</button>
+        <button class="ts-zurueck" type="button">Anderen Namen eingeben</button>
+      </form>
+      <div class="ts-err">${msg || ''}</div>
+      <button class="ts-gast" type="button">Seite ohne Anmeldung nutzen<small>Dein Fortschritt wird dann nur in diesem Browser gespeichert.</small></button>
+    </div>`;
+    document.body.appendChild(ov);
+    const f1 = ov.querySelector('.ts-f1'), f2 = ov.querySelector('.ts-f2'), err = ov.querySelector('.ts-err');
+    const k = f1.kennung, pw = f2.passwort;
+    setTimeout(() => k.focus(), 50);
+
+    const gast = () => { ss.set(SS.gast, '1'); ov.remove(); document.removeEventListener('keydown', esc); };
+    const esc = e => { if (e.key === 'Escape') gast(); };
+    document.addEventListener('keydown', esc);
+    ov.querySelector('.ts-x').addEventListener('click', gast);
+    ov.querySelector('.ts-gast').addEventListener('click', gast);
+    ov.querySelector('.ts-zurueck').addEventListener('click', () => { f2.hidden = true; f1.hidden = false; err.textContent = ''; k.select(); });
+
+    async function senden(btn, body){
+      btn.disabled = true; err.textContent = '';
+      try {
+        const r = await fetch(CONFIG.api + '/login', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)})
+          .then(async x => { const j = await x.json().catch(() => ({})); if (!x.ok) throw new Error(x.status === 429 ? 'Zu viele Versuche – bitte kurz warten.' : (j.message || 'Anmeldung fehlgeschlagen.')); return j; });
+        if (r.passwort){ f1.hidden = true; f2.hidden = false; ov.querySelector('.ts-wer').textContent = body.kennung; pw.value = ''; pw.focus(); return; }
+        if (r.rolle === 'schueler'){
+          ls.set(K.code, r.cred); ls.set(K.anzeige, r.anzeige); ls.set(K.klasse, r.klasse || '');
+          ss.del(SS.lehrer); ss.del('ts-reload');
+          aktiv = true;
+          await uebernehmen().catch(() => {});
+        } else {
+          ss.set(SS.lehrer, JSON.stringify({rolle: r.rolle, token: r.token, name: r.name}));
+        }
+        location.reload();
+      } catch (x){
+        err.textContent = x.message || 'Anmeldung fehlgeschlagen.';
+        (f2.hidden ? k : pw).select();
+      } finally { btn.disabled = false; }
+    }
+    f1.addEventListener('submit', e => {
+      e.preventDefault();
+      const v = k.value.trim();
+      if (!v){ err.textContent = 'Bitte gib deinen Code oder Benutzernamen ein.'; return; }
+      senden(f1.querySelector('.ts-btn'), {kennung: v});
+    });
+    f2.addEventListener('submit', e => {
+      e.preventDefault();
+      if (!pw.value){ err.textContent = 'Bitte gib dein Passwort ein.'; return; }
+      senden(f2.querySelector('.ts-btn'), {kennung: k.value.trim(), passwort: pw.value});
+    });
+  }
+
+  async function abmelden(){
+    if (lehrerSitzung()){ ss.del(SS.lehrer); ss.del(SS.gast); location.reload(); return; }
+    if (!confirm(`Abmelden?\n\nAngemeldet als ${ls.get(K.anzeige) || ls.get(K.code)}. Dein Fortschritt bleibt auf dem Server gespeichert.`)) return;
+    if (pushPending) await push();
+    await flush();
+    if (queue().length && !confirm('Einige gelöste Aufgaben konnten noch nicht übertragen werden (keine Verbindung). Trotzdem abmelden?')) return;
+    wipeLocal(); ss.del(SS.gast); ss.del('ts-sichtbar');
+    location.reload();
+  }
+  function abgelaufen(){
+    aktiv = false;
+    wipeLocal(); ss.del('ts-sichtbar');
+    showMenu();
+    showLogin('Deine Anmeldung ist nicht mehr gültig. Bitte melde dich neu an.');
+  }
+
+  /* ---------- Bedingte Menüpunkte (z. B. Tipp-Aufgabe nur mit aufgegebener Aufgabe) ---------- */
+  function zeigeTools(ids){
+    // Tool-ids bestehen nur aus a–z, 0–9 und - (katalog.js); andere werden ignoriert
+    ids.filter(id => /^[a-z0-9-]+$/.test(id)).forEach(id => document.querySelectorAll(`[data-tool="${id}"]`).forEach(el => el.classList.add('pf-sichtbar')));
+  }
+  async function sichtbar(){
+    try { zeigeTools(JSON.parse(ss.get('ts-sichtbar') || '[]')); } catch (e) {}   // Stand der letzten Seite, ohne Flackern
+    try { const r = await api('/sichtbar'); ss.set('ts-sichtbar', JSON.stringify(r.tools || [])); zeigeTools(r.tools || []); } catch (e) {}
+  }
+
+  /* ---------- Start ---------- */
+  async function start(){
+    if (!hosted || window.PF_EINZELDATEI) return;          // Einzeldatei: immer ohne Anmeldung, Fortschritt nur im Browser
+    try {
+      const h = await fetch('/api/health', {cache: 'no-store'});
+      if (!h.ok) return;                                    // kein PocketBase: Seite läuft nur lokal
+    } catch (e){ return; }
+    injectCss();
+    aktiv = !!ls.get(K.code);
+    showMenu();
+    if (!aktiv){
+      if (!lehrerSitzung() && !ss.get(SS.gast)) showLogin();
+      return;
+    }
+    sichtbar();
+    try { await pull(); flush(); }
+    catch (err){ if (err.status === 401) abgelaufen(); else setStatus('offline'); }
+  }
+
+  lastSnap = JSON.stringify(snapshot());   // Stand beim Laden der Seite (vor deren Initialisierung)
+  window.TrainerSync = {changed, event, anmelden: () => showLogin(), get aktiv(){ return aktiv; }, get lehrer(){ return lehrerSitzung(); }, abmelden};
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
+})();
+
+</script>
+<script>
+(function(){var t=null;try{t=localStorage.getItem('wenn-theme');}catch(e){}
+document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');})();
+</script>
+<style>
+:root{--bg:#e5e9f0;--panel:#f6f8fb;--panel2:#eceff4;--text:#2e3440;--muted:#5b6578;--border:#cdd3de;--accent:#5e81ac;--err:#a8434d;--ok:#5e8a45;
+  --mono:ui-monospace,Consolas,"Liberation Mono",monospace;
+  --av:#81a1c1;--uv:#b5cde0;--ek:#a3be8c;--fk:#ebcb8b;--plus:#4f7a3a;--minus:#a8434d;--plus-bg:#dfeccf;--minus-bg:#f3d9dc}
+[data-theme=dark]{--bg:#2e3440;--panel:#3b4252;--panel2:#434c5e;--text:#eceff4;--muted:#a9b3c4;--border:#4c566a;--accent:#88c0d0;--err:#d4848b;--ok:#a3be8c;
+  --av:#81a1c1;--uv:#b5cde0;--ek:#a3be8c;--fk:#ebcb8b;--plus:#b5d39a;--minus:#e0959b;--plus-bg:#3f4d3a;--minus-bg:#553c42}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;min-height:100vh}
+.wrap{width:min(1400px,100%);margin:0 auto;padding:14px 16px 24px}
+.bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:12px}
+.brand{font:800 20px var(--mono);letter-spacing:-.5px;margin-right:8px}
+.brand span{color:var(--accent-text,var(--accent))}
+.spacer{flex:1}
+.gruppe{display:inline-flex;gap:4px;align-items:center;flex-wrap:wrap}
+.hint,.muted{color:var(--muted)}
+.hint{font-size:13px;margin:0 2px 0 6px}
+.btn{font:600 14px system-ui,sans-serif;background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:7px 12px;cursor:pointer}
+.btn:hover{border-color:var(--accent)}
+.btn:disabled{opacity:.45;cursor:default;border-color:var(--border)}
+.btn.on,.btn.haupt{background:var(--accent);border-color:var(--accent);color:#fff}
+[data-theme=dark] .btn.on,[data-theme=dark] .btn.haupt{color:#2e3440}
+.btn.klein{font-size:13px;padding:4px 9px}
+.btn:focus-visible,.feld:focus{outline:2px solid var(--accent);outline-offset:1px}
+.feld{font:14px system-ui,sans-serif;background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 8px}
+.arbeit{display:grid;grid-template-columns:minmax(340px,480px) minmax(0,1fr);gap:12px;align-items:start}
+@media (max-width:980px){.arbeit{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:600px){
+  .builder{grid-template-columns:minmax(0,1fr)}.builder .an{padding:0}
+  .pz,.gz,.summe{padding:3px 5px;font-size:12.5px}.pz.ein{padding-left:10px}.pz small{display:block}
+  .tkonto{grid-template-columns:minmax(0,1fr)}.seite+.seite{border-left:none;border-top:2px solid var(--text)}
+}
+.karte{min-width:0;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px 16px}
+.karte h2{font-size:18px;margin:0 0 6px}
+.karte h3{font-size:15px;margin:14px 0 6px}
+.karte p{margin:0 0 8px}
+.tag{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;background:var(--accent);color:#fff;border-radius:6px;padding:1px 6px;vertical-align:2px}
+[data-theme=dark] .tag{color:#2e3440}
+.faelle{display:flex;flex-wrap:wrap;gap:6px}
+.fall{font:600 13px system-ui,sans-serif;background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:5px 9px;cursor:pointer;text-align:left}
+.fall:hover{border-color:var(--accent)}
+.fall.on{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.fall .n{color:var(--muted);font-weight:400}
+.fallkarte{border-top:1px solid var(--border);margin-top:14px;padding-top:4px}
+pre.bsatz{font:12.5px/1.5 var(--mono);background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin:6px 0 10px;overflow-x:auto}
+.nr{font-size:13px;color:var(--muted);margin:-2px 0 8px}
+.fb{border-radius:8px;padding:7px 10px;margin:8px 0 0;font-size:14px}
+.fb.ok{background:var(--plus-bg);color:var(--text)}
+.fb.falsch{background:var(--minus-bg);color:var(--text)}
+.teil{border-top:1px solid var(--border);padding-top:10px;margin-top:10px}
+.teil.zu{opacity:.5}
+.gf{background:var(--panel2);border-radius:8px;padding:8px 10px}
+.kopfzeile{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.knoepfe{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.builder{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:6px 8px;align-items:start}
+.builder .an{font:700 14px var(--mono);align-self:end;padding-bottom:10px}
+.spalte{display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.sk{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.bz{display:flex;flex-wrap:wrap;gap:4px;align-items:center;width:100%}
+.bz select{flex:1 1 120px;min-width:0}
+.bz input{flex:1 1 90px;min-width:0;text-align:right;font-family:var(--mono)}
+.x{background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:0 4px}
+.wahl{display:flex;flex-wrap:wrap;gap:6px}
+.antwort{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.antwort input{width:150px;text-align:right;font-family:var(--mono)}
+ol.verlauf{margin:0 0 8px;padding-left:22px;font-size:14px}
+/* Bilanz */
+.bkopf{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.bkopf h2{margin:0}
+.tkonto{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);border-top:2px solid var(--text)}
+.seite{display:flex;flex-direction:column;padding:4px 0}
+.seite+.seite{border-left:2px solid var(--text)}
+.sh{font-weight:800;text-align:center;padding:2px 0 6px;letter-spacing:.03em}
+.pz,.gz,.summe{display:flex;justify-content:space-between;gap:8px;padding:3px 10px;font-size:14px;align-items:baseline}
+.pz>span:first-child,.gz>span:first-child{min-width:0;overflow-wrap:break-word;hyphens:auto}
+.betr{flex:none}
+.pz small{color:var(--muted);font-family:var(--mono);font-size:11.5px;white-space:nowrap}
+.pz.ein{padding-left:22px}
+.gz{font-weight:700;margin-top:4px}
+.gz small{font-weight:400;color:var(--muted)}
+.betr{font-family:var(--mono);white-space:nowrap;text-align:right}
+.pz.plus,.gz.plus{background:var(--plus-bg)}
+.pz.minus,.gz.minus{background:var(--minus-bg)}
+.badge{display:block;font-size:12px;font-weight:700}
+.badge.plus{color:var(--plus)}
+.badge.minus{color:var(--minus)}
+.summe{margin-top:auto;border-top:1.5px solid var(--text);font-weight:800}
+.unten{display:flex;flex-wrap:wrap;gap:12px;margin-top:12px;align-items:flex-start}
+#bild{flex:1 1 380px;min-width:0}
+#bild svg{width:100%;height:auto;max-height:520px;display:block}
+#kz{flex:0 1 270px}
+.kz{background:var(--panel2);border-radius:10px;padding:10px 12px;font-size:14px}
+.kz h3{margin:0 0 6px;font-size:14px}
+.kz table{border-collapse:collapse;width:100%}
+.kz td{padding:2px 0}
+.kz td:last-child{text-align:right;font-family:var(--mono)}
+.gross{font:700 20px var(--mono);margin:0}
+.ja{color:var(--ok);font-weight:700}
+.nein{color:var(--err);font-weight:700}
+svg .seg{stroke:var(--panel);stroke-width:1.5}
+svg .seg.av{fill:var(--av)} svg .seg.uv{fill:var(--uv)} svg .seg.ek{fill:var(--ek)} svg .seg.fk{fill:var(--fk)}
+svg .seg.alt{fill-opacity:.72}
+svg .seg.geaendert{stroke:var(--text);stroke-width:2.5}
+svg .lbl{fill:#2e3440;font:600 13px system-ui,sans-serif;text-anchor:middle}
+svg .lbl.k{font-weight:400;font-size:11.5px}
+svg .kopf{fill:var(--text);font:800 14px system-ui,sans-serif;text-anchor:middle}
+svg .dz{font:700 12px var(--mono)}
+svg .dz.plus{fill:var(--plus)} svg .dz.minus{fill:var(--minus)}
+svg .linie{stroke:var(--muted);stroke-width:1.2;stroke-dasharray:5 4}
+svg .linie.vorher{stroke-dasharray:2 3}
+svg .lt{fill:var(--muted);font:11px system-ui,sans-serif}
+svg .grenze{stroke:var(--text);stroke-width:1.6;stroke-dasharray:7 4}
+svg .luecke{fill:var(--err);fill-opacity:.35;stroke:var(--err);stroke-width:1.5}
+svg .ltext{fill:var(--err);font:700 11.5px system-ui,sans-serif}
+svg .schr line{stroke:#2e3440;stroke-opacity:.28;stroke-width:3}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="bar">
+    <div class="brand">Bilanz<span>-Modell</span></div>
+    <span class="gruppe" role="group" aria-label="Modus">
+      <button class="btn" type="button" data-modus="erkunden">Erkunden</button>
+      <button class="btn" type="button" data-modus="ueben">Üben</button>
+    </span>
+    <span class="gruppe" role="group" aria-label="Einteilung der Bilanz"><span class="hint">Einteilung</span>
+      <button class="btn" type="button" data-ansicht="konten">Bilanzposten</button>
+      <button class="btn" type="button" data-ansicht="struktur">AV/UV · EK/FK</button>
+      <button class="btn" type="button" data-ansicht="fristen">Goldene Regel</button>
+    </span>
+    <span class="spacer"></span>
+    <button class="btn" type="button" id="reset">Bilanz zurücksetzen</button>
+  </div>
+  <div class="arbeit">
+    <section class="karte" id="links" aria-live="polite"></section>
+    <section class="karte">
+      <div class="bkopf"><h2>Bilanz der Saitgig e. K.</h2><span class="muted">in €</span></div>
+      <div id="tabelle"></div>
+      <div class="unten"><div id="bild"></div><div id="kz"></div></div>
+    </section>
+  </div>
+</div>
+<script>
+'use strict';
+/* ---------- Daten ---------- */
+const KONTEN = {
+  BVG:   {nr:'0530', name:'Betriebs- und Verwaltungsgebäude', g:'AV'},
+  MA:    {nr:'0700', name:'Maschinen und Anlagen', g:'AV'},
+  FP:    {nr:'0840', name:'Fuhrpark', g:'AV'},
+  BGA:   {nr:'0870', name:'Büromöbel und Geschäftsausstattung', g:'AV'},
+  R:     {nr:'2000', name:'Rohstoffe', g:'UV'},
+  FO:    {nr:'2400', name:'Forderungen aus Lieferungen und Leistungen', g:'UV'},
+  VORST: {nr:'2600', name:'Vorsteuer', g:'UV'},
+  BK:    {nr:'2800', name:'Bank', g:'UV'},
+  KA:    {nr:'2880', name:'Kasse', g:'UV'},
+  EK:    {nr:'3000', name:'Eigenkapital', g:'EK'},
+  KBKV:  {nr:'4200', name:'Kurzfristige Bankverbindlichkeiten', g:'FK'},
+  LBKV:  {nr:'4250', name:'Langfristige Bankverbindlichkeiten', g:'FK'},
+  VE:    {nr:'4400', name:'Verbindlichkeiten aus Lieferungen und Leistungen', g:'FK'}
+};
+const AKTIVA = ['BVG', 'MA', 'FP', 'BGA', 'R', 'FO', 'VORST', 'BK', 'KA'], PASSIVA = ['EK', 'LBKV', 'KBKV', 'VE'];
+const AV = AKTIVA.filter(k => KONTEN[k].g === 'AV'), UV = AKTIVA.filter(k => KONTEN[k].g === 'UV');
+const LANG = ['EK', 'LBKV'], KURZ = ['KBKV', 'VE'];
+const KONTOWAHL = Object.keys(KONTEN).sort((a, b) => KONTEN[a].nr.localeCompare(KONTEN[b].nr));
+// Bilanz zum 31.12. aus dem Selbstlernheft, Kapitel 2 (Summe 1.040.000,00 €)
+const START = {BVG:420000, MA:260000, FP:60000, BGA:40000, R:95000, FO:110000, VORST:0, BK:48000, KA:7000,
+  EK:312000, LBKV:520000, KBKV:98000, VE:110000};
+const UST = 0.19;
+const ART = {
+  APM:  {name:'Aktiv-Passiv-Mehrung', text:'Ein Posten auf der Aktivseite und ein Posten auf der Passivseite nehmen um denselben Betrag zu. Die Bilanzsumme steigt.'},
+  APMI: {name:'Aktiv-Passiv-Minderung', text:'Ein Posten auf der Aktivseite und ein Posten auf der Passivseite nehmen um denselben Betrag ab. Die Bilanzsumme sinkt.'},
+  AT:   {name:'Aktivtausch', text:'Nur die Aktivseite ändert sich: Was ein Posten zunimmt, nimmt ein anderer ab. Die Bilanzsumme bleibt gleich.'},
+  PT:   {name:'Passivtausch', text:'Nur die Passivseite ändert sich: Was ein Posten zunimmt, nimmt ein anderer ab. Die Bilanzsumme bleibt gleich.'}
+};
+const ART_FOLGE = ['APM', 'APMI', 'AT', 'PT'];
+// Betrag = Nettobetrag (bei ust) bzw. Betrag; von/bis/schritt für Übungen, std für Erkunden
+const FAELLE = [
+  {id:'darlehen', art:'APM', titel:'Darlehen aufnehmen', von:40000, bis:120000, schritt:10000, std:80000,
+    text:b => `Die Hausbank zahlt Saitgig ein Darlehen über ${eur(b)} mit einer Laufzeit von 8 Jahren auf das Bankkonto aus.`,
+    soll:[['BK', 1]], haben:[['LBKV', 1]]},
+  {id:'kredit', art:'APM', titel:'Kurzfristigen Kredit aufnehmen', von:10000, bis:40000, schritt:5000, std:20000,
+    text:b => `Für einen Zahlungsengpass gewährt die Bank Saitgig einen Kredit über ${eur(b)} mit einer Laufzeit von 6 Monaten. Der Betrag wird dem Bankkonto gutgeschrieben.`,
+    soll:[['BK', 1]], haben:[['KBKV', 1]]},
+  {id:'einlage', art:'APM', titel:'Einlage des Inhabers', von:10000, bis:50000, schritt:5000, std:20000,
+    text:b => `Jakob Seite überweist ${eur(b)} von seinem privaten Sparkonto auf das Geschäftskonto von Saitgig.`,
+    soll:[['BK', 1]], haben:[['EK', 1]]},
+  {id:'maschine-ziel', art:'APM', titel:'Maschine auf Ziel kaufen', ust:true, von:20000, bis:60000, schritt:5000, std:40000,
+    text:b => `Saitgig kauft eine Lackieranlage für ${eur(b)} netto zuzüglich 19 % Umsatzsteuer auf Ziel.`,
+    soll:[['MA', 1], ['VORST', UST]], haben:[['VE', 1 + UST]]},
+  {id:'moebel-ziel', art:'APM', titel:'Büromöbel auf Ziel kaufen', ust:true, von:3000, bis:12000, schritt:1000, std:6000,
+    text:b => `Für das Büro kauft Saitgig Schreibtische und Schränke für ${eur(b)} netto zuzüglich 19 % Umsatzsteuer auf Ziel.`,
+    soll:[['BGA', 1], ['VORST', UST]], haben:[['VE', 1 + UST]]},
+  {id:'halle-darlehen', art:'APM', titel:'Werkhalle mit Darlehen kaufen', von:100000, bis:250000, schritt:25000, std:150000,
+    text:b => `Saitgig kauft eine Werkhalle für ${eur(b)} (umsatzsteuerfrei). Die Bank gewährt dafür ein Darlehen mit 20 Jahren Laufzeit und überweist den Kaufpreis direkt an den Verkäufer.`,
+    soll:[['BVG', 1]], haben:[['LBKV', 1]]},
+  {id:'fraese-kredit', art:'APM', titel:'Maschine mit kurzfristigem Kredit kaufen', ust:true, von:40000, bis:100000, schritt:10000, std:80000,
+    text:b => `Saitgig kauft eine CNC-Fräse für ${eur(b)} netto zuzüglich 19 % Umsatzsteuer. Die Bank gewährt dafür einen Kredit mit 6 Monaten Laufzeit und überweist den Rechnungsbetrag direkt an den Lieferer.`,
+    soll:[['MA', 1], ['VORST', UST]], haben:[['KBKV', 1 + UST]]},
+  {id:'ve-bank', art:'APMI', titel:'Liefererrechnung bezahlen', von:5000, bis:30000, schritt:5000, std:10000,
+    text:b => `Saitgig begleicht eine Liefererrechnung über ${eur(b)} per Banküberweisung.`,
+    soll:[['VE', 1]], haben:[['BK', 1]]},
+  {id:'tilgung', art:'APMI', titel:'Darlehen tilgen', von:10000, bis:40000, schritt:5000, std:20000,
+    text:b => `Saitgig tilgt ${eur(b)} des langfristigen Bankdarlehens per Banküberweisung.`,
+    soll:[['LBKV', 1]], haben:[['BK', 1]]},
+  {id:'kredit-zurueck', art:'APMI', titel:'Kurzfristigen Kredit zurückzahlen', von:10000, bis:40000, schritt:5000, std:20000,
+    text:b => `Saitgig zahlt einen kurzfristigen Bankkredit über ${eur(b)} vom Bankkonto zurück.`,
+    soll:[['KBKV', 1]], haben:[['BK', 1]]},
+  {id:'abhebung', art:'AT', titel:'Bargeld abheben', von:500, bis:5000, schritt:500, std:2000,
+    text:b => `Saitgig hebt ${eur(b)} vom Bankkonto ab und legt das Geld in die Kasse.`,
+    soll:[['KA', 1]], haben:[['BK', 1]]},
+  {id:'bareinzahlung', art:'AT', titel:'Bargeld einzahlen', von:500, bis:5000, schritt:500, std:3000,
+    text:b => `Saitgig zahlt ${eur(b)} aus der Kasse auf das Bankkonto ein.`,
+    soll:[['BK', 1]], haben:[['KA', 1]]},
+  {id:'kunde-zahlt', art:'AT', titel:'Kunde zahlt Rechnung', von:5000, bis:30000, schritt:5000, std:15000,
+    text:b => `Ein Musikhaus überweist Saitgig den Betrag einer offenen Rechnung über ${eur(b)}.`,
+    soll:[['BK', 1]], haben:[['FO', 1]]},
+  {id:'maschine-bank', art:'AT', titel:'Maschine per Bank kaufen', ust:true, von:5000, bis:30000, schritt:5000, std:15000,
+    text:b => `Saitgig kauft eine Schleifmaschine für ${eur(b)} netto zuzüglich 19 % Umsatzsteuer und bezahlt sofort per Banküberweisung.`,
+    soll:[['MA', 1], ['VORST', UST]], haben:[['BK', 1 + UST]]},
+  {id:'umschuldung', art:'PT', titel:'Kredit in Darlehen umwandeln', von:20000, bis:60000, schritt:10000, std:40000,
+    text:b => `Die Bank wandelt einen kurzfristigen Kredit von Saitgig über ${eur(b)} in ein Darlehen mit 5 Jahren Laufzeit um.`,
+    soll:[['KBKV', 1]], haben:[['LBKV', 1]]},
+  {id:'ve-kredit', art:'PT', titel:'Liefererschuld mit Kredit bezahlen', von:5000, bis:30000, schritt:5000, std:15000,
+    text:b => `Saitgig begleicht eine Liefererrechnung über ${eur(b)}. Die Bank überweist den Betrag direkt an den Lieferer und gewährt Saitgig dafür einen Kredit mit 6 Monaten Laufzeit.`,
+    soll:[['VE', 1]], haben:[['KBKV', 1]]}
+];
+const ANSICHTEN = ['konten', 'struktur', 'fristen'];
+
+/* ---------- Helfer ---------- */
+const KEY = 'bilanz-';
+const ld = k => { try { return localStorage.getItem(KEY + k); } catch (e) { return null; } };
+const ldJ = (k, d) => { try { const x = JSON.parse(ld(k)); return x == null ? d : x; } catch (e) { return d; } };
+function st(k, v){ try { localStorage.setItem(KEY + k, typeof v === 'string' ? v : JSON.stringify(v)); } catch (e) {} if (window.TrainerSync) TrainerSync.changed(); }
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;'}[c]));
+const r2 = n => Math.round(n * 100) / 100;
+const zahl = n => r2(n).toLocaleString('de-DE', {minimumFractionDigits:2, maximumFractionDigits:2});
+const eur = n => zahl(n) + ' €';
+const kurz = n => Math.round(n).toLocaleString('de-DE') + ' €';
+const proz = n => n.toLocaleString('de-DE', {minimumFractionDigits:1, maximumFractionDigits:1}) + ' %';
+const aktiv = k => AKTIVA.includes(k);
+const fall = id => FAELLE.find(f => f.id === id) || FAELLE[0];
+const summe = (w, ks) => r2(ks.reduce((s, k) => s + (w[k] || 0), 0));
+const konto = k => KONTEN[k].nr + ' ' + k;
+function parseBetrag(s){
+  s = String(s).replace(/€|\s/g, '');
+  if (!s) return NaN;
+  if (s.includes(',')) s = s.replace(/\./g, '').replace(',', '.');
+  else if (/^\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, '');
+  return /^\d+(\.\d+)?$/.test(s) ? +s : NaN;
+}
+function buchung(f, b){ const z = ([k, fa]) => ({k, b:r2(b * fa)}); return {soll:f.soll.map(z), haben:f.haben.map(z)}; }
+function deltas(bs){
+  const d = {}, add = (k, v) => { d[k] = r2((d[k] || 0) + v); };
+  bs.soll.forEach(x => add(x.k, aktiv(x.k) ? x.b : -x.b));
+  bs.haben.forEach(x => add(x.k, aktiv(x.k) ? -x.b : x.b));
+  return d;
+}
+const fehlend = (w, d) => Object.keys(d).filter(k => w[k] + d[k] < -0.005);
+function anwenden(w, d, f = 1){ const n = Object.assign({}, w); for (const k in d) n[k] = r2(n[k] + f * d[k]); return n; }
+// Buchungssatz als Text: Soll-Zeilen, „an“ auf der letzten Soll-Zeile, weitere Haben-Konten bündig darunter
+function bsText(bs){
+  const w1 = Math.max(...bs.soll.map(x => konto(x.k).length)), b1 = Math.max(...bs.soll.map(x => eur(x.b).length));
+  const w2 = Math.max(...bs.haben.map(x => konto(x.k).length)), b2 = Math.max(...bs.haben.map(x => eur(x.b).length));
+  const z = (x, w, b) => konto(x.k).padEnd(w) + '  ' + eur(x.b).padStart(b);
+  const zeilen = bs.soll.map((x, i) => z(x, w1, b1) + (i === bs.soll.length - 1 ? '   an   ' + z(bs.haben[0], w2, b2) : ''));
+  bs.haben.slice(1).forEach(x => zeilen.push(' '.repeat(w1 + b1 + 10) + z(x, w2, b2)));
+  return zeilen.join('\n');
+}
+function nebenrechnung(f, b){
+  if (!f.ust) return '';
+  return `<div class="nr">Nebenrechnung: Vorsteuer ${eur(b)} · 19 % = ${eur(b * UST)}; Rechnungsbetrag ${eur(b)} + ${eur(b * UST)} = ${eur(b * (1 + UST))}</div>`;
+}
+const fbHTML = fb => fb ? `<div class="fb ${fb.ok ? 'ok' : 'falsch'}">${fb.t}</div>` : '';
+
+/* ---------- Zustand ---------- */
+let modus = ld('modus') === 'ueben' ? 'ueben' : 'erkunden';
+let ansicht = ANSICHTEN.includes(ld('ansicht')) ? ld('ansicht') : 'struktur';
+let S = ldJ('stand', null);
+if (!S || !S.werte || !Array.isArray(S.verlauf)) S = {werte:Object.assign({}, START), verlauf:[]};
+for (const k in START) if (typeof S.werte[k] !== 'number') S.werte[k] = START[k];
+let geloest = ldJ('geloest', {});
+let A = ldJ('aufgabe', null);
+if (A && !FAELLE.some(f => f.id === A.id)) A = null;
+let sel = FAELLE.some(f => f.id === ld('sel')) ? ld('sel') : 'darlehen', selBetrag = null;
+let mark = null, animVon = null, erklaert = null;   // letzte Änderung (Hervorhebung), Startwerte der Animation, Erklärung in Erkunden
+
+function buchen(id, b, d){
+  const vorher = S.werte;
+  S.werte = anwenden(S.werte, d); S.verlauf.push({id, b, d});
+  mark = {d, vorher:summe(vorher, AKTIVA)}; animVon = vorher;
+  st('stand', S);
+}
+function zuruecknehmen(){
+  const v = S.verlauf.pop(); if (!v) return;
+  const vorher = S.werte, neg = {};
+  for (const k in v.d) neg[k] = -v.d[k];
+  S.werte = anwenden(S.werte, v.d, -1);
+  mark = {d:neg, vorher:summe(vorher, AKTIVA)}; animVon = vorher; erklaert = null;
+  st('stand', S);
+}
+
+/* ---------- Erkunden ---------- */
+function erklaerung(d, s0, s1){
+  const z = Object.keys(d).filter(k => d[k]).map(k => `<li>${KONTEN[k].name} <span class="muted">(${aktiv(k) ? 'Aktiva' : 'Passiva'})</span>: <b>${d[k] > 0 ? '+' : '−'} ${eur(Math.abs(d[k]))}</b></li>`);
+  return `<ul>${z.join('')}</ul><p>Bilanzsumme: ${eur(s0)} → ${eur(s1)}${s0 === s1 ? ' (unverändert)' : ''}</p>`;
+}
+function htmlErkunden(){
+  let h = '<h2>Geschäftsfälle</h2><p class="muted">Wähle einen Geschäftsfall, lies den Buchungssatz und buche ihn. Rechts siehst du, wie sich die Bilanz verändert.</p>';
+  ART_FOLGE.forEach(a => {
+    h += `<h3>${ART[a].name}${a === 'APM' ? ' <span class="tag">Schwerpunkt</span>' : ''}</h3><div class="faelle">`
+      + FAELLE.filter(f => f.art === a).map(f => `<button class="fall${f.id === sel ? ' on' : ''}" type="button" data-fall="${f.id}">${esc(f.titel)}</button>`).join('') + '</div>';
+  });
+  const f = fall(sel), b = selBetrag || f.std, bs = buchung(f, b), d = deltas(bs), fehlt = fehlend(S.werte, d);
+  h += `<div class="fallkarte"><h3>${esc(f.titel)}</h3><p>${f.text(b)}</p>
+    <p><label class="muted">Betrag${f.ust ? ' (netto)' : ''} in € <input class="feld" id="selBetrag" type="number" min="${f.schritt}" step="${f.schritt}" value="${b}" style="width:130px"></label></p>
+    ${nebenrechnung(f, b)}<pre class="bsatz" aria-label="Buchungssatz">${esc(bsText(bs))}</pre>
+    <p><b>${ART[f.art].name}:</b> ${ART[f.art].text}</p>
+    <div class="knoepfe"><button class="btn haupt" type="button" id="buchen"${fehlt.length ? ' disabled' : ''}>Buchen</button></div>
+    ${fehlt.length ? `<div class="fb falsch">Das geht nicht: Der Bestand bei ${fehlt.map(k => KONTEN[k].name).join(', ')} reicht nicht aus.</div>` : ''}
+    ${erklaert ? `<div class="fb ok"><b>Gebucht.</b> So hat sich die Bilanz verändert:${erklaert}</div>` : ''}</div>`;
+  if (S.verlauf.length) h += `<h3>Gebuchte Geschäftsfälle</h3><ol class="verlauf">${S.verlauf.map(v => `<li>${esc(fall(v.id).titel)} · ${eur(v.b)}</li>`).join('')}</ol>
+    <button class="btn" type="button" id="undo">Letzte Buchung zurücknehmen</button>`;
+  return h;
+}
+
+/* ---------- Üben ---------- */
+function neueAufgabe(nr){
+  const gewicht = FAELLE.map(f => f.art === 'APM' ? 3 : 1), ges = gewicht.reduce((a, b) => a + b, 0);
+  for (let v = 0; v < 60; v++){
+    let r = Math.random() * ges, i = 0;
+    while (r >= gewicht[i]) r -= gewicht[i++];
+    const f = FAELLE[i];
+    if (A && f.id === A.id && v < 50) continue;
+    const b = f.von + f.schritt * Math.floor(Math.random() * (Math.floor((f.bis - f.von) / f.schritt) + 1));
+    if (fehlend(S.werte, deltas(buchung(f, b))).length) continue;
+    A = {id:f.id, b, teil:'a', soll:[{k:'', b:''}], haben:[{k:'', b:''}], fb:{}, nr:nr || 1};
+    st('aufgabe', A); return;
+  }
+  S = {werte:Object.assign({}, START), verlauf:[]}; st('stand', S); neueAufgabe(nr);
+}
+function builderHTML(){
+  const opt = k => '<option value="">Konto …</option>' + KONTOWAHL.map(x => `<option value="${x}"${x === k ? ' selected' : ''}>${konto(x)}</option>`).join('');
+  const zeile = (seite, x, i) => `<div class="bz"><select class="feld" data-seite="${seite}" data-i="${i}" data-f="k" aria-label="${seite === 'soll' ? 'Soll' : 'Haben'}-Konto ${i + 1}">${opt(x.k)}</select>`
+    + `<input class="feld" data-seite="${seite}" data-i="${i}" data-f="b" value="${esc(x.b)}" placeholder="Betrag" inputmode="decimal" autocomplete="off" aria-label="Betrag in €">`
+    + (A[seite].length > 1 ? `<button class="x" type="button" data-weg="${seite}" data-i="${i}" title="Zeile entfernen" aria-label="Zeile entfernen">×</button>` : '') + '</div>';
+  const spalte = (seite, t) => `<div class="spalte"><div class="sk">${t}</div>${A[seite].map((x, i) => zeile(seite, x, i)).join('')}`
+    + `<button class="btn klein" type="button" data-plus="${seite}">+ Konto</button></div>`;
+  return `<div class="builder">${spalte('soll', 'Soll')}<div class="an">an</div>${spalte('haben', 'Haben')}</div>`;
+}
+const AUFGABE_C = {
+  konten:'Gib die Bilanzsumme nach der Buchung an.',
+  struktur:'Berechne die Eigenkapitalquote nach der Buchung (auf eine Nachkommastelle gerundet).',
+  fristen:'Prüfe, ob Saitgig die Goldene Finanzierungsregel nach der Buchung einhält.'
+};
+function htmlUeben(){
+  if (!A) neueAufgabe(1);
+  const f = fall(A.id), bs = buchung(f, A.b);
+  let h = `<div class="kopfzeile"><h2>Aufgabe ${A.nr}</h2><span class="muted">${Object.values(geloest).reduce((a, b) => a + b, 0)} gelöst</span></div>
+    <p class="gf"><b>Geschäftsfall:</b> ${f.text(A.b)}</p>`;
+  h += `<div class="teil"><p><b>a)</b> Bilde den Buchungssatz.</p>`;
+  if (A.teil === 'a') h += builderHTML() + `<div class="knoepfe"><button class="btn haupt" type="button" id="pruefenA">Prüfen</button><button class="btn" type="button" id="andere">Andere Aufgabe</button></div>` + fbHTML(A.fb.a);
+  else h += nebenrechnung(f, A.b) + `<pre class="bsatz">${esc(bsText(bs))}</pre>` + fbHTML(A.fb.a);
+  h += '</div><div class="teil' + (A.teil === 'a' ? ' zu' : '') + '"><p><b>b)</b> Gib die Art der Bilanzveränderung an.</p>';
+  if (A.teil === 'b') h += `<div class="wahl">${ART_FOLGE.map(a => `<button class="btn" type="button" data-art="${a}">${ART[a].name}</button>`).join('')}</div>` + fbHTML(A.fb.b);
+  else if (A.teil !== 'a') h += `<div class="fb ok">✓ <b>${ART[f.art].name}:</b> ${ART[f.art].text}</div>`;
+  h += '</div><div class="teil' + (A.teil === 'a' || A.teil === 'b' ? ' zu' : '') + `"><p><b>c)</b> ${A.teil === 'fertig' ? A.cFrage : AUFGABE_C[ansicht]}</p>`;
+  if (A.teil === 'c'){
+    h += ansicht === 'fristen'
+      ? `<div class="wahl"><button class="btn" type="button" data-gr="ja">Wird eingehalten</button><button class="btn" type="button" data-gr="nein">Wird nicht eingehalten</button></div>`
+      : `<div class="antwort"><input class="feld" id="antwortC" inputmode="decimal" autocomplete="off" aria-label="Antwort"><span>${ansicht === 'konten' ? '€' : '%'}</span><button class="btn haupt" type="button" id="pruefenC">Prüfen</button></div>`;
+    h += fbHTML(A.fb.c);
+  } else if (A.teil === 'fertig') h += fbHTML(A.fb.c) + `<div class="knoepfe"><button class="btn haupt" type="button" id="weiter">Nächste Aufgabe</button></div>`;
+  return h + '</div>';
+}
+function pruefeA(){
+  const f = fall(A.id), bs = buchung(f, A.b);
+  const ein = s => A[s].filter(x => x.k || String(x.b).trim()).map(x => ({k:x.k, b:parseBetrag(x.b)}));
+  const s = ein('soll'), hb = ein('haben'), alle = [...s, ...hb], ks = l => l.map(x => x.k).sort().join(' ');
+  let fb = null;
+  if (!s.length || !hb.length) fb = 'Trage mindestens ein Soll-Konto und ein Haben-Konto ein.';
+  else if (alle.some(x => !x.k)) fb = 'Wähle zu jedem Betrag ein Konto aus.';
+  else if (alle.some(x => isNaN(x.b))) fb = 'Trage zu jedem Konto einen Betrag ein, z. B. 12.500,00.';
+  else if (new Set(alle.map(x => x.k)).size !== alle.length) fb = 'Jedes Konto darf nur einmal im Buchungssatz stehen.';
+  else if (ks(s) === ks(bs.haben) && ks(hb) === ks(bs.soll)) fb = 'Soll und Haben sind vertauscht. Überlege bei jedem Konto: Nimmt der Posten zu oder ab – und steht er auf der Aktiv- oder der Passivseite?';
+  else if (ks(s) !== ks(bs.soll) || ks(hb) !== ks(bs.haben)){
+    const n = bs.soll.length + bs.haben.length;
+    fb = 'Die Konten stimmen noch nicht. ' + (f.ust && !alle.some(x => x.k === 'VORST') ? 'Denke an die Vorsteuer.'
+      : alle.length > n ? 'Es sind zu viele Konten.' : alle.length < n ? 'Es fehlt ein Konto.'
+      : 'Überlege, welche Bilanzposten sich durch den Geschäftsfall verändern und auf welcher Seite sie stehen.');
+  } else {
+    const soll = l => (x => l.find(y => y.k === x.k).b);
+    const falsch = [...s.filter(x => Math.abs(x.b - soll(bs.soll)(x)) > 0.005), ...hb.filter(x => Math.abs(x.b - soll(bs.haben)(x)) > 0.005)];
+    if (falsch.length) fb = `Die Konten stimmen. Prüfe den Betrag bei ${falsch.map(x => konto(x.k)).join(', ')}.` + (f.ust ? ' Die Vorsteuer beträgt 19 % des Nettobetrags.' : '');
+  }
+  if (fb){ A.fb.a = {ok:false, t:fb}; st('aufgabe', A); render(); return; }
+  const d = deltas(bs);
+  if (fehlend(S.werte, d).length){ neueAufgabe(A.nr); render(); return; }
+  buchen(f.id, A.b, d);
+  A.teil = 'b'; A.fb.a = {ok:true, t:'Richtig! Rechts siehst du, wie sich die Bilanz durch die Buchung verändert hat.'};
+  st('aufgabe', A); render();
+}
+function pruefeB(a){
+  const f = fall(A.id);
+  if (a !== f.art){ A.fb.b = {ok:false, t:'Noch nicht. Schau rechts in die Bilanz: Welche Seiten haben sich verändert, und hat sich die Bilanzsumme verändert?'}; st('aufgabe', A); render(); return; }
+  A.teil = 'c'; A.fb.b = null; st('aufgabe', A); render();
+}
+function pruefeC(antwort){
+  const w = S.werte, t = summe(w, AKTIVA), lang = summe(w, LANG), av = summe(w, AV);
+  let ok, loes;
+  if (ansicht === 'konten'){
+    const x = parseBetrag(antwort); ok = Math.abs(x - t) < 0.005;
+    loes = `Bilanzsumme nach der Buchung: ${eur(t)} (vorher ${eur(mark ? mark.vorher : t)}).`;
+    if (!ok) return falschC(isNaN(x) ? 'Gib einen Betrag ein, z. B. 1.040.000,00.' : 'Das stimmt noch nicht. Die Bilanzsumme ist die Summe aller Aktivposten (oder aller Passivposten).');
+  } else if (ansicht === 'struktur'){
+    const q = w.EK * 100 / t, x = parseBetrag(String(antwort).replace('%', '')); ok = Math.abs(x - Math.round(q * 10) / 10) < 0.051;
+    loes = `Eigenkapitalquote = ${eur(w.EK)} · 100 : ${eur(t)} = ${proz(q)}`;
+    if (!ok) return falschC(isNaN(x) ? 'Gib die Eigenkapitalquote als Zahl ein, z. B. 30,0.' : 'Das stimmt noch nicht. Eigenkapitalquote in % = Eigenkapital · 100 : Gesamtkapital. Das Gesamtkapital ist die Bilanzsumme nach der Buchung.');
+  } else {
+    const ein = av <= lang + 0.005; ok = (antwort === 'ja') === ein;
+    loes = `Anlagevermögen ${eur(av)} ${ein ? '≤' : '>'} langfristiges Kapital (Eigenkapital + langfristiges Fremdkapital) ${eur(lang)}. `
+      + (ein ? 'Die Goldene Finanzierungsregel wird eingehalten.' : 'Ein Teil des Anlagevermögens ist kurzfristig finanziert – die Goldene Finanzierungsregel wird nicht eingehalten.');
+    if (!ok) return falschC('Noch nicht. Vergleiche das Anlagevermögen mit dem langfristigen Kapital (Eigenkapital + langfristiges Fremdkapital).');
+  }
+  const f = fall(A.id), erstmals = !geloest[f.id];
+  geloest[f.id] = (geloest[f.id] || 0) + 1; st('geloest', geloest);
+  A.teil = 'fertig'; A.cFrage = AUFGABE_C[ansicht]; A.fb.c = {ok:true, t:'✓ ' + loes}; st('aufgabe', A);
+  if (window.TrainerSync) TrainerSync.event({modus:'uebungen', stufe:ANSICHTEN.indexOf(ansicht) + 1, aufgabe:f.id, titel:f.titel, gesamt:FAELLE.length, erstmals});
+  render();
+}
+function falschC(t){ A.fb.c = {ok:false, t}; st('aufgabe', A); render(); }
+// Während b) und c) bleiben Kennzahlen (und bei „Bilanzposten“ die Bilanzsumme) verdeckt
+const verdeckt = () => modus === 'ueben' && A && (A.teil === 'b' || A.teil === 'c');
+
+/* ---------- Bilanz: Tabelle ---------- */
+function gruppen(){
+  if (ansicht === 'konten') return {A:[{k:AKTIVA}], P:[{k:PASSIVA}]};
+  if (ansicht === 'struktur') return {A:[{t:'Anlagevermögen', k:AV}, {t:'Umlaufvermögen', k:UV}], P:[{t:'Eigenkapital', k:['EK']}, {t:'Fremdkapital', k:['LBKV', 'KBKV', 'VE']}]};
+  return {A:[{t:'Anlagevermögen', u:'langfristig gebunden', k:AV}, {t:'Umlaufvermögen', u:'kurzfristig gebunden', k:UV}],
+    P:[{t:'Langfristiges Kapital', u:'EK + langfristiges FK', k:LANG}, {t:'Kurzfristiges Kapital', u:'kurzfristiges FK', k:KURZ}]};
+}
+const badge = v => v ? `<span class="badge ${v > 0 ? 'plus' : 'minus'}">${v > 0 ? '+' : '−'} ${zahl(Math.abs(v))}</span>` : '';
+const pm = v => v > 0 ? ' plus' : v < 0 ? ' minus' : '';
+function seiteHTML(titel, grs, ks){
+  const w = S.werte, d = mark ? mark.d : {};
+  let h = `<div class="seite"><div class="sh">${titel}</div>`;
+  grs.forEach(g => {
+    if (g.t){ const dz = r2(g.k.reduce((s, k) => s + (d[k] || 0), 0)); h += `<div class="gz${pm(dz)}"><span>${g.t}${g.u ? ` <small>(${g.u})</small>` : ''}</span><span class="betr">${zahl(summe(w, g.k))}${badge(dz)}</span></div>`; }
+    g.k.forEach(k => {
+      if (k === 'VORST' && !w[k] && !d[k]) return;
+      h += `<div class="pz${pm(d[k] || 0)}${g.t ? ' ein' : ''}"><span>${KONTEN[k].name} <small>${konto(k)}</small></span><span class="betr">${zahl(w[k])}${badge(d[k] || 0)}</span></div>`;
+    });
+  });
+  const t = summe(w, ks), dt = mark ? r2(t - mark.vorher) : 0, zu = verdeckt() && ansicht === 'konten';
+  return h + `<div class="summe"><span>Summe</span><span class="betr">${zu ? '?' : zahl(t)}${zu ? '' : badge(dt)}</span></div></div>`;
+}
+function kzHTML(){
+  if (verdeckt()) return '<div class="kz"><p class="muted" style="margin:0">Die Kennzahlen erscheinen, wenn du die Aufgabe gelöst hast.</p></div>';
+  const w = S.werte, t = summe(w, AKTIVA), t0 = summe(START, AKTIVA);
+  if (ansicht === 'konten') return `<div class="kz"><h3>Bilanzsumme</h3><p class="gross">${eur(t)}</p><p class="muted" style="margin:4px 0 0">zu Beginn: ${eur(t0)}</p></div>`;
+  if (ansicht === 'struktur'){
+    const z = (n, v) => `<tr><td>${n}</td><td>${eur(v)}</td></tr>`;
+    return `<div class="kz"><h3>Aufbau der Bilanz</h3><table>${z('Anlagevermögen', summe(w, AV))}${z('Umlaufvermögen', summe(w, UV))}${z('Eigenkapital', w.EK)}${z('Fremdkapital', summe(w, ['LBKV', 'KBKV', 'VE']))}${z('Bilanzsumme', t)}</table>
+      <h3 style="margin-top:10px">Eigenkapitalquote</h3><p class="gross">${proz(w.EK * 100 / t)}</p><p class="muted" style="margin:4px 0 0">Eigenkapital · 100 : Gesamtkapital<br>Branchendurchschnitt Musikinstrumentenbau: 38 %</p></div>`;
+  }
+  const av = summe(w, AV), lang = summe(w, LANG), uv = summe(w, UV), kfk = summe(w, KURZ), ok1 = av <= lang + 0.005, ok2 = uv + 0.005 >= kfk;
+  const j = ok => ok ? '<span class="ja">✓</span>' : '<span class="nein">✗</span>';
+  return `<div class="kz"><h3>Goldene Finanzierungsregel</h3>
+    <p>${j(ok1)} Anlagevermögen ≤ langfristiges Kapital<br><span class="betr">${kurz(av)} ${ok1 ? '≤' : '>'} ${kurz(lang)}</span></p>
+    <p>${j(ok2)} Umlaufvermögen ≥ kurzfristiges Kapital<br><span class="betr">${kurz(uv)} ${ok2 ? '≥' : '<'} ${kurz(kfk)}</span></p>
+    <p style="margin:0"><b>${ok1 && ok2 ? 'Die Regel wird eingehalten.' : 'Die Regel wird nicht eingehalten – es drohen Liquiditätsschwierigkeiten.'}</b></p></div>`;
+}
+
+/* ---------- Bilanz: Bild (maßstäblich) ---------- */
+const BW = 170, XA = 110, XP = 300, TOP = 30, HMAX = 400;
+function segmente(){
+  if (ansicht === 'konten') return {A:AKTIVA.map(k => ({ks:[k], t:k, c:KONTEN[k].g.toLowerCase()})), P:PASSIVA.map(k => ({ks:[k], t:k, c:KONTEN[k].g.toLowerCase()})), kurzT:true};
+  if (ansicht === 'struktur') return {A:[{ks:AV, t:'Anlagevermögen', c:'av'}, {ks:UV, t:'Umlaufvermögen', c:'uv'}],
+    P:[{ks:['EK'], t:'Eigenkapital', c:'ek'}, {ks:['LBKV', 'KBKV', 'VE'], t:'Fremdkapital', c:'fk'}]};
+  return {A:[{ks:AV, t:'Anlagevermögen', c:'av', lang:1}, {ks:UV, t:'Umlaufvermögen', c:'uv'}],
+    P:[{ks:['EK'], t:'Eigenkapital', c:'ek', lang:1}, {ks:['LBKV'], t:'langfristiges FK', c:'fk', lang:1}, {ks:KURZ, t:'kurzfristiges FK', c:'fk'}]};
+}
+function bildSVG(w){
+  const d = mark ? mark.d : {}, t = summe(w, AKTIVA), sc = HMAX / Math.max(1500000, t * 1.03), seg = segmente(), zu = verdeckt();
+  let h = `<svg viewBox="0 0 580 ${TOP + HMAX + 16}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Bilanz als Bild, Höhe entspricht dem Betrag">
+    <defs><pattern id="schr" class="schr" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="9"/></pattern></defs>
+    <text class="kopf" x="${XA + BW / 2}" y="18">Aktiva</text><text class="kopf" x="${XP + BW / 2}" y="18">Passiva</text>`;
+  const spalte = (list, x, links) => {
+    let y = TOP;
+    list.forEach((s, i) => {
+      const v = summe(w, s.ks), hh = Math.max(0, v * sc), dz = r2(s.ks.reduce((a, k) => a + (d[k] || 0), 0));
+      if (hh < 0.3 && !dz) return;
+      h += `<rect class="seg ${s.c}${seg.kurzT && i % 2 ? ' alt' : ''}${dz ? ' geaendert' : ''}" x="${x}" y="${y}" width="${BW}" height="${hh}"><title>${seg.kurzT ? KONTEN[s.t].name : s.t}: ${eur(v)}</title></rect>`;
+      if (s.lang) h += `<rect x="${x}" y="${y}" width="${BW}" height="${hh}" fill="url(#schr)" pointer-events="none"/>`;
+      if (hh >= 15) h += `<text class="lbl" x="${x + BW / 2}" y="${y + (hh >= 32 ? hh / 2 - 2 : hh / 2 + 4.5)}">${seg.kurzT ? konto(s.t) : s.t}</text>`;
+      if (hh >= 32) h += `<text class="lbl k" x="${x + BW / 2}" y="${y + hh / 2 + 13}">${kurz(v)}</text>`;
+      if (dz) h += `<text class="dz ${dz > 0 ? 'plus' : 'minus'}" x="${links ? x - 6 : x + BW + 6}" y="${y + Math.max(hh / 2, 6) + 4}" text-anchor="${links ? 'end' : 'start'}">${dz > 0 ? '+' : '−'}${kurz(Math.abs(dz))}</text>`;
+      y += hh;
+    });
+  };
+  spalte(seg.A, XA, true); spalte(seg.P, XP, false);
+  const y0 = TOP + summe(START, AKTIVA) * sc;
+  h += `<line class="linie" x1="${XA - 10}" x2="${XP + BW + 10}" y1="${y0}" y2="${y0}"/><text class="lt" x="${XA - 12}" y="${y0 + 4}" text-anchor="end">zu Beginn</text>`;
+  if (mark && Math.abs(mark.vorher - summe(S.werte, AKTIVA)) > 0.5 && !zu){
+    const yv = TOP + mark.vorher * sc;
+    h += `<line class="linie vorher" x1="${XA - 10}" x2="${XP + BW + 10}" y1="${yv}" y2="${yv}"/><text class="lt" x="${XP + BW + 12}" y="${yv + 4}">vor der Buchung</text>`;
+  }
+  if (ansicht === 'fristen' && !zu){
+    const ya = TOP + summe(w, AV) * sc, yl = TOP + summe(w, LANG) * sc;
+    h += `<line class="grenze" x1="${XA}" x2="${XP + BW}" y1="${ya}" y2="${ya}"/>`;
+    if (yl < ya - 0.5) h += `<rect class="luecke" x="${XP}" y="${yl}" width="${BW}" height="${ya - yl}"/><text class="ltext" x="${XP + BW + 6}" y="${(yl + ya) / 2 + 4}">AV kurzfristig</text><text class="ltext" x="${XP + BW + 6}" y="${(yl + ya) / 2 + 18}">finanziert!</text>`;
+  }
+  return h + '</svg>';
+}
+let animId = 0;
+function zeichne(w){ $('#bild').innerHTML = bildSVG(w); }
+function animiere(von, nach){
+  const id = ++animId, t0 = performance.now();
+  const schritt = jetzt => {
+    if (id !== animId) return;
+    let t = Math.min(1, (jetzt - t0) / 700); t = 1 - Math.pow(1 - t, 3);
+    const w = {}; for (const k in nach) w[k] = von[k] + (nach[k] - von[k]) * t;
+    zeichne(w); if (t < 1) requestAnimationFrame(schritt);
+  };
+  zeichne(von); requestAnimationFrame(schritt);
+}
+
+/* ---------- Darstellung ---------- */
+function render(){
+  document.querySelectorAll('[data-modus]').forEach(b => b.classList.toggle('on', b.dataset.modus === modus));
+  document.querySelectorAll('[data-ansicht]').forEach(b => b.classList.toggle('on', b.dataset.ansicht === ansicht));
+  $('#links').innerHTML = modus === 'ueben' ? htmlUeben() : htmlErkunden();
+  const g = gruppen();
+  $('#tabelle').innerHTML = `<div class="tkonto">${seiteHTML('Aktiva', g.A, AKTIVA)}${seiteHTML('Passiva', g.P, PASSIVA)}</div>`;
+  $('#kz').innerHTML = kzHTML();
+  if (animVon){ animiere(animVon, S.werte); animVon = null; } else { animId++; zeichne(S.werte); }
+}
+
+document.addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const ds = b.dataset;
+  if (ds.modus){ modus = ds.modus; st('modus', modus); mark = null; erklaert = null; }
+  else if (ds.ansicht){ ansicht = ds.ansicht; st('ansicht', ansicht); }
+  else if (b.id === 'reset'){
+    if (!confirm('Bilanz wieder auf den Anfangsbestand zurücksetzen? Alle Buchungen werden entfernt.')) return;
+    S = {werte:Object.assign({}, START), verlauf:[]}; st('stand', S); mark = null; erklaert = null;
+    if (A && A.teil !== 'a') neueAufgabe(A.nr + (A.teil === 'fertig' ? 1 : 0));
+  }
+  else if (ds.fall){ sel = ds.fall; selBetrag = null; erklaert = null; st('sel', sel); }
+  else if (b.id === 'buchen'){
+    const f = fall(sel), bv = selBetrag || f.std, d = deltas(buchung(f, bv)), s0 = summe(S.werte, AKTIVA);
+    if (fehlend(S.werte, d).length) return;
+    buchen(f.id, bv, d); erklaert = erklaerung(d, s0, summe(S.werte, AKTIVA));
+  }
+  else if (b.id === 'undo') zuruecknehmen();
+  else if (b.id === 'pruefenA') return pruefeA();
+  else if (b.id === 'andere'){ neueAufgabe(A.nr); mark = null; }
+  else if (ds.plus){ A[ds.plus].push({k:'', b:''}); st('aufgabe', A); }
+  else if (ds.weg){ A[ds.weg].splice(+ds.i, 1); st('aufgabe', A); }
+  else if (ds.art) return pruefeB(ds.art);
+  else if (ds.gr) return pruefeC(ds.gr);
+  else if (b.id === 'pruefenC') return pruefeC($('#antwortC').value);
+  else if (b.id === 'weiter'){ neueAufgabe(A.nr + 1); mark = null; }
+  else return;
+  render();
+});
+document.addEventListener('input', e => {
+  const t = e.target;
+  if (t.dataset.seite && A){ A[t.dataset.seite][+t.dataset.i][t.dataset.f] = t.value; st('aufgabe', A); }
+});
+document.addEventListener('change', e => {
+  if (e.target.id === 'selBetrag'){ const v = Math.round(+e.target.value * 100) / 100; selBetrag = v > 0 ? v : null; erklaert = null; render(); }
+});
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  if (e.target.id === 'antwortC'){ e.preventDefault(); pruefeC(e.target.value); }
+  else if (e.target.dataset && e.target.dataset.seite && e.target.tagName === 'INPUT'){ e.preventDefault(); pruefeA(); }
+});
+render();
+</script>
+</body>
+</html>

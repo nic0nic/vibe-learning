@@ -1,0 +1,606 @@
+<!doctype html>
+<html lang="de" data-trainer="bilanz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bilanz-Modell – vibe learning</title>
+<!--
+  Bilanz-Modell (BWR 9, Finanzierung): Die Bilanz von Saitgig (Selbstlernheft „Möglichkeiten der Finanzierung“,
+  Kapitel 2) verändert sich mit jeder Buchung. Rechts Bilanz als Tabelle und als maßstäbliches Bild.
+  Modus Erkunden: Geschäftsfall wählen, Buchungssatz ansehen, buchen, zurücknehmen.
+  Modus Üben:    a) Buchungssatz bilden → Bilanz ändert sich, b) Art der Bilanzveränderung angeben,
+                 c) je nach Einteilung neue Bilanzsumme, Eigenkapitalquote oder Goldene Finanzierungsregel prüfen.
+  Einteilung:    konten (Bilanzposten) · struktur (AV/UV, EK/FK) · fristen (Goldene Finanzierungsregel).
+  Daten:         KONTEN, START, FAELLE (Faktor 1 bzw. UST/1 + UST am Nettobetrag). Neuer Geschäftsfall = neuer Eintrag in FAELLE.
+  Gespeichert:   bilanz-stand (Bilanz und Buchungen), bilanz-aufgabe, bilanz-geloest, bilanz-modus, bilanz-ansicht.
+  Auswertung:    TrainerSync.event mit stufe = Einteilung (1–3), aufgabe = id des Geschäftsfalls.
+-->
+<script src="../../../katalog.js"></script>
+<script src="../../../nav.js"></script>
+<script src="../../../sync.js"></script>
+<script>
+(function(){var t=null;try{t=localStorage.getItem('wenn-theme');}catch(e){}
+document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');})();
+</script>
+<style>
+:root{--bg:#e5e9f0;--panel:#f6f8fb;--panel2:#eceff4;--text:#2e3440;--muted:#5b6578;--border:#cdd3de;--accent:#5e81ac;--err:#a8434d;--ok:#5e8a45;
+  --mono:ui-monospace,Consolas,"Liberation Mono",monospace;
+  --av:#81a1c1;--uv:#b5cde0;--ek:#a3be8c;--fk:#ebcb8b;--plus:#4f7a3a;--minus:#a8434d;--plus-bg:#dfeccf;--minus-bg:#f3d9dc}
+[data-theme=dark]{--bg:#2e3440;--panel:#3b4252;--panel2:#434c5e;--text:#eceff4;--muted:#a9b3c4;--border:#4c566a;--accent:#88c0d0;--err:#d4848b;--ok:#a3be8c;
+  --av:#81a1c1;--uv:#b5cde0;--ek:#a3be8c;--fk:#ebcb8b;--plus:#b5d39a;--minus:#e0959b;--plus-bg:#3f4d3a;--minus-bg:#553c42}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;min-height:100vh}
+.wrap{width:min(1400px,100%);margin:0 auto;padding:14px 16px 24px}
+.bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:12px}
+.brand{font:800 20px var(--mono);letter-spacing:-.5px;margin-right:8px}
+.brand span{color:var(--accent-text,var(--accent))}
+.spacer{flex:1}
+.gruppe{display:inline-flex;gap:4px;align-items:center;flex-wrap:wrap}
+.hint,.muted{color:var(--muted)}
+.hint{font-size:13px;margin:0 2px 0 6px}
+.btn{font:600 14px system-ui,sans-serif;background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:7px 12px;cursor:pointer}
+.btn:hover{border-color:var(--accent)}
+.btn:disabled{opacity:.45;cursor:default;border-color:var(--border)}
+.btn.on,.btn.haupt{background:var(--accent);border-color:var(--accent);color:#fff}
+[data-theme=dark] .btn.on,[data-theme=dark] .btn.haupt{color:#2e3440}
+.btn.klein{font-size:13px;padding:4px 9px}
+.btn:focus-visible,.feld:focus{outline:2px solid var(--accent);outline-offset:1px}
+.feld{font:14px system-ui,sans-serif;background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 8px}
+.arbeit{display:grid;grid-template-columns:minmax(340px,480px) minmax(0,1fr);gap:12px;align-items:start}
+@media (max-width:980px){.arbeit{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:600px){
+  .builder{grid-template-columns:minmax(0,1fr)}.builder .an{padding:0}
+  .pz,.gz,.summe{padding:3px 5px;font-size:12.5px}.pz.ein{padding-left:10px}.pz small{display:block}
+  .tkonto{grid-template-columns:minmax(0,1fr)}.seite+.seite{border-left:none;border-top:2px solid var(--text)}
+}
+.karte{min-width:0;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px 16px}
+.karte h2{font-size:18px;margin:0 0 6px}
+.karte h3{font-size:15px;margin:14px 0 6px}
+.karte p{margin:0 0 8px}
+.tag{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;background:var(--accent);color:#fff;border-radius:6px;padding:1px 6px;vertical-align:2px}
+[data-theme=dark] .tag{color:#2e3440}
+.faelle{display:flex;flex-wrap:wrap;gap:6px}
+.fall{font:600 13px system-ui,sans-serif;background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:5px 9px;cursor:pointer;text-align:left}
+.fall:hover{border-color:var(--accent)}
+.fall.on{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.fall .n{color:var(--muted);font-weight:400}
+.fallkarte{border-top:1px solid var(--border);margin-top:14px;padding-top:4px}
+pre.bsatz{font:12.5px/1.5 var(--mono);background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin:6px 0 10px;overflow-x:auto}
+.nr{font-size:13px;color:var(--muted);margin:-2px 0 8px}
+.fb{border-radius:8px;padding:7px 10px;margin:8px 0 0;font-size:14px}
+.fb.ok{background:var(--plus-bg);color:var(--text)}
+.fb.falsch{background:var(--minus-bg);color:var(--text)}
+.teil{border-top:1px solid var(--border);padding-top:10px;margin-top:10px}
+.teil.zu{opacity:.5}
+.gf{background:var(--panel2);border-radius:8px;padding:8px 10px}
+.kopfzeile{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.knoepfe{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.builder{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:6px 8px;align-items:start}
+.builder .an{font:700 14px var(--mono);align-self:end;padding-bottom:10px}
+.spalte{display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.sk{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.bz{display:flex;flex-wrap:wrap;gap:4px;align-items:center;width:100%}
+.bz select{flex:1 1 120px;min-width:0}
+.bz input{flex:1 1 90px;min-width:0;text-align:right;font-family:var(--mono)}
+.x{background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:0 4px}
+.wahl{display:flex;flex-wrap:wrap;gap:6px}
+.antwort{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.antwort input{width:150px;text-align:right;font-family:var(--mono)}
+ol.verlauf{margin:0 0 8px;padding-left:22px;font-size:14px}
+/* Bilanz */
+.bkopf{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.bkopf h2{margin:0}
+.tkonto{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);border-top:2px solid var(--text)}
+.seite{display:flex;flex-direction:column;padding:4px 0}
+.seite+.seite{border-left:2px solid var(--text)}
+.sh{font-weight:800;text-align:center;padding:2px 0 6px;letter-spacing:.03em}
+.pz,.gz,.summe{display:flex;justify-content:space-between;gap:8px;padding:3px 10px;font-size:14px;align-items:baseline}
+.pz>span:first-child,.gz>span:first-child{min-width:0;overflow-wrap:break-word;hyphens:auto}
+.betr{flex:none}
+.pz small{color:var(--muted);font-family:var(--mono);font-size:11.5px;white-space:nowrap}
+.pz.ein{padding-left:22px}
+.gz{font-weight:700;margin-top:4px}
+.gz small{font-weight:400;color:var(--muted)}
+.betr{font-family:var(--mono);white-space:nowrap;text-align:right}
+.pz.plus,.gz.plus{background:var(--plus-bg)}
+.pz.minus,.gz.minus{background:var(--minus-bg)}
+.badge{display:block;font-size:12px;font-weight:700}
+.badge.plus{color:var(--plus)}
+.badge.minus{color:var(--minus)}
+.summe{margin-top:auto;border-top:1.5px solid var(--text);font-weight:800}
+.unten{display:flex;flex-wrap:wrap;gap:12px;margin-top:12px;align-items:flex-start}
+#bild{flex:1 1 380px;min-width:0}
+#bild svg{width:100%;height:auto;max-height:520px;display:block}
+#kz{flex:0 1 270px}
+.kz{background:var(--panel2);border-radius:10px;padding:10px 12px;font-size:14px}
+.kz h3{margin:0 0 6px;font-size:14px}
+.kz table{border-collapse:collapse;width:100%}
+.kz td{padding:2px 0}
+.kz td:last-child{text-align:right;font-family:var(--mono)}
+.gross{font:700 20px var(--mono);margin:0}
+.ja{color:var(--ok);font-weight:700}
+.nein{color:var(--err);font-weight:700}
+svg .seg{stroke:var(--panel);stroke-width:1.5}
+svg .seg.av{fill:var(--av)} svg .seg.uv{fill:var(--uv)} svg .seg.ek{fill:var(--ek)} svg .seg.fk{fill:var(--fk)}
+svg .seg.alt{fill-opacity:.72}
+svg .seg.geaendert{stroke:var(--text);stroke-width:2.5}
+svg .lbl{fill:#2e3440;font:600 13px system-ui,sans-serif;text-anchor:middle}
+svg .lbl.k{font-weight:400;font-size:11.5px}
+svg .kopf{fill:var(--text);font:800 14px system-ui,sans-serif;text-anchor:middle}
+svg .dz{font:700 12px var(--mono)}
+svg .dz.plus{fill:var(--plus)} svg .dz.minus{fill:var(--minus)}
+svg .linie{stroke:var(--muted);stroke-width:1.2;stroke-dasharray:5 4}
+svg .linie.vorher{stroke-dasharray:2 3}
+svg .lt{fill:var(--muted);font:11px system-ui,sans-serif}
+svg .grenze{stroke:var(--text);stroke-width:1.6;stroke-dasharray:7 4}
+svg .luecke{fill:var(--err);fill-opacity:.35;stroke:var(--err);stroke-width:1.5}
+svg .ltext{fill:var(--err);font:700 11.5px system-ui,sans-serif}
+svg .schr line{stroke:#2e3440;stroke-opacity:.28;stroke-width:3}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="bar">
+    <div class="brand">Bilanz<span>-Modell</span></div>
+    <span class="gruppe" role="group" aria-label="Modus">
+      <button class="btn" type="button" data-modus="erkunden">Erkunden</button>
+      <button class="btn" type="button" data-modus="ueben">Üben</button>
+    </span>
+    <span class="gruppe" role="group" aria-label="Einteilung der Bilanz"><span class="hint">Einteilung</span>
+      <button class="btn" type="button" data-ansicht="konten">Bilanzposten</button>
+      <button class="btn" type="button" data-ansicht="struktur">AV/UV · EK/FK</button>
+      <button class="btn" type="button" data-ansicht="fristen">Goldene Regel</button>
+    </span>
+    <span class="spacer"></span>
+    <button class="btn" type="button" id="reset">Bilanz zurücksetzen</button>
+  </div>
+  <div class="arbeit">
+    <section class="karte" id="links" aria-live="polite"></section>
+    <section class="karte">
+      <div class="bkopf"><h2>Bilanz der Saitgig e. K.</h2><span class="muted">in €</span></div>
+      <div id="tabelle"></div>
+      <div class="unten"><div id="bild"></div><div id="kz"></div></div>
+    </section>
+  </div>
+</div>
+<script>
+'use strict';
+/* ---------- Daten ---------- */
+const KONTEN = {
+  BVG:   {nr:'0530', name:'Betriebs- und Verwaltungsgebäude', g:'AV'},
+  MA:    {nr:'0700', name:'Maschinen und Anlagen', g:'AV'},
+  FP:    {nr:'0840', name:'Fuhrpark', g:'AV'},
+  BGA:   {nr:'0870', name:'Büromöbel und Geschäftsausstattung', g:'AV'},
+  R:     {nr:'2000', name:'Rohstoffe', g:'UV'},
+  FO:    {nr:'2400', name:'Forderungen aus Lieferungen und Leistungen', g:'UV'},
+  VORST: {nr:'2600', name:'Vorsteuer', g:'UV'},
+  BK:    {nr:'2800', name:'Bank', g:'UV'},
+  KA:    {nr:'2880', name:'Kasse', g:'UV'},
+  EK:    {nr:'3000', name:'Eigenkapital', g:'EK'},
+  KBKV:  {nr:'4200', name:'Kurzfristige Bankverbindlichkeiten', g:'FK'},
+  LBKV:  {nr:'4250', name:'Langfristige Bankverbindlichkeiten', g:'FK'},
+  VE:    {nr:'4400', name:'Verbindlichkeiten aus Lieferungen und Leistungen', g:'FK'}
+};
+const AKTIVA = ['BVG', 'MA', 'FP', 'BGA', 'R', 'FO', 'VORST', 'BK', 'KA'], PASSIVA = ['EK', 'LBKV', 'KBKV', 'VE'];
+const AV = AKTIVA.filter(k => KONTEN[k].g === 'AV'), UV = AKTIVA.filter(k => KONTEN[k].g === 'UV');
+const LANG = ['EK', 'LBKV'], KURZ = ['KBKV', 'VE'];
+const KONTOWAHL = Object.keys(KONTEN).sort((a, b) => KONTEN[a].nr.localeCompare(KONTEN[b].nr));
+// Bilanz zum 31.12. aus dem Selbstlernheft, Kapitel 2 (Summe 1.040.000,00 €)
+const START = {BVG:420000, MA:260000, FP:60000, BGA:40000, R:95000, FO:110000, VORST:0, BK:48000, KA:7000,
+  EK:312000, LBKV:520000, KBKV:98000, VE:110000};
+const UST = 0.19;
+const ART = {
+  APM:  {name:'Aktiv-Passiv-Mehrung', text:'Ein Posten auf der Aktivseite und ein Posten auf der Passivseite nehmen um denselben Betrag zu. Die Bilanzsumme steigt.'},
+  APMI: {name:'Aktiv-Passiv-Minderung', text:'Ein Posten auf der Aktivseite und ein Posten auf der Passivseite nehmen um denselben Betrag ab. Die Bilanzsumme sinkt.'},
+  AT:   {name:'Aktivtausch', text:'Nur die Aktivseite ändert sich: Was ein Posten zunimmt, nimmt ein anderer ab. Die Bilanzsumme bleibt gleich.'},
+  PT:   {name:'Passivtausch', text:'Nur die Passivseite ändert sich: Was ein Posten zunimmt, nimmt ein anderer ab. Die Bilanzsumme bleibt gleich.'}
+};
+const ART_FOLGE = ['APM', 'APMI', 'AT', 'PT'];
+// Betrag = Nettobetrag (bei ust) bzw. Betrag; von/bis/schritt für Übungen, std für Erkunden
+const FAELLE = [
+  {id:'darlehen', art:'APM', titel:'Darlehen aufnehmen', von:40000, bis:120000, schritt:10000, std:80000,
+    text:b => `Die Hausbank zahlt Saitgig ein Darlehen über ${eur(b)} mit einer Laufzeit von 8 Jahren auf das Bankkonto aus.`,
+    soll:[['BK', 1]], haben:[['LBKV', 1]]},
+  {id:'kredit', art:'APM', titel:'Kurzfristigen Kredit aufnehmen', von:10000, bis:40000, schritt:5000, std:20000,
+    text:b => `Für einen Zahlungsengpass gewährt die Bank Saitgig einen Kredit über ${eur(b)} mit einer Laufzeit von 6 Monaten. Der Betrag wird dem Bankkonto gutgeschrieben.`,
+    soll:[['BK', 1]], haben:[['KBKV', 1]]},
+  {id:'einlage', art:'APM', titel:'Einlage des Inhabers', von:10000, bis:50000, schritt:5000, std:20000,
+    text:b => `Jakob Seite überweist ${eur(b)} von seinem privaten Sparkonto auf das Geschäftskonto von Saitgig.`,
+    soll:[['BK', 1]], haben:[['EK', 1]]},
+  {id:'maschine-ziel', art:'APM', titel:'Maschine auf Ziel kaufen', ust:true, von:20000, bis:60000, schritt:5000, std:40000,
+    text:b => `Saitgig kauft eine Lackieranlage für ${eur(b)} netto zuzüglich 19 % Umsatzsteuer auf Ziel.`,
+    soll:[['MA', 1], ['VORST', UST]], haben:[['VE', 1 + UST]]},
+  {id:'moebel-ziel', art:'APM', titel:'Büromöbel auf Ziel kaufen', ust:true, von:3000, bis:12000, schritt:1000, std:6000,
+    text:b => `Für das Büro kauft Saitgig Schreibtische und Schränke für ${eur(b)} netto zuzüglich 19 % Umsatzsteuer auf Ziel.`,
+    soll:[['BGA', 1], ['VORST', UST]], haben:[['VE', 1 + UST]]},
+  {id:'halle-darlehen', art:'APM', titel:'Werkhalle mit Darlehen kaufen', von:100000, bis:250000, schritt:25000, std:150000,
+    text:b => `Saitgig kauft eine Werkhalle für ${eur(b)} (umsatzsteuerfrei). Die Bank gewährt dafür ein Darlehen mit 20 Jahren Laufzeit und überweist den Kaufpreis direkt an den Verkäufer.`,
+    soll:[['BVG', 1]], haben:[['LBKV', 1]]},
+  {id:'fraese-kredit', art:'APM', titel:'Maschine mit kurzfristigem Kredit kaufen', ust:true, von:40000, bis:100000, schritt:10000, std:80000,
+    text:b => `Saitgig kauft eine CNC-Fräse für ${eur(b)} netto zuzüglich 19 % Umsatzsteuer. Die Bank gewährt dafür einen Kredit mit 6 Monaten Laufzeit und überweist den Rechnungsbetrag direkt an den Lieferer.`,
+    soll:[['MA', 1], ['VORST', UST]], haben:[['KBKV', 1 + UST]]},
+  {id:'ve-bank', art:'APMI', titel:'Liefererrechnung bezahlen', von:5000, bis:30000, schritt:5000, std:10000,
+    text:b => `Saitgig begleicht eine Liefererrechnung über ${eur(b)} per Banküberweisung.`,
+    soll:[['VE', 1]], haben:[['BK', 1]]},
+  {id:'tilgung', art:'APMI', titel:'Darlehen tilgen', von:10000, bis:40000, schritt:5000, std:20000,
+    text:b => `Saitgig tilgt ${eur(b)} des langfristigen Bankdarlehens per Banküberweisung.`,
+    soll:[['LBKV', 1]], haben:[['BK', 1]]},
+  {id:'kredit-zurueck', art:'APMI', titel:'Kurzfristigen Kredit zurückzahlen', von:10000, bis:40000, schritt:5000, std:20000,
+    text:b => `Saitgig zahlt einen kurzfristigen Bankkredit über ${eur(b)} vom Bankkonto zurück.`,
+    soll:[['KBKV', 1]], haben:[['BK', 1]]},
+  {id:'abhebung', art:'AT', titel:'Bargeld abheben', von:500, bis:5000, schritt:500, std:2000,
+    text:b => `Saitgig hebt ${eur(b)} vom Bankkonto ab und legt das Geld in die Kasse.`,
+    soll:[['KA', 1]], haben:[['BK', 1]]},
+  {id:'bareinzahlung', art:'AT', titel:'Bargeld einzahlen', von:500, bis:5000, schritt:500, std:3000,
+    text:b => `Saitgig zahlt ${eur(b)} aus der Kasse auf das Bankkonto ein.`,
+    soll:[['BK', 1]], haben:[['KA', 1]]},
+  {id:'kunde-zahlt', art:'AT', titel:'Kunde zahlt Rechnung', von:5000, bis:30000, schritt:5000, std:15000,
+    text:b => `Ein Musikhaus überweist Saitgig den Betrag einer offenen Rechnung über ${eur(b)}.`,
+    soll:[['BK', 1]], haben:[['FO', 1]]},
+  {id:'maschine-bank', art:'AT', titel:'Maschine per Bank kaufen', ust:true, von:5000, bis:30000, schritt:5000, std:15000,
+    text:b => `Saitgig kauft eine Schleifmaschine für ${eur(b)} netto zuzüglich 19 % Umsatzsteuer und bezahlt sofort per Banküberweisung.`,
+    soll:[['MA', 1], ['VORST', UST]], haben:[['BK', 1 + UST]]},
+  {id:'umschuldung', art:'PT', titel:'Kredit in Darlehen umwandeln', von:20000, bis:60000, schritt:10000, std:40000,
+    text:b => `Die Bank wandelt einen kurzfristigen Kredit von Saitgig über ${eur(b)} in ein Darlehen mit 5 Jahren Laufzeit um.`,
+    soll:[['KBKV', 1]], haben:[['LBKV', 1]]},
+  {id:'ve-kredit', art:'PT', titel:'Liefererschuld mit Kredit bezahlen', von:5000, bis:30000, schritt:5000, std:15000,
+    text:b => `Saitgig begleicht eine Liefererrechnung über ${eur(b)}. Die Bank überweist den Betrag direkt an den Lieferer und gewährt Saitgig dafür einen Kredit mit 6 Monaten Laufzeit.`,
+    soll:[['VE', 1]], haben:[['KBKV', 1]]}
+];
+const ANSICHTEN = ['konten', 'struktur', 'fristen'];
+
+/* ---------- Helfer ---------- */
+const KEY = 'bilanz-';
+const ld = k => { try { return localStorage.getItem(KEY + k); } catch (e) { return null; } };
+const ldJ = (k, d) => { try { const x = JSON.parse(ld(k)); return x == null ? d : x; } catch (e) { return d; } };
+function st(k, v){ try { localStorage.setItem(KEY + k, typeof v === 'string' ? v : JSON.stringify(v)); } catch (e) {} if (window.TrainerSync) TrainerSync.changed(); }
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;'}[c]));
+const r2 = n => Math.round(n * 100) / 100;
+const zahl = n => r2(n).toLocaleString('de-DE', {minimumFractionDigits:2, maximumFractionDigits:2});
+const eur = n => zahl(n) + ' €';
+const kurz = n => Math.round(n).toLocaleString('de-DE') + ' €';
+const proz = n => n.toLocaleString('de-DE', {minimumFractionDigits:1, maximumFractionDigits:1}) + ' %';
+const aktiv = k => AKTIVA.includes(k);
+const fall = id => FAELLE.find(f => f.id === id) || FAELLE[0];
+const summe = (w, ks) => r2(ks.reduce((s, k) => s + (w[k] || 0), 0));
+const konto = k => KONTEN[k].nr + ' ' + k;
+function parseBetrag(s){
+  s = String(s).replace(/€|\s/g, '');
+  if (!s) return NaN;
+  if (s.includes(',')) s = s.replace(/\./g, '').replace(',', '.');
+  else if (/^\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, '');
+  return /^\d+(\.\d+)?$/.test(s) ? +s : NaN;
+}
+function buchung(f, b){ const z = ([k, fa]) => ({k, b:r2(b * fa)}); return {soll:f.soll.map(z), haben:f.haben.map(z)}; }
+function deltas(bs){
+  const d = {}, add = (k, v) => { d[k] = r2((d[k] || 0) + v); };
+  bs.soll.forEach(x => add(x.k, aktiv(x.k) ? x.b : -x.b));
+  bs.haben.forEach(x => add(x.k, aktiv(x.k) ? -x.b : x.b));
+  return d;
+}
+const fehlend = (w, d) => Object.keys(d).filter(k => w[k] + d[k] < -0.005);
+function anwenden(w, d, f = 1){ const n = Object.assign({}, w); for (const k in d) n[k] = r2(n[k] + f * d[k]); return n; }
+// Buchungssatz als Text: Soll-Zeilen, „an“ auf der letzten Soll-Zeile, weitere Haben-Konten bündig darunter
+function bsText(bs){
+  const w1 = Math.max(...bs.soll.map(x => konto(x.k).length)), b1 = Math.max(...bs.soll.map(x => eur(x.b).length));
+  const w2 = Math.max(...bs.haben.map(x => konto(x.k).length)), b2 = Math.max(...bs.haben.map(x => eur(x.b).length));
+  const z = (x, w, b) => konto(x.k).padEnd(w) + '  ' + eur(x.b).padStart(b);
+  const zeilen = bs.soll.map((x, i) => z(x, w1, b1) + (i === bs.soll.length - 1 ? '   an   ' + z(bs.haben[0], w2, b2) : ''));
+  bs.haben.slice(1).forEach(x => zeilen.push(' '.repeat(w1 + b1 + 10) + z(x, w2, b2)));
+  return zeilen.join('\n');
+}
+function nebenrechnung(f, b){
+  if (!f.ust) return '';
+  return `<div class="nr">Nebenrechnung: Vorsteuer ${eur(b)} · 19 % = ${eur(b * UST)}; Rechnungsbetrag ${eur(b)} + ${eur(b * UST)} = ${eur(b * (1 + UST))}</div>`;
+}
+const fbHTML = fb => fb ? `<div class="fb ${fb.ok ? 'ok' : 'falsch'}">${fb.t}</div>` : '';
+
+/* ---------- Zustand ---------- */
+let modus = ld('modus') === 'ueben' ? 'ueben' : 'erkunden';
+let ansicht = ANSICHTEN.includes(ld('ansicht')) ? ld('ansicht') : 'struktur';
+let S = ldJ('stand', null);
+if (!S || !S.werte || !Array.isArray(S.verlauf)) S = {werte:Object.assign({}, START), verlauf:[]};
+for (const k in START) if (typeof S.werte[k] !== 'number') S.werte[k] = START[k];
+let geloest = ldJ('geloest', {});
+let A = ldJ('aufgabe', null);
+if (A && !FAELLE.some(f => f.id === A.id)) A = null;
+let sel = FAELLE.some(f => f.id === ld('sel')) ? ld('sel') : 'darlehen', selBetrag = null;
+let mark = null, animVon = null, erklaert = null;   // letzte Änderung (Hervorhebung), Startwerte der Animation, Erklärung in Erkunden
+
+function buchen(id, b, d){
+  const vorher = S.werte;
+  S.werte = anwenden(S.werte, d); S.verlauf.push({id, b, d});
+  mark = {d, vorher:summe(vorher, AKTIVA)}; animVon = vorher;
+  st('stand', S);
+}
+function zuruecknehmen(){
+  const v = S.verlauf.pop(); if (!v) return;
+  const vorher = S.werte, neg = {};
+  for (const k in v.d) neg[k] = -v.d[k];
+  S.werte = anwenden(S.werte, v.d, -1);
+  mark = {d:neg, vorher:summe(vorher, AKTIVA)}; animVon = vorher; erklaert = null;
+  st('stand', S);
+}
+
+/* ---------- Erkunden ---------- */
+function erklaerung(d, s0, s1){
+  const z = Object.keys(d).filter(k => d[k]).map(k => `<li>${KONTEN[k].name} <span class="muted">(${aktiv(k) ? 'Aktiva' : 'Passiva'})</span>: <b>${d[k] > 0 ? '+' : '−'} ${eur(Math.abs(d[k]))}</b></li>`);
+  return `<ul>${z.join('')}</ul><p>Bilanzsumme: ${eur(s0)} → ${eur(s1)}${s0 === s1 ? ' (unverändert)' : ''}</p>`;
+}
+function htmlErkunden(){
+  let h = '<h2>Geschäftsfälle</h2><p class="muted">Wähle einen Geschäftsfall, lies den Buchungssatz und buche ihn. Rechts siehst du, wie sich die Bilanz verändert.</p>';
+  ART_FOLGE.forEach(a => {
+    h += `<h3>${ART[a].name}${a === 'APM' ? ' <span class="tag">Schwerpunkt</span>' : ''}</h3><div class="faelle">`
+      + FAELLE.filter(f => f.art === a).map(f => `<button class="fall${f.id === sel ? ' on' : ''}" type="button" data-fall="${f.id}">${esc(f.titel)}</button>`).join('') + '</div>';
+  });
+  const f = fall(sel), b = selBetrag || f.std, bs = buchung(f, b), d = deltas(bs), fehlt = fehlend(S.werte, d);
+  h += `<div class="fallkarte"><h3>${esc(f.titel)}</h3><p>${f.text(b)}</p>
+    <p><label class="muted">Betrag${f.ust ? ' (netto)' : ''} in € <input class="feld" id="selBetrag" type="number" min="${f.schritt}" step="${f.schritt}" value="${b}" style="width:130px"></label></p>
+    ${nebenrechnung(f, b)}<pre class="bsatz" aria-label="Buchungssatz">${esc(bsText(bs))}</pre>
+    <p><b>${ART[f.art].name}:</b> ${ART[f.art].text}</p>
+    <div class="knoepfe"><button class="btn haupt" type="button" id="buchen"${fehlt.length ? ' disabled' : ''}>Buchen</button></div>
+    ${fehlt.length ? `<div class="fb falsch">Das geht nicht: Der Bestand bei ${fehlt.map(k => KONTEN[k].name).join(', ')} reicht nicht aus.</div>` : ''}
+    ${erklaert ? `<div class="fb ok"><b>Gebucht.</b> So hat sich die Bilanz verändert:${erklaert}</div>` : ''}</div>`;
+  if (S.verlauf.length) h += `<h3>Gebuchte Geschäftsfälle</h3><ol class="verlauf">${S.verlauf.map(v => `<li>${esc(fall(v.id).titel)} · ${eur(v.b)}</li>`).join('')}</ol>
+    <button class="btn" type="button" id="undo">Letzte Buchung zurücknehmen</button>`;
+  return h;
+}
+
+/* ---------- Üben ---------- */
+function neueAufgabe(nr){
+  const gewicht = FAELLE.map(f => f.art === 'APM' ? 3 : 1), ges = gewicht.reduce((a, b) => a + b, 0);
+  for (let v = 0; v < 60; v++){
+    let r = Math.random() * ges, i = 0;
+    while (r >= gewicht[i]) r -= gewicht[i++];
+    const f = FAELLE[i];
+    if (A && f.id === A.id && v < 50) continue;
+    const b = f.von + f.schritt * Math.floor(Math.random() * (Math.floor((f.bis - f.von) / f.schritt) + 1));
+    if (fehlend(S.werte, deltas(buchung(f, b))).length) continue;
+    A = {id:f.id, b, teil:'a', soll:[{k:'', b:''}], haben:[{k:'', b:''}], fb:{}, nr:nr || 1};
+    st('aufgabe', A); return;
+  }
+  S = {werte:Object.assign({}, START), verlauf:[]}; st('stand', S); neueAufgabe(nr);
+}
+function builderHTML(){
+  const opt = k => '<option value="">Konto …</option>' + KONTOWAHL.map(x => `<option value="${x}"${x === k ? ' selected' : ''}>${konto(x)}</option>`).join('');
+  const zeile = (seite, x, i) => `<div class="bz"><select class="feld" data-seite="${seite}" data-i="${i}" data-f="k" aria-label="${seite === 'soll' ? 'Soll' : 'Haben'}-Konto ${i + 1}">${opt(x.k)}</select>`
+    + `<input class="feld" data-seite="${seite}" data-i="${i}" data-f="b" value="${esc(x.b)}" placeholder="Betrag" inputmode="decimal" autocomplete="off" aria-label="Betrag in €">`
+    + (A[seite].length > 1 ? `<button class="x" type="button" data-weg="${seite}" data-i="${i}" title="Zeile entfernen" aria-label="Zeile entfernen">×</button>` : '') + '</div>';
+  const spalte = (seite, t) => `<div class="spalte"><div class="sk">${t}</div>${A[seite].map((x, i) => zeile(seite, x, i)).join('')}`
+    + `<button class="btn klein" type="button" data-plus="${seite}">+ Konto</button></div>`;
+  return `<div class="builder">${spalte('soll', 'Soll')}<div class="an">an</div>${spalte('haben', 'Haben')}</div>`;
+}
+const AUFGABE_C = {
+  konten:'Gib die Bilanzsumme nach der Buchung an.',
+  struktur:'Berechne die Eigenkapitalquote nach der Buchung (auf eine Nachkommastelle gerundet).',
+  fristen:'Prüfe, ob Saitgig die Goldene Finanzierungsregel nach der Buchung einhält.'
+};
+function htmlUeben(){
+  if (!A) neueAufgabe(1);
+  const f = fall(A.id), bs = buchung(f, A.b);
+  let h = `<div class="kopfzeile"><h2>Aufgabe ${A.nr}</h2><span class="muted">${Object.values(geloest).reduce((a, b) => a + b, 0)} gelöst</span></div>
+    <p class="gf"><b>Geschäftsfall:</b> ${f.text(A.b)}</p>`;
+  h += `<div class="teil"><p><b>a)</b> Bilde den Buchungssatz.</p>`;
+  if (A.teil === 'a') h += builderHTML() + `<div class="knoepfe"><button class="btn haupt" type="button" id="pruefenA">Prüfen</button><button class="btn" type="button" id="andere">Andere Aufgabe</button></div>` + fbHTML(A.fb.a);
+  else h += nebenrechnung(f, A.b) + `<pre class="bsatz">${esc(bsText(bs))}</pre>` + fbHTML(A.fb.a);
+  h += '</div><div class="teil' + (A.teil === 'a' ? ' zu' : '') + '"><p><b>b)</b> Gib die Art der Bilanzveränderung an.</p>';
+  if (A.teil === 'b') h += `<div class="wahl">${ART_FOLGE.map(a => `<button class="btn" type="button" data-art="${a}">${ART[a].name}</button>`).join('')}</div>` + fbHTML(A.fb.b);
+  else if (A.teil !== 'a') h += `<div class="fb ok">✓ <b>${ART[f.art].name}:</b> ${ART[f.art].text}</div>`;
+  h += '</div><div class="teil' + (A.teil === 'a' || A.teil === 'b' ? ' zu' : '') + `"><p><b>c)</b> ${A.teil === 'fertig' ? A.cFrage : AUFGABE_C[ansicht]}</p>`;
+  if (A.teil === 'c'){
+    h += ansicht === 'fristen'
+      ? `<div class="wahl"><button class="btn" type="button" data-gr="ja">Wird eingehalten</button><button class="btn" type="button" data-gr="nein">Wird nicht eingehalten</button></div>`
+      : `<div class="antwort"><input class="feld" id="antwortC" inputmode="decimal" autocomplete="off" aria-label="Antwort"><span>${ansicht === 'konten' ? '€' : '%'}</span><button class="btn haupt" type="button" id="pruefenC">Prüfen</button></div>`;
+    h += fbHTML(A.fb.c);
+  } else if (A.teil === 'fertig') h += fbHTML(A.fb.c) + `<div class="knoepfe"><button class="btn haupt" type="button" id="weiter">Nächste Aufgabe</button></div>`;
+  return h + '</div>';
+}
+function pruefeA(){
+  const f = fall(A.id), bs = buchung(f, A.b);
+  const ein = s => A[s].filter(x => x.k || String(x.b).trim()).map(x => ({k:x.k, b:parseBetrag(x.b)}));
+  const s = ein('soll'), hb = ein('haben'), alle = [...s, ...hb], ks = l => l.map(x => x.k).sort().join(' ');
+  let fb = null;
+  if (!s.length || !hb.length) fb = 'Trage mindestens ein Soll-Konto und ein Haben-Konto ein.';
+  else if (alle.some(x => !x.k)) fb = 'Wähle zu jedem Betrag ein Konto aus.';
+  else if (alle.some(x => isNaN(x.b))) fb = 'Trage zu jedem Konto einen Betrag ein, z. B. 12.500,00.';
+  else if (new Set(alle.map(x => x.k)).size !== alle.length) fb = 'Jedes Konto darf nur einmal im Buchungssatz stehen.';
+  else if (ks(s) === ks(bs.haben) && ks(hb) === ks(bs.soll)) fb = 'Soll und Haben sind vertauscht. Überlege bei jedem Konto: Nimmt der Posten zu oder ab – und steht er auf der Aktiv- oder der Passivseite?';
+  else if (ks(s) !== ks(bs.soll) || ks(hb) !== ks(bs.haben)){
+    const n = bs.soll.length + bs.haben.length;
+    fb = 'Die Konten stimmen noch nicht. ' + (f.ust && !alle.some(x => x.k === 'VORST') ? 'Denke an die Vorsteuer.'
+      : alle.length > n ? 'Es sind zu viele Konten.' : alle.length < n ? 'Es fehlt ein Konto.'
+      : 'Überlege, welche Bilanzposten sich durch den Geschäftsfall verändern und auf welcher Seite sie stehen.');
+  } else {
+    const soll = l => (x => l.find(y => y.k === x.k).b);
+    const falsch = [...s.filter(x => Math.abs(x.b - soll(bs.soll)(x)) > 0.005), ...hb.filter(x => Math.abs(x.b - soll(bs.haben)(x)) > 0.005)];
+    if (falsch.length) fb = `Die Konten stimmen. Prüfe den Betrag bei ${falsch.map(x => konto(x.k)).join(', ')}.` + (f.ust ? ' Die Vorsteuer beträgt 19 % des Nettobetrags.' : '');
+  }
+  if (fb){ A.fb.a = {ok:false, t:fb}; st('aufgabe', A); render(); return; }
+  const d = deltas(bs);
+  if (fehlend(S.werte, d).length){ neueAufgabe(A.nr); render(); return; }
+  buchen(f.id, A.b, d);
+  A.teil = 'b'; A.fb.a = {ok:true, t:'Richtig! Rechts siehst du, wie sich die Bilanz durch die Buchung verändert hat.'};
+  st('aufgabe', A); render();
+}
+function pruefeB(a){
+  const f = fall(A.id);
+  if (a !== f.art){ A.fb.b = {ok:false, t:'Noch nicht. Schau rechts in die Bilanz: Welche Seiten haben sich verändert, und hat sich die Bilanzsumme verändert?'}; st('aufgabe', A); render(); return; }
+  A.teil = 'c'; A.fb.b = null; st('aufgabe', A); render();
+}
+function pruefeC(antwort){
+  const w = S.werte, t = summe(w, AKTIVA), lang = summe(w, LANG), av = summe(w, AV);
+  let ok, loes;
+  if (ansicht === 'konten'){
+    const x = parseBetrag(antwort); ok = Math.abs(x - t) < 0.005;
+    loes = `Bilanzsumme nach der Buchung: ${eur(t)} (vorher ${eur(mark ? mark.vorher : t)}).`;
+    if (!ok) return falschC(isNaN(x) ? 'Gib einen Betrag ein, z. B. 1.040.000,00.' : 'Das stimmt noch nicht. Die Bilanzsumme ist die Summe aller Aktivposten (oder aller Passivposten).');
+  } else if (ansicht === 'struktur'){
+    const q = w.EK * 100 / t, x = parseBetrag(String(antwort).replace('%', '')); ok = Math.abs(x - Math.round(q * 10) / 10) < 0.051;
+    loes = `Eigenkapitalquote = ${eur(w.EK)} · 100 : ${eur(t)} = ${proz(q)}`;
+    if (!ok) return falschC(isNaN(x) ? 'Gib die Eigenkapitalquote als Zahl ein, z. B. 30,0.' : 'Das stimmt noch nicht. Eigenkapitalquote in % = Eigenkapital · 100 : Gesamtkapital. Das Gesamtkapital ist die Bilanzsumme nach der Buchung.');
+  } else {
+    const ein = av <= lang + 0.005; ok = (antwort === 'ja') === ein;
+    loes = `Anlagevermögen ${eur(av)} ${ein ? '≤' : '>'} langfristiges Kapital (Eigenkapital + langfristiges Fremdkapital) ${eur(lang)}. `
+      + (ein ? 'Die Goldene Finanzierungsregel wird eingehalten.' : 'Ein Teil des Anlagevermögens ist kurzfristig finanziert – die Goldene Finanzierungsregel wird nicht eingehalten.');
+    if (!ok) return falschC('Noch nicht. Vergleiche das Anlagevermögen mit dem langfristigen Kapital (Eigenkapital + langfristiges Fremdkapital).');
+  }
+  const f = fall(A.id), erstmals = !geloest[f.id];
+  geloest[f.id] = (geloest[f.id] || 0) + 1; st('geloest', geloest);
+  A.teil = 'fertig'; A.cFrage = AUFGABE_C[ansicht]; A.fb.c = {ok:true, t:'✓ ' + loes}; st('aufgabe', A);
+  if (window.TrainerSync) TrainerSync.event({modus:'uebungen', stufe:ANSICHTEN.indexOf(ansicht) + 1, aufgabe:f.id, titel:f.titel, gesamt:FAELLE.length, erstmals});
+  render();
+}
+function falschC(t){ A.fb.c = {ok:false, t}; st('aufgabe', A); render(); }
+// Während b) und c) bleiben Kennzahlen (und bei „Bilanzposten“ die Bilanzsumme) verdeckt
+const verdeckt = () => modus === 'ueben' && A && (A.teil === 'b' || A.teil === 'c');
+
+/* ---------- Bilanz: Tabelle ---------- */
+function gruppen(){
+  if (ansicht === 'konten') return {A:[{k:AKTIVA}], P:[{k:PASSIVA}]};
+  if (ansicht === 'struktur') return {A:[{t:'Anlagevermögen', k:AV}, {t:'Umlaufvermögen', k:UV}], P:[{t:'Eigenkapital', k:['EK']}, {t:'Fremdkapital', k:['LBKV', 'KBKV', 'VE']}]};
+  return {A:[{t:'Anlagevermögen', u:'langfristig gebunden', k:AV}, {t:'Umlaufvermögen', u:'kurzfristig gebunden', k:UV}],
+    P:[{t:'Langfristiges Kapital', u:'EK + langfristiges FK', k:LANG}, {t:'Kurzfristiges Kapital', u:'kurzfristiges FK', k:KURZ}]};
+}
+const badge = v => v ? `<span class="badge ${v > 0 ? 'plus' : 'minus'}">${v > 0 ? '+' : '−'} ${zahl(Math.abs(v))}</span>` : '';
+const pm = v => v > 0 ? ' plus' : v < 0 ? ' minus' : '';
+function seiteHTML(titel, grs, ks){
+  const w = S.werte, d = mark ? mark.d : {};
+  let h = `<div class="seite"><div class="sh">${titel}</div>`;
+  grs.forEach(g => {
+    if (g.t){ const dz = r2(g.k.reduce((s, k) => s + (d[k] || 0), 0)); h += `<div class="gz${pm(dz)}"><span>${g.t}${g.u ? ` <small>(${g.u})</small>` : ''}</span><span class="betr">${zahl(summe(w, g.k))}${badge(dz)}</span></div>`; }
+    g.k.forEach(k => {
+      if (k === 'VORST' && !w[k] && !d[k]) return;
+      h += `<div class="pz${pm(d[k] || 0)}${g.t ? ' ein' : ''}"><span>${KONTEN[k].name} <small>${konto(k)}</small></span><span class="betr">${zahl(w[k])}${badge(d[k] || 0)}</span></div>`;
+    });
+  });
+  const t = summe(w, ks), dt = mark ? r2(t - mark.vorher) : 0, zu = verdeckt() && ansicht === 'konten';
+  return h + `<div class="summe"><span>Summe</span><span class="betr">${zu ? '?' : zahl(t)}${zu ? '' : badge(dt)}</span></div></div>`;
+}
+function kzHTML(){
+  if (verdeckt()) return '<div class="kz"><p class="muted" style="margin:0">Die Kennzahlen erscheinen, wenn du die Aufgabe gelöst hast.</p></div>';
+  const w = S.werte, t = summe(w, AKTIVA), t0 = summe(START, AKTIVA);
+  if (ansicht === 'konten') return `<div class="kz"><h3>Bilanzsumme</h3><p class="gross">${eur(t)}</p><p class="muted" style="margin:4px 0 0">zu Beginn: ${eur(t0)}</p></div>`;
+  if (ansicht === 'struktur'){
+    const z = (n, v) => `<tr><td>${n}</td><td>${eur(v)}</td></tr>`;
+    return `<div class="kz"><h3>Aufbau der Bilanz</h3><table>${z('Anlagevermögen', summe(w, AV))}${z('Umlaufvermögen', summe(w, UV))}${z('Eigenkapital', w.EK)}${z('Fremdkapital', summe(w, ['LBKV', 'KBKV', 'VE']))}${z('Bilanzsumme', t)}</table>
+      <h3 style="margin-top:10px">Eigenkapitalquote</h3><p class="gross">${proz(w.EK * 100 / t)}</p><p class="muted" style="margin:4px 0 0">Eigenkapital · 100 : Gesamtkapital<br>Branchendurchschnitt Musikinstrumentenbau: 38 %</p></div>`;
+  }
+  const av = summe(w, AV), lang = summe(w, LANG), uv = summe(w, UV), kfk = summe(w, KURZ), ok1 = av <= lang + 0.005, ok2 = uv + 0.005 >= kfk;
+  const j = ok => ok ? '<span class="ja">✓</span>' : '<span class="nein">✗</span>';
+  return `<div class="kz"><h3>Goldene Finanzierungsregel</h3>
+    <p>${j(ok1)} Anlagevermögen ≤ langfristiges Kapital<br><span class="betr">${kurz(av)} ${ok1 ? '≤' : '>'} ${kurz(lang)}</span></p>
+    <p>${j(ok2)} Umlaufvermögen ≥ kurzfristiges Kapital<br><span class="betr">${kurz(uv)} ${ok2 ? '≥' : '<'} ${kurz(kfk)}</span></p>
+    <p style="margin:0"><b>${ok1 && ok2 ? 'Die Regel wird eingehalten.' : 'Die Regel wird nicht eingehalten – es drohen Liquiditätsschwierigkeiten.'}</b></p></div>`;
+}
+
+/* ---------- Bilanz: Bild (maßstäblich) ---------- */
+const BW = 170, XA = 110, XP = 300, TOP = 30, HMAX = 400;
+function segmente(){
+  if (ansicht === 'konten') return {A:AKTIVA.map(k => ({ks:[k], t:k, c:KONTEN[k].g.toLowerCase()})), P:PASSIVA.map(k => ({ks:[k], t:k, c:KONTEN[k].g.toLowerCase()})), kurzT:true};
+  if (ansicht === 'struktur') return {A:[{ks:AV, t:'Anlagevermögen', c:'av'}, {ks:UV, t:'Umlaufvermögen', c:'uv'}],
+    P:[{ks:['EK'], t:'Eigenkapital', c:'ek'}, {ks:['LBKV', 'KBKV', 'VE'], t:'Fremdkapital', c:'fk'}]};
+  return {A:[{ks:AV, t:'Anlagevermögen', c:'av', lang:1}, {ks:UV, t:'Umlaufvermögen', c:'uv'}],
+    P:[{ks:['EK'], t:'Eigenkapital', c:'ek', lang:1}, {ks:['LBKV'], t:'langfristiges FK', c:'fk', lang:1}, {ks:KURZ, t:'kurzfristiges FK', c:'fk'}]};
+}
+function bildSVG(w){
+  const d = mark ? mark.d : {}, t = summe(w, AKTIVA), sc = HMAX / Math.max(1500000, t * 1.03), seg = segmente(), zu = verdeckt();
+  let h = `<svg viewBox="0 0 580 ${TOP + HMAX + 16}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Bilanz als Bild, Höhe entspricht dem Betrag">
+    <defs><pattern id="schr" class="schr" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="9"/></pattern></defs>
+    <text class="kopf" x="${XA + BW / 2}" y="18">Aktiva</text><text class="kopf" x="${XP + BW / 2}" y="18">Passiva</text>`;
+  const spalte = (list, x, links) => {
+    let y = TOP;
+    list.forEach((s, i) => {
+      const v = summe(w, s.ks), hh = Math.max(0, v * sc), dz = r2(s.ks.reduce((a, k) => a + (d[k] || 0), 0));
+      if (hh < 0.3 && !dz) return;
+      h += `<rect class="seg ${s.c}${seg.kurzT && i % 2 ? ' alt' : ''}${dz ? ' geaendert' : ''}" x="${x}" y="${y}" width="${BW}" height="${hh}"><title>${seg.kurzT ? KONTEN[s.t].name : s.t}: ${eur(v)}</title></rect>`;
+      if (s.lang) h += `<rect x="${x}" y="${y}" width="${BW}" height="${hh}" fill="url(#schr)" pointer-events="none"/>`;
+      if (hh >= 15) h += `<text class="lbl" x="${x + BW / 2}" y="${y + (hh >= 32 ? hh / 2 - 2 : hh / 2 + 4.5)}">${seg.kurzT ? konto(s.t) : s.t}</text>`;
+      if (hh >= 32) h += `<text class="lbl k" x="${x + BW / 2}" y="${y + hh / 2 + 13}">${kurz(v)}</text>`;
+      if (dz) h += `<text class="dz ${dz > 0 ? 'plus' : 'minus'}" x="${links ? x - 6 : x + BW + 6}" y="${y + Math.max(hh / 2, 6) + 4}" text-anchor="${links ? 'end' : 'start'}">${dz > 0 ? '+' : '−'}${kurz(Math.abs(dz))}</text>`;
+      y += hh;
+    });
+  };
+  spalte(seg.A, XA, true); spalte(seg.P, XP, false);
+  const y0 = TOP + summe(START, AKTIVA) * sc;
+  h += `<line class="linie" x1="${XA - 10}" x2="${XP + BW + 10}" y1="${y0}" y2="${y0}"/><text class="lt" x="${XA - 12}" y="${y0 + 4}" text-anchor="end">zu Beginn</text>`;
+  if (mark && Math.abs(mark.vorher - summe(S.werte, AKTIVA)) > 0.5 && !zu){
+    const yv = TOP + mark.vorher * sc;
+    h += `<line class="linie vorher" x1="${XA - 10}" x2="${XP + BW + 10}" y1="${yv}" y2="${yv}"/><text class="lt" x="${XP + BW + 12}" y="${yv + 4}">vor der Buchung</text>`;
+  }
+  if (ansicht === 'fristen' && !zu){
+    const ya = TOP + summe(w, AV) * sc, yl = TOP + summe(w, LANG) * sc;
+    h += `<line class="grenze" x1="${XA}" x2="${XP + BW}" y1="${ya}" y2="${ya}"/>`;
+    if (yl < ya - 0.5) h += `<rect class="luecke" x="${XP}" y="${yl}" width="${BW}" height="${ya - yl}"/><text class="ltext" x="${XP + BW + 6}" y="${(yl + ya) / 2 + 4}">AV kurzfristig</text><text class="ltext" x="${XP + BW + 6}" y="${(yl + ya) / 2 + 18}">finanziert!</text>`;
+  }
+  return h + '</svg>';
+}
+let animId = 0;
+function zeichne(w){ $('#bild').innerHTML = bildSVG(w); }
+function animiere(von, nach){
+  const id = ++animId, t0 = performance.now();
+  const schritt = jetzt => {
+    if (id !== animId) return;
+    let t = Math.min(1, (jetzt - t0) / 700); t = 1 - Math.pow(1 - t, 3);
+    const w = {}; for (const k in nach) w[k] = von[k] + (nach[k] - von[k]) * t;
+    zeichne(w); if (t < 1) requestAnimationFrame(schritt);
+  };
+  zeichne(von); requestAnimationFrame(schritt);
+}
+
+/* ---------- Darstellung ---------- */
+function render(){
+  document.querySelectorAll('[data-modus]').forEach(b => b.classList.toggle('on', b.dataset.modus === modus));
+  document.querySelectorAll('[data-ansicht]').forEach(b => b.classList.toggle('on', b.dataset.ansicht === ansicht));
+  $('#links').innerHTML = modus === 'ueben' ? htmlUeben() : htmlErkunden();
+  const g = gruppen();
+  $('#tabelle').innerHTML = `<div class="tkonto">${seiteHTML('Aktiva', g.A, AKTIVA)}${seiteHTML('Passiva', g.P, PASSIVA)}</div>`;
+  $('#kz').innerHTML = kzHTML();
+  if (animVon){ animiere(animVon, S.werte); animVon = null; } else { animId++; zeichne(S.werte); }
+}
+
+document.addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const ds = b.dataset;
+  if (ds.modus){ modus = ds.modus; st('modus', modus); mark = null; erklaert = null; }
+  else if (ds.ansicht){ ansicht = ds.ansicht; st('ansicht', ansicht); }
+  else if (b.id === 'reset'){
+    if (!confirm('Bilanz wieder auf den Anfangsbestand zurücksetzen? Alle Buchungen werden entfernt.')) return;
+    S = {werte:Object.assign({}, START), verlauf:[]}; st('stand', S); mark = null; erklaert = null;
+    if (A && A.teil !== 'a') neueAufgabe(A.nr + (A.teil === 'fertig' ? 1 : 0));
+  }
+  else if (ds.fall){ sel = ds.fall; selBetrag = null; erklaert = null; st('sel', sel); }
+  else if (b.id === 'buchen'){
+    const f = fall(sel), bv = selBetrag || f.std, d = deltas(buchung(f, bv)), s0 = summe(S.werte, AKTIVA);
+    if (fehlend(S.werte, d).length) return;
+    buchen(f.id, bv, d); erklaert = erklaerung(d, s0, summe(S.werte, AKTIVA));
+  }
+  else if (b.id === 'undo') zuruecknehmen();
+  else if (b.id === 'pruefenA') return pruefeA();
+  else if (b.id === 'andere'){ neueAufgabe(A.nr); mark = null; }
+  else if (ds.plus){ A[ds.plus].push({k:'', b:''}); st('aufgabe', A); }
+  else if (ds.weg){ A[ds.weg].splice(+ds.i, 1); st('aufgabe', A); }
+  else if (ds.art) return pruefeB(ds.art);
+  else if (ds.gr) return pruefeC(ds.gr);
+  else if (b.id === 'pruefenC') return pruefeC($('#antwortC').value);
+  else if (b.id === 'weiter'){ neueAufgabe(A.nr + 1); mark = null; }
+  else return;
+  render();
+});
+document.addEventListener('input', e => {
+  const t = e.target;
+  if (t.dataset.seite && A){ A[t.dataset.seite][+t.dataset.i][t.dataset.f] = t.value; st('aufgabe', A); }
+});
+document.addEventListener('change', e => {
+  if (e.target.id === 'selBetrag'){ const v = Math.round(+e.target.value * 100) / 100; selBetrag = v > 0 ? v : null; erklaert = null; render(); }
+});
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  if (e.target.id === 'antwortC'){ e.preventDefault(); pruefeC(e.target.value); }
+  else if (e.target.dataset && e.target.dataset.seite && e.target.tagName === 'INPUT'){ e.preventDefault(); pruefeA(); }
+});
+render();
+</script>
+</body>
+</html>

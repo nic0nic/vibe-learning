@@ -12,6 +12,13 @@ Gesammelt im Thread „Aufbau der Seite“. Umgesetzt wird erst, wenn die Lehrkr
 
 ### Version vom 04.11.
 
+32. **BWR Finanzierung: Bilanz-Modell** (gewünscht 04.11.)
+    - `BWR/9II/finanzierung/bilanz.html`: Bilanz von Saitgig (Selbstlernheft Finanzierung, Kap. 2) verändert sich mit jeder Buchung, Tabelle mit +/− und maßstäbliches Bild.
+    - 16 Geschäftsfälle (7 Aktiv-Passiv-Mehrungen als Schwerpunkt, 3 Minderungen, 4 Aktivtausch, 2 Passivtausch), teils mit Vorsteuer.
+    - Einteilungen: Bilanzposten, AV/UV · EK/FK (mit Eigenkapitalquote), Goldene Regel (langfristig/kurzfristig, Prüfung AV ≤ EK + langfr. FK).
+    - Erkunden (buchen, zurücknehmen) und Üben: a) Buchungssatz bilden, b) Art der Bilanzveränderung angeben, c) je nach Einteilung Bilanzsumme, Eigenkapitalquote oder Goldene Regel.
+    - Offen zur Prüfung durch die Lehrkraft: Kontennummer 0530 BVG, Einlage des Inhabers direkt auf 3000 EK (ohne 3001 P).
+
 13. **Funktionen: Erarbeitung MITTELWERT neu ordnen** (gewünscht 22.10.)
     Aufgabe „MITTELWERT nach unten“ direkt nach der Einführung, danach erst „Leere Zellen“ mit Extrazeile =SUMME(B4:B9)/5 neben /6 und MITTELWERT. Schrittzahl gleich (7), Schritt 3 und 4 haben die Plätze getauscht.
 
