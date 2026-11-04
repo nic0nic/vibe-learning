@@ -812,6 +812,7 @@ body{background:var(--bg);color:var(--text);font:15px/1.45 system-ui,-apple-syst
 .fall:hover{border-color:var(--accent)}
 .fall.on{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
 .fall .n{color:var(--muted);font-weight:400}
+.unter{font-size:13px;font-weight:700;color:var(--muted);margin:8px 0 4px!important}
 .fallkarte{border-top:1px solid var(--border);margin-top:14px;padding-top:4px}
 pre.bsatz{font:12.5px/1.5 var(--mono);background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin:6px 0 10px;overflow-x:auto}
 .nr{font-size:13px;color:var(--muted);margin:-2px 0 8px}
@@ -927,15 +928,17 @@ const KONTEN = {
   EK:    {nr:'3000', name:'Eigenkapital', g:'EK'},
   KBKV:  {nr:'4200', name:'Kurzfristige Bankverbindlichkeiten', g:'FK'},
   LBKV:  {nr:'4250', name:'Langfristige Bankverbindlichkeiten', g:'FK'},
-  VE:    {nr:'4400', name:'Verbindlichkeiten aus Lieferungen und Leistungen', g:'FK'}
+  VE:    {nr:'4400', name:'Verbindlichkeiten aus Lieferungen und Leistungen', g:'FK'},
+  UST:   {nr:'4800', name:'Umsatzsteuer', g:'FK'}
 };
-const AKTIVA = ['BVG', 'MA', 'FP', 'BGA', 'R', 'FO', 'VORST', 'BK', 'KA'], PASSIVA = ['EK', 'LBKV', 'KBKV', 'VE'];
+const AKTIVA = ['BVG', 'MA', 'FP', 'BGA', 'R', 'FO', 'VORST', 'BK', 'KA'], PASSIVA = ['EK', 'LBKV', 'KBKV', 'VE', 'UST'];
 const AV = AKTIVA.filter(k => KONTEN[k].g === 'AV'), UV = AKTIVA.filter(k => KONTEN[k].g === 'UV');
-const LANG = ['EK', 'LBKV'], KURZ = ['KBKV', 'VE'];
+const FK = PASSIVA.filter(k => KONTEN[k].g === 'FK'), LANG = ['EK', 'LBKV'], KURZ = ['KBKV', 'VE', 'UST'];
+const STEUER = ['VORST', 'UST'];   // erscheinen in der Bilanz erst, wenn sie einen Bestand haben
 const KONTOWAHL = Object.keys(KONTEN).sort((a, b) => KONTEN[a].nr.localeCompare(KONTEN[b].nr));
 // Bilanz zum 31.12. aus dem Selbstlernheft, Kapitel 2 (Summe 1.040.000,00 €)
 const START = {BVG:420000, MA:260000, FP:60000, BGA:40000, R:95000, FO:110000, VORST:0, BK:48000, KA:7000,
-  EK:312000, LBKV:520000, KBKV:98000, VE:110000};
+  EK:312000, LBKV:520000, KBKV:98000, VE:110000, UST:0};
 const UST = 0.19;
 const ART = {
   APM:  {name:'Aktiv-Passiv-Mehrung', text:'Ein Posten auf der Aktivseite und ein Posten auf der Passivseite nehmen um denselben Betrag zu. Die Bilanzsumme steigt.'},
@@ -944,7 +947,8 @@ const ART = {
   PT:   {name:'Passivtausch', text:'Nur die Passivseite ändert sich: Was ein Posten zunimmt, nimmt ein anderer ab. Die Bilanzsumme bleibt gleich.'}
 };
 const ART_FOLGE = ['APM', 'APMI', 'AT', 'PT'];
-// Betrag = Nettobetrag (bei ust) bzw. Betrag; von/bis/schritt für Übungen, std für Erkunden
+// Betrag = Nettobetrag (bei ust) bzw. Betrag; von/bis/schritt für Übungen, std für Erkunden;
+// unter = Unterpunkt in der Liste, artText = eigene Erklärung statt ART[art].text
 const FAELLE = [
   {id:'darlehen', art:'APM', titel:'Darlehen aufnehmen', von:40000, bis:120000, schritt:10000, std:80000,
     text:b => `Die Hausbank zahlt Saitgig ein Darlehen über ${eur(b)} mit einer Laufzeit von 8 Jahren auf das Bankkonto aus.`,
@@ -988,6 +992,10 @@ const FAELLE = [
   {id:'maschine-bank', art:'AT', titel:'Maschine per Bank kaufen', ust:true, von:5000, bis:30000, schritt:5000, std:15000,
     text:b => `Saitgig kauft eine Schleifmaschine für ${eur(b)} netto zuzüglich 19 % Umsatzsteuer und bezahlt sofort per Banküberweisung.`,
     soll:[['MA', 1], ['VORST', UST]], haben:[['BK', 1 + UST]]},
+  {id:'maschine-verkauf', art:'AT', unter:'mit Umsatzsteuer', titel:'Maschine bar verkaufen', ust:true, von:2000, bis:12000, schritt:1000, std:5000,
+    text:b => `Saitgig verkauft eine gebrauchte Maschine zum Buchwert von ${eur(b)} netto zuzüglich 19 % Umsatzsteuer gegen Barzahlung.`,
+    artText:'Im Kern ein Aktivtausch: Die Maschinen nehmen ab, die Kasse nimmt zu. Zusätzlich schuldet Saitgig dem Finanzamt die Umsatzsteuer. Sie steht als Passivposten in der Bilanz – um diesen Betrag steigt die Bilanzsumme.',
+    soll:[['KA', 1 + UST]], haben:[['MA', 1], ['UST', UST]]},
   {id:'umschuldung', art:'PT', titel:'Kredit in Darlehen umwandeln', von:20000, bis:60000, schritt:10000, std:40000,
     text:b => `Die Bank wandelt einen kurzfristigen Kredit von Saitgig über ${eur(b)} in ein Darlehen mit 5 Jahren Laufzeit um.`,
     soll:[['KBKV', 1]], haben:[['LBKV', 1]]},
@@ -1040,8 +1048,11 @@ function bsText(bs){
 }
 function nebenrechnung(f, b){
   if (!f.ust) return '';
-  return `<div class="nr">Nebenrechnung: Vorsteuer ${eur(b)} · 19 % = ${eur(b * UST)}; Rechnungsbetrag ${eur(b)} + ${eur(b * UST)} = ${eur(b * (1 + UST))}</div>`;
+  const st = [...f.soll, ...f.haben].some(([k]) => k === 'UST') ? 'Umsatzsteuer' : 'Vorsteuer';
+  return `<div class="nr">Nebenrechnung: ${st} ${eur(b)} · 19 % = ${eur(b * UST)}; Rechnungsbetrag ${eur(b)} + ${eur(b * UST)} = ${eur(b * (1 + UST))}</div>`;
 }
+const artName = f => ART[f.art].name + (f.unter ? ' ' + f.unter : '');
+const artText = f => f.artText || ART[f.art].text;
 const fbHTML = fb => fb ? `<div class="fb ${fb.ok ? 'ok' : 'falsch'}">${fb.t}</div>` : '';
 
 /* ---------- Zustand ---------- */
@@ -1077,16 +1088,20 @@ function erklaerung(d, s0, s1){
   return `<ul>${z.join('')}</ul><p>Bilanzsumme: ${eur(s0)} → ${eur(s1)}${s0 === s1 ? ' (unverändert)' : ''}</p>`;
 }
 function htmlErkunden(){
+  const knopf = f => `<button class="fall${f.id === sel ? ' on' : ''}" type="button" data-fall="${f.id}">${esc(f.titel)}</button>`;
   let h = '<h2>Geschäftsfälle</h2><p class="muted">Wähle einen Geschäftsfall, lies den Buchungssatz und buche ihn. Rechts siehst du, wie sich die Bilanz verändert.</p>';
   ART_FOLGE.forEach(a => {
     h += `<h3>${ART[a].name}${a === 'APM' ? ' <span class="tag">Schwerpunkt</span>' : ''}</h3><div class="faelle">`
-      + FAELLE.filter(f => f.art === a).map(f => `<button class="fall${f.id === sel ? ' on' : ''}" type="button" data-fall="${f.id}">${esc(f.titel)}</button>`).join('') + '</div>';
+      + FAELLE.filter(f => f.art === a && !f.unter).map(knopf).join('') + '</div>';
+    [...new Set(FAELLE.filter(f => f.art === a && f.unter).map(f => f.unter))].forEach(u => {
+      h += `<p class="unter">${ART[a].name} ${u}</p><div class="faelle">` + FAELLE.filter(f => f.art === a && f.unter === u).map(knopf).join('') + '</div>';
+    });
   });
   const f = fall(sel), b = selBetrag || f.std, bs = buchung(f, b), d = deltas(bs), fehlt = fehlend(S.werte, d);
   h += `<div class="fallkarte"><h3>${esc(f.titel)}</h3><p>${f.text(b)}</p>
     <p><label class="muted">Betrag${f.ust ? ' (netto)' : ''} in € <input class="feld" id="selBetrag" type="number" min="${f.schritt}" step="${f.schritt}" value="${b}" style="width:130px"></label></p>
     ${nebenrechnung(f, b)}<pre class="bsatz" aria-label="Buchungssatz">${esc(bsText(bs))}</pre>
-    <p><b>${ART[f.art].name}:</b> ${ART[f.art].text}</p>
+    <p><b>${artName(f)}:</b> ${artText(f)}</p>
     <div class="knoepfe"><button class="btn haupt" type="button" id="buchen"${fehlt.length ? ' disabled' : ''}>Buchen</button></div>
     ${fehlt.length ? `<div class="fb falsch">Das geht nicht: Der Bestand bei ${fehlt.map(k => KONTEN[k].name).join(', ')} reicht nicht aus.</div>` : ''}
     ${erklaert ? `<div class="fb ok"><b>Gebucht.</b> So hat sich die Bilanz verändert:${erklaert}</div>` : ''}</div>`;
@@ -1134,7 +1149,7 @@ function htmlUeben(){
   else h += nebenrechnung(f, A.b) + `<pre class="bsatz">${esc(bsText(bs))}</pre>` + fbHTML(A.fb.a);
   h += '</div><div class="teil' + (A.teil === 'a' ? ' zu' : '') + '"><p><b>b)</b> Gib die Art der Bilanzveränderung an.</p>';
   if (A.teil === 'b') h += `<div class="wahl">${ART_FOLGE.map(a => `<button class="btn" type="button" data-art="${a}">${ART[a].name}</button>`).join('')}</div>` + fbHTML(A.fb.b);
-  else if (A.teil !== 'a') h += `<div class="fb ok">✓ <b>${ART[f.art].name}:</b> ${ART[f.art].text}</div>`;
+  else if (A.teil !== 'a') h += `<div class="fb ok">✓ <b>${artName(f)}:</b> ${artText(f)}</div>`;
   h += '</div><div class="teil' + (A.teil === 'a' || A.teil === 'b' ? ' zu' : '') + `"><p><b>c)</b> ${A.teil === 'fertig' ? A.cFrage : AUFGABE_C[ansicht]}</p>`;
   if (A.teil === 'c'){
     h += ansicht === 'fristen'
@@ -1156,13 +1171,14 @@ function pruefeA(){
   else if (ks(s) === ks(bs.haben) && ks(hb) === ks(bs.soll)) fb = 'Soll und Haben sind vertauscht. Überlege bei jedem Konto: Nimmt der Posten zu oder ab – und steht er auf der Aktiv- oder der Passivseite?';
   else if (ks(s) !== ks(bs.soll) || ks(hb) !== ks(bs.haben)){
     const n = bs.soll.length + bs.haben.length;
-    fb = 'Die Konten stimmen noch nicht. ' + (f.ust && !alle.some(x => x.k === 'VORST') ? 'Denke an die Vorsteuer.'
+    const steuer = [...bs.soll, ...bs.haben].find(x => STEUER.includes(x.k));
+    fb = 'Die Konten stimmen noch nicht. ' + (steuer && !alle.some(x => x.k === steuer.k) ? `Denke an die ${KONTEN[steuer.k].name}.`
       : alle.length > n ? 'Es sind zu viele Konten.' : alle.length < n ? 'Es fehlt ein Konto.'
       : 'Überlege, welche Bilanzposten sich durch den Geschäftsfall verändern und auf welcher Seite sie stehen.');
   } else {
     const soll = l => (x => l.find(y => y.k === x.k).b);
     const falsch = [...s.filter(x => Math.abs(x.b - soll(bs.soll)(x)) > 0.005), ...hb.filter(x => Math.abs(x.b - soll(bs.haben)(x)) > 0.005)];
-    if (falsch.length) fb = `Die Konten stimmen. Prüfe den Betrag bei ${falsch.map(x => konto(x.k)).join(', ')}.` + (f.ust ? ' Die Vorsteuer beträgt 19 % des Nettobetrags.' : '');
+    if (falsch.length) fb = `Die Konten stimmen. Prüfe den Betrag bei ${falsch.map(x => konto(x.k)).join(', ')}.` + (f.ust ? ' Die Steuer beträgt 19 % des Nettobetrags.' : '');
   }
   if (fb){ A.fb.a = {ok:false, t:fb}; st('aufgabe', A); render(); return; }
   const d = deltas(bs);
@@ -1173,7 +1189,7 @@ function pruefeA(){
 }
 function pruefeB(a){
   const f = fall(A.id);
-  if (a !== f.art){ A.fb.b = {ok:false, t:'Noch nicht. Schau rechts in die Bilanz: Welche Seiten haben sich verändert, und hat sich die Bilanzsumme verändert?'}; st('aufgabe', A); render(); return; }
+  if (a !== f.art){ A.fb.b = {ok:false, t:(f.unter && a === 'APM' ? 'Fast: Die Bilanzsumme steigt zwar um die Umsatzsteuer, im Kern ist der Verkauf aber ein Tausch auf der Aktivseite. ' : '') + 'Noch nicht. Schau rechts in die Bilanz: Welche Seiten haben sich verändert, und hat sich die Bilanzsumme verändert?'}; st('aufgabe', A); render(); return; }
   A.teil = 'c'; A.fb.b = null; st('aufgabe', A); render();
 }
 function pruefeC(antwort){
@@ -1206,7 +1222,7 @@ const verdeckt = () => modus === 'ueben' && A && (A.teil === 'b' || A.teil === '
 /* ---------- Bilanz: Tabelle ---------- */
 function gruppen(){
   if (ansicht === 'konten') return {A:[{k:AKTIVA}], P:[{k:PASSIVA}]};
-  if (ansicht === 'struktur') return {A:[{t:'Anlagevermögen', k:AV}, {t:'Umlaufvermögen', k:UV}], P:[{t:'Eigenkapital', k:['EK']}, {t:'Fremdkapital', k:['LBKV', 'KBKV', 'VE']}]};
+  if (ansicht === 'struktur') return {A:[{t:'Anlagevermögen', k:AV}, {t:'Umlaufvermögen', k:UV}], P:[{t:'Eigenkapital', k:['EK']}, {t:'Fremdkapital', k:FK}]};
   return {A:[{t:'Anlagevermögen', u:'langfristig gebunden', k:AV}, {t:'Umlaufvermögen', u:'kurzfristig gebunden', k:UV}],
     P:[{t:'Langfristiges Kapital', u:'EK + langfristiges FK', k:LANG}, {t:'Kurzfristiges Kapital', u:'kurzfristiges FK', k:KURZ}]};
 }
@@ -1218,7 +1234,7 @@ function seiteHTML(titel, grs, ks){
   grs.forEach(g => {
     if (g.t){ const dz = r2(g.k.reduce((s, k) => s + (d[k] || 0), 0)); h += `<div class="gz${pm(dz)}"><span>${g.t}${g.u ? ` <small>(${g.u})</small>` : ''}</span><span class="betr">${zahl(summe(w, g.k))}${badge(dz)}</span></div>`; }
     g.k.forEach(k => {
-      if (k === 'VORST' && !w[k] && !d[k]) return;
+      if (STEUER.includes(k) && !w[k] && !d[k]) return;
       h += `<div class="pz${pm(d[k] || 0)}${g.t ? ' ein' : ''}"><span>${KONTEN[k].name} <small>${konto(k)}</small></span><span class="betr">${zahl(w[k])}${badge(d[k] || 0)}</span></div>`;
     });
   });
@@ -1231,7 +1247,7 @@ function kzHTML(){
   if (ansicht === 'konten') return `<div class="kz"><h3>Bilanzsumme</h3><p class="gross">${eur(t)}</p><p class="muted" style="margin:4px 0 0">zu Beginn: ${eur(t0)}</p></div>`;
   if (ansicht === 'struktur'){
     const z = (n, v) => `<tr><td>${n}</td><td>${eur(v)}</td></tr>`;
-    return `<div class="kz"><h3>Aufbau der Bilanz</h3><table>${z('Anlagevermögen', summe(w, AV))}${z('Umlaufvermögen', summe(w, UV))}${z('Eigenkapital', w.EK)}${z('Fremdkapital', summe(w, ['LBKV', 'KBKV', 'VE']))}${z('Bilanzsumme', t)}</table>
+    return `<div class="kz"><h3>Aufbau der Bilanz</h3><table>${z('Anlagevermögen', summe(w, AV))}${z('Umlaufvermögen', summe(w, UV))}${z('Eigenkapital', w.EK)}${z('Fremdkapital', summe(w, FK))}${z('Bilanzsumme', t)}</table>
       <h3 style="margin-top:10px">Eigenkapitalquote</h3><p class="gross">${proz(w.EK * 100 / t)}</p><p class="muted" style="margin:4px 0 0">Eigenkapital · 100 : Gesamtkapital<br>Branchendurchschnitt Musikinstrumentenbau: 38 %</p></div>`;
   }
   const av = summe(w, AV), lang = summe(w, LANG), uv = summe(w, UV), kfk = summe(w, KURZ), ok1 = av <= lang + 0.005, ok2 = uv + 0.005 >= kfk;
@@ -1247,7 +1263,7 @@ const BW = 170, XA = 110, XP = 300, TOP = 30, HMAX = 400;
 function segmente(){
   if (ansicht === 'konten') return {A:AKTIVA.map(k => ({ks:[k], t:k, c:KONTEN[k].g.toLowerCase()})), P:PASSIVA.map(k => ({ks:[k], t:k, c:KONTEN[k].g.toLowerCase()})), kurzT:true};
   if (ansicht === 'struktur') return {A:[{ks:AV, t:'Anlagevermögen', c:'av'}, {ks:UV, t:'Umlaufvermögen', c:'uv'}],
-    P:[{ks:['EK'], t:'Eigenkapital', c:'ek'}, {ks:['LBKV', 'KBKV', 'VE'], t:'Fremdkapital', c:'fk'}]};
+    P:[{ks:['EK'], t:'Eigenkapital', c:'ek'}, {ks:FK, t:'Fremdkapital', c:'fk'}]};
   return {A:[{ks:AV, t:'Anlagevermögen', c:'av', lang:1}, {ks:UV, t:'Umlaufvermögen', c:'uv'}],
     P:[{ks:['EK'], t:'Eigenkapital', c:'ek', lang:1}, {ks:['LBKV'], t:'langfristiges FK', c:'fk', lang:1}, {ks:KURZ, t:'kurzfristiges FK', c:'fk'}]};
 }
