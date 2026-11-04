@@ -12,6 +12,11 @@ Gesammelt im Thread „Aufbau der Seite“. Umgesetzt wird erst, wenn die Lehrkr
 
 ### Version vom 04.11.
 
+33. **BWR Finanzierung: Erarbeitung kurzfristige Kredite** (gewünscht 04.11., Ergänzung zum Heft Kap. 7)
+    - `BWR/9II/finanzierung/kurzfristige-kredite.html`: Kontokorrentkredit (Grafik Kontostand mit Kreditlinie), Dispositionskredit, Lieferantenkredit mit interaktiver Zeitleiste (Zahlungsdatum eingeben oder Regler → Dauer von Lieferanten- und Kontokorrentkredit, drei Ablesefragen).
+    - 7.1 Merkmale zuordnen (Ziehen oder Antippen), 7.2 Multiple Choice, 7.3 Skonto-Ergebnisse prüfen, 7.4 Kostenvergleich und danach Handlungsempfehlung (Multiple Choice), 7.5 Lückentext mit Auswahllisten. Vor jeder Aufgabe eine Erinnerung, alle Werte auf derselben Seite.
+    - Gemeinsames Grundlayout der BWR-Seiten in `BWR/bwr.css` (auch für bilanz.html).
+
 32. **BWR Finanzierung: Bilanz-Modell** (gewünscht 04.11.)
     - `BWR/9II/finanzierung/bilanz.html`: Bilanz von Saitgig (Selbstlernheft Finanzierung, Kap. 2) verändert sich mit jeder Buchung, Tabelle mit +/− und maßstäbliches Bild.
     - 19 Geschäftsfälle: 7 Aktiv-Passiv-Mehrungen (Schwerpunkt), 3 Minderungen, 4 Aktivtausch, 2 Passivtausch, teils mit Vorsteuer.

@@ -328,3 +328,22 @@ Strukto.listen(el)          alle Unterlisten eines Elements
 Strukto.pruefe(daten)       Diagramm aus fremdem JSON (Datei öffnen, Speicher) bereinigen, sonst null
 Strukto.BREITEN             wählbare Breiten in Pixeln (0 = automatisch)
 ```
+
+### BWR/bwr.css – BWR: Grundlayout aller BWR-Seiten (Farben, Leiste, Karten, Knöpfe, Material, Erinnerung)
+
+```text
+bwr.css – Grundlayout der BWR-Seiten (Nord-Farben, hell und dunkel)
+
+Einbinden im <head> nach den Skripten, Pfad zum Ordner BWR/, z. B. aus BWR/9II/finanzierung/:
+  <link rel="stylesheet" href="../../bwr.css">
+Danach eigene <style>-Regeln der Seite (nur, was keine andere BWR-Seite braucht).
+
+Farben:   --bg --panel --panel2 --text --muted --border --accent --err --ok --mono,
+          --plus/--plus-bg (richtig, Zunahme), --minus/--minus-bg (falsch, Abnahme)
+Gerüst:   .wrap > .bar (.brand mit <span>, .gruppe, .hint, .spacer) und darunter .karte (h2, h3, p)
+Knöpfe:   .btn, .btn.on (gewählt), .btn.haupt (Hauptaktion), .btn.klein; Eingaben .feld
+Texte:    .muted, .tag (kleines Etikett), .nr (Nebenrechnung, klein und grau)
+Rückmeldung: <div class="fb ok|falsch">…</div>; Knopfzeile .knoepfe
+Material: <div class="material"><div class="mt">Titel</div>…</div>, Tabelle darin .beleg
+Erinnerung: <details class="erinnerung" open><summary>Erinnerung</summary>…</details>
+```

@@ -4,7 +4,7 @@ Ziel: Das Projekt bleibt auf Dauer klein, damit Änderungen und neue Seiten weni
 
 1. **Gemeinsamer Code steht in Bibliotheken.**
    - Für alle Seiten: `katalog.js`, `nav.js`, `sync.js`, `seite.css`.
-   - Pro Bereich eine eigene. Excel: `IT/excel/basis.js` für alle Übungen, dazu `bausteine.js` (Formeln aus Bausteinen) oder `tabelle.js` (Tabellen mit Rechenkern), jeweils mit gleichnamiger CSS-Datei. Python: `IT/python/lib/pykurs.js`.
+   - Pro Bereich eine eigene. Excel: `IT/excel/basis.js` für alle Übungen, dazu `bausteine.js` (Formeln aus Bausteinen) oder `tabelle.js` (Tabellen mit Rechenkern), jeweils mit gleichnamiger CSS-Datei. Python: `IT/python/lib/pykurs.js`. BWR: `BWR/bwr.css` (Grundlayout aller BWR-Seiten).
 2. **Eine Seite enthält nur ihr Eigenes.** Aufgaben und Level stehen möglichst als Daten in der Seite, nicht als Code.
 3. **Jede Bibliothek beginnt mit einer kurzen Beschreibung** ihrer Funktionen und wie man sie aufruft. Wer eine neue Seite baut, liest diese Beschreibung und eine Beispielseite, nicht den Code der Bibliothek. Die Beschreibung steht nur dort; ein Skill für neue Seiten wird daraus erzeugt, nicht von Hand gepflegt.
 4. **In eine Bibliothek kommt nur, was mindestens zwei Seiten gleich brauchen.** Sonderfälle einer Übung bleiben in der Übung, keine Schalter für Einzelfälle in der Bibliothek.

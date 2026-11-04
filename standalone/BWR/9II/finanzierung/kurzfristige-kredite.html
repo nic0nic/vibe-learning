@@ -1,0 +1,1305 @@
+<!doctype html>
+<html lang="de" data-trainer="kurzkredit">
+<head>
+<script>window.PF_EINZELDATEI = true;</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kurzfristige Kredite – vibe learning</title>
+<!--
+  Erarbeitung zu Kapitel 7 der Ergänzung zum Selbstlernheft Finanzierung (Saitgig):
+  Kontokorrent-, Dispositions- und Lieferantenkredit. Schritte in SCHRITTE (Info oder Aufgabe 7.1–7.5),
+  jede Seite enthält alle Werte, die man für ihre Aufgabe braucht (Material wird wiederholt).
+  Lieferantenkredit: Zahlungsdatum eingeben → Zeitleiste zeigt Dauer von Lieferanten- und Kontokorrentkredit.
+  Gespeichert: kurzkredit-stand = {schritt, erledigt:{id:true}}. Auswertung: TrainerSync.event, modus erarbeitung.
+-->
+<script>/* ../../../katalog.js */
+/* Inhaltsverzeichnis der Übungsplattform
+ *
+ * Das ist die einzige Stelle, an der ein neues Tool eingetragen werden muss.
+ * Menüleiste, Startseite, Bereichsseiten, Speichern und Lehrerbereich lesen von hier.
+ *
+ * Aufbau:   Fach → (Jahrgangsstufe) → Bereich → Tool. Ordner in pb_public: <Fach>/<Bereich>/
+ *           bzw. <Fach>/<Stufe>/<Bereich>/, z. B. IT/excel/wenn.html, BWR/9II/anlagen/…
+ * Fach:     id      = Ordnername (z. B. IT, BWR), titel = Anzeige im Fach-Menü, text = Untertitel der Startseite
+ *           bereiche = [Bereich] oder stufen = [{id (Ordner, z. B. 9II), titel (Fach-Menü), kurz (oben in der
+ *           Leiste, z. B. 9), text, bereiche}] für Fächer mit Jahrgangsstufen
+ * Bereich:  id      = Name des Unterordners (nur a–z, 0–9, -), über alle Fächer eindeutig
+ *           titel   = Text in der Menüleiste
+ *           farbe   = Akzentfarbe im dunklen Design (Nord-Farben, nordtheme.com),
+ *           farbeHell = dunklerer Ton derselben Farbe für das helle Design (sonst schlecht lesbar)
+ *           farbeSchrift = optional: hellerer Ton für Schrift im dunklen Design, wenn farbe dort zu wenig Kontrast hat
+ *           Ohne farbe bekommt der Bereich das neutrale Nord-Blau.
+ * Tool:     id      = Kürzel für Speicherstand und Auswertung, über alle Fächer eindeutig (nie mehr ändern,
+ *                     sonst geht der gespeicherte Fortschritt verloren)
+ *           datei   = HTML-Datei im Ordner des Bereichs
+ *           titel, text = Anzeige im Menü und auf den Übersichtsseiten
+ *           bedingt = true: nur sichtbar, wenn der Server es für den angemeldeten Schüler freigibt
+ *                     (z. B. Tipp-Aufgabe, siehe /api/trainer/sichtbar in pb_hooks/tippen.pb.js)
+ *           stufen  = Stufen der Übungen für die Auswertung (lehrer.html): Anzahl oder Liste
+ *                     mit Kurznamen, wenn die Nummern allein missverständlich wären
+ *           gruppe  = optional: Untermenü im Menü (aufklappen beim Darüberfahren) und
+ *                     Zwischenüberschrift auf der Bereichsseite (Tools derselben Gruppe direkt hintereinander)
+ * Bereich mit auswertung: false (z. B. Tools ohne Aufgaben) erscheint nicht im Lehrerbereich.
+ *
+ * In der HTML-Datei eines Tools steht dieselbe id: <html lang="de" data-trainer="…">.
+ * Übersichtsseiten: Bereich <html data-bereich="IT/excel">, Fach bzw. Stufe <html data-gruppe="IT">
+ * bzw. data-gruppe="BWR/9II" mit <div id="pf-start">, Fach mit Stufen <html data-fach="BWR"> mit <div id="pf-fach">.
+ *
+ * Am Ende berechnet: KATALOG.gruppen = [{pfad, fach, stufe, titel, text, bereiche}] (Fach bzw. Fach + Stufe)
+ * und KATALOG.bereiche = alle Bereiche aller Fächer, jeweils mit pfad (Ordner) und gruppe.
+ */
+window.KATALOG = {
+  name: 'vibe learning',
+  untertitel: 'Übungen für den Unterricht. Wähle oben Fach und Bereich aus.',
+  faecher: [
+    {id: 'IT', titel: 'IT', text: 'Informationstechnologie: Tabellenkalkulation, Programmieren, Datenbanken, Tippen und Werkzeuge.',
+      bereiche: [
+        {
+          id: 'excel', titel: 'Excel', farbe: '#a3be8c', farbeHell: '#5e8a45',
+          text: 'Tabellenkalkulation: Funktionen, Bedingungen und Verknüpfungen.',
+          tools: [
+            {id: 'fn',   stufen: 5, datei: 'funktionen.html', titel: 'SUMME, MIN, MAX …', text: 'SUMME, MITTELWERT, MIN, MAX, ANZAHL und ANZAHL2 – mit Erklärung, Übungen und Endlos-Modus.'},
+            {id: 'wenn', stufen: 9, datei: 'wenn.html',       titel: 'WENN-Funktion',     text: 'Die WENN-Funktion üben – von Bausteinen bis zur eigenen Formel.'},
+            {id: 'uo',   stufen: 9, datei: 'und-oder.html',   titel: 'UND / ODER',        text: 'Bedingungen verknüpfen – mit Erarbeitung, Übungen und Endlos-Modus.'},
+            {id: 'bz',   stufen: 6, datei: 'bezuege.html',    titel: 'Zellbezüge $',      text: 'Relative und absolute Bezüge: Formeln übertragen und $-Zeichen richtig setzen.'}
+          ]
+        },
+        {id: 'python',      titel: 'Python', farbe: '#b48ead', farbeHell: '#8a5f84', text: 'Programmieren mit Python.',
+          tools: [
+            {id: 'py', datei: 'editor.html', titel: 'Python-Editor', text: 'Python direkt im Browser schreiben und ausführen – mit Terminal für Ein- und Ausgabe.'},
+            {id: 'pyif', stufen: 3, datei: 'bedingungen.html', titel: 'Bedingte Anweisung', text: 'if, elif und else: 10 Aufgaben mit Erklärung und automatischer Prüfung.'}
+          ]
+        },
+        {id: 'datenbanken', titel: 'Datenbanken', farbe: '#bf616a', farbeHell: '#a3434c', farbeSchrift: '#e0959b', text: 'Tabellen, Beziehungen und SQL-Abfragen.',
+          tools: [
+            {id: 'sqlfrei', datei: 'filmdatenbank.html', titel: 'Film-Datenbank', text: 'Eigene Abfragen an die Filmdatenbank stellen, ohne Aufgaben – mit Entwurfsansicht oder in SQL.'},
+            {id: 'sql', stufen: 5, datei: 'abfragen.html', titel: 'SQL-Abfragen', text: 'SELECT, FROM, WHERE und ORDER BY an einer Filmdatenbank – vom Entwurf wie in Access bis zur eigenen SQL-Abfrage.'},
+            {id: 'sqluo', stufen: ['Access 1', 'Access 2', 'Access 3', 'SQL 1', 'SQL 2', 'SQL 3', 'SQL 4', 'SQL 5'], datei: 'datenight.html', titel: 'Datenight: UND / ODER', text: 'Drei Wochen Dates mit immer verrückteren Filmwünschen: Kriterien mit UND und ODER – im Access-Entwurf oder mit Blöcken und SQL.'},
+            {id: 'bericht', datei: 'bericht.html', titel: 'Bericht (Versuch)', text: 'Berichte aus einer Abfrage entwerfen wie in Access: als Liste oder eine Seite je Datensatz, mit Seitenansicht als PDF.'}
+          ]
+        },
+        {id: 'tippen', titel: 'Tippen', farbe: '#8db3ee', farbeHell: '#2b579a', text: 'Schnell und sicher tippen mit zehn Fingern.',
+          tools: [
+            {id: 'tippen', datei: 'pockettype.html', titel: 'pockettype', text: 'Tipptrainer: Wörter und Anschläge pro Minute, Genauigkeit, Bestwerte und Verlauf. Eigenes Projekt auf Basis von Monkeytype (GPL-3.0).'},
+            {id: 'lektionen', datei: 'lektionen.html', titel: 'Lektion üben', text: 'Die 17 Lektionen aus TIPP10 in fester Reihenfolge: von der Grundreihe asdf jklö bis zu Ziffern und Sonderzeichen.'},
+            {id: 'tippaufgabe', bedingt: true, datei: 'aufgabe.html', titel: 'Aufgabe', text: 'Den Text abschreiben, den deine Lehrkraft aufgegeben hat – so oft du willst.'}
+          ]
+        },
+        {id: 'tools', titel: 'Tools', farbe: '#b4bdcc', farbeHell: '#4c566a', auswertung: false, text: 'Werkzeuge für den Unterricht, ohne Aufgaben.',
+          tools: [
+            {id: 'strukto', gruppe: 'Struktogramm', datei: 'struktogramm.html', titel: 'Struktogramm-Editor', text: 'Struktogramme mit der Maus zusammensetzen und als SVG, HTML oder JPG exportieren.'},
+            {id: 'pystrukto', gruppe: 'Struktogramm', datei: 'python-struktogramm.html', titel: 'Python → Struktogramm', text: 'Python-Code eingeben, das Struktogramm entsteht sofort daneben – zum Export oder zum Weiterbearbeiten im Editor.'}
+          ]
+        }
+      ]
+    },
+    {id: 'BWR', titel: 'BWR', text: 'Betriebswirtschaftslehre/Rechnungswesen.',
+      stufen: [
+        {id: '9II', titel: 'Jahrgangsstufe 9', kurz: '9', text: 'BWR, Jahrgangsstufe 9 (Wahlpflichtfächergruppe II).',
+          bereiche: [
+            {id: 'unternehmensfuehrung', titel: 'Unternehmensführung', farbe: '#81a1c1', farbeHell: '#4f73a3', text: 'Übungen zur Unternehmensführung.', tools: []},
+            {id: 'anlagen', titel: 'Anlagen', farbe: '#a3be8c', farbeHell: '#5e8a45', text: 'Übungen zu Anlagen.', tools: []},
+            {id: 'finanzierung', titel: 'Finanzierung', farbe: '#ebcb8b', farbeHell: '#8a6d1f', text: 'Übungen zur Finanzierung.',
+              tools: [
+                {id: 'bilanz', stufen: ['Bilanzposten', 'AV/UV · EK/FK', 'Goldene Regel'], datei: 'bilanz.html', titel: 'Bilanz-Modell', text: 'Wie Buchungen die Bilanz verändern: Aktivtausch, Passivtausch, Aktiv-Passiv-Mehrung und -Minderung – eingeteilt nach Bilanzposten, nach AV/UV und EK/FK oder nach der Goldenen Finanzierungsregel.'},
+                {id: 'kurzkredit', datei: 'kurzfristige-kredite.html', titel: 'Kontokorrent-, Dispo- und Lieferantenkredit', text: 'Erarbeitung zu kurzfristigen Krediten (Heft Kap. 7): Lieferantenkredit auf der Zeitleiste ausprobieren, Merkmale zuordnen, Skonto berechnen und Kosten vergleichen.'}
+              ]},
+            {id: 'kapitalanlage', titel: 'Kapitalanlage', farbe: '#b48ead', farbeHell: '#8a5f84', text: 'Übungen zur Kapitalanlage.', tools: []},
+            {id: 'forderungen', titel: 'Forderungen', farbe: '#bf616a', farbeHell: '#a3434c', farbeSchrift: '#e0959b', text: 'Übungen zu Forderungen.', tools: []}
+          ]
+        }
+      ]
+    }
+  ]
+};
+
+// Gruppen (Fach bzw. Fach + Jahrgangsstufe) und alle Bereiche mit Ordner, für nav.js, sync.js und lehrer.html
+(function (K) {
+  K.gruppen = [];
+  K.faecher.forEach(f => (f.stufen
+    ? f.stufen.map(s => ({pfad: f.id + '/' + s.id, fach: f, stufe: s, titel: f.titel + ' ' + (s.kurz || s.titel), text: s.text || f.text, bereiche: s.bereiche}))
+    : [{pfad: f.id, fach: f, stufe: null, titel: f.titel, text: f.text, bereiche: f.bereiche}]).forEach(g => K.gruppen.push(g)));
+  K.bereiche = [].concat(...K.gruppen.map(g => g.bereiche.map(b => Object.assign(b, {pfad: g.pfad + '/' + b.id, gruppe: g}))));
+})(window.KATALOG);
+
+</script>
+<script>/* ../../../nav.js */
+/* Menüleiste der Übungsplattform
+ *
+ * Baut oben auf jeder Seite die Leiste: vorne das Fach-Menü (IT, BWR › Jahrgangsstufe 9 …),
+ * dahinter die Bereiche des gewählten Fachs aus katalog.js.
+ * Fährt man mit der Maus über einen Bereich (am Handy: antippen), klappen
+ * dessen Übungen auf. Außerdem füllt das Skript die Startseite bzw. Fachseite (#pf-start),
+ * die Auswahl der Jahrgangsstufe (#pf-fach) und die Übersichtsseite eines Bereichs (#pf-bereich).
+ * Das zuletzt gewählte Fach merkt sich der Browser (localStorage pf-fach) für die Startseite.
+ *
+ * Fehlt katalog.js oder nav.js, läuft das Tool trotzdem – nur ohne Menüleiste.
+ * Tools mit gruppe (katalog.js) stehen im Menü in einem Untermenü (klappt beim Darüberfahren auf)
+ * und auf der Bereichsseite unter einer Zwischenüberschrift.
+ * Tools mit bedingt: true (katalog.js) sind zunächst ausgeblendet; sync.js blendet sie ein,
+ * wenn der Server sie für den angemeldeten Schüler freigibt (Klasse pf-sichtbar).
+ * In Einzeldateien (werkzeuge/einzeldateien.py, window.PF_EINZELDATEI) zeigt die
+ * Leiste nur Name und Hell/Dunkel-Knopf, weil es keine anderen Seiten gibt.
+ */
+(function () {
+  'use strict';
+  const K = window.KATALOG;
+  if (!K) return;
+
+  // Wurzel der Plattform = Ordner, in dem nav.js liegt (funktioniert auch per Doppelklick)
+  const me = document.currentScript && document.currentScript.src;
+  const BASE = me ? me.replace(/[^/]*$/, '') : '';
+  const root = document.documentElement;
+  const TOOL = root.dataset.trainer || '';
+  // Aktueller Bereich: über das Tool oder <html data-bereich="IT/excel">.
+  // Aktuelle Gruppe (Fach bzw. Fach + Jahrgangsstufe): über den Bereich, <html data-gruppe="BWR/9II">
+  // oder <html data-fach="BWR">, sonst die zuletzt gewählte (localStorage pf-fach), sonst die erste.
+  const BER = K.bereiche.find(b => b.tools.some(t => t.id === TOOL)) || K.bereiche.find(b => b.pfad === root.dataset.bereich) || null;
+  const BEREICH = BER ? BER.id : '';
+  const FACHSEITE = K.faecher.find(f => f.id === root.dataset.fach) || null;
+  let GRUPPE = BER ? BER.gruppe : K.gruppen.find(g => g.pfad === root.dataset.gruppe) || (FACHSEITE && K.gruppen.find(g => g.fach === FACHSEITE));
+  if (GRUPPE){ try { localStorage.setItem('pf-fach', GRUPPE.pfad); } catch (e) {} }
+  else {
+    let zuletzt = null;
+    try { zuletzt = localStorage.getItem('pf-fach'); } catch (e) {}
+    GRUPPE = K.gruppen.find(g => g.pfad === zuletzt) || K.gruppen[0];
+  }
+
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+  const bereichUrl = b => BASE + b.pfad + '/index.html';
+  const toolUrl = (b, t) => BASE + b.pfad + '/' + t.datei;
+  const gruppeUrl = g => BASE + g.pfad + '/index.html';
+  const fachUrl = f => BASE + f.id + '/index.html';
+
+  const CSS = `
+.pf-nav{background:var(--panel,#f6f8fb);color:var(--text,#2e3440);border-bottom:1px solid var(--border,#cdd3de);position:relative;z-index:60;font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.pf-in{max-width:1400px;margin:0 auto;display:flex;align-items:center;gap:6px;padding:0 16px;min-height:50px}
+.pf-brand{font:800 18px ui-monospace,Consolas,"Liberation Mono",monospace;color:inherit;text-decoration:none;margin-right:14px;white-space:nowrap}
+.pf-brand span{color:var(--accent-text,var(--accent,#5e81ac))}
+.pf-menu{display:flex;gap:2px;list-style:none;margin:0;padding:0}
+.pf-item{position:relative;--bc:#5e81ac}
+html[data-theme=dark] .pf-item{--bc:#88c0d0}
+.pf-item>a{display:flex;align-items:center;gap:5px;padding:14px 11px;color:inherit;text-decoration:none;font-weight:600;border-bottom:3px solid transparent;white-space:nowrap}
+.pf-item>a::after{content:"";width:6px;height:6px;border:solid currentColor;border-width:0 2px 2px 0;transform:rotate(45deg) translateY(-2px);opacity:.5}
+.pf-item:hover>a,.pf-item.open>a{color:var(--bc)}
+.pf-item>a[aria-current]{border-bottom-color:var(--bc)}
+.pf-drop{display:none;position:absolute;top:100%;left:0;min-width:280px;background:var(--panel,#f6f8fb);border:1px solid var(--border,#cdd3de);border-radius:0 0 12px 12px;box-shadow:0 14px 30px rgba(0,0,0,.18);padding:6px;list-style:none;margin:0}
+.pf-item:hover .pf-drop,.pf-item:focus-within .pf-drop,.pf-item.open .pf-drop{display:block}
+.pf-drop a{display:block;padding:8px 10px;border-radius:8px;color:inherit;text-decoration:none}
+.pf-drop a:hover,.pf-drop a:focus{background:var(--panel2,#eceff4);outline:none}
+.pf-drop a[aria-current]{color:var(--bc);font-weight:600}
+.pf-drop small{display:block;color:var(--muted,#5b6578);font-size:13px}
+.pf-drop .pf-all{font-size:13px;color:var(--muted,#5b6578);border-top:1px solid var(--border,#cdd3de);border-radius:0 0 8px 8px;margin-top:4px}
+.pf-fach{margin-right:8px}
+.pf-fach>a{border:1px solid var(--border,#cdd3de);border-radius:10px;background:var(--panel2,#eceff4);padding:6px 10px!important;margin:6px 0}
+.pf-fach>a small{font-weight:500;color:var(--muted,#5b6578);margin-right:2px}
+.pf-sub{position:relative}
+.pf-sub>a{display:flex!important;align-items:center;justify-content:space-between;gap:12px}
+.pf-sub>a::after{content:"";width:6px;height:6px;border:solid currentColor;border-width:0 2px 2px 0;transform:rotate(-45deg);opacity:.5;flex:none}
+.pf-drop2{display:none;position:absolute;left:100%;top:-7px;min-width:250px;background:var(--panel,#f6f8fb);border:1px solid var(--border,#cdd3de);border-radius:12px;box-shadow:0 14px 30px rgba(0,0,0,.18);padding:6px;list-style:none;margin:0}
+.pf-sub.links>.pf-drop2{left:auto;right:100%}
+.pf-sub:hover>.pf-drop2,.pf-sub:focus-within>.pf-drop2,.pf-sub.open>.pf-drop2{display:block}
+.pf-drop .pf-leer{padding:8px 10px;color:var(--muted,#5b6578);font-style:italic}
+.pf-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.pf-btn{background:var(--panel2,#eceff4);border:1px solid var(--border,#cdd3de);color:inherit;border-radius:10px;width:38px;height:38px;display:grid;place-items:center;cursor:pointer;font-size:17px;padding:0}
+.pf-burger{display:none}
+.pf-einzeln .pf-menu{display:none!important}
+.pf-bedingt:not(.pf-sichtbar){display:none!important}
+@media (max-width:760px){
+  .pf-burger{display:grid}
+  .pf-menu{display:none;position:absolute;top:100%;left:0;right:0;flex-direction:column;background:var(--panel,#f6f8fb);border-bottom:1px solid var(--border,#cdd3de);box-shadow:0 14px 30px rgba(0,0,0,.18);padding:6px 16px 12px;max-height:80vh;overflow:auto}
+  .pf-nav.open .pf-menu{display:flex}
+  .pf-item>a{padding:10px 0 4px;border:0}
+  .pf-item>a::after{display:none}
+  .pf-drop{display:block;position:static;min-width:0;border:0;box-shadow:none;padding:0 0 4px 10px}
+  .pf-drop2{display:block;position:static;min-width:0;border:0;box-shadow:none;padding:0 0 0 12px}
+  .pf-sub>a::after{display:none}
+}
+.pf-knapp .ts-badge.gast .ts-lang{display:none}
+/* dasselbe, wenn die Leiste zu voll ist (nav.js setzt pf-eng) */
+.pf-eng .pf-burger{display:grid}
+.pf-eng .pf-menu{display:none;position:absolute;top:100%;left:0;right:0;flex-direction:column;background:var(--panel,#f6f8fb);border-bottom:1px solid var(--border,#cdd3de);box-shadow:0 14px 30px rgba(0,0,0,.18);padding:6px 16px 12px;max-height:80vh;overflow:auto}
+.pf-eng.open .pf-menu{display:flex}
+.pf-eng .pf-item>a{padding:10px 0 4px;border:0}
+.pf-eng .pf-item>a::after{display:none}
+.pf-eng .pf-drop{display:block;position:static;min-width:0;border:0;box-shadow:none;padding:0 0 4px 10px}
+.pf-eng .pf-drop2{display:block;position:static;min-width:0;border:0;box-shadow:none;padding:0 0 0 12px}
+.pf-eng .pf-sub>a::after{display:none}
+.pf-fade,.pf-fade *{transition:background-color .35s,color .35s,border-color .35s,fill .35s!important}
+.pf-gesperrt{opacity:.5;cursor:default!important}
+@media print{.pf-nav{display:none}}`;
+
+  // Farben der Bereiche (katalog.js: farbe = dunkles Design, farbeHell = helles Design,
+  // farbeSchrift = optional hellerer Ton für Schrift im dunklen Design).
+  // --accent gilt für die ganze Seite des aktuellen Bereichs, --bc nur für den eigenen Menüpunkt.
+  function akzentCss(){
+    let css = '';
+    K.bereiche.forEach(b => {
+      if (!b.farbe) return;
+      const dunkel = b.farbeSchrift || b.farbe;
+      css += `\n.pf-item[data-b="${b.id}"]{--bc:${b.farbeHell || b.farbe}}\nhtml[data-theme=dark] .pf-item[data-b="${b.id}"]{--bc:${dunkel}}`;
+      if (b.id === BEREICH) css += `\nhtml[data-theme]{--accent:${b.farbeHell || b.farbe};--accent-text:${b.farbeHell || b.farbe}}\nhtml[data-theme=dark]{--accent:${b.farbe};--accent-text:${dunkel}}`;
+    });
+    return css;
+  }
+
+  const SONNE = '☀', MOND = '☾';
+  function theme(){ return root.dataset.theme === 'dark' ? 'dark' : 'light'; }
+
+  // Tools derselben gruppe (katalog.js) hintereinander → [{name, tools}], ohne gruppe: name ''
+  function gruppen(b){
+    const out = [];
+    b.tools.forEach(t => {
+      const g = out[out.length - 1];
+      if (g && g.name === (t.gruppe || '')) g.tools.push(t); else out.push({name: t.gruppe || '', tools: [t]});
+    });
+    return out;
+  }
+  const toolLi = (b, t) => `<li${t.bedingt ? ` class="pf-bedingt" data-tool="${esc(t.id)}"` : ''}><a href="${toolUrl(b, t)}"${t.id === TOOL ? ' aria-current="page"' : ''}>${esc(t.titel)}</a></li>`;
+
+  // Fach-Menü: Fächer ohne Stufen direkt, Fächer mit Jahrgangsstufen als Untermenü (wie gruppe bei Tools)
+  function fachMenue(){
+    const eintrag = (g, text) => `<li><a href="${gruppeUrl(g)}"${g === GRUPPE ? ' aria-current="page"' : ''}>${esc(text)}</a></li>`;
+    return `<li class="pf-item pf-fach"><a href="${gruppeUrl(GRUPPE)}" aria-haspopup="true" title="Fach wechseln"><small>Fach</small> ${esc(GRUPPE.titel)}</a>
+      <ul class="pf-drop">${K.faecher.map(f => f.stufen
+        ? `<li class="pf-sub"><a href="${fachUrl(f)}"${GRUPPE.fach === f ? ' aria-current="true"' : ''} aria-haspopup="true">${esc(f.titel)}</a><ul class="pf-drop2">${f.stufen.map(st => eintrag(K.gruppen.find(g => g.stufe === st), st.titel)).join('')}</ul></li>`
+        : eintrag(K.gruppen.find(g => g.fach === f), f.titel)).join('')}</ul></li>`;
+  }
+
+  function buildNav(){
+    const s = document.createElement('style'); s.textContent = CSS + akzentCss(); document.head.appendChild(s);
+    const nav = document.createElement('nav');
+    nav.className = 'pf-nav' + (window.PF_EINZELDATEI ? ' pf-einzeln' : '');
+    nav.setAttribute('aria-label', 'Bereiche');
+    const name = esc(K.name).replace(/^(\S+)/, '<span>$1</span>');
+    const EINZELN = !!window.PF_EINZELDATEI;
+    nav.innerHTML = `<div class="pf-in">
+      ${EINZELN ? `<span class="pf-brand">${name}</span>` : `<a class="pf-brand" href="${BASE}index.html">${name}</a>`}
+      <ul class="pf-menu">${fachMenue()}${GRUPPE.bereiche.map(b => `
+        <li class="pf-item" data-b="${esc(b.id)}">
+          <a href="${bereichUrl(b)}"${b.id === BEREICH ? ' aria-current="true"' : ''}>${esc(b.titel)}</a>
+          <ul class="pf-drop">${b.tools.length
+            ? gruppen(b).map(g => g.name
+              ? `<li class="pf-sub"><a href="${bereichUrl(b)}"${g.tools.some(t => t.id === TOOL) ? ' aria-current="true"' : ''} aria-haspopup="true">${esc(g.name)}</a><ul class="pf-drop2">${g.tools.map(t => toolLi(b, t)).join('')}</ul></li>`
+              : g.tools.map(t => toolLi(b, t)).join('')).join('')
+              + `<li><a class="pf-all" href="${bereichUrl(b)}">Alle Übungen zu ${esc(b.titel)}</a></li>`
+            : '<li class="pf-leer">Hier entstehen bald Übungen.</li>'}
+          </ul>
+        </li>`).join('')}
+      </ul>
+      <div class="pf-right">
+        ${document.getElementById('themeBtn') ? '' : `<button class="pf-btn" id="pfTheme" type="button" aria-label="Hell/Dunkel umschalten">${theme() === 'dark' ? SONNE : MOND}</button>`}
+        ${EINZELN ? '' : '<button class="pf-btn pf-burger" type="button" aria-label="Menü">☰</button>'}
+      </div>
+    </div>`;
+    document.body.insertBefore(nav, document.body.firstChild);
+
+    // Passt die Leiste nicht in die Breite (Fach-Menü, lange Bereichsnamen, Anmeldung), kommt das Menü hinter ☰
+    const innen = nav.querySelector('.pf-in');
+    // Erst den Zusatz „– Fortschritt wird nicht gespeichert“ weglassen (pf-knapp), erst dann ☰ (pf-eng)
+    const voll = () => innen.scrollWidth > innen.clientWidth + 1;
+    const platz = () => {
+      nav.classList.remove('pf-eng', 'pf-knapp');
+      if (EINZELN || !voll()) return;
+      nav.classList.add('pf-knapp');
+      if (voll()) nav.classList.add('pf-eng');
+    };
+    platz();
+    addEventListener('resize', platz);
+    new MutationObserver(platz).observe(nav.querySelector('.pf-right'), {childList: true, subtree: true, characterData: true});
+    if (document.fonts) document.fonts.ready.then(platz);
+    const schmal = () => matchMedia('(max-width:760px)').matches || nav.classList.contains('pf-eng');
+
+    const burger = nav.querySelector('.pf-burger');
+    if (burger) burger.addEventListener('click', () => nav.classList.toggle('open'));
+    const tb = nav.querySelector('#pfTheme');
+    if (tb) tb.addEventListener('click', () => {
+      const t = theme() === 'dark' ? 'light' : 'dark';
+      root.dataset.theme = t; tb.textContent = t === 'dark' ? SONNE : MOND;
+      try { localStorage.setItem('wenn-theme', t); } catch (e) {}
+    });
+
+    // Geräte ohne Maus: erstes Antippen klappt auf, zweites öffnet die Bereichsseite
+    const items = [...nav.querySelectorAll('.pf-item')];
+    if (matchMedia('(hover: none)').matches) items.forEach(li => li.firstElementChild.addEventListener('click', e => {
+      if (schmal() || li.classList.contains('open')) return;
+      e.preventDefault();
+      items.forEach(x => x.classList.toggle('open', x === li));
+    }));
+    // Untermenüs (gruppe): nach links aufklappen, wenn rechts kein Platz ist; ohne Maus erst antippen
+    nav.querySelectorAll('.pf-sub').forEach(sub => {
+      sub.addEventListener('mouseenter', () => {
+        const r = sub.getBoundingClientRect();
+        sub.classList.toggle('links', r.right + 260 > innerWidth);
+      });
+      if (matchMedia('(hover: none)').matches) sub.firstElementChild.addEventListener('click', e => {
+        if (schmal() || sub.classList.contains('open')) return;
+        e.preventDefault();
+        const r = sub.getBoundingClientRect();
+        sub.classList.toggle('links', r.right + 260 > innerWidth);
+        sub.classList.add('open');
+      });
+    });
+    document.addEventListener('click', e => { if (!nav.contains(e.target)){ nav.querySelectorAll('.pf-sub.open').forEach(x => x.classList.remove('open')); items.forEach(x => x.classList.remove('open')); nav.classList.remove('open'); } });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape'){ items.forEach(x => x.classList.remove('open')); nav.classList.remove('open'); } });
+  }
+
+  /* ---------- Übersichtsseiten ---------- */
+  // Tools mit gruppe (katalog.js) stehen unter einer gemeinsamen Zwischenüberschrift
+  function kacheln(b){
+    if (!b.tools.length) return '<p class="pf-hinweis">Hier entstehen bald Übungen.</p>';
+    const kachel = t => `<a class="pf-tile${t.bedingt ? ' pf-bedingt' : ''}"${t.bedingt ? ` data-tool="${esc(t.id)}"` : ''} href="${toolUrl(b, t)}"><b>${esc(t.titel)}</b><span>${esc(t.text)}</span></a>`;
+    return gruppen(b).map(g => (g.name ? `<h3 class="pf-gruppe">${esc(g.name)}</h3>` : '') + `<div class="pf-grid">${g.tools.map(kachel).join('')}</div>`).join('');
+  }
+  function buildPages(){
+    const start = document.getElementById('pf-start');
+    if (start){
+      const gruppenseite = !!root.dataset.gruppe;
+      if (gruppenseite) document.title = GRUPPE.titel + ' – ' + K.name;
+      start.innerHTML = `<h1>${esc(gruppenseite ? GRUPPE.titel : K.name)}</h1><p class="pf-lead">${esc(GRUPPE.text)}${gruppenseite ? '' : ' ' + esc(K.untertitel)}</p>`
+        + GRUPPE.bereiche.map(b => `<section class="pf-sec"><h2><a href="${bereichUrl(b)}">${esc(b.titel)}</a></h2><p class="pf-text">${esc(b.text)}</p>${kacheln(b)}</section>`).join('');
+    }
+    // Fach mit Jahrgangsstufen: Auswahl der Stufe
+    const fach = document.getElementById('pf-fach');
+    if (fach && FACHSEITE){
+      document.title = FACHSEITE.titel + ' – ' + K.name;
+      fach.innerHTML = `<h1>${esc(FACHSEITE.titel)}</h1><p class="pf-lead">${esc(FACHSEITE.text)} Wähle die Jahrgangsstufe.</p><div class="pf-grid">`
+        + K.gruppen.filter(g => g.fach === FACHSEITE).map(g => `<a class="pf-tile" href="${gruppeUrl(g)}"><b>${esc(g.stufe.titel)}</b><span>${esc(g.text)}</span></a>`).join('') + '</div>';
+    }
+    const be = document.getElementById('pf-bereich');
+    const b = BER;
+    if (be && b){
+      document.title = b.titel + ' – ' + K.name;
+      be.innerHTML = `<h1>${esc(b.titel)}</h1><p class="pf-lead">${esc(b.text)}</p>${kacheln(b)}`;
+    }
+  }
+
+  // Hell/Dunkel höchstens einmal pro Sekunde umschalten und weich überblenden – kein Flackern beim schnellen Klicken
+  let themeSperre = 0;
+  document.addEventListener('click', e => {
+    const btn = e.target.closest('#themeBtn,#pfTheme');
+    if (!btn) return;
+    if (Date.now() < themeSperre){ e.stopImmediatePropagation(); e.preventDefault(); return; }
+    themeSperre = Date.now() + 1000;
+    root.classList.add('pf-fade'); btn.classList.add('pf-gesperrt');
+    setTimeout(() => root.classList.remove('pf-fade'), 400);
+    setTimeout(() => btn.classList.remove('pf-gesperrt'), 1000);
+  }, true);
+
+  function init(){ buildNav(); buildPages(); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();
+
+</script>
+<script>/* ../../../sync.js */
+/* vibe learning – Anmeldung und Anbindung an PocketBase
+ *
+ * Läuft die Seite über den PocketBase-Server, erscheint beim ersten Öffnen ein
+ * Anmeldefenster: ein Feld für Code oder Benutzername (bei Benutzernamen folgt das
+ * Passwort), alternativ „Seite ohne Anmeldung nutzen“. Oben rechts in der Leiste
+ * steht danach, wer angemeldet ist; dort meldet man sich auch an und ab.
+ *
+ * Schüler: Fortschritt wird auf dem Server gespeichert, jede gelöste Aufgabe protokolliert.
+ * Lehrkraft/Admin: Anmeldung gilt bis zum Schließen des Browsers, im Menü steht
+ * der Link zur Verwaltung (lehrer.html).
+ * Wird die HTML-Datei direkt geöffnet (oder läuft kein PocketBase dahinter),
+ * passiert nichts davon – die Seite speichert dann wie bisher nur im Browser.
+ *
+ * Bedingte Menüpunkte (katalog.js: bedingt) blendet das Skript nach der Anmeldung ein,
+ * wenn der Server sie für diesen Schüler freigibt (/api/trainer/sichtbar).
+ *
+ * Die Seite ruft auf:
+ *   TrainerSync.changed()      nach jeder Änderung am gespeicherten Stand
+ *   TrainerSync.event({...})   wenn eine Aufgabe richtig gelöst wurde
+ */
+(function () {
+  'use strict';
+
+  const CONFIG = {
+    api: '/api/trainer',
+    verwaltung: 'lehrer.html'   // relativ zum Ordner von sync.js
+  };
+
+  const me = document.currentScript && document.currentScript.src;
+  const BASE = me ? me.replace(/[^/]*$/, '') : '';
+  const PAGE = document.documentElement.dataset.trainer || '';          // Tool-id aus katalog.js, leer auf Übersichtsseiten
+  const TOOL_IDS = window.KATALOG ? [].concat(...window.KATALOG.bereiche.map(b => b.tools.map(t => t.id))) : [];
+  const ALL_PREFIXES = [...new Set(['wenn', 'uo', 'fn', PAGE].concat(TOOL_IDS))].filter(Boolean).map(id => id + '-');
+  const OWN = PAGE + '-';
+  const SKIP = ['wenn-theme'];                                             // Hell/Dunkel bleibt pro Gerät
+  const K = {code: 'ts-code', anzeige: 'ts-anzeige', klasse: 'ts-klasse', queue: 'ts-queue', stand: 'ts-stand-' + PAGE};
+  const SS = {gast: 'ts-gast', lehrer: 'ts-lehrer'};                      // gilt nur bis zum Schließen des Browsers
+
+  const ls = {
+    get(k){ try { return localStorage.getItem(k); } catch (e) { return null; } },
+    set(k, v){ try { localStorage.setItem(k, v); } catch (e) {} },
+    del(k){ try { localStorage.removeItem(k); } catch (e) {} },
+    keys(){ try { return Object.keys(localStorage); } catch (e) { return []; } }
+  };
+  const ss = {
+    get(k){ try { return sessionStorage.getItem(k); } catch (e) { return null; } },
+    set(k, v){ try { sessionStorage.setItem(k, v); } catch (e) {} },
+    del(k){ try { sessionStorage.removeItem(k); } catch (e) {} }
+  };
+  function lehrerSitzung(){ try { return JSON.parse(ss.get(SS.lehrer) || 'null'); } catch (e) { return null; } }
+
+  const hosted = /^https?:$/.test(location.protocol);
+  let aktiv = false, pushTimer = null, pushPending = false, menuEl = null, lastSnap = '';
+
+  /* ---------- Hilfen ---------- */
+  function api(path, opt){
+    opt = opt || {};
+    return fetch(CONFIG.api + path, {
+      method: opt.method || 'GET',
+      keepalive: !!opt.keepalive,
+      headers: {'Content-Type': 'application/json', 'X-Trainer-Code': ls.get(K.code) || ''},
+      body: opt.body ? JSON.stringify(opt.body) : undefined
+    }).then(async r => {
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok){ const err = new Error(j.message || ('HTTP ' + r.status)); err.status = r.status; err.data = j; throw err; }
+      return j;
+    });
+  }
+  const trainerKeys = prefix => ls.keys().filter(k => k.startsWith(prefix) && !SKIP.includes(k));
+  function snapshot(prefix){ prefix = prefix || OWN; const d = {}; trainerKeys(prefix).sort().forEach(k => { d[k] = ls.get(k); }); return d; }
+  function applySnapshot(d, prefix){
+    prefix = prefix || OWN;
+    trainerKeys(prefix).forEach(k => ls.del(k));
+    Object.keys(d || {}).forEach(k => { if (k.startsWith(prefix) && !SKIP.includes(k) && typeof d[k] === 'string') ls.set(k, d[k]); });
+  }
+  function wipeLocal(){
+    ALL_PREFIXES.forEach(p => trainerKeys(p).forEach(k => ls.del(k)));
+    ls.keys().filter(k => k.startsWith('ts-stand-')).forEach(k => ls.del(k));
+    [K.queue, K.code, K.klasse, K.anzeige].forEach(k => ls.del(k));
+  }
+  function reloadOnce(){
+    let last = 0; try { last = +sessionStorage.getItem('ts-reload') || 0; } catch (e) {}
+    if (Date.now() - last < 8000) return;
+    try { sessionStorage.setItem('ts-reload', Date.now()); } catch (e) {}
+    location.reload();
+  }
+
+  /* ---------- Fortschritt abgleichen ---------- */
+  async function pull(){
+    if (!PAGE){ setStatus('ok'); return; }
+    const r = await api('/state?seite=' + PAGE);
+    const local = +ls.get(K.stand) || 0, server = +r.stand || 0;
+    if (r.daten && server > local){
+      const before = JSON.stringify(snapshot());
+      applySnapshot(r.daten);
+      ls.set(K.stand, server);
+      lastSnap = JSON.stringify(snapshot());
+      if (lastSnap !== before) reloadOnce();
+    } else if (local > server) await push();
+    setStatus('ok');
+  }
+
+  async function push(keepalive){
+    clearTimeout(pushTimer); pushPending = false;
+    if (!aktiv || !PAGE) return;
+    const stand = +ls.get(K.stand) || Date.now();
+    setStatus('saving');
+    try {
+      await api('/state', {method: 'POST', body: {seite: PAGE, daten: snapshot(), stand}, keepalive});
+      setStatus('ok');
+    } catch (err){
+      if (err.status === 409){ await pull().catch(() => setStatus('offline')); }
+      else if (err.status === 401) abgelaufen();
+      else { pushPending = true; setStatus('offline'); }
+    }
+  }
+
+  function changed(){
+    if (!PAGE) return;
+    // Seiten schreiben ihren Stand auch beim Öffnen neu – nur echte Änderungen zählen,
+    // sonst würde ein frisch geöffnetes Gerät einen neueren Stand vom Server überschreiben.
+    const snap = JSON.stringify(snapshot());
+    if (snap === lastSnap) return;
+    lastSnap = snap;
+    ls.set(K.stand, Date.now());
+    if (!aktiv) return;
+    pushPending = true;
+    clearTimeout(pushTimer);
+    pushTimer = setTimeout(push, 700);
+  }
+
+  /* ---------- Protokoll gelöster Aufgaben ---------- */
+  function queue(){ try { return JSON.parse(ls.get(K.queue) || '[]'); } catch (e) { return []; } }
+  function event(ev){
+    if (!aktiv || !PAGE) return;
+    const q = queue(); q.push(Object.assign({seite: PAGE}, ev)); ls.set(K.queue, JSON.stringify(q.slice(-500)));
+    flush();
+  }
+  let flushing = false;
+  async function flush(keepalive){
+    if (!aktiv || flushing) return;
+    const q = queue(); if (!q.length) return;
+    flushing = true;
+    try {
+      await api('/events', {method: 'POST', body: {events: q.slice(0, 200)}, keepalive});
+      ls.set(K.queue, JSON.stringify(queue().slice(Math.min(q.length, 200))));
+    } catch (err){
+      if (err.status === 401) abgelaufen(); else setStatus('offline');
+    } finally { flushing = false; }
+    if (queue().length && !keepalive) setTimeout(flush, 2000);
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden' && aktiv){ if (pushPending) push(true); flush(true); }
+  });
+  window.addEventListener('online', () => { if (aktiv){ flush(); if (pushPending) push(); else pull().catch(() => {}); } });
+
+
+  /* ---------- Gast-Fortschritt beim Anmelden übernehmen ---------- */
+  // Für jede Übung: Ist das Konto dort noch leer, wird der Stand dieses Geräts hochgeladen,
+  // sonst gilt der Stand vom Server.
+  async function uebernehmen(){
+    for (const p of ALL_PREFIXES){
+      const id = p.slice(0, -1), lokal = snapshot(p);
+      const st = await api('/state?seite=' + id);
+      const leer = !st.daten || !Object.keys(st.daten).length;
+      if (leer){
+        if (!Object.keys(lokal).length) continue;
+        const stand = Date.now();
+        await api('/state', {method: 'POST', body: {seite: id, daten: lokal, stand}});
+        ls.set('ts-stand-' + id, stand);
+      } else {
+        applySnapshot(st.daten, p);
+        ls.set('ts-stand-' + id, +st.stand || 0);
+      }
+    }
+  }
+
+  /* ---------- Oberfläche: Anmeldefenster + Menü oben rechts ---------- */
+  const CSS = `
+.ts-ov{position:fixed;inset:0;z-index:2000;background:rgba(20,24,32,.6);backdrop-filter:blur(3px);display:grid;place-items:center;padding:16px}
+.ts-box{position:relative;background:var(--panel,#f6f8fb);color:var(--text,#2e3440);border:1px solid var(--border,#cdd3de);border-radius:16px;padding:24px;width:min(420px,100%);box-shadow:0 20px 50px rgba(0,0,0,.3);font:16px/1.5 system-ui,sans-serif}
+.ts-box h2{margin:0 0 6px;font-size:21px}
+.ts-box p{margin:0 0 14px;color:var(--muted,#5b6578)}
+.ts-x{position:absolute;top:10px;right:10px;width:34px;height:34px;border-radius:9px;border:0;background:none;color:var(--muted,#5b6578);font-size:22px;line-height:1;cursor:pointer}
+.ts-x:hover{background:var(--panel2,#eceff4);color:var(--text,#2e3440)}
+.ts-in{width:100%;box-sizing:border-box;font:700 20px ui-monospace,Consolas,monospace;letter-spacing:.03em;padding:12px 14px;border-radius:10px;border:2px solid var(--slot-border,var(--border,#a7b1c2));background:var(--slot,var(--panel2,#eceff4));color:var(--text,#2e3440);outline:none}
+.ts-in:focus{border-color:var(--accent,#5e81ac)}
+.ts-btn{margin-top:12px;width:100%;font:600 17px system-ui,sans-serif;padding:12px;border-radius:10px;border:1px solid color-mix(in srgb,var(--accent,#5e81ac) 50%,var(--panel,#f6f8fb));background:color-mix(in srgb,var(--accent,#5e81ac) 22%,var(--panel,#f6f8fb));color:color-mix(in srgb,var(--accent,#5e81ac) 60%,var(--text,#2e3440));cursor:pointer}
+.ts-btn:disabled{opacity:.6;cursor:wait}
+.ts-err{color:var(--err,#a8434d);min-height:1.4em;margin-top:8px;font-size:14px}
+.ts-zurueck{background:none;border:0;padding:0;margin-top:10px;color:var(--muted,#5b6578);text-decoration:underline;cursor:pointer;font-size:14px}
+.ts-gast{display:block;width:100%;margin-top:18px;padding:12px;border-radius:10px;border:1px solid var(--border,#cdd3de);background:var(--panel2,#eceff4);color:var(--text,#2e3440);font:600 16px system-ui,sans-serif;cursor:pointer}
+.ts-gast small{display:block;font-weight:400;font-size:13px;color:var(--muted,#5b6578)}
+.ts-wrap{position:relative}
+.ts-badge{display:inline-flex;align-items:center;gap:6px;font:600 13px system-ui,sans-serif;padding:7px 11px;border-radius:999px;border:1px solid var(--border,#cdd3de);background:var(--panel2,#eceff4);color:var(--text,#2e3440);cursor:pointer;white-space:nowrap}
+.ts-badge .ts-dot{width:8px;height:8px;border-radius:50%;background:#8a95ab}
+.ts-badge.ok .ts-dot{background:var(--then,#a3be8c)}
+.ts-badge.saving .ts-dot{background:#ebcb8b}
+.ts-badge.offline .ts-dot{background:var(--else,#bf616a)}
+.ts-badge.gast{border-color:color-mix(in srgb,#d08770 60%,var(--border,#cdd3de));background:color-mix(in srgb,#d08770 16%,var(--panel,#f6f8fb))}
+.ts-badge.gast .ts-dot{background:#d08770}
+.ts-dd{display:none;position:absolute;right:0;top:calc(100% + 6px);min-width:240px;z-index:70;background:var(--panel,#f6f8fb);color:var(--text,#2e3440);border:1px solid var(--border,#cdd3de);border-radius:12px;box-shadow:0 14px 30px rgba(0,0,0,.18);padding:6px;font:14px/1.4 system-ui,sans-serif}
+.ts-wrap.open .ts-dd{display:block}
+.ts-dd .ts-info{padding:8px 10px;color:var(--muted,#5b6578);border-bottom:1px solid var(--border,#cdd3de);margin-bottom:4px}
+.ts-dd .ts-info b{color:var(--text,#2e3440)}
+.ts-dd a,.ts-dd button{display:block;width:100%;text-align:left;padding:8px 10px;border-radius:8px;border:0;background:none;color:inherit;font:inherit;text-decoration:none;cursor:pointer}
+.ts-dd a:hover,.ts-dd button:hover{background:var(--panel2,#eceff4)}
+@media (max-width:640px){.ts-badge .ts-lang{display:none}}`;
+
+  function injectCss(){ const s = document.createElement('style'); s.textContent = CSS; document.head.appendChild(s); }
+  const escH = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+
+  function setStatus(st){
+    const b = menuEl && menuEl.querySelector('.ts-badge');
+    if (!b || !aktiv) return;
+    b.className = 'ts-badge ' + st;
+    const t = {ok: 'Fortschritt gespeichert', saving: 'Wird gespeichert …', offline: 'Keine Verbindung – wird später gespeichert'}[st] || '';
+    b.title = t;
+    const i = menuEl.querySelector('.ts-status'); if (i) i.textContent = t;
+  }
+
+  // Menü oben rechts: angemeldet (Dropdown mit Abmelden) oder Gast (Klick öffnet die Anmeldung)
+  function showMenu(){
+    if (menuEl) menuEl.remove();
+    const host = document.querySelector('.pf-right') || document.querySelector('.hdr-right') || document.querySelector('header') || document.body;
+    const L = lehrerSitzung();
+    menuEl = document.createElement('div');
+    menuEl.className = 'ts-wrap';
+    if (aktiv){
+      const klasse = ls.get(K.klasse);
+      menuEl.innerHTML = `<button class="ts-badge saving" type="button"><span class="ts-dot"></span>👤 <span class="ts-lang">${escH(ls.get(K.anzeige) || ls.get(K.code))}</span></button>
+        <div class="ts-dd"><div class="ts-info">Angemeldet als <b>${escH(ls.get(K.anzeige) || ls.get(K.code))}</b>${klasse ? ' (Klasse ' + escH(klasse) + ')' : ''}<br><span class="ts-status"></span></div>
+        <button type="button" data-a="ab">Abmelden</button></div>`;
+    } else if (L){
+      menuEl.innerHTML = `<button class="ts-badge" type="button">👤 <span class="ts-lang">${escH(L.name)}</span></button>
+        <div class="ts-dd"><div class="ts-info">Angemeldet als <b>${escH(L.name)}</b> (${L.rolle === 'admin' ? 'Admin' : 'Lehrkraft'})</div>
+        <a href="${BASE + CONFIG.verwaltung}">Verwaltung: Klassen und Auswertung</a>
+        <button type="button" data-a="ab">Abmelden</button></div>`;
+    } else {
+      menuEl.innerHTML = `<button class="ts-badge gast" type="button" title="Fortschritt wird nicht gespeichert. Klicken zum Anmelden."><span class="ts-dot"></span>Nicht angemeldet<span class="ts-lang">&nbsp;– Fortschritt wird nicht gespeichert</span></button>`;
+    }
+    host.insertBefore(menuEl, host.firstChild);
+    menuEl.querySelector('.ts-badge').addEventListener('click', () => {
+      if (!aktiv && !L){ showLogin(); return; }
+      menuEl.classList.toggle('open');
+    });
+    const ab = menuEl.querySelector('[data-a="ab"]');
+    if (ab) ab.addEventListener('click', abmelden);
+    document.addEventListener('click', e => { if (menuEl && !menuEl.contains(e.target)) menuEl.classList.remove('open'); });
+  }
+
+  function showLogin(msg){
+    if (document.querySelector('.ts-ov')) return;
+    const ov = document.createElement('div');
+    ov.className = 'ts-ov';
+    ov.innerHTML = `<div class="ts-box" role="dialog" aria-modal="true" aria-label="Anmelden">
+      <button class="ts-x" type="button" aria-label="Schließen und ohne Anmeldung nutzen" title="Ohne Anmeldung nutzen">×</button>
+      <form class="ts-f1" autocomplete="off">
+        <h2>Anmelden</h2>
+        <p>Gib deinen Zugangscode oder deinen Benutzernamen ein.</p>
+        <input class="ts-in" name="kennung" placeholder="Code oder Benutzername" autocapitalize="none" spellcheck="false" aria-label="Code oder Benutzername">
+        <button class="ts-btn" type="submit">Weiter</button>
+      </form>
+      <form class="ts-f2" hidden>
+        <h2>Passwort</h2>
+        <p>für <b class="ts-wer"></b></p>
+        <input class="ts-in" name="passwort" type="password" autocomplete="current-password" aria-label="Passwort">
+        <button class="ts-btn" type="submit">Anmelden</button>
+        <button class="ts-zurueck" type="button">Anderen Namen eingeben</button>
+      </form>
+      <div class="ts-err">${msg || ''}</div>
+      <button class="ts-gast" type="button">Seite ohne Anmeldung nutzen<small>Dein Fortschritt wird dann nur in diesem Browser gespeichert.</small></button>
+    </div>`;
+    document.body.appendChild(ov);
+    const f1 = ov.querySelector('.ts-f1'), f2 = ov.querySelector('.ts-f2'), err = ov.querySelector('.ts-err');
+    const k = f1.kennung, pw = f2.passwort;
+    setTimeout(() => k.focus(), 50);
+
+    const gast = () => { ss.set(SS.gast, '1'); ov.remove(); document.removeEventListener('keydown', esc); };
+    const esc = e => { if (e.key === 'Escape') gast(); };
+    document.addEventListener('keydown', esc);
+    ov.querySelector('.ts-x').addEventListener('click', gast);
+    ov.querySelector('.ts-gast').addEventListener('click', gast);
+    ov.querySelector('.ts-zurueck').addEventListener('click', () => { f2.hidden = true; f1.hidden = false; err.textContent = ''; k.select(); });
+
+    async function senden(btn, body){
+      btn.disabled = true; err.textContent = '';
+      try {
+        const r = await fetch(CONFIG.api + '/login', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)})
+          .then(async x => { const j = await x.json().catch(() => ({})); if (!x.ok) throw new Error(x.status === 429 ? 'Zu viele Versuche – bitte kurz warten.' : (j.message || 'Anmeldung fehlgeschlagen.')); return j; });
+        if (r.passwort){ f1.hidden = true; f2.hidden = false; ov.querySelector('.ts-wer').textContent = body.kennung; pw.value = ''; pw.focus(); return; }
+        if (r.rolle === 'schueler'){
+          ls.set(K.code, r.cred); ls.set(K.anzeige, r.anzeige); ls.set(K.klasse, r.klasse || '');
+          ss.del(SS.lehrer); ss.del('ts-reload');
+          aktiv = true;
+          await uebernehmen().catch(() => {});
+        } else {
+          ss.set(SS.lehrer, JSON.stringify({rolle: r.rolle, token: r.token, name: r.name}));
+        }
+        location.reload();
+      } catch (x){
+        err.textContent = x.message || 'Anmeldung fehlgeschlagen.';
+        (f2.hidden ? k : pw).select();
+      } finally { btn.disabled = false; }
+    }
+    f1.addEventListener('submit', e => {
+      e.preventDefault();
+      const v = k.value.trim();
+      if (!v){ err.textContent = 'Bitte gib deinen Code oder Benutzernamen ein.'; return; }
+      senden(f1.querySelector('.ts-btn'), {kennung: v});
+    });
+    f2.addEventListener('submit', e => {
+      e.preventDefault();
+      if (!pw.value){ err.textContent = 'Bitte gib dein Passwort ein.'; return; }
+      senden(f2.querySelector('.ts-btn'), {kennung: k.value.trim(), passwort: pw.value});
+    });
+  }
+
+  async function abmelden(){
+    if (lehrerSitzung()){ ss.del(SS.lehrer); ss.del(SS.gast); location.reload(); return; }
+    if (!confirm(`Abmelden?\n\nAngemeldet als ${ls.get(K.anzeige) || ls.get(K.code)}. Dein Fortschritt bleibt auf dem Server gespeichert.`)) return;
+    if (pushPending) await push();
+    await flush();
+    if (queue().length && !confirm('Einige gelöste Aufgaben konnten noch nicht übertragen werden (keine Verbindung). Trotzdem abmelden?')) return;
+    wipeLocal(); ss.del(SS.gast); ss.del('ts-sichtbar');
+    location.reload();
+  }
+  function abgelaufen(){
+    aktiv = false;
+    wipeLocal(); ss.del('ts-sichtbar');
+    showMenu();
+    showLogin('Deine Anmeldung ist nicht mehr gültig. Bitte melde dich neu an.');
+  }
+
+  /* ---------- Bedingte Menüpunkte (z. B. Tipp-Aufgabe nur mit aufgegebener Aufgabe) ---------- */
+  function zeigeTools(ids){
+    // Tool-ids bestehen nur aus a–z, 0–9 und - (katalog.js); andere werden ignoriert
+    ids.filter(id => /^[a-z0-9-]+$/.test(id)).forEach(id => document.querySelectorAll(`[data-tool="${id}"]`).forEach(el => el.classList.add('pf-sichtbar')));
+  }
+  async function sichtbar(){
+    try { zeigeTools(JSON.parse(ss.get('ts-sichtbar') || '[]')); } catch (e) {}   // Stand der letzten Seite, ohne Flackern
+    try { const r = await api('/sichtbar'); ss.set('ts-sichtbar', JSON.stringify(r.tools || [])); zeigeTools(r.tools || []); } catch (e) {}
+  }
+
+  /* ---------- Start ---------- */
+  async function start(){
+    if (!hosted || window.PF_EINZELDATEI) return;          // Einzeldatei: immer ohne Anmeldung, Fortschritt nur im Browser
+    try {
+      const h = await fetch('/api/health', {cache: 'no-store'});
+      if (!h.ok) return;                                    // kein PocketBase: Seite läuft nur lokal
+    } catch (e){ return; }
+    injectCss();
+    aktiv = !!ls.get(K.code);
+    showMenu();
+    if (!aktiv){
+      if (!lehrerSitzung() && !ss.get(SS.gast)) showLogin();
+      return;
+    }
+    sichtbar();
+    try { await pull(); flush(); }
+    catch (err){ if (err.status === 401) abgelaufen(); else setStatus('offline'); }
+  }
+
+  lastSnap = JSON.stringify(snapshot());   // Stand beim Laden der Seite (vor deren Initialisierung)
+  window.TrainerSync = {changed, event, anmelden: () => showLogin(), get aktiv(){ return aktiv; }, get lehrer(){ return lehrerSitzung(); }, abmelden};
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
+})();
+
+</script>
+<script>
+(function(){var t=null;try{t=localStorage.getItem('wenn-theme');}catch(e){}
+document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');})();
+</script>
+<style>/* ../../bwr.css */
+/* bwr.css – Grundlayout der BWR-Seiten (Nord-Farben, hell und dunkel)
+ *
+ * Einbinden im <head> nach den Skripten, Pfad zum Ordner BWR/, z. B. aus BWR/9II/finanzierung/:
+ *   <link rel="stylesheet" href="../../bwr.css">
+ * Danach eigene <style>-Regeln der Seite (nur, was keine andere BWR-Seite braucht).
+ *
+ * Farben:   --bg --panel --panel2 --text --muted --border --accent --err --ok --mono,
+ *           --plus/--plus-bg (richtig, Zunahme), --minus/--minus-bg (falsch, Abnahme)
+ * Gerüst:   .wrap > .bar (.brand mit <span>, .gruppe, .hint, .spacer) und darunter .karte (h2, h3, p)
+ * Knöpfe:   .btn, .btn.on (gewählt), .btn.haupt (Hauptaktion), .btn.klein; Eingaben .feld
+ * Texte:    .muted, .tag (kleines Etikett), .nr (Nebenrechnung, klein und grau)
+ * Rückmeldung: <div class="fb ok|falsch">…</div>; Knopfzeile .knoepfe
+ * Material: <div class="material"><div class="mt">Titel</div>…</div>, Tabelle darin .beleg
+ * Erinnerung: <details class="erinnerung" open><summary>Erinnerung</summary>…</details>
+ */
+:root{--bg:#e5e9f0;--panel:#f6f8fb;--panel2:#eceff4;--text:#2e3440;--muted:#5b6578;--border:#cdd3de;--accent:#5e81ac;--err:#a8434d;--ok:#5e8a45;
+  --mono:ui-monospace,Consolas,"Liberation Mono",monospace;
+  --plus:#4f7a3a;--minus:#a8434d;--plus-bg:#dfeccf;--minus-bg:#f3d9dc}
+[data-theme=dark]{--bg:#2e3440;--panel:#3b4252;--panel2:#434c5e;--text:#eceff4;--muted:#a9b3c4;--border:#4c566a;--accent:#88c0d0;--err:#d4848b;--ok:#a3be8c;
+  --plus:#b5d39a;--minus:#e0959b;--plus-bg:#3f4d3a;--minus-bg:#553c42}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;min-height:100vh}
+.wrap{width:min(1400px,100%);margin:0 auto;padding:14px 16px 24px}
+.bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:12px}
+.brand{font:800 20px var(--mono);letter-spacing:-.5px;margin-right:8px}
+.brand span{color:var(--accent-text,var(--accent))}
+.spacer{flex:1}
+.gruppe{display:inline-flex;gap:4px;align-items:center;flex-wrap:wrap}
+.hint,.muted{color:var(--muted)}
+.hint{font-size:13px;margin:0 2px 0 6px}
+.btn{font:600 14px system-ui,sans-serif;background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:7px 12px;cursor:pointer}
+.btn:hover{border-color:var(--accent)}
+.btn:disabled{opacity:.45;cursor:default;border-color:var(--border)}
+.btn.on,.btn.haupt{background:var(--accent);border-color:var(--accent);color:#fff}
+[data-theme=dark] .btn.on,[data-theme=dark] .btn.haupt{color:#2e3440}
+.btn.klein{font-size:13px;padding:4px 9px}
+.btn:focus-visible,.feld:focus{outline:2px solid var(--accent);outline-offset:1px}
+.feld{font:14px system-ui,sans-serif;background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 8px}
+.karte{min-width:0;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px 16px}
+.karte h2{font-size:18px;margin:0 0 6px}
+.karte h3{font-size:15px;margin:14px 0 6px}
+.karte p{margin:0 0 8px}
+.tag{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;background:var(--accent);color:#fff;border-radius:6px;padding:1px 6px;vertical-align:2px}
+[data-theme=dark] .tag{color:#2e3440}
+.nr{font-size:13px;color:var(--muted);margin:-2px 0 8px}
+.fb{border-radius:8px;padding:7px 10px;margin:8px 0 0;font-size:14px}
+.fb.ok{background:var(--plus-bg);color:var(--text)}
+.fb.falsch{background:var(--minus-bg);color:var(--text)}
+.knoepfe{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.material{border:1px solid var(--border);background:var(--panel2);border-radius:10px;padding:10px 12px;margin:0 0 12px}
+.material .mt{font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:6px}
+.beleg{border-collapse:collapse;width:100%;max-width:520px;font-size:14px}
+.beleg td{padding:3px 6px;border-bottom:1px solid var(--border)}
+.beleg td:last-child{text-align:right;font-family:var(--mono);white-space:nowrap}
+.beleg tr.summe td{font-weight:700;border-bottom:none;border-top:1.5px solid var(--text)}
+.erinnerung{border-left:4px solid var(--accent);background:var(--panel2);border-radius:0 10px 10px 0;padding:6px 12px;margin:0 0 12px}
+.erinnerung summary{cursor:pointer;font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);padding:2px 0}
+.erinnerung>*:not(summary){margin:6px 0}
+
+</style>
+<style>
+.wrap{max-width:1000px}
+.schritte{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.schritte .btn{font-size:13px;padding:5px 10px}
+.schritte .btn.erl::after{content:" ✓";color:var(--ok)}
+.schritte .btn.on.erl::after{color:inherit}
+.info{border-left:4px solid var(--accent);padding:2px 0 2px 12px;margin:0 0 12px}
+.alltag{background:var(--panel2);border-radius:10px;padding:8px 12px;margin:0 0 12px}
+.alltag b:first-child{display:block;font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.unten{display:flex;justify-content:space-between;gap:8px;margin-top:16px;border-top:1px solid var(--border);padding-top:12px}
+.aufgabe{font-weight:600;margin:4px 0 10px}
+.aufgabe .nrk{display:inline-block;min-width:36px;font-family:var(--mono)}
+.erledigt{font-size:13px;color:var(--ok);font-weight:700;margin:0 0 8px}
+ul.merk{margin:0 0 12px;padding-left:20px}
+ul.merk li{margin-bottom:3px}
+/* Grafiken */
+.grafik{width:100%;height:auto;display:block;margin:4px 0 10px}
+.grafik text{fill:var(--text);font:12px system-ui,sans-serif}
+.grafik .achse{stroke:var(--text);stroke-width:1.5}
+.grafik .limit{stroke:var(--err);stroke-width:2;stroke-dasharray:6 4}
+.grafik .kurve{fill:none;stroke:var(--accent);stroke-width:3;stroke-linejoin:round}
+.grafik .ueberzogen{fill:var(--err);fill-opacity:.35}
+.grafik .schr{stroke:var(--text);stroke-opacity:.45;stroke-width:2}
+.grafik .rotT{fill:var(--err);font-weight:700}
+.grafik .gruen{fill:#a3be8c}.grafik .orange{fill:#ebcb8b}.grafik .rot{fill:#d08770;fill-opacity:.7}
+.grafik text.bt{fill:#2e3440;font-weight:700;text-anchor:middle}
+.grafik text.bt.k{font-weight:400}
+.grafik .tick{stroke:var(--muted)}
+.grafik text.dt{fill:var(--muted);font-size:11px;text-anchor:middle}
+.grafik text.key{font-weight:700;text-anchor:middle}
+.grafik .marke{stroke:var(--text);stroke-width:2.5}
+.grafik text.mt{font-weight:800;font-size:13px}
+.grafik .lk{fill:var(--accent)}
+.grafik .kk{fill:url(#tlSchr);stroke:var(--text);stroke-width:1}
+.datum{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:4px 0 6px}
+.datum input[type=text]{width:90px;font-family:var(--mono);text-align:center}
+.datum input[type=range]{flex:1 1 220px;accent-color:var(--accent)}
+.stand{background:var(--panel2);border-radius:10px;padding:8px 12px;margin:0 0 12px}
+/* Fragen mit Eingabe */
+.fragen{display:flex;flex-direction:column;gap:8px;margin:8px 0}
+.frage{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}
+.frage .ft{flex:1 1 320px}
+.frage input{width:120px;text-align:right;font-family:var(--mono)}
+.frage .ok{color:var(--ok);font-weight:700}.frage .nein{color:var(--err);font-weight:700}
+.frage input.richtig{border-color:var(--ok);background:var(--plus-bg)}
+.frage input.falsch{border-color:var(--err);background:var(--minus-bg)}
+/* Zuordnen (Drag and Drop) */
+.pool{display:flex;flex-wrap:wrap;gap:8px;min-height:56px;padding:10px;border:2px dashed var(--border);border-radius:12px;margin-bottom:12px}
+.zonen{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+@media (max-width:760px){.zonen{grid-template-columns:minmax(0,1fr)}}
+.zone{border:2px solid var(--border);border-radius:12px;padding:8px;min-height:150px;display:flex;flex-direction:column;gap:6px;background:var(--panel2)}
+.zone h3{margin:0 0 4px!important;text-align:center;font-size:14px}
+.zone.ziel{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 30%,transparent)}
+.kk-karte{background:var(--panel);border:1px solid var(--border);border-left:5px solid var(--accent);border-radius:8px;padding:7px 10px;font-size:14px;cursor:grab;touch-action:none;user-select:none;max-width:100%}
+.pool .kk-karte{flex:1 1 220px}
+.kk-karte.gewaehlt{outline:3px solid var(--accent)}
+.kk-karte.quelle{opacity:.35}
+.kk-karte.fix{border-left-color:var(--ok);background:var(--plus-bg);cursor:default}
+.kk-karte.weg{animation:wackeln .5s;border-left-color:var(--err);background:var(--minus-bg)}
+@keyframes wackeln{20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+.geist{position:fixed;z-index:100;pointer-events:none;box-shadow:0 8px 20px rgba(0,0,0,.25);transform:rotate(-2deg);width:240px}
+/* Multiple Choice */
+.mc{margin:0 0 14px}
+.mc .q{font-weight:600;margin:0 0 6px}
+.mc .opts{display:flex;flex-direction:column;gap:6px}
+.mc .opt{text-align:left;font:15px system-ui,sans-serif;background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:8px 12px;cursor:pointer}
+.mc .opt:hover{border-color:var(--accent)}
+.mc .opt.richtig{background:var(--plus-bg);border-color:var(--ok)}
+.mc .opt.falsch{background:var(--minus-bg);border-color:var(--err)}
+.mc .opt:disabled{cursor:default}
+/* Lückentext */
+.lueckentext{line-height:2.4;font-size:16px}
+.lueckentext select{font:15px system-ui,sans-serif;background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:3px 6px}
+.lueckentext select.richtig{border-color:var(--ok);background:var(--plus-bg)}
+.lueckentext select.falsch{border-color:var(--err);background:var(--minus-bg)}
+.ueberblick p{margin:0 0 8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="bar"><div class="brand">Kurzfristige<span> Kredite</span></div><span class="spacer"></span><span class="muted" id="zaehler"></span></div>
+  <nav class="schritte" id="schritte" aria-label="Schritte"></nav>
+  <main class="karte" id="inhalt" aria-live="polite"></main>
+</div>
+<script>
+'use strict';
+/* ---------- Helfer ---------- */
+const KEY = 'kurzkredit-';
+const ldJ = (k, d) => { try { const x = JSON.parse(localStorage.getItem(KEY + k)); return x == null ? d : x; } catch (e) { return d; } };
+function st(k, v){ try { localStorage.setItem(KEY + k, JSON.stringify(v)); } catch (e) {} if (window.TrainerSync) TrainerSync.changed(); }
+const $ = s => document.querySelector(s);
+const r2 = n => Math.round(n * 100) / 100;
+const eur = n => r2(n).toLocaleString('de-DE', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' €';
+function zahl(s){
+  s = String(s).replace(/€|%|Tage?|\s/g, '');
+  if (!s) return NaN;
+  if (s.includes(',')) s = s.replace(/\./g, '').replace(',', '.');
+  else if (/^\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, '');
+  return /^-?\d+(\.\d+)?$/.test(s) ? +s : NaN;
+}
+function mischen(a){ a = a.slice(); for (let i = a.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+
+/* ---------- Material (Werte aus dem Heft, Kapitel 7) ---------- */
+const R = {netto:10000, ust:1900, brutto:11900, skonto:2, tageSkonto:10, tageZiel:30, zinsenKK:58.31};
+R.bruttoSkonto = r2(R.brutto * R.skonto / 100); R.nettoSkonto = r2(R.bruttoSkonto / 1.19); R.ueberweisung = r2(R.brutto - R.bruttoSkonto);
+const rechnungHTML = () => `<div class="material"><div class="mt">Material: Eingangsrechnung eines Holzlieferanten (Auszug)</div>
+  <table class="beleg"><tr><td>Rechnungsdatum</td><td>02.11.</td></tr><tr><td>20 Hälse aus Ahorn, Warenwert netto</td><td>${eur(R.netto)}</td></tr>
+  <tr><td>+ 19 % Umsatzsteuer</td><td>${eur(R.ust)}</td></tr><tr class="summe"><td>Rechnungsbetrag</td><td>${eur(R.brutto)}</td></tr></table>
+  <p style="margin:8px 0 0">Zahlungsbedingungen: Zahlbar innerhalb von 30 Tagen ohne Abzug; bei Zahlung innerhalb von 10 Tagen 2 % Skonto.</p></div>`;
+const kkTextHTML = () => `<p style="margin:8px 0 0">Saitgig hat zurzeit kein Guthaben. Nutzt Jakob das Skonto, muss er den Überweisungsbetrag mit dem Kontokorrentkredit bezahlen. Die Bank verlangt dafür für die 20 Tage <b>${eur(R.zinsenKK)}</b> Zinsen.</p>`;
+
+/* ---------- Zustand ---------- */
+let stand = ldJ('stand', {});
+if (!stand.erledigt) stand.erledigt = {};
+const Z = {};   // Zustand der Aufgaben in dieser Sitzung (Eingaben, Rückmeldungen)
+function erledigt(s){
+  const erstmals = !stand.erledigt[s.id];
+  stand.erledigt[s.id] = true; st('stand', stand);
+  if (s.aufgabe && window.TrainerSync) TrainerSync.event({modus:'erarbeitung', stufe:0, aufgabe:s.id, titel:s.titel, gesamt:SCHRITTE.filter(x => x.aufgabe).length, erstmals});
+}
+
+/* ---------- Grafik Kontokorrentkredit ---------- */
+function kkGrafik(){
+  const P = [[0, 20], [1, 8], [2, -30], [3, -45], [4, -25], [5, 10], [6, -5], [7, -50], [8, -82], [9, -62], [10, -20], [11, 15]];
+  const X = t => 70 + t * 48, Y = v => 40 + (30 - v) * 1.7;
+  const pts = P.map(([t, v]) => X(t) + ',' + Y(v)).join(' '), flaeche = `${X(0)},${Y(0)} ${pts} ${X(11)},${Y(0)}`;
+  return `<svg class="grafik" viewBox="0 0 640 280" role="img" aria-label="Kontostand eines Geschäftsbankkontos im Zeitverlauf mit Kreditlinie">
+    <defs><pattern id="kkSchr" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="8" class="schr"/></pattern>
+    <clipPath id="kkU0"><rect x="0" y="${Y(0)}" width="640" height="300"/></clipPath><clipPath id="kkUL"><rect x="0" y="${Y(-70)}" width="640" height="300"/></clipPath></defs>
+    <polygon points="${flaeche}" fill="url(#kkSchr)" clip-path="url(#kkU0)"/>
+    <polygon points="${flaeche}" class="ueberzogen" clip-path="url(#kkUL)"/>
+    <line class="achse" x1="62" x2="632" y1="${Y(0)}" y2="${Y(0)}"/><line class="achse" x1="62" x2="62" y1="22" y2="256"/>
+    <line class="limit" x1="62" x2="632" y1="${Y(-70)}" y2="${Y(-70)}"/>
+    <polyline class="kurve" points="${pts}"/>
+    <text x="6" y="18">Kontostand</text><text x="56" y="${Y(0) + 4}" text-anchor="end">0 €</text><text x="632" y="${Y(0) + 18}" text-anchor="end">Zeit</text>
+    <text x="70" y="${Y(-70) - 7}" class="rotT">Kreditlinie (Limit) – 70.000 €</text>
+    <text x="${X(0) + 4}" y="${Y(20) - 10}">Guthaben</text>
+    <text x="${X(5)}" y="${Y(10) - 10}" text-anchor="middle">Kunde zahlt ein</text>
+    <text x="${X(8) - 14}" y="${Y(-70) + 19}" text-anchor="end" class="rotT">geduldete Überziehung (noch teurer!) →</text>
+    <text x="62" y="276">schraffiert = Kontokorrentkredit beansprucht → Zinsen</text></svg>`;
+}
+
+/* ---------- Zeitleiste Lieferantenkredit ---------- */
+const datum = d => { const n = 2 + d; return n <= 30 ? String(n).padStart(2, '0') + '.11.' : String(n - 30).padStart(2, '0') + '.12.'; };
+function tagAus(s){
+  const m = String(s).trim().match(/^(\d{1,2})\.(\d{1,2})\.?(\d{2,4})?$/);
+  if (!m) return null;
+  const tag = +m[1], monat = +m[2];
+  const d = monat === 11 ? tag - 2 : monat === 12 ? 28 + tag : NaN;
+  return d >= 0 && d <= 40 && tag >= 1 && tag <= (monat === 11 ? 30 : 31) ? d : null;
+}
+function zeitleiste(d){
+  const X = t => 30 + t * 15, mitte = (a, b) => (X(a) + X(b)) / 2;
+  let h = `<svg class="grafik" viewBox="0 0 660 230" role="img" aria-label="Zeitleiste des Lieferantenkredits mit Zahlung am ${datum(d)}">
+    <defs><pattern id="tlSchr" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="8" height="8" fill="#ebcb8b" fill-opacity=".35"/><line x1="0" y1="0" x2="0" y2="8" class="schr"/></pattern></defs>
+    <rect class="gruen" x="${X(0)}" y="34" width="${X(10) - X(0)}" height="38"/><rect class="orange" x="${X(10)}" y="34" width="${X(30) - X(10)}" height="38"/><rect class="rot" x="${X(30)}" y="34" width="${X(40) - X(30)}" height="38"/>
+    <text class="bt" x="${mitte(0, 10)}" y="50">10 Tage Skontofrist</text><text class="bt k" x="${mitte(0, 10)}" y="65">kostenlos</text>
+    <text class="bt" x="${mitte(10, 30)}" y="50">20 Tage bis zum Zahlungsziel</text><text class="bt k" x="${mitte(10, 30)}" y="65">Preis = entgangenes Skonto</text>
+    <text class="bt" x="${mitte(30, 40)}" y="57">zu spät</text>`;
+  for (let t = 0; t <= 40; t++) h += `<line class="tick" x1="${X(t)}" x2="${X(t)}" y1="72" y2="${t % 5 ? 76 : 80}"/>`;
+  [[0, 'Rechnung'], [10, 'Ende Skontofrist'], [30, 'Zahlungsziel']].forEach(([t, s]) => { h += `<text class="key" x="${X(t)}" y="94">${datum(t)}</text><text class="dt" x="${X(t)}" y="107">${s}</text>`; });
+  [5, 15, 20, 25, 35, 40].forEach(t => { h += `<text class="dt" x="${X(t)}" y="94">${datum(t)}</text>`; });
+  const lx = Math.min(Math.max(X(d), 60), 600);
+  h += `<path class="marke" d="M${X(d) - 6},24 L${X(d) + 6},24 L${X(d)},33 z" style="fill:var(--text)"/><line class="marke" x1="${X(d)}" x2="${X(d)}" y1="76" y2="214"/><text class="mt" x="${lx}" y="18" text-anchor="middle">Zahlung am ${datum(d)}</text>`;
+  if (d > 0) h += `<rect class="lk" x="${X(0)}" y="136" width="${X(d) - X(0)}" height="16" rx="3"/>`;
+  h += `<text x="${X(0)}" y="130">${d > 0 ? `Lieferantenkredit: ${d} ${d === 1 ? 'Tag' : 'Tage'} (02.11. bis ${datum(d)})` : 'Sofortige Zahlung: kein Lieferantenkredit'}</text>`;
+  if (d <= 10){
+    const tx = Math.min(X(d), 330);
+    h += `<rect class="kk" x="${X(d)}" y="186" width="${X(30) - X(d)}" height="16" rx="3"/><text x="${tx}" y="180">Kontokorrentkredit: ${30 - d} Tage (${datum(d)} bis 02.12.)</text>`;
+  }
+  return h + '</svg>';
+}
+function standText(d){
+  if (d <= 10) return `<b>Zahlung mit Skonto.</b> Jakob überweist ${eur(R.ueberweisung)}. Der Lieferantenkredit dauert ${d} ${d === 1 ? 'Tag' : 'Tage'} und ist kostenlos. Weil Saitgig kein Guthaben hat, zahlt Jakob mit dem Kontokorrentkredit. Er läuft so lange, bis Jakob ohnehin hätte zahlen müssen (Zahlungsziel 02.12.): <b>${30 - d} Tage</b>.`;
+  if (d <= 30) return `<b>Zahlung ohne Abzug.</b> Jakob überweist ${eur(R.brutto)}. Der Lieferantenkredit dauert ${d} Tage – die Tage nach dem 12.11. bezahlt Jakob mit dem entgangenen Skonto.`;
+  return `<b>Zu spät!</b> Das Zahlungsziel (02.12.) ist um ${d - 30} ${d - 30 === 1 ? 'Tag' : 'Tage'} überschritten. Saitgig gerät in Zahlungsverzug – der Lieferer kann mahnen und Verzugszinsen verlangen.`;
+}
+
+/* ---------- Bausteine für Aufgaben ---------- */
+// Fragen mit Zahleneingabe: [{id, t (Frage), l (Lösung), e (Einheit), h (Hinweis bei Fehler)}]
+function fragenHTML(z, fr){
+  return '<div class="fragen">' + fr.map(f => {
+    const r = z.ok && z.ok[f.id];
+    return `<div class="frage"><span class="ft">${f.t}</span><input class="feld${r === true ? ' richtig' : r === false ? ' falsch' : ''}" data-frage="${f.id}" value="${z.ein && z.ein[f.id] || ''}" inputmode="decimal" autocomplete="off" aria-label="Antwort"${r === true ? ' readonly' : ''}><span>${f.e}</span>${r === true ? '<span class="ok">✓</span>' : r === false ? '<span class="nein">✗</span>' : ''}</div>`
+      + (r === false && f.h ? `<div class="nr" style="margin:0 0 0 2px">${f.h}</div>` : '');
+  }).join('') + '</div>';
+}
+function fragenPruefen(z, fr){
+  z.ok = z.ok || {};
+  fr.forEach(f => { const v = zahl(z.ein && z.ein[f.id]); z.ok[f.id] = Math.abs(v - f.l) < 0.005; });
+  return fr.every(f => z.ok[f.id]);
+}
+// Multiple Choice: q = {id, q, o:[Antworten], r (Index richtig), w:{Index: Erklärung}}
+function mcHTML(z, qs){
+  return qs.map(q => {
+    const g = z.mc && z.mc[q.id], ord = z.ord[q.id] || (z.ord[q.id] = mischen(q.o.map((_, i) => i)));
+    return `<div class="mc"><p class="q">${q.q}</p><div class="opts">${ord.map(i => `<button class="opt${g && g.ok && i === q.r ? ' richtig' : g && !g.ok && g.i === i ? ' falsch' : ''}" type="button" data-mc="${q.id}" data-i="${i}"${g && g.ok ? ' disabled' : ''}>${q.o[i]}</button>`).join('')}</div>`
+      + (g ? `<div class="fb ${g.ok ? 'ok' : 'falsch'}">${g.ok ? '✓ Richtig.' + (q.e ? ' ' + q.e : '') : (q.w && q.w[g.i]) || 'Das stimmt nicht. Versuche es noch einmal.'}</div>` : '') + '</div>';
+  }).join('');
+}
+
+/* ---------- Schritte ---------- */
+const KARTEN = [
+  {id:'k1', t:'Das Geschäftsbankkonto darf bis zur Kreditlinie überzogen werden.', z:'kk'},
+  {id:'k2', t:'Er sichert die Liquidität eines Unternehmens im laufenden Geschäftsverkehr.', z:'kk'},
+  {id:'k3', t:'Zahlungseingänge von Kunden tilgen ihn automatisch.', z:'kk'},
+  {id:'k4', t:'Kontoführungsgebühren dafür bucht das Unternehmen auf 6750 KGV.', z:'kk'},
+  {id:'d1', t:'Die Bank räumt ihn Privatkunden ein.', z:'dispo'},
+  {id:'d2', t:'Man überzieht damit sein privates Girokonto.', z:'dispo'},
+  {id:'d3', t:'Seine Höhe hängt von regelmäßigen Geldeingängen wie dem Gehalt ab.', z:'dispo'},
+  {id:'d4', t:'Die Bank bietet ihn dir vielleicht mit deinem ersten Ausbildungsgehalt an.', z:'dispo'},
+  {id:'l1', t:'Der Lieferer gewährt ein Zahlungsziel, z. B. 30 Tage.', z:'lk'},
+  {id:'l2', t:'Bis zum Ende der Skontofrist ist er kostenlos.', z:'lk'},
+  {id:'l3', t:'Sein Preis ist das entgangene Skonto.', z:'lk'},
+  {id:'l4', t:'Auf ein Jahr hochgerechnet entspricht er oft einem Zinssatz von rund 36 %.', z:'lk'}
+];
+const ZONEN = [['kk', 'Kontokorrentkredit'], ['dispo', 'Dispositionskredit'], ['lk', 'Lieferantenkredit']];
+const MC72 = [
+  {id:'a', q:'Welche Aussage unterscheidet Kontokorrent- und Dispositionskredit richtig?',
+    o:['Kontokorrentkredit: Unternehmen auf dem Geschäftsbankkonto – Dispositionskredit: Privatkunden auf dem Girokonto',
+       'Kontokorrentkredit: Privatkunden auf dem Girokonto – Dispositionskredit: Unternehmen auf dem Geschäftsbankkonto',
+       'Der Kontokorrentkredit ist zinslos, der Dispositionskredit nicht.',
+       'Der Dispositionskredit ist langfristig, der Kontokorrentkredit kurzfristig.'], r:0,
+    w:{1:'Genau vertauscht: Unternehmen haben ein Geschäftsbankkonto, Privatkunden ein Girokonto.', 2:'Für beide Kredite verlangt die Bank Zinsen.', 3:'Beide Kredite sind kurzfristig.'}},
+  {id:'b', q:'Wovon hängt die Höhe eines Dispositionskredits vor allem ab?',
+    o:['von der Kreditwürdigkeit und den regelmäßigen Geldeingängen, z. B. dem Gehalt', 'vom Skontosatz der Lieferer', 'von der Zahl der Maschinen im Unternehmen', 'von der Laufzeit eines Darlehens'], r:0,
+    w:{1:'Skonto gehört zum Lieferantenkredit.', 2:'Den Dispo bekommen Privatkunden, nicht Unternehmen.', 3:'Der Dispo hat keine feste Laufzeit wie ein Darlehen.'}},
+  {id:'c', q:'Was haben Kontokorrent- und Dispositionskredit gemeinsam?',
+    o:['Das Konto darf bis zu einer Obergrenze überzogen werden; Zinsen fallen nur für die beanspruchte Höhe und Dauer an.',
+       'Beide sind bis zum Ende einer Frist kostenlos.', 'Beide dienen zur langfristigen Finanzierung von Maschinen.', 'Beide gewährt ein Lieferer.'], r:0,
+    w:{1:'Kostenlos bis zum Ende einer Frist ist nur der Lieferantenkredit (Skontofrist).', 2:'Beide sind kurzfristig – Maschinen finanziert man langfristig (Goldene Finanzierungsregel).', 3:'Beide gewährt die Bank.'}}
+];
+const MC74 = [{id:'empf', q:'Welche Handlungsempfehlung leitet sich daraus für Jakob ab?',
+  o:['Jakob sollte innerhalb der Skontofrist (bis 12.11.) mit dem Kontokorrentkredit zahlen und Skonto abziehen.',
+     'Jakob sollte bis zum 02.12. warten und ohne Abzug zahlen, weil dann keine Zinsen anfallen.',
+     'Jakob sollte für die Rechnung ein langfristiges Darlehen aufnehmen.',
+     'Jakob sollte die Rechnung erst nach dem 02.12. bezahlen.'], r:0,
+  e:'Der Kontokorrentkredit kostet nur 58,31 €, das Skonto bringt 200,00 € – Jakob spart 141,69 €.',
+  w:{1:'Dann zahlt er zwar keine Bankzinsen, verliert aber 200,00 € Skonto – das ist teurer als 58,31 € Zinsen.', 2:'Ein Darlehen passt nicht zu einer kurzfristigen Rechnung über 20 Tage (Goldene Finanzierungsregel).', 3:'Dann gerät Saitgig in Zahlungsverzug.'}}];
+const LUECKEN = [
+  'Der Kontokorrentkredit ist eine ', ['teure', 'günstige', 'zinslose'], ' und ', ['kurzfristige', 'langfristige'], ' Kreditart. Er soll nur ',
+  ['kurzfristige Zahlungsengpässe', 'langfristige Investitionen', 'fehlendes Eigenkapital'], ' überbrücken. Wird er dauerhaft beansprucht, kosten die ',
+  ['Zinsen', 'Skonti', 'Tilgungen'], ' viel Geld, und die ', ['Kreditlinie', 'Skontofrist', 'Eigenkapitalquote'], ' fehlt für andere Zahlungen.'
+];
+const F_LK = [
+  {id:'f1', t:'Lies ab: Wie viele Tage ist der Lieferantenkredit kostenlos?', l:10, e:'Tage', h:'Schau auf den grünen Abschnitt der Zeitleiste.'},
+  {id:'f2', t:'Jakob zahlt am letzten Tag der Skontofrist (12.11.) mit dem Kontokorrentkredit. Lies ab: Wie viele Tage müsste der Kontokorrentkredit bis zum Zahlungsziel laufen?', l:20, e:'Tage', h:'Stelle das Datum 12.11. ein und lies den schraffierten Balken ab.'},
+  {id:'f3', t:'Jakob zahlt schon am 06.11. mit Skonto. Stelle das Datum ein und lies ab: Wie viele Tage müsste der Kontokorrentkredit dann laufen?', l:26, e:'Tage', h:'Stelle das Datum 06.11. ein und lies den schraffierten Balken ab.'}
+];
+const F73 = [
+  {id:'bs', t:'Bruttoskonto', l:R.bruttoSkonto, e:'€', h:'Bruttoskonto = Rechnungsbetrag · Skontosatz : 100'},
+  {id:'ns', t:'Nettoskonto', l:R.nettoSkonto, e:'€', h:'Nettoskonto = Bruttoskonto : 1,19'},
+  {id:'ub', t:'Überweisungsbetrag', l:R.ueberweisung, e:'€', h:'Überweisungsbetrag = Rechnungsbetrag – Bruttoskonto'}
+];
+const F74 = [
+  {id:'klk', t:'Kosten des Lieferantenkredits', l:R.nettoSkonto, e:'€', h:'Die Kosten des Lieferantenkredits sind der entgangene Nettoskonto.'},
+  {id:'kkk', t:'Kosten des Kontokorrentkredits', l:R.zinsenKK, e:'€', h:'Die Kosten des Kontokorrentkredits sind die Zinsen der Bank (siehe Material).'},
+  {id:'vor', t:'Kostenvorteil bei Aufnahme des Kontokorrentkredits', l:r2(R.nettoSkonto - R.zinsenKK), e:'€', h:'Kostenvorteil = Kosten des Lieferantenkredits – Kosten des Kontokorrentkredits'}
+];
+const aufgabe = (nr, t) => `<p class="aufgabe">${nr ? `<span class="nrk">${nr}</span>` : ''}${t}</p>`;
+
+const SCHRITTE = [
+  {id:'kontokorrent', kurz:'Kontokorrentkredit', titel:'Kontokorrentkredit', html:() => `<h2>Kontokorrentkredit</h2>
+    <p>Nicht jeder Kredit ist ein großes Darlehen. Für den laufenden Geschäftsverkehr nutzen Unternehmen kurzfristige Kredite.</p>
+    <div class="info"><p><b>Kontokorrentkredit</b> (ital. <i>conto corrente</i> = laufendes Konto): Die Bank erlaubt dem Unternehmen, sein <b>Geschäftsbankkonto</b> bis zu einer <b>Kreditlinie</b> (Kreditlimit = Obergrenze) zu überziehen – ohne weitere Rücksprache. Er dient zur Finanzierung des laufenden Geschäftsverkehrs, zur <b>Sicherung der Liquidität</b> und zur Überbrückung kurzfristiger Zahlungsengpässe.</p></div>
+    ${kkGrafik()}
+    <ul class="merk"><li>kurzfristiger Kredit; <b>Zinsen nur für die tatsächlich beanspruchte Höhe und Dauer</b></li>
+    <li>vergleichsweise <b>teure</b> Kreditart; wird das Limit überschritten (geduldete Überziehung), fallen noch höhere Überziehungszinsen an</li>
+    <li><b>Tilgung automatisch</b> durch Zahlungseingänge (z. B. Kunden überweisen); die Bank kann die Kreditlinie jederzeit anpassen</li>
+    <li>zusätzlich können Kontoführungsgebühren anfallen → Konto <b>6750 KGV</b> (Kosten des Geldverkehrs); Zinsen → <b>7510 ZAW</b></li></ul>`},
+  {id:'dispo', kurz:'Dispositionskredit', titel:'Dispositionskredit', html:() => `<h2>Dispositionskredit („Dispo“)</h2>
+    <div class="info"><p>Der <b>Dispositionskredit</b> funktioniert genauso wie der Kontokorrentkredit, wird aber <b>Privatkunden</b> auf dem <b>Girokonto</b> eingeräumt. Die Höhe hängt von der <b>Kreditwürdigkeit</b> und den <b>regelmäßigen Geldeingängen</b> (z. B. Gehalt) ab.</p>
+    <p>Vorteil: hohe Flexibilität. Nachteil: sehr hohe Zinsen → nur in Ausnahmefällen nutzen!</p></div>
+    <div class="alltag"><b>Aus dem Alltag · Der Dispo auf deinem ersten Girokonto</b>Mit dem ersten Ausbildungsgehalt bietet dir die Bank vielleicht einen Dispo von 1.000 € an. Bequem – aber teuer: Dispozinsen liegen oft bei über 10 % im Jahr. Wer dauerhaft „im Minus“ lebt, zahlt jeden Monat drauf.</div>
+    <table class="beleg" style="max-width:none"><tr><td></td><td style="text-align:left;font-family:inherit"><b>Kontokorrentkredit</b></td><td style="text-align:left;font-family:inherit"><b>Dispositionskredit</b></td></tr>
+    <tr><td>für wen?</td><td style="text-align:left;font-family:inherit">Unternehmen</td><td style="text-align:left;font-family:inherit">Privatkunden</td></tr>
+    <tr><td>welches Konto?</td><td style="text-align:left;font-family:inherit">Geschäftsbankkonto</td><td style="text-align:left;font-family:inherit">Girokonto</td></tr></table>`},
+  {id:'lieferantenkredit', aufgabe:true, kurz:'Lieferantenkredit', titel:'Lieferantenkredit auf der Zeitleiste', html:() => {
+    const z = Z.lk || (Z.lk = {d:10, ein:{}});
+    return `<h2>Lieferantenkredit</h2>
+    <div class="info"><p>Gibt ein Lieferer ein <b>Zahlungsziel</b> (z. B. „zahlbar innerhalb von 30 Tagen“), gewährt er seinem Kunden einen <b>Kredit</b>. Bietet er zusätzlich <b>Skonto</b> an (z. B. „2 % Skonto bei Zahlung innerhalb von 10 Tagen“), gilt: Bis zum Ende der <b>Skontofrist</b> ist der Lieferantenkredit <b>zinslos</b>. Wer später zahlt, verzichtet auf das Skonto – der entgangene <b>Nettoskonto</b> ist der Preis für die restlichen Tage.</p>
+    <p>Rechnet man 2 % für 20 Tage auf ein ganzes Jahr hoch, entspricht das einem Zinssatz von etwa <b>36 %</b>! Ein Kontokorrentkredit kostet meist nur 8–12 %. Deshalb gilt: <b>Skonto nutzen – notfalls mit dem Kontokorrentkredit.</b></p></div>
+    ${rechnungHTML()}
+    <h3>Probiere aus: Wann bezahlt Jakob die Rechnung?</h3>
+    <div class="datum"><label>Zahlungsdatum <input class="feld" type="text" id="lkDatum" value="${datum(z.d)}" autocomplete="off" aria-describedby="lkHinweis"></label>
+      <input type="range" id="lkRegler" min="0" max="40" step="1" value="${z.d}" aria-label="Zahlungsdatum verschieben"></div>
+    <div class="nr" id="lkHinweis">Gib ein Datum ein (z. B. 20.11.) oder verschiebe den Regler.</div>
+    <div id="lkBild">${zeitleiste(z.d)}</div><div class="stand" id="lkStand">${standText(z.d)}</div>
+    ${aufgabe('', 'Beantworte die Fragen mithilfe der Zeitleiste.')}${fragenHTML(z, F_LK)}
+    <div class="knoepfe"><button class="btn haupt" type="button" data-pruefen="lieferantenkredit">Prüfen</button></div>${z.fb ? `<div class="fb ${z.fb.ok ? 'ok' : 'falsch'}">${z.fb.t}</div>` : ''}`;
+  }},
+  {id:'a71', aufgabe:true, kurz:'7.1', titel:'7.1 Merkmale zuordnen', html:() => {
+    const z = Z.a71 || (Z.a71 = {platz:{}, fix:{}, ord:mischen(KARTEN.map(k => k.id))});
+    const karte = id => { const k = KARTEN.find(x => x.id === id); return `<div class="kk-karte${z.fix[id] ? ' fix' : ''}${z.wahl === id ? ' gewaehlt' : ''}${z.weg && z.weg.includes(id) ? ' weg' : ''}" data-karte="${id}" tabindex="0" role="button" aria-label="${k.t}">${k.t}</div>`; };
+    return `<details class="erinnerung" open><summary>Erinnerung</summary>
+      <p><b>Kontokorrentkredit:</b> Unternehmen überziehen ihr Geschäftsbankkonto bis zur Kreditlinie. <b>Dispositionskredit:</b> dasselbe für Privatkunden auf dem Girokonto. <b>Lieferantenkredit:</b> der Lieferer gewährt ein Zahlungsziel; bis zum Ende der Skontofrist kostenlos.</p></details>
+      ${aufgabe('7.1', 'Ordne die Merkmale dem passenden Kredit zu. Ziehe jede Karte in ein Feld (oder tippe erst die Karte, dann das Feld an).')}
+      <div class="pool" data-zone="pool">${z.ord.filter(id => !z.platz[id]).map(karte).join('') || '<span class="muted">Alle Karten sind verteilt.</span>'}</div>
+      <div class="zonen">${ZONEN.map(([id, t]) => `<div class="zone" data-zone="${id}"><h3>${t}</h3>${z.ord.filter(k => z.platz[k] === id).map(karte).join('')}</div>`).join('')}</div>
+      <div class="knoepfe"><button class="btn haupt" type="button" data-pruefen="a71">Prüfen</button></div>${z.fb ? `<div class="fb ${z.fb.ok ? 'ok' : 'falsch'}">${z.fb.t}</div>` : ''}`;
+  }},
+  {id:'a72', aufgabe:true, kurz:'7.2', titel:'7.2 Kontokorrent- und Dispositionskredit', html:() => {
+    const z = Z.a72 || (Z.a72 = {mc:{}, ord:{}});
+    return `<details class="erinnerung" open><summary>Erinnerung</summary>
+      <p>Beide Kredite erlauben es, ein Konto bis zu einer Obergrenze zu überziehen; Zinsen fallen nur für die beanspruchte Höhe und Dauer an. Der <b>Kontokorrentkredit</b> ist für Unternehmen, der <b>Dispositionskredit</b> für Privatkunden.</p></details>
+      ${aufgabe('7.2', 'Unterscheide Kontokorrentkredit und Dispositionskredit. Wähle jeweils die richtige Antwort.')}${mcHTML(z, MC72)}`;
+  }},
+  {id:'a73', aufgabe:true, kurz:'7.3', titel:'7.3 Skonto berechnen', html:() => {
+    const z = Z.a73 || (Z.a73 = {ein:{}});
+    return `<details class="erinnerung" open><summary>Erinnerung</summary>
+      <p>Bruttoskonto = Rechnungsbetrag · Skontosatz : 100 &nbsp;·&nbsp; Nettoskonto = Bruttoskonto : 1,19 &nbsp;·&nbsp; Überweisungsbetrag = Rechnungsbetrag – Bruttoskonto</p></details>
+      ${rechnungHTML()}
+      ${aufgabe('7.3', 'Berechne den Bruttoskonto, den Nettoskonto und den Überweisungsbetrag, wenn Jakob innerhalb der Skontofrist zahlt. Trage deine Ergebnisse ein und überprüfe sie.')}${fragenHTML(z, F73)}
+      <div class="knoepfe"><button class="btn haupt" type="button" data-pruefen="a73">Ergebnisse überprüfen</button></div>${z.fb ? `<div class="fb ${z.fb.ok ? 'ok' : 'falsch'}">${z.fb.t}</div>` : ''}`;
+  }},
+  {id:'a74', aufgabe:true, kurz:'7.4', titel:'7.4 Kostenvergleich', html:() => {
+    const z = Z.a74 || (Z.a74 = {ein:{}, mc:{}, ord:{}});
+    return `<details class="erinnerung" open><summary>Erinnerung</summary>
+      <p><b>Kosten des Lieferantenkredits</b> = entgangener Nettoskonto (siehe 7.3: Nettoskonto = Rechnungsbetrag · 2 % : 1,19). <b>Kosten des Kontokorrentkredits</b> = Zinsen der Bank. <b>Kostenvorteil</b> = Differenz beider Kosten.</p></details>
+      <div class="material"><div class="mt">Material</div><table class="beleg"><tr><td>Rechnungsdatum</td><td>02.11.</td></tr><tr><td>Warenwert netto</td><td>${eur(R.netto)}</td></tr><tr><td>+ 19 % Umsatzsteuer</td><td>${eur(R.ust)}</td></tr><tr class="summe"><td>Rechnungsbetrag</td><td>${eur(R.brutto)}</td></tr></table>
+      <p style="margin:8px 0 0">Zahlungsbedingungen: Zahlbar innerhalb von 30 Tagen ohne Abzug; bei Zahlung innerhalb von 10 Tagen 2 % Skonto.</p>${kkTextHTML()}</div>
+      ${aufgabe('7.4', 'Gib die Kosten des Lieferantenkredits, die Kosten des Kontokorrentkredits und den Kostenvorteil bei der Aufnahme des Kontokorrentkredits an.')}${fragenHTML(z, F74)}
+      <div class="knoepfe"><button class="btn haupt" type="button" data-pruefen="a74">Prüfen</button></div>${z.fb ? `<div class="fb ${z.fb.ok ? 'ok' : 'falsch'}">${z.fb.t}</div>` : ''}
+      ${z.rechnungOk ? '<h3>Und jetzt?</h3>' + mcHTML(z, MC74) : ''}`;
+  }},
+  {id:'a75', aufgabe:true, kurz:'7.5', titel:'7.5 Lückentext Kontokorrentkredit', html:() => {
+    const z = Z.a75 || (Z.a75 = {wahl:{}, ord:{}});
+    let n = 0;
+    const text = LUECKEN.map(teil => {
+      if (typeof teil === 'string') return teil;
+      const i = n++, ord = z.ord[i] || (z.ord[i] = mischen(teil.map((_, j) => j))), w = z.wahl[i], r = z.ok && z.ok[i];
+      return `<select data-luecke="${i}" class="${r === true ? 'richtig' : r === false ? 'falsch' : ''}" aria-label="Lücke ${i + 1}"><option value="">– wählen –</option>${ord.map(j => `<option value="${j}"${String(w) === String(j) ? ' selected' : ''}>${teil[j]}</option>`).join('')}</select>`;
+    }).join('');
+    return `<details class="erinnerung" open><summary>Erinnerung</summary>
+      <p>Der Kontokorrentkredit ist ein <b>kurzfristiger</b> Kredit und eine vergleichsweise <b>teure</b> Kreditart. Er dient zur Sicherung der Liquidität und zur Überbrückung kurzfristiger Zahlungsengpässe – bis zur <b>Kreditlinie</b>.</p></details>
+      ${aufgabe('7.5', 'Begründe, warum Jakob die Rechnung nicht dauerhaft über den Kontokorrentkredit finanzieren sollte. Vervollständige dazu den Text.')}
+      <p class="lueckentext">${text}</p>
+      <div class="knoepfe"><button class="btn haupt" type="button" data-pruefen="a75">Prüfen</button></div>${z.fb ? `<div class="fb ${z.fb.ok ? 'ok' : 'falsch'}">${z.fb.t}</div>` : ''}`;
+  }},
+  {id:'ueberblick', kurz:'Überblick', titel:'Überblick', html:() => `<h2>Überblick · Kurzfristige Kredite</h2>
+    <div class="ueberblick info"><p><b>Kontokorrentkredit:</b> Überziehung des Geschäftsbankkontos bis zur Kreditlinie; Zinsen nur für beanspruchte Höhe und Dauer; Tilgung durch Zahlungseingänge.</p>
+    <p><b>Dispositionskredit:</b> wie Kontokorrentkredit, aber für Privatkunden auf dem Girokonto.</p>
+    <p><b>Lieferantenkredit:</b> bis zum Ende der Skontofrist kostenlos, danach sehr teuer, weil der Nettoskonto verloren geht → Skonto ausnutzen.</p></div>
+    <p class="muted">Übertrage den Überblick in dein Heft (Seite 2, Kapitel 7) und vergleiche mit dem Lösungsblatt L7.</p>`}
+];
+
+/* ---------- Prüfen ---------- */
+const PRUEFEN = {
+  lieferantenkredit(){
+    const z = Z.lk, ok = fragenPruefen(z, F_LK);
+    z.fb = ok ? {ok:true, t:'✓ Alles richtig! Je früher Jakob mit Skonto zahlt, desto länger muss der Kontokorrentkredit laufen – bis zum Zahlungsziel.'} : {ok:false, t:'Noch nicht alles richtig. Nutze die Zeitleiste und lies die Balken ab.'};
+    if (ok) erledigt(schritt('lieferantenkredit'));
+  },
+  a71(){
+    const z = Z.a71, falsch = [];
+    KARTEN.forEach(k => { if (z.platz[k.id]){ if (z.platz[k.id] === k.z) z.fix[k.id] = true; else { falsch.push(k.id); delete z.platz[k.id]; } } });
+    z.weg = falsch; z.wahl = null;
+    const fertig = KARTEN.filter(k => z.fix[k.id]).length, offen = KARTEN.length - fertig;
+    if (!offen){ z.fb = {ok:true, t:'✓ Alle 12 Merkmale richtig zugeordnet!'}; erledigt(schritt('a71')); }
+    else z.fb = {ok:false, t:`${fertig} von ${KARTEN.length} richtig. ${falsch.length ? `${falsch.length} ${falsch.length === 1 ? 'Karte ist' : 'Karten sind'} zurück in den Stapel gewandert. ` : ''}Ordne die übrigen Karten zu.`};
+  },
+  a73(){
+    const z = Z.a73, ok = fragenPruefen(z, F73);
+    z.fb = ok ? {ok:true, t:`✓ Richtig! Bruttoskonto ${eur(R.bruttoSkonto)}, Nettoskonto ${eur(R.nettoSkonto)} (Steuerberichtigung ${eur(R.bruttoSkonto - R.nettoSkonto)}), Überweisungsbetrag ${eur(R.ueberweisung)}.`} : {ok:false, t:'Noch nicht alles richtig. Die Erinnerung oben zeigt dir den Rechenweg.'};
+    if (ok) erledigt(schritt('a73'));
+  },
+  a74(){
+    const z = Z.a74, ok = fragenPruefen(z, F74);
+    z.fb = ok ? {ok:true, t:`✓ Richtig! Lieferantenkredit ${eur(R.nettoSkonto)} – Kontokorrentkredit ${eur(R.zinsenKK)} = Vorteil ${eur(R.nettoSkonto - R.zinsenKK)}.`} : {ok:false, t:'Noch nicht alles richtig. Lies die Erinnerung und das Material genau.'};
+    z.rechnungOk = ok;
+  },
+  a75(){
+    const z = Z.a75; z.ok = {};
+    let i = 0, alle = true;
+    LUECKEN.forEach(teil => { if (typeof teil !== 'string'){ z.ok[i] = String(z.wahl[i]) === '0'; alle = alle && z.ok[i]; i++; } });
+    z.fb = alle ? {ok:true, t:'✓ Richtig! Der Kontokorrentkredit ist nur für kurzfristige Engpässe gedacht.'} : {ok:false, t:'Noch nicht alles richtig. Die rot markierten Lücken stimmen nicht.'};
+    if (alle) erledigt(schritt('a75'));
+  }
+};
+const schritt = id => SCHRITTE.find(s => s.id === id);
+
+/* ---------- Darstellung ---------- */
+let akt = Math.min(Math.max(stand.schritt || 0, 0), SCHRITTE.length - 1);
+function render(oben){
+  const s = SCHRITTE[akt];
+  $('#schritte').innerHTML = SCHRITTE.map((x, i) => `<button class="btn${i === akt ? ' on' : ''}${stand.erledigt[x.id] ? ' erl' : ''}" type="button" data-schritt="${i}"${i === akt ? ' aria-current="step"' : ''}>${x.kurz}</button>`).join('');
+  const n = SCHRITTE.filter(x => x.aufgabe && stand.erledigt[x.id]).length, m = SCHRITTE.filter(x => x.aufgabe).length;
+  $('#zaehler').textContent = `${n} von ${m} Aufgaben gelöst`;
+  $('#inhalt').innerHTML = (s.aufgabe && stand.erledigt[s.id] ? '<p class="erledigt">✓ Diese Aufgabe hast du schon gelöst. Du kannst sie noch einmal bearbeiten.</p>' : '') + s.html()
+    + `<div class="unten"><button class="btn" type="button" data-weiter="-1"${akt ? '' : ' disabled'}>◀ Zurück</button><button class="btn haupt" type="button" data-weiter="1"${akt < SCHRITTE.length - 1 ? '' : ' disabled'}>Weiter ▶</button></div>`;
+  if (oben) window.scrollTo(0, 0);
+}
+function gehe(i){
+  const s = SCHRITTE[akt];
+  if (!s.aufgabe && i > akt) erledigt(s);
+  akt = Math.min(Math.max(i, 0), SCHRITTE.length - 1); stand.schritt = akt; st('stand', stand); render(true);
+}
+
+/* ---------- Ereignisse ---------- */
+document.addEventListener('click', e => {
+  const b = e.target.closest('button, .zone, .kk-karte'); if (!b) return;
+  const ds = b.dataset;
+  if (ds.schritt) return gehe(+ds.schritt);
+  if (ds.weiter) return gehe(akt + +ds.weiter);
+  if (ds.pruefen){ PRUEFEN[ds.pruefen](); render(); return; }
+  if (ds.mc){
+    const z = Z[SCHRITTE[akt].id], q = [...MC72, ...MC74].find(x => x.id === ds.mc), i = +ds.i;
+    z.mc[q.id] = {i, ok:i === q.r};
+    if (MC72.every(x => z.mc[x.id] && z.mc[x.id].ok) && SCHRITTE[akt].id === 'a72') erledigt(schritt('a72'));
+    if (q.id === 'empf' && i === q.r) erledigt(schritt('a74'));
+    return render();
+  }
+  // Zuordnen per Antippen: erst Karte, dann Feld
+  const z = Z.a71; if (!z || SCHRITTE[akt].id !== 'a71' || zieht) return;
+  if (ds.karte && !z.fix[ds.karte]){ z.wahl = z.wahl === ds.karte ? null : ds.karte; z.weg = null; return render(); }
+  if (ds.zone && z.wahl){ legen(z.wahl, ds.zone); z.wahl = null; render(); }
+});
+function legen(id, zone){ const z = Z.a71; if (z.fix[id]) return; if (zone === 'pool') delete z.platz[id]; else z.platz[id] = zone; z.weg = null; z.fb = null; }
+document.addEventListener('input', e => {
+  const t = e.target, z = Z[SCHRITTE[akt].id === 'lieferantenkredit' ? 'lk' : SCHRITTE[akt].id];
+  if (t.dataset.frage){ z.ein[t.dataset.frage] = t.value; return; }
+  if (t.id === 'lkRegler') setzeTag(+t.value, true);
+  if (t.id === 'lkDatum'){ const d = tagAus(t.value); $('#lkHinweis').textContent = d == null ? 'Gib ein Datum zwischen 02.11. und 12.12. ein, z. B. 20.11.' : 'Gib ein Datum ein (z. B. 20.11.) oder verschiebe den Regler.'; if (d != null) setzeTag(d, false); }
+});
+document.addEventListener('change', e => {
+  const t = e.target;
+  if (t.dataset.luecke != null){ Z.a75.wahl[t.dataset.luecke] = t.value; Z.a75.ok = null; Z.a75.fb = null; t.className = ''; }
+  if (t.id === 'lkDatum' && tagAus(t.value) != null) t.value = datum(tagAus(t.value));
+});
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  const t = e.target;
+  if (t.dataset && t.dataset.frage){ e.preventDefault(); const b = document.querySelector('[data-pruefen]'); if (b) b.click(); }
+  else if (t.classList && t.classList.contains('kk-karte')){ e.preventDefault(); t.click(); }
+});
+function setzeTag(d, vomRegler){
+  Z.lk.d = d;
+  $('#lkBild').innerHTML = zeitleiste(d); $('#lkStand').innerHTML = standText(d);
+  if (vomRegler) $('#lkDatum').value = datum(d); else $('#lkRegler').value = d;
+}
+
+/* Ziehen mit Maus, Stift oder Finger */
+let zieht = false, zug = null;
+document.addEventListener('pointerdown', e => {
+  const k = e.target.closest('.kk-karte'); if (!k || k.classList.contains('fix')) return;
+  zug = {id:k.dataset.karte, el:k, x:e.clientX, y:e.clientY, geist:null};
+});
+document.addEventListener('pointermove', e => {
+  if (!zug) return;
+  if (!zug.geist){
+    if (Math.hypot(e.clientX - zug.x, e.clientY - zug.y) < 6) return;
+    zug.geist = zug.el.cloneNode(true); zug.geist.classList.add('geist'); zug.geist.classList.remove('gewaehlt'); document.body.appendChild(zug.geist);
+    zug.el.classList.add('quelle'); zieht = true;
+  }
+  e.preventDefault();
+  zug.geist.style.left = (e.clientX - 120) + 'px'; zug.geist.style.top = (e.clientY - 20) + 'px';
+  document.querySelectorAll('.zone.ziel').forEach(x => x.classList.remove('ziel'));
+  const ziel = document.elementFromPoint(e.clientX, e.clientY);
+  const zo = ziel && ziel.closest('.zone'); if (zo) zo.classList.add('ziel');
+});
+document.addEventListener('pointerup', e => {
+  if (!zug) return;
+  const g = zug; zug = null;
+  if (!g.geist) return;
+  g.geist.remove();
+  const ziel = document.elementFromPoint(e.clientX, e.clientY), zo = ziel && ziel.closest('[data-zone]');
+  if (zo) legen(g.id, zo.dataset.zone);
+  render(); setTimeout(() => { zieht = false; }, 0);
+});
+document.addEventListener('pointercancel', () => { if (zug && zug.geist) zug.geist.remove(); zug = null; zieht = false; render(); });
+
+render();
+</script>
+</body>
+</html>

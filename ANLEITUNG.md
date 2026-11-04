@@ -62,11 +62,13 @@ vibe-learning/
 │   │       └── struktogramm.js/.css   Zeichnen und Export, Aufbau oben in struktogramm.js
 │   └── BWR/                   Fach mit Jahrgangsstufen
 │       ├── index.html             Auswahl der Jahrgangsstufe
+│       ├── bwr.css                Grundlayout aller BWR-Seiten
 │       └── 9II/                   Jahrgangsstufe 9 (Wahlpflichtfächergruppe II)
 │           ├── index.html             Übersicht der Stufe
 │           ├── finanzierung/
 │           │   ├── index.html         Übersicht des Bereichs
-│           │   └── bilanz.html        Bilanz-Modell: Buchungen verändern die Bilanz (Bilanz von Saitgig)
+│           │   ├── bilanz.html        Bilanz-Modell: Buchungen verändern die Bilanz (Bilanz von Saitgig)
+│           │   └── kurzfristige-kredite.html  Erarbeitung Kontokorrent-, Dispo- und Lieferantenkredit (Heft Kap. 7)
 │           └── unternehmensfuehrung/, anlagen/, kapitalanlage/, forderungen/
 ├── standalone/            jede Übung als Einzeldatei, gleiche Ordner wie in pb_public (IT/excel/…)
 └── ANLEITUNG.md

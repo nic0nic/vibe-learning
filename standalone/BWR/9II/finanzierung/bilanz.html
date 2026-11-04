@@ -106,7 +106,8 @@ window.KATALOG = {
             {id: 'anlagen', titel: 'Anlagen', farbe: '#a3be8c', farbeHell: '#5e8a45', text: 'Übungen zu Anlagen.', tools: []},
             {id: 'finanzierung', titel: 'Finanzierung', farbe: '#ebcb8b', farbeHell: '#8a6d1f', text: 'Übungen zur Finanzierung.',
               tools: [
-                {id: 'bilanz', stufen: ['Bilanzposten', 'AV/UV · EK/FK', 'Goldene Regel'], datei: 'bilanz.html', titel: 'Bilanz-Modell', text: 'Wie Buchungen die Bilanz verändern: Aktivtausch, Passivtausch, Aktiv-Passiv-Mehrung und -Minderung – eingeteilt nach Bilanzposten, nach AV/UV und EK/FK oder nach der Goldenen Finanzierungsregel.'}
+                {id: 'bilanz', stufen: ['Bilanzposten', 'AV/UV · EK/FK', 'Goldene Regel'], datei: 'bilanz.html', titel: 'Bilanz-Modell', text: 'Wie Buchungen die Bilanz verändern: Aktivtausch, Passivtausch, Aktiv-Passiv-Mehrung und -Minderung – eingeteilt nach Bilanzposten, nach AV/UV und EK/FK oder nach der Goldenen Finanzierungsregel.'},
+                {id: 'kurzkredit', datei: 'kurzfristige-kredite.html', titel: 'Kontokorrent-, Dispo- und Lieferantenkredit', text: 'Erarbeitung zu kurzfristigen Krediten (Heft Kap. 7): Lieferantenkredit auf der Zeitleiste ausprobieren, Merkmale zuordnen, Skonto berechnen und Kosten vergleichen.'}
               ]},
             {id: 'kapitalanlage', titel: 'Kapitalanlage', farbe: '#b48ead', farbeHell: '#8a5f84', text: 'Übungen zur Kapitalanlage.', tools: []},
             {id: 'forderungen', titel: 'Forderungen', farbe: '#bf616a', farbeHell: '#a3434c', farbeSchrift: '#e0959b', text: 'Übungen zu Forderungen.', tools: []}
@@ -770,12 +771,27 @@ html[data-theme=dark] .pf-item{--bc:#88c0d0}
 (function(){var t=null;try{t=localStorage.getItem('wenn-theme');}catch(e){}
 document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');})();
 </script>
-<style>
+<style>/* ../../bwr.css */
+/* bwr.css – Grundlayout der BWR-Seiten (Nord-Farben, hell und dunkel)
+ *
+ * Einbinden im <head> nach den Skripten, Pfad zum Ordner BWR/, z. B. aus BWR/9II/finanzierung/:
+ *   <link rel="stylesheet" href="../../bwr.css">
+ * Danach eigene <style>-Regeln der Seite (nur, was keine andere BWR-Seite braucht).
+ *
+ * Farben:   --bg --panel --panel2 --text --muted --border --accent --err --ok --mono,
+ *           --plus/--plus-bg (richtig, Zunahme), --minus/--minus-bg (falsch, Abnahme)
+ * Gerüst:   .wrap > .bar (.brand mit <span>, .gruppe, .hint, .spacer) und darunter .karte (h2, h3, p)
+ * Knöpfe:   .btn, .btn.on (gewählt), .btn.haupt (Hauptaktion), .btn.klein; Eingaben .feld
+ * Texte:    .muted, .tag (kleines Etikett), .nr (Nebenrechnung, klein und grau)
+ * Rückmeldung: <div class="fb ok|falsch">…</div>; Knopfzeile .knoepfe
+ * Material: <div class="material"><div class="mt">Titel</div>…</div>, Tabelle darin .beleg
+ * Erinnerung: <details class="erinnerung" open><summary>Erinnerung</summary>…</details>
+ */
 :root{--bg:#e5e9f0;--panel:#f6f8fb;--panel2:#eceff4;--text:#2e3440;--muted:#5b6578;--border:#cdd3de;--accent:#5e81ac;--err:#a8434d;--ok:#5e8a45;
   --mono:ui-monospace,Consolas,"Liberation Mono",monospace;
-  --av:#81a1c1;--uv:#b5cde0;--ek:#a3be8c;--fk:#ebcb8b;--plus:#4f7a3a;--minus:#a8434d;--plus-bg:#dfeccf;--minus-bg:#f3d9dc}
+  --plus:#4f7a3a;--minus:#a8434d;--plus-bg:#dfeccf;--minus-bg:#f3d9dc}
 [data-theme=dark]{--bg:#2e3440;--panel:#3b4252;--panel2:#434c5e;--text:#eceff4;--muted:#a9b3c4;--border:#4c566a;--accent:#88c0d0;--err:#d4848b;--ok:#a3be8c;
-  --av:#81a1c1;--uv:#b5cde0;--ek:#a3be8c;--fk:#ebcb8b;--plus:#b5d39a;--minus:#e0959b;--plus-bg:#3f4d3a;--minus-bg:#553c42}
+  --plus:#b5d39a;--minus:#e0959b;--plus-bg:#3f4d3a;--minus-bg:#553c42}
 *{box-sizing:border-box}
 html,body{margin:0}
 body{background:var(--bg);color:var(--text);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;min-height:100vh}
@@ -795,6 +811,30 @@ body{background:var(--bg);color:var(--text);font:15px/1.45 system-ui,-apple-syst
 .btn.klein{font-size:13px;padding:4px 9px}
 .btn:focus-visible,.feld:focus{outline:2px solid var(--accent);outline-offset:1px}
 .feld{font:14px system-ui,sans-serif;background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 8px}
+.karte{min-width:0;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px 16px}
+.karte h2{font-size:18px;margin:0 0 6px}
+.karte h3{font-size:15px;margin:14px 0 6px}
+.karte p{margin:0 0 8px}
+.tag{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;background:var(--accent);color:#fff;border-radius:6px;padding:1px 6px;vertical-align:2px}
+[data-theme=dark] .tag{color:#2e3440}
+.nr{font-size:13px;color:var(--muted);margin:-2px 0 8px}
+.fb{border-radius:8px;padding:7px 10px;margin:8px 0 0;font-size:14px}
+.fb.ok{background:var(--plus-bg);color:var(--text)}
+.fb.falsch{background:var(--minus-bg);color:var(--text)}
+.knoepfe{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.material{border:1px solid var(--border);background:var(--panel2);border-radius:10px;padding:10px 12px;margin:0 0 12px}
+.material .mt{font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:6px}
+.beleg{border-collapse:collapse;width:100%;max-width:520px;font-size:14px}
+.beleg td{padding:3px 6px;border-bottom:1px solid var(--border)}
+.beleg td:last-child{text-align:right;font-family:var(--mono);white-space:nowrap}
+.beleg tr.summe td{font-weight:700;border-bottom:none;border-top:1.5px solid var(--text)}
+.erinnerung{border-left:4px solid var(--accent);background:var(--panel2);border-radius:0 10px 10px 0;padding:6px 12px;margin:0 0 12px}
+.erinnerung summary{cursor:pointer;font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);padding:2px 0}
+.erinnerung>*:not(summary){margin:6px 0}
+
+</style>
+<style>
+:root{--av:#81a1c1;--uv:#b5cde0;--ek:#a3be8c;--fk:#ebcb8b}
 .arbeit{display:grid;grid-template-columns:minmax(340px,480px) minmax(0,1fr);gap:12px;align-items:start}
 @media (max-width:980px){.arbeit{grid-template-columns:minmax(0,1fr)}}
 @media (max-width:600px){
@@ -802,12 +842,6 @@ body{background:var(--bg);color:var(--text);font:15px/1.45 system-ui,-apple-syst
   .pz,.gz,.summe{padding:3px 5px;font-size:12.5px}.pz.ein{padding-left:10px}.pz small{display:block}
   .tkonto{grid-template-columns:minmax(0,1fr)}.seite+.seite{border-left:none;border-top:2px solid var(--text)}
 }
-.karte{min-width:0;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px 16px}
-.karte h2{font-size:18px;margin:0 0 6px}
-.karte h3{font-size:15px;margin:14px 0 6px}
-.karte p{margin:0 0 8px}
-.tag{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;background:var(--accent);color:#fff;border-radius:6px;padding:1px 6px;vertical-align:2px}
-[data-theme=dark] .tag{color:#2e3440}
 .faelle{display:flex;flex-wrap:wrap;gap:6px}
 .fall{font:600 13px system-ui,sans-serif;background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:5px 9px;cursor:pointer;text-align:left}
 .fall:hover{border-color:var(--accent)}
@@ -815,15 +849,10 @@ body{background:var(--bg);color:var(--text);font:15px/1.45 system-ui,-apple-syst
 .fall .n{color:var(--muted);font-weight:400}
 .fallkarte{border-top:1px solid var(--border);margin-top:14px;padding-top:4px}
 pre.bsatz{font:12.5px/1.5 var(--mono);background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin:6px 0 10px;overflow-x:auto}
-.nr{font-size:13px;color:var(--muted);margin:-2px 0 8px}
-.fb{border-radius:8px;padding:7px 10px;margin:8px 0 0;font-size:14px}
-.fb.ok{background:var(--plus-bg);color:var(--text)}
-.fb.falsch{background:var(--minus-bg);color:var(--text)}
 .teil{border-top:1px solid var(--border);padding-top:10px;margin-top:10px}
 .teil.zu{opacity:.5}
 .gf{background:var(--panel2);border-radius:8px;padding:8px 10px}
 .kopfzeile{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
-.knoepfe{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .builder{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:6px 8px;align-items:start}
 .builder .an{font:700 14px var(--mono);align-self:end;padding-bottom:10px}
 .spalte{display:flex;flex-direction:column;gap:6px;align-items:flex-start}

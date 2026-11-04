@@ -1,0 +1,496 @@
+<!doctype html>
+<html lang="de" data-trainer="kurzkredit">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kurzfristige Kredite – vibe learning</title>
+<!--
+  Erarbeitung zu Kapitel 7 der Ergänzung zum Selbstlernheft Finanzierung (Saitgig):
+  Kontokorrent-, Dispositions- und Lieferantenkredit. Schritte in SCHRITTE (Info oder Aufgabe 7.1–7.5),
+  jede Seite enthält alle Werte, die man für ihre Aufgabe braucht (Material wird wiederholt).
+  Lieferantenkredit: Zahlungsdatum eingeben → Zeitleiste zeigt Dauer von Lieferanten- und Kontokorrentkredit.
+  Gespeichert: kurzkredit-stand = {schritt, erledigt:{id:true}}. Auswertung: TrainerSync.event, modus erarbeitung.
+-->
+<script src="../../../katalog.js"></script>
+<script src="../../../nav.js"></script>
+<script src="../../../sync.js"></script>
+<script>
+(function(){var t=null;try{t=localStorage.getItem('wenn-theme');}catch(e){}
+document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');})();
+</script>
+<link rel="stylesheet" href="../../bwr.css">
+<style>
+.wrap{max-width:1000px}
+.schritte{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.schritte .btn{font-size:13px;padding:5px 10px}
+.schritte .btn.erl::after{content:" ✓";color:var(--ok)}
+.schritte .btn.on.erl::after{color:inherit}
+.info{border-left:4px solid var(--accent);padding:2px 0 2px 12px;margin:0 0 12px}
+.alltag{background:var(--panel2);border-radius:10px;padding:8px 12px;margin:0 0 12px}
+.alltag b:first-child{display:block;font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.unten{display:flex;justify-content:space-between;gap:8px;margin-top:16px;border-top:1px solid var(--border);padding-top:12px}
+.aufgabe{font-weight:600;margin:4px 0 10px}
+.aufgabe .nrk{display:inline-block;min-width:36px;font-family:var(--mono)}
+.erledigt{font-size:13px;color:var(--ok);font-weight:700;margin:0 0 8px}
+ul.merk{margin:0 0 12px;padding-left:20px}
+ul.merk li{margin-bottom:3px}
+/* Grafiken */
+.grafik{width:100%;height:auto;display:block;margin:4px 0 10px}
+.grafik text{fill:var(--text);font:12px system-ui,sans-serif}
+.grafik .achse{stroke:var(--text);stroke-width:1.5}
+.grafik .limit{stroke:var(--err);stroke-width:2;stroke-dasharray:6 4}
+.grafik .kurve{fill:none;stroke:var(--accent);stroke-width:3;stroke-linejoin:round}
+.grafik .ueberzogen{fill:var(--err);fill-opacity:.35}
+.grafik .schr{stroke:var(--text);stroke-opacity:.45;stroke-width:2}
+.grafik .rotT{fill:var(--err);font-weight:700}
+.grafik .gruen{fill:#a3be8c}.grafik .orange{fill:#ebcb8b}.grafik .rot{fill:#d08770;fill-opacity:.7}
+.grafik text.bt{fill:#2e3440;font-weight:700;text-anchor:middle}
+.grafik text.bt.k{font-weight:400}
+.grafik .tick{stroke:var(--muted)}
+.grafik text.dt{fill:var(--muted);font-size:11px;text-anchor:middle}
+.grafik text.key{font-weight:700;text-anchor:middle}
+.grafik .marke{stroke:var(--text);stroke-width:2.5}
+.grafik text.mt{font-weight:800;font-size:13px}
+.grafik .lk{fill:var(--accent)}
+.grafik .kk{fill:url(#tlSchr);stroke:var(--text);stroke-width:1}
+.datum{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:4px 0 6px}
+.datum input[type=text]{width:90px;font-family:var(--mono);text-align:center}
+.datum input[type=range]{flex:1 1 220px;accent-color:var(--accent)}
+.stand{background:var(--panel2);border-radius:10px;padding:8px 12px;margin:0 0 12px}
+/* Fragen mit Eingabe */
+.fragen{display:flex;flex-direction:column;gap:8px;margin:8px 0}
+.frage{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}
+.frage .ft{flex:1 1 320px}
+.frage input{width:120px;text-align:right;font-family:var(--mono)}
+.frage .ok{color:var(--ok);font-weight:700}.frage .nein{color:var(--err);font-weight:700}
+.frage input.richtig{border-color:var(--ok);background:var(--plus-bg)}
+.frage input.falsch{border-color:var(--err);background:var(--minus-bg)}
+/* Zuordnen (Drag and Drop) */
+.pool{display:flex;flex-wrap:wrap;gap:8px;min-height:56px;padding:10px;border:2px dashed var(--border);border-radius:12px;margin-bottom:12px}
+.zonen{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+@media (max-width:760px){.zonen{grid-template-columns:minmax(0,1fr)}}
+.zone{border:2px solid var(--border);border-radius:12px;padding:8px;min-height:150px;display:flex;flex-direction:column;gap:6px;background:var(--panel2)}
+.zone h3{margin:0 0 4px!important;text-align:center;font-size:14px}
+.zone.ziel{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 30%,transparent)}
+.kk-karte{background:var(--panel);border:1px solid var(--border);border-left:5px solid var(--accent);border-radius:8px;padding:7px 10px;font-size:14px;cursor:grab;touch-action:none;user-select:none;max-width:100%}
+.pool .kk-karte{flex:1 1 220px}
+.kk-karte.gewaehlt{outline:3px solid var(--accent)}
+.kk-karte.quelle{opacity:.35}
+.kk-karte.fix{border-left-color:var(--ok);background:var(--plus-bg);cursor:default}
+.kk-karte.weg{animation:wackeln .5s;border-left-color:var(--err);background:var(--minus-bg)}
+@keyframes wackeln{20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+.geist{position:fixed;z-index:100;pointer-events:none;box-shadow:0 8px 20px rgba(0,0,0,.25);transform:rotate(-2deg);width:240px}
+/* Multiple Choice */
+.mc{margin:0 0 14px}
+.mc .q{font-weight:600;margin:0 0 6px}
+.mc .opts{display:flex;flex-direction:column;gap:6px}
+.mc .opt{text-align:left;font:15px system-ui,sans-serif;background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:8px 12px;cursor:pointer}
+.mc .opt:hover{border-color:var(--accent)}
+.mc .opt.richtig{background:var(--plus-bg);border-color:var(--ok)}
+.mc .opt.falsch{background:var(--minus-bg);border-color:var(--err)}
+.mc .opt:disabled{cursor:default}
+/* Lückentext */
+.lueckentext{line-height:2.4;font-size:16px}
+.lueckentext select{font:15px system-ui,sans-serif;background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:3px 6px}
+.lueckentext select.richtig{border-color:var(--ok);background:var(--plus-bg)}
+.lueckentext select.falsch{border-color:var(--err);background:var(--minus-bg)}
+.ueberblick p{margin:0 0 8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="bar"><div class="brand">Kurzfristige<span> Kredite</span></div><span class="spacer"></span><span class="muted" id="zaehler"></span></div>
+  <nav class="schritte" id="schritte" aria-label="Schritte"></nav>
+  <main class="karte" id="inhalt" aria-live="polite"></main>
+</div>
+<script>
+'use strict';
+/* ---------- Helfer ---------- */
+const KEY = 'kurzkredit-';
+const ldJ = (k, d) => { try { const x = JSON.parse(localStorage.getItem(KEY + k)); return x == null ? d : x; } catch (e) { return d; } };
+function st(k, v){ try { localStorage.setItem(KEY + k, JSON.stringify(v)); } catch (e) {} if (window.TrainerSync) TrainerSync.changed(); }
+const $ = s => document.querySelector(s);
+const r2 = n => Math.round(n * 100) / 100;
+const eur = n => r2(n).toLocaleString('de-DE', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' €';
+function zahl(s){
+  s = String(s).replace(/€|%|Tage?|\s/g, '');
+  if (!s) return NaN;
+  if (s.includes(',')) s = s.replace(/\./g, '').replace(',', '.');
+  else if (/^\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, '');
+  return /^-?\d+(\.\d+)?$/.test(s) ? +s : NaN;
+}
+function mischen(a){ a = a.slice(); for (let i = a.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+
+/* ---------- Material (Werte aus dem Heft, Kapitel 7) ---------- */
+const R = {netto:10000, ust:1900, brutto:11900, skonto:2, tageSkonto:10, tageZiel:30, zinsenKK:58.31};
+R.bruttoSkonto = r2(R.brutto * R.skonto / 100); R.nettoSkonto = r2(R.bruttoSkonto / 1.19); R.ueberweisung = r2(R.brutto - R.bruttoSkonto);
+const rechnungHTML = () => `<div class="material"><div class="mt">Material: Eingangsrechnung eines Holzlieferanten (Auszug)</div>
+  <table class="beleg"><tr><td>Rechnungsdatum</td><td>02.11.</td></tr><tr><td>20 Hälse aus Ahorn, Warenwert netto</td><td>${eur(R.netto)}</td></tr>
+  <tr><td>+ 19 % Umsatzsteuer</td><td>${eur(R.ust)}</td></tr><tr class="summe"><td>Rechnungsbetrag</td><td>${eur(R.brutto)}</td></tr></table>
+  <p style="margin:8px 0 0">Zahlungsbedingungen: Zahlbar innerhalb von 30 Tagen ohne Abzug; bei Zahlung innerhalb von 10 Tagen 2 % Skonto.</p></div>`;
+const kkTextHTML = () => `<p style="margin:8px 0 0">Saitgig hat zurzeit kein Guthaben. Nutzt Jakob das Skonto, muss er den Überweisungsbetrag mit dem Kontokorrentkredit bezahlen. Die Bank verlangt dafür für die 20 Tage <b>${eur(R.zinsenKK)}</b> Zinsen.</p>`;
+
+/* ---------- Zustand ---------- */
+let stand = ldJ('stand', {});
+if (!stand.erledigt) stand.erledigt = {};
+const Z = {};   // Zustand der Aufgaben in dieser Sitzung (Eingaben, Rückmeldungen)
+function erledigt(s){
+  const erstmals = !stand.erledigt[s.id];
+  stand.erledigt[s.id] = true; st('stand', stand);
+  if (s.aufgabe && window.TrainerSync) TrainerSync.event({modus:'erarbeitung', stufe:0, aufgabe:s.id, titel:s.titel, gesamt:SCHRITTE.filter(x => x.aufgabe).length, erstmals});
+}
+
+/* ---------- Grafik Kontokorrentkredit ---------- */
+function kkGrafik(){
+  const P = [[0, 20], [1, 8], [2, -30], [3, -45], [4, -25], [5, 10], [6, -5], [7, -50], [8, -82], [9, -62], [10, -20], [11, 15]];
+  const X = t => 70 + t * 48, Y = v => 40 + (30 - v) * 1.7;
+  const pts = P.map(([t, v]) => X(t) + ',' + Y(v)).join(' '), flaeche = `${X(0)},${Y(0)} ${pts} ${X(11)},${Y(0)}`;
+  return `<svg class="grafik" viewBox="0 0 640 280" role="img" aria-label="Kontostand eines Geschäftsbankkontos im Zeitverlauf mit Kreditlinie">
+    <defs><pattern id="kkSchr" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="8" class="schr"/></pattern>
+    <clipPath id="kkU0"><rect x="0" y="${Y(0)}" width="640" height="300"/></clipPath><clipPath id="kkUL"><rect x="0" y="${Y(-70)}" width="640" height="300"/></clipPath></defs>
+    <polygon points="${flaeche}" fill="url(#kkSchr)" clip-path="url(#kkU0)"/>
+    <polygon points="${flaeche}" class="ueberzogen" clip-path="url(#kkUL)"/>
+    <line class="achse" x1="62" x2="632" y1="${Y(0)}" y2="${Y(0)}"/><line class="achse" x1="62" x2="62" y1="22" y2="256"/>
+    <line class="limit" x1="62" x2="632" y1="${Y(-70)}" y2="${Y(-70)}"/>
+    <polyline class="kurve" points="${pts}"/>
+    <text x="6" y="18">Kontostand</text><text x="56" y="${Y(0) + 4}" text-anchor="end">0 €</text><text x="632" y="${Y(0) + 18}" text-anchor="end">Zeit</text>
+    <text x="70" y="${Y(-70) - 7}" class="rotT">Kreditlinie (Limit) – 70.000 €</text>
+    <text x="${X(0) + 4}" y="${Y(20) - 10}">Guthaben</text>
+    <text x="${X(5)}" y="${Y(10) - 10}" text-anchor="middle">Kunde zahlt ein</text>
+    <text x="${X(8) - 14}" y="${Y(-70) + 19}" text-anchor="end" class="rotT">geduldete Überziehung (noch teurer!) →</text>
+    <text x="62" y="276">schraffiert = Kontokorrentkredit beansprucht → Zinsen</text></svg>`;
+}
+
+/* ---------- Zeitleiste Lieferantenkredit ---------- */
+const datum = d => { const n = 2 + d; return n <= 30 ? String(n).padStart(2, '0') + '.11.' : String(n - 30).padStart(2, '0') + '.12.'; };
+function tagAus(s){
+  const m = String(s).trim().match(/^(\d{1,2})\.(\d{1,2})\.?(\d{2,4})?$/);
+  if (!m) return null;
+  const tag = +m[1], monat = +m[2];
+  const d = monat === 11 ? tag - 2 : monat === 12 ? 28 + tag : NaN;
+  return d >= 0 && d <= 40 && tag >= 1 && tag <= (monat === 11 ? 30 : 31) ? d : null;
+}
+function zeitleiste(d){
+  const X = t => 30 + t * 15, mitte = (a, b) => (X(a) + X(b)) / 2;
+  let h = `<svg class="grafik" viewBox="0 0 660 230" role="img" aria-label="Zeitleiste des Lieferantenkredits mit Zahlung am ${datum(d)}">
+    <defs><pattern id="tlSchr" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="8" height="8" fill="#ebcb8b" fill-opacity=".35"/><line x1="0" y1="0" x2="0" y2="8" class="schr"/></pattern></defs>
+    <rect class="gruen" x="${X(0)}" y="34" width="${X(10) - X(0)}" height="38"/><rect class="orange" x="${X(10)}" y="34" width="${X(30) - X(10)}" height="38"/><rect class="rot" x="${X(30)}" y="34" width="${X(40) - X(30)}" height="38"/>
+    <text class="bt" x="${mitte(0, 10)}" y="50">10 Tage Skontofrist</text><text class="bt k" x="${mitte(0, 10)}" y="65">kostenlos</text>
+    <text class="bt" x="${mitte(10, 30)}" y="50">20 Tage bis zum Zahlungsziel</text><text class="bt k" x="${mitte(10, 30)}" y="65">Preis = entgangenes Skonto</text>
+    <text class="bt" x="${mitte(30, 40)}" y="57">zu spät</text>`;
+  for (let t = 0; t <= 40; t++) h += `<line class="tick" x1="${X(t)}" x2="${X(t)}" y1="72" y2="${t % 5 ? 76 : 80}"/>`;
+  [[0, 'Rechnung'], [10, 'Ende Skontofrist'], [30, 'Zahlungsziel']].forEach(([t, s]) => { h += `<text class="key" x="${X(t)}" y="94">${datum(t)}</text><text class="dt" x="${X(t)}" y="107">${s}</text>`; });
+  [5, 15, 20, 25, 35, 40].forEach(t => { h += `<text class="dt" x="${X(t)}" y="94">${datum(t)}</text>`; });
+  const lx = Math.min(Math.max(X(d), 60), 600);
+  h += `<path class="marke" d="M${X(d) - 6},24 L${X(d) + 6},24 L${X(d)},33 z" style="fill:var(--text)"/><line class="marke" x1="${X(d)}" x2="${X(d)}" y1="76" y2="214"/><text class="mt" x="${lx}" y="18" text-anchor="middle">Zahlung am ${datum(d)}</text>`;
+  if (d > 0) h += `<rect class="lk" x="${X(0)}" y="136" width="${X(d) - X(0)}" height="16" rx="3"/>`;
+  h += `<text x="${X(0)}" y="130">${d > 0 ? `Lieferantenkredit: ${d} ${d === 1 ? 'Tag' : 'Tage'} (02.11. bis ${datum(d)})` : 'Sofortige Zahlung: kein Lieferantenkredit'}</text>`;
+  if (d <= 10){
+    const tx = Math.min(X(d), 330);
+    h += `<rect class="kk" x="${X(d)}" y="186" width="${X(30) - X(d)}" height="16" rx="3"/><text x="${tx}" y="180">Kontokorrentkredit: ${30 - d} Tage (${datum(d)} bis 02.12.)</text>`;
+  }
+  return h + '</svg>';
+}
+function standText(d){
+  if (d <= 10) return `<b>Zahlung mit Skonto.</b> Jakob überweist ${eur(R.ueberweisung)}. Der Lieferantenkredit dauert ${d} ${d === 1 ? 'Tag' : 'Tage'} und ist kostenlos. Weil Saitgig kein Guthaben hat, zahlt Jakob mit dem Kontokorrentkredit. Er läuft so lange, bis Jakob ohnehin hätte zahlen müssen (Zahlungsziel 02.12.): <b>${30 - d} Tage</b>.`;
+  if (d <= 30) return `<b>Zahlung ohne Abzug.</b> Jakob überweist ${eur(R.brutto)}. Der Lieferantenkredit dauert ${d} Tage – die Tage nach dem 12.11. bezahlt Jakob mit dem entgangenen Skonto.`;
+  return `<b>Zu spät!</b> Das Zahlungsziel (02.12.) ist um ${d - 30} ${d - 30 === 1 ? 'Tag' : 'Tage'} überschritten. Saitgig gerät in Zahlungsverzug – der Lieferer kann mahnen und Verzugszinsen verlangen.`;
+}
+
+/* ---------- Bausteine für Aufgaben ---------- */
+// Fragen mit Zahleneingabe: [{id, t (Frage), l (Lösung), e (Einheit), h (Hinweis bei Fehler)}]
+function fragenHTML(z, fr){
+  return '<div class="fragen">' + fr.map(f => {
+    const r = z.ok && z.ok[f.id];
+    return `<div class="frage"><span class="ft">${f.t}</span><input class="feld${r === true ? ' richtig' : r === false ? ' falsch' : ''}" data-frage="${f.id}" value="${z.ein && z.ein[f.id] || ''}" inputmode="decimal" autocomplete="off" aria-label="Antwort"${r === true ? ' readonly' : ''}><span>${f.e}</span>${r === true ? '<span class="ok">✓</span>' : r === false ? '<span class="nein">✗</span>' : ''}</div>`
+      + (r === false && f.h ? `<div class="nr" style="margin:0 0 0 2px">${f.h}</div>` : '');
+  }).join('') + '</div>';
+}
+function fragenPruefen(z, fr){
+  z.ok = z.ok || {};
+  fr.forEach(f => { const v = zahl(z.ein && z.ein[f.id]); z.ok[f.id] = Math.abs(v - f.l) < 0.005; });
+  return fr.every(f => z.ok[f.id]);
+}
+// Multiple Choice: q = {id, q, o:[Antworten], r (Index richtig), w:{Index: Erklärung}}
+function mcHTML(z, qs){
+  return qs.map(q => {
+    const g = z.mc && z.mc[q.id], ord = z.ord[q.id] || (z.ord[q.id] = mischen(q.o.map((_, i) => i)));
+    return `<div class="mc"><p class="q">${q.q}</p><div class="opts">${ord.map(i => `<button class="opt${g && g.ok && i === q.r ? ' richtig' : g && !g.ok && g.i === i ? ' falsch' : ''}" type="button" data-mc="${q.id}" data-i="${i}"${g && g.ok ? ' disabled' : ''}>${q.o[i]}</button>`).join('')}</div>`
+      + (g ? `<div class="fb ${g.ok ? 'ok' : 'falsch'}">${g.ok ? '✓ Richtig.' + (q.e ? ' ' + q.e : '') : (q.w && q.w[g.i]) || 'Das stimmt nicht. Versuche es noch einmal.'}</div>` : '') + '</div>';
+  }).join('');
+}
+
+/* ---------- Schritte ---------- */
+const KARTEN = [
+  {id:'k1', t:'Das Geschäftsbankkonto darf bis zur Kreditlinie überzogen werden.', z:'kk'},
+  {id:'k2', t:'Er sichert die Liquidität eines Unternehmens im laufenden Geschäftsverkehr.', z:'kk'},
+  {id:'k3', t:'Zahlungseingänge von Kunden tilgen ihn automatisch.', z:'kk'},
+  {id:'k4', t:'Kontoführungsgebühren dafür bucht das Unternehmen auf 6750 KGV.', z:'kk'},
+  {id:'d1', t:'Die Bank räumt ihn Privatkunden ein.', z:'dispo'},
+  {id:'d2', t:'Man überzieht damit sein privates Girokonto.', z:'dispo'},
+  {id:'d3', t:'Seine Höhe hängt von regelmäßigen Geldeingängen wie dem Gehalt ab.', z:'dispo'},
+  {id:'d4', t:'Die Bank bietet ihn dir vielleicht mit deinem ersten Ausbildungsgehalt an.', z:'dispo'},
+  {id:'l1', t:'Der Lieferer gewährt ein Zahlungsziel, z. B. 30 Tage.', z:'lk'},
+  {id:'l2', t:'Bis zum Ende der Skontofrist ist er kostenlos.', z:'lk'},
+  {id:'l3', t:'Sein Preis ist das entgangene Skonto.', z:'lk'},
+  {id:'l4', t:'Auf ein Jahr hochgerechnet entspricht er oft einem Zinssatz von rund 36 %.', z:'lk'}
+];
+const ZONEN = [['kk', 'Kontokorrentkredit'], ['dispo', 'Dispositionskredit'], ['lk', 'Lieferantenkredit']];
+const MC72 = [
+  {id:'a', q:'Welche Aussage unterscheidet Kontokorrent- und Dispositionskredit richtig?',
+    o:['Kontokorrentkredit: Unternehmen auf dem Geschäftsbankkonto – Dispositionskredit: Privatkunden auf dem Girokonto',
+       'Kontokorrentkredit: Privatkunden auf dem Girokonto – Dispositionskredit: Unternehmen auf dem Geschäftsbankkonto',
+       'Der Kontokorrentkredit ist zinslos, der Dispositionskredit nicht.',
+       'Der Dispositionskredit ist langfristig, der Kontokorrentkredit kurzfristig.'], r:0,
+    w:{1:'Genau vertauscht: Unternehmen haben ein Geschäftsbankkonto, Privatkunden ein Girokonto.', 2:'Für beide Kredite verlangt die Bank Zinsen.', 3:'Beide Kredite sind kurzfristig.'}},
+  {id:'b', q:'Wovon hängt die Höhe eines Dispositionskredits vor allem ab?',
+    o:['von der Kreditwürdigkeit und den regelmäßigen Geldeingängen, z. B. dem Gehalt', 'vom Skontosatz der Lieferer', 'von der Zahl der Maschinen im Unternehmen', 'von der Laufzeit eines Darlehens'], r:0,
+    w:{1:'Skonto gehört zum Lieferantenkredit.', 2:'Den Dispo bekommen Privatkunden, nicht Unternehmen.', 3:'Der Dispo hat keine feste Laufzeit wie ein Darlehen.'}},
+  {id:'c', q:'Was haben Kontokorrent- und Dispositionskredit gemeinsam?',
+    o:['Das Konto darf bis zu einer Obergrenze überzogen werden; Zinsen fallen nur für die beanspruchte Höhe und Dauer an.',
+       'Beide sind bis zum Ende einer Frist kostenlos.', 'Beide dienen zur langfristigen Finanzierung von Maschinen.', 'Beide gewährt ein Lieferer.'], r:0,
+    w:{1:'Kostenlos bis zum Ende einer Frist ist nur der Lieferantenkredit (Skontofrist).', 2:'Beide sind kurzfristig – Maschinen finanziert man langfristig (Goldene Finanzierungsregel).', 3:'Beide gewährt die Bank.'}}
+];
+const MC74 = [{id:'empf', q:'Welche Handlungsempfehlung leitet sich daraus für Jakob ab?',
+  o:['Jakob sollte innerhalb der Skontofrist (bis 12.11.) mit dem Kontokorrentkredit zahlen und Skonto abziehen.',
+     'Jakob sollte bis zum 02.12. warten und ohne Abzug zahlen, weil dann keine Zinsen anfallen.',
+     'Jakob sollte für die Rechnung ein langfristiges Darlehen aufnehmen.',
+     'Jakob sollte die Rechnung erst nach dem 02.12. bezahlen.'], r:0,
+  e:'Der Kontokorrentkredit kostet nur 58,31 €, das Skonto bringt 200,00 € – Jakob spart 141,69 €.',
+  w:{1:'Dann zahlt er zwar keine Bankzinsen, verliert aber 200,00 € Skonto – das ist teurer als 58,31 € Zinsen.', 2:'Ein Darlehen passt nicht zu einer kurzfristigen Rechnung über 20 Tage (Goldene Finanzierungsregel).', 3:'Dann gerät Saitgig in Zahlungsverzug.'}}];
+const LUECKEN = [
+  'Der Kontokorrentkredit ist eine ', ['teure', 'günstige', 'zinslose'], ' und ', ['kurzfristige', 'langfristige'], ' Kreditart. Er soll nur ',
+  ['kurzfristige Zahlungsengpässe', 'langfristige Investitionen', 'fehlendes Eigenkapital'], ' überbrücken. Wird er dauerhaft beansprucht, kosten die ',
+  ['Zinsen', 'Skonti', 'Tilgungen'], ' viel Geld, und die ', ['Kreditlinie', 'Skontofrist', 'Eigenkapitalquote'], ' fehlt für andere Zahlungen.'
+];
+const F_LK = [
+  {id:'f1', t:'Lies ab: Wie viele Tage ist der Lieferantenkredit kostenlos?', l:10, e:'Tage', h:'Schau auf den grünen Abschnitt der Zeitleiste.'},
+  {id:'f2', t:'Jakob zahlt am letzten Tag der Skontofrist (12.11.) mit dem Kontokorrentkredit. Lies ab: Wie viele Tage müsste der Kontokorrentkredit bis zum Zahlungsziel laufen?', l:20, e:'Tage', h:'Stelle das Datum 12.11. ein und lies den schraffierten Balken ab.'},
+  {id:'f3', t:'Jakob zahlt schon am 06.11. mit Skonto. Stelle das Datum ein und lies ab: Wie viele Tage müsste der Kontokorrentkredit dann laufen?', l:26, e:'Tage', h:'Stelle das Datum 06.11. ein und lies den schraffierten Balken ab.'}
+];
+const F73 = [
+  {id:'bs', t:'Bruttoskonto', l:R.bruttoSkonto, e:'€', h:'Bruttoskonto = Rechnungsbetrag · Skontosatz : 100'},
+  {id:'ns', t:'Nettoskonto', l:R.nettoSkonto, e:'€', h:'Nettoskonto = Bruttoskonto : 1,19'},
+  {id:'ub', t:'Überweisungsbetrag', l:R.ueberweisung, e:'€', h:'Überweisungsbetrag = Rechnungsbetrag – Bruttoskonto'}
+];
+const F74 = [
+  {id:'klk', t:'Kosten des Lieferantenkredits', l:R.nettoSkonto, e:'€', h:'Die Kosten des Lieferantenkredits sind der entgangene Nettoskonto.'},
+  {id:'kkk', t:'Kosten des Kontokorrentkredits', l:R.zinsenKK, e:'€', h:'Die Kosten des Kontokorrentkredits sind die Zinsen der Bank (siehe Material).'},
+  {id:'vor', t:'Kostenvorteil bei Aufnahme des Kontokorrentkredits', l:r2(R.nettoSkonto - R.zinsenKK), e:'€', h:'Kostenvorteil = Kosten des Lieferantenkredits – Kosten des Kontokorrentkredits'}
+];
+const aufgabe = (nr, t) => `<p class="aufgabe">${nr ? `<span class="nrk">${nr}</span>` : ''}${t}</p>`;
+
+const SCHRITTE = [
+  {id:'kontokorrent', kurz:'Kontokorrentkredit', titel:'Kontokorrentkredit', html:() => `<h2>Kontokorrentkredit</h2>
+    <p>Nicht jeder Kredit ist ein großes Darlehen. Für den laufenden Geschäftsverkehr nutzen Unternehmen kurzfristige Kredite.</p>
+    <div class="info"><p><b>Kontokorrentkredit</b> (ital. <i>conto corrente</i> = laufendes Konto): Die Bank erlaubt dem Unternehmen, sein <b>Geschäftsbankkonto</b> bis zu einer <b>Kreditlinie</b> (Kreditlimit = Obergrenze) zu überziehen – ohne weitere Rücksprache. Er dient zur Finanzierung des laufenden Geschäftsverkehrs, zur <b>Sicherung der Liquidität</b> und zur Überbrückung kurzfristiger Zahlungsengpässe.</p></div>
+    ${kkGrafik()}
+    <ul class="merk"><li>kurzfristiger Kredit; <b>Zinsen nur für die tatsächlich beanspruchte Höhe und Dauer</b></li>
+    <li>vergleichsweise <b>teure</b> Kreditart; wird das Limit überschritten (geduldete Überziehung), fallen noch höhere Überziehungszinsen an</li>
+    <li><b>Tilgung automatisch</b> durch Zahlungseingänge (z. B. Kunden überweisen); die Bank kann die Kreditlinie jederzeit anpassen</li>
+    <li>zusätzlich können Kontoführungsgebühren anfallen → Konto <b>6750 KGV</b> (Kosten des Geldverkehrs); Zinsen → <b>7510 ZAW</b></li></ul>`},
+  {id:'dispo', kurz:'Dispositionskredit', titel:'Dispositionskredit', html:() => `<h2>Dispositionskredit („Dispo“)</h2>
+    <div class="info"><p>Der <b>Dispositionskredit</b> funktioniert genauso wie der Kontokorrentkredit, wird aber <b>Privatkunden</b> auf dem <b>Girokonto</b> eingeräumt. Die Höhe hängt von der <b>Kreditwürdigkeit</b> und den <b>regelmäßigen Geldeingängen</b> (z. B. Gehalt) ab.</p>
+    <p>Vorteil: hohe Flexibilität. Nachteil: sehr hohe Zinsen → nur in Ausnahmefällen nutzen!</p></div>
+    <div class="alltag"><b>Aus dem Alltag · Der Dispo auf deinem ersten Girokonto</b>Mit dem ersten Ausbildungsgehalt bietet dir die Bank vielleicht einen Dispo von 1.000 € an. Bequem – aber teuer: Dispozinsen liegen oft bei über 10 % im Jahr. Wer dauerhaft „im Minus“ lebt, zahlt jeden Monat drauf.</div>
+    <table class="beleg" style="max-width:none"><tr><td></td><td style="text-align:left;font-family:inherit"><b>Kontokorrentkredit</b></td><td style="text-align:left;font-family:inherit"><b>Dispositionskredit</b></td></tr>
+    <tr><td>für wen?</td><td style="text-align:left;font-family:inherit">Unternehmen</td><td style="text-align:left;font-family:inherit">Privatkunden</td></tr>
+    <tr><td>welches Konto?</td><td style="text-align:left;font-family:inherit">Geschäftsbankkonto</td><td style="text-align:left;font-family:inherit">Girokonto</td></tr></table>`},
+  {id:'lieferantenkredit', aufgabe:true, kurz:'Lieferantenkredit', titel:'Lieferantenkredit auf der Zeitleiste', html:() => {
+    const z = Z.lk || (Z.lk = {d:10, ein:{}});
+    return `<h2>Lieferantenkredit</h2>
+    <div class="info"><p>Gibt ein Lieferer ein <b>Zahlungsziel</b> (z. B. „zahlbar innerhalb von 30 Tagen“), gewährt er seinem Kunden einen <b>Kredit</b>. Bietet er zusätzlich <b>Skonto</b> an (z. B. „2 % Skonto bei Zahlung innerhalb von 10 Tagen“), gilt: Bis zum Ende der <b>Skontofrist</b> ist der Lieferantenkredit <b>zinslos</b>. Wer später zahlt, verzichtet auf das Skonto – der entgangene <b>Nettoskonto</b> ist der Preis für die restlichen Tage.</p>
+    <p>Rechnet man 2 % für 20 Tage auf ein ganzes Jahr hoch, entspricht das einem Zinssatz von etwa <b>36 %</b>! Ein Kontokorrentkredit kostet meist nur 8–12 %. Deshalb gilt: <b>Skonto nutzen – notfalls mit dem Kontokorrentkredit.</b></p></div>
+    ${rechnungHTML()}
+    <h3>Probiere aus: Wann bezahlt Jakob die Rechnung?</h3>
+    <div class="datum"><label>Zahlungsdatum <input class="feld" type="text" id="lkDatum" value="${datum(z.d)}" autocomplete="off" aria-describedby="lkHinweis"></label>
+      <input type="range" id="lkRegler" min="0" max="40" step="1" value="${z.d}" aria-label="Zahlungsdatum verschieben"></div>
+    <div class="nr" id="lkHinweis">Gib ein Datum ein (z. B. 20.11.) oder verschiebe den Regler.</div>
+    <div id="lkBild">${zeitleiste(z.d)}</div><div class="stand" id="lkStand">${standText(z.d)}</div>
+    ${aufgabe('', 'Beantworte die Fragen mithilfe der Zeitleiste.')}${fragenHTML(z, F_LK)}
+    <div class="knoepfe"><button class="btn haupt" type="button" data-pruefen="lieferantenkredit">Prüfen</button></div>${z.fb ? `<div class="fb ${z.fb.ok ? 'ok' : 'falsch'}">${z.fb.t}</div>` : ''}`;
+  }},
+  {id:'a71', aufgabe:true, kurz:'7.1', titel:'7.1 Merkmale zuordnen', html:() => {
+    const z = Z.a71 || (Z.a71 = {platz:{}, fix:{}, ord:mischen(KARTEN.map(k => k.id))});
+    const karte = id => { const k = KARTEN.find(x => x.id === id); return `<div class="kk-karte${z.fix[id] ? ' fix' : ''}${z.wahl === id ? ' gewaehlt' : ''}${z.weg && z.weg.includes(id) ? ' weg' : ''}" data-karte="${id}" tabindex="0" role="button" aria-label="${k.t}">${k.t}</div>`; };
+    return `<details class="erinnerung" open><summary>Erinnerung</summary>
+      <p><b>Kontokorrentkredit:</b> Unternehmen überziehen ihr Geschäftsbankkonto bis zur Kreditlinie. <b>Dispositionskredit:</b> dasselbe für Privatkunden auf dem Girokonto. <b>Lieferantenkredit:</b> der Lieferer gewährt ein Zahlungsziel; bis zum Ende der Skontofrist kostenlos.</p></details>
+      ${aufgabe('7.1', 'Ordne die Merkmale dem passenden Kredit zu. Ziehe jede Karte in ein Feld (oder tippe erst die Karte, dann das Feld an).')}
+      <div class="pool" data-zone="pool">${z.ord.filter(id => !z.platz[id]).map(karte).join('') || '<span class="muted">Alle Karten sind verteilt.</span>'}</div>
+      <div class="zonen">${ZONEN.map(([id, t]) => `<div class="zone" data-zone="${id}"><h3>${t}</h3>${z.ord.filter(k => z.platz[k] === id).map(karte).join('')}</div>`).join('')}</div>
+      <div class="knoepfe"><button class="btn haupt" type="button" data-pruefen="a71">Prüfen</button></div>${z.fb ? `<div class="fb ${z.fb.ok ? 'ok' : 'falsch'}">${z.fb.t}</div>` : ''}`;
+  }},
+  {id:'a72', aufgabe:true, kurz:'7.2', titel:'7.2 Kontokorrent- und Dispositionskredit', html:() => {
+    const z = Z.a72 || (Z.a72 = {mc:{}, ord:{}});
+    return `<details class="erinnerung" open><summary>Erinnerung</summary>
+      <p>Beide Kredite erlauben es, ein Konto bis zu einer Obergrenze zu überziehen; Zinsen fallen nur für die beanspruchte Höhe und Dauer an. Der <b>Kontokorrentkredit</b> ist für Unternehmen, der <b>Dispositionskredit</b> für Privatkunden.</p></details>
+      ${aufgabe('7.2', 'Unterscheide Kontokorrentkredit und Dispositionskredit. Wähle jeweils die richtige Antwort.')}${mcHTML(z, MC72)}`;
+  }},
+  {id:'a73', aufgabe:true, kurz:'7.3', titel:'7.3 Skonto berechnen', html:() => {
+    const z = Z.a73 || (Z.a73 = {ein:{}});
+    return `<details class="erinnerung" open><summary>Erinnerung</summary>
+      <p>Bruttoskonto = Rechnungsbetrag · Skontosatz : 100 &nbsp;·&nbsp; Nettoskonto = Bruttoskonto : 1,19 &nbsp;·&nbsp; Überweisungsbetrag = Rechnungsbetrag – Bruttoskonto</p></details>
+      ${rechnungHTML()}
+      ${aufgabe('7.3', 'Berechne den Bruttoskonto, den Nettoskonto und den Überweisungsbetrag, wenn Jakob innerhalb der Skontofrist zahlt. Trage deine Ergebnisse ein und überprüfe sie.')}${fragenHTML(z, F73)}
+      <div class="knoepfe"><button class="btn haupt" type="button" data-pruefen="a73">Ergebnisse überprüfen</button></div>${z.fb ? `<div class="fb ${z.fb.ok ? 'ok' : 'falsch'}">${z.fb.t}</div>` : ''}`;
+  }},
+  {id:'a74', aufgabe:true, kurz:'7.4', titel:'7.4 Kostenvergleich', html:() => {
+    const z = Z.a74 || (Z.a74 = {ein:{}, mc:{}, ord:{}});
+    return `<details class="erinnerung" open><summary>Erinnerung</summary>
+      <p><b>Kosten des Lieferantenkredits</b> = entgangener Nettoskonto (siehe 7.3: Nettoskonto = Rechnungsbetrag · 2 % : 1,19). <b>Kosten des Kontokorrentkredits</b> = Zinsen der Bank. <b>Kostenvorteil</b> = Differenz beider Kosten.</p></details>
+      <div class="material"><div class="mt">Material</div><table class="beleg"><tr><td>Rechnungsdatum</td><td>02.11.</td></tr><tr><td>Warenwert netto</td><td>${eur(R.netto)}</td></tr><tr><td>+ 19 % Umsatzsteuer</td><td>${eur(R.ust)}</td></tr><tr class="summe"><td>Rechnungsbetrag</td><td>${eur(R.brutto)}</td></tr></table>
+      <p style="margin:8px 0 0">Zahlungsbedingungen: Zahlbar innerhalb von 30 Tagen ohne Abzug; bei Zahlung innerhalb von 10 Tagen 2 % Skonto.</p>${kkTextHTML()}</div>
+      ${aufgabe('7.4', 'Gib die Kosten des Lieferantenkredits, die Kosten des Kontokorrentkredits und den Kostenvorteil bei der Aufnahme des Kontokorrentkredits an.')}${fragenHTML(z, F74)}
+      <div class="knoepfe"><button class="btn haupt" type="button" data-pruefen="a74">Prüfen</button></div>${z.fb ? `<div class="fb ${z.fb.ok ? 'ok' : 'falsch'}">${z.fb.t}</div>` : ''}
+      ${z.rechnungOk ? '<h3>Und jetzt?</h3>' + mcHTML(z, MC74) : ''}`;
+  }},
+  {id:'a75', aufgabe:true, kurz:'7.5', titel:'7.5 Lückentext Kontokorrentkredit', html:() => {
+    const z = Z.a75 || (Z.a75 = {wahl:{}, ord:{}});
+    let n = 0;
+    const text = LUECKEN.map(teil => {
+      if (typeof teil === 'string') return teil;
+      const i = n++, ord = z.ord[i] || (z.ord[i] = mischen(teil.map((_, j) => j))), w = z.wahl[i], r = z.ok && z.ok[i];
+      return `<select data-luecke="${i}" class="${r === true ? 'richtig' : r === false ? 'falsch' : ''}" aria-label="Lücke ${i + 1}"><option value="">– wählen –</option>${ord.map(j => `<option value="${j}"${String(w) === String(j) ? ' selected' : ''}>${teil[j]}</option>`).join('')}</select>`;
+    }).join('');
+    return `<details class="erinnerung" open><summary>Erinnerung</summary>
+      <p>Der Kontokorrentkredit ist ein <b>kurzfristiger</b> Kredit und eine vergleichsweise <b>teure</b> Kreditart. Er dient zur Sicherung der Liquidität und zur Überbrückung kurzfristiger Zahlungsengpässe – bis zur <b>Kreditlinie</b>.</p></details>
+      ${aufgabe('7.5', 'Begründe, warum Jakob die Rechnung nicht dauerhaft über den Kontokorrentkredit finanzieren sollte. Vervollständige dazu den Text.')}
+      <p class="lueckentext">${text}</p>
+      <div class="knoepfe"><button class="btn haupt" type="button" data-pruefen="a75">Prüfen</button></div>${z.fb ? `<div class="fb ${z.fb.ok ? 'ok' : 'falsch'}">${z.fb.t}</div>` : ''}`;
+  }},
+  {id:'ueberblick', kurz:'Überblick', titel:'Überblick', html:() => `<h2>Überblick · Kurzfristige Kredite</h2>
+    <div class="ueberblick info"><p><b>Kontokorrentkredit:</b> Überziehung des Geschäftsbankkontos bis zur Kreditlinie; Zinsen nur für beanspruchte Höhe und Dauer; Tilgung durch Zahlungseingänge.</p>
+    <p><b>Dispositionskredit:</b> wie Kontokorrentkredit, aber für Privatkunden auf dem Girokonto.</p>
+    <p><b>Lieferantenkredit:</b> bis zum Ende der Skontofrist kostenlos, danach sehr teuer, weil der Nettoskonto verloren geht → Skonto ausnutzen.</p></div>
+    <p class="muted">Übertrage den Überblick in dein Heft (Seite 2, Kapitel 7) und vergleiche mit dem Lösungsblatt L7.</p>`}
+];
+
+/* ---------- Prüfen ---------- */
+const PRUEFEN = {
+  lieferantenkredit(){
+    const z = Z.lk, ok = fragenPruefen(z, F_LK);
+    z.fb = ok ? {ok:true, t:'✓ Alles richtig! Je früher Jakob mit Skonto zahlt, desto länger muss der Kontokorrentkredit laufen – bis zum Zahlungsziel.'} : {ok:false, t:'Noch nicht alles richtig. Nutze die Zeitleiste und lies die Balken ab.'};
+    if (ok) erledigt(schritt('lieferantenkredit'));
+  },
+  a71(){
+    const z = Z.a71, falsch = [];
+    KARTEN.forEach(k => { if (z.platz[k.id]){ if (z.platz[k.id] === k.z) z.fix[k.id] = true; else { falsch.push(k.id); delete z.platz[k.id]; } } });
+    z.weg = falsch; z.wahl = null;
+    const fertig = KARTEN.filter(k => z.fix[k.id]).length, offen = KARTEN.length - fertig;
+    if (!offen){ z.fb = {ok:true, t:'✓ Alle 12 Merkmale richtig zugeordnet!'}; erledigt(schritt('a71')); }
+    else z.fb = {ok:false, t:`${fertig} von ${KARTEN.length} richtig. ${falsch.length ? `${falsch.length} ${falsch.length === 1 ? 'Karte ist' : 'Karten sind'} zurück in den Stapel gewandert. ` : ''}Ordne die übrigen Karten zu.`};
+  },
+  a73(){
+    const z = Z.a73, ok = fragenPruefen(z, F73);
+    z.fb = ok ? {ok:true, t:`✓ Richtig! Bruttoskonto ${eur(R.bruttoSkonto)}, Nettoskonto ${eur(R.nettoSkonto)} (Steuerberichtigung ${eur(R.bruttoSkonto - R.nettoSkonto)}), Überweisungsbetrag ${eur(R.ueberweisung)}.`} : {ok:false, t:'Noch nicht alles richtig. Die Erinnerung oben zeigt dir den Rechenweg.'};
+    if (ok) erledigt(schritt('a73'));
+  },
+  a74(){
+    const z = Z.a74, ok = fragenPruefen(z, F74);
+    z.fb = ok ? {ok:true, t:`✓ Richtig! Lieferantenkredit ${eur(R.nettoSkonto)} – Kontokorrentkredit ${eur(R.zinsenKK)} = Vorteil ${eur(R.nettoSkonto - R.zinsenKK)}.`} : {ok:false, t:'Noch nicht alles richtig. Lies die Erinnerung und das Material genau.'};
+    z.rechnungOk = ok;
+  },
+  a75(){
+    const z = Z.a75; z.ok = {};
+    let i = 0, alle = true;
+    LUECKEN.forEach(teil => { if (typeof teil !== 'string'){ z.ok[i] = String(z.wahl[i]) === '0'; alle = alle && z.ok[i]; i++; } });
+    z.fb = alle ? {ok:true, t:'✓ Richtig! Der Kontokorrentkredit ist nur für kurzfristige Engpässe gedacht.'} : {ok:false, t:'Noch nicht alles richtig. Die rot markierten Lücken stimmen nicht.'};
+    if (alle) erledigt(schritt('a75'));
+  }
+};
+const schritt = id => SCHRITTE.find(s => s.id === id);
+
+/* ---------- Darstellung ---------- */
+let akt = Math.min(Math.max(stand.schritt || 0, 0), SCHRITTE.length - 1);
+function render(oben){
+  const s = SCHRITTE[akt];
+  $('#schritte').innerHTML = SCHRITTE.map((x, i) => `<button class="btn${i === akt ? ' on' : ''}${stand.erledigt[x.id] ? ' erl' : ''}" type="button" data-schritt="${i}"${i === akt ? ' aria-current="step"' : ''}>${x.kurz}</button>`).join('');
+  const n = SCHRITTE.filter(x => x.aufgabe && stand.erledigt[x.id]).length, m = SCHRITTE.filter(x => x.aufgabe).length;
+  $('#zaehler').textContent = `${n} von ${m} Aufgaben gelöst`;
+  $('#inhalt').innerHTML = (s.aufgabe && stand.erledigt[s.id] ? '<p class="erledigt">✓ Diese Aufgabe hast du schon gelöst. Du kannst sie noch einmal bearbeiten.</p>' : '') + s.html()
+    + `<div class="unten"><button class="btn" type="button" data-weiter="-1"${akt ? '' : ' disabled'}>◀ Zurück</button><button class="btn haupt" type="button" data-weiter="1"${akt < SCHRITTE.length - 1 ? '' : ' disabled'}>Weiter ▶</button></div>`;
+  if (oben) window.scrollTo(0, 0);
+}
+function gehe(i){
+  const s = SCHRITTE[akt];
+  if (!s.aufgabe && i > akt) erledigt(s);
+  akt = Math.min(Math.max(i, 0), SCHRITTE.length - 1); stand.schritt = akt; st('stand', stand); render(true);
+}
+
+/* ---------- Ereignisse ---------- */
+document.addEventListener('click', e => {
+  const b = e.target.closest('button, .zone, .kk-karte'); if (!b) return;
+  const ds = b.dataset;
+  if (ds.schritt) return gehe(+ds.schritt);
+  if (ds.weiter) return gehe(akt + +ds.weiter);
+  if (ds.pruefen){ PRUEFEN[ds.pruefen](); render(); return; }
+  if (ds.mc){
+    const z = Z[SCHRITTE[akt].id], q = [...MC72, ...MC74].find(x => x.id === ds.mc), i = +ds.i;
+    z.mc[q.id] = {i, ok:i === q.r};
+    if (MC72.every(x => z.mc[x.id] && z.mc[x.id].ok) && SCHRITTE[akt].id === 'a72') erledigt(schritt('a72'));
+    if (q.id === 'empf' && i === q.r) erledigt(schritt('a74'));
+    return render();
+  }
+  // Zuordnen per Antippen: erst Karte, dann Feld
+  const z = Z.a71; if (!z || SCHRITTE[akt].id !== 'a71' || zieht) return;
+  if (ds.karte && !z.fix[ds.karte]){ z.wahl = z.wahl === ds.karte ? null : ds.karte; z.weg = null; return render(); }
+  if (ds.zone && z.wahl){ legen(z.wahl, ds.zone); z.wahl = null; render(); }
+});
+function legen(id, zone){ const z = Z.a71; if (z.fix[id]) return; if (zone === 'pool') delete z.platz[id]; else z.platz[id] = zone; z.weg = null; z.fb = null; }
+document.addEventListener('input', e => {
+  const t = e.target, z = Z[SCHRITTE[akt].id === 'lieferantenkredit' ? 'lk' : SCHRITTE[akt].id];
+  if (t.dataset.frage){ z.ein[t.dataset.frage] = t.value; return; }
+  if (t.id === 'lkRegler') setzeTag(+t.value, true);
+  if (t.id === 'lkDatum'){ const d = tagAus(t.value); $('#lkHinweis').textContent = d == null ? 'Gib ein Datum zwischen 02.11. und 12.12. ein, z. B. 20.11.' : 'Gib ein Datum ein (z. B. 20.11.) oder verschiebe den Regler.'; if (d != null) setzeTag(d, false); }
+});
+document.addEventListener('change', e => {
+  const t = e.target;
+  if (t.dataset.luecke != null){ Z.a75.wahl[t.dataset.luecke] = t.value; Z.a75.ok = null; Z.a75.fb = null; t.className = ''; }
+  if (t.id === 'lkDatum' && tagAus(t.value) != null) t.value = datum(tagAus(t.value));
+});
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  const t = e.target;
+  if (t.dataset && t.dataset.frage){ e.preventDefault(); const b = document.querySelector('[data-pruefen]'); if (b) b.click(); }
+  else if (t.classList && t.classList.contains('kk-karte')){ e.preventDefault(); t.click(); }
+});
+function setzeTag(d, vomRegler){
+  Z.lk.d = d;
+  $('#lkBild').innerHTML = zeitleiste(d); $('#lkStand').innerHTML = standText(d);
+  if (vomRegler) $('#lkDatum').value = datum(d); else $('#lkRegler').value = d;
+}
+
+/* Ziehen mit Maus, Stift oder Finger */
+let zieht = false, zug = null;
+document.addEventListener('pointerdown', e => {
+  const k = e.target.closest('.kk-karte'); if (!k || k.classList.contains('fix')) return;
+  zug = {id:k.dataset.karte, el:k, x:e.clientX, y:e.clientY, geist:null};
+});
+document.addEventListener('pointermove', e => {
+  if (!zug) return;
+  if (!zug.geist){
+    if (Math.hypot(e.clientX - zug.x, e.clientY - zug.y) < 6) return;
+    zug.geist = zug.el.cloneNode(true); zug.geist.classList.add('geist'); zug.geist.classList.remove('gewaehlt'); document.body.appendChild(zug.geist);
+    zug.el.classList.add('quelle'); zieht = true;
+  }
+  e.preventDefault();
+  zug.geist.style.left = (e.clientX - 120) + 'px'; zug.geist.style.top = (e.clientY - 20) + 'px';
+  document.querySelectorAll('.zone.ziel').forEach(x => x.classList.remove('ziel'));
+  const ziel = document.elementFromPoint(e.clientX, e.clientY);
+  const zo = ziel && ziel.closest('.zone'); if (zo) zo.classList.add('ziel');
+});
+document.addEventListener('pointerup', e => {
+  if (!zug) return;
+  const g = zug; zug = null;
+  if (!g.geist) return;
+  g.geist.remove();
+  const ziel = document.elementFromPoint(e.clientX, e.clientY), zo = ziel && ziel.closest('[data-zone]');
+  if (zo) legen(g.id, zo.dataset.zone);
+  render(); setTimeout(() => { zieht = false; }, 0);
+});
+document.addEventListener('pointercancel', () => { if (zug && zug.geist) zug.geist.remove(); zug = null; zieht = false; render(); });
+
+render();
+</script>
+</body>
+</html>

@@ -18,6 +18,7 @@ BIBLIOTHEKEN = [
     ("IT/datenbanken/abfragen.js", "Datenbanken: SQL-Abfragen mit Entwurfsansicht und Editor (dazu abfragen.css)"),
     ("IT/datenbanken/filme.js", "Datenbanken: Tabelle filme als Daten"),
     ("IT/tools/struktogramm.js", "Tools: Struktogramme zeichnen und exportieren (dazu struktogramm.css)"),
+    ("BWR/bwr.css", "BWR: Grundlayout aller BWR-Seiten (Farben, Leiste, Karten, Knöpfe, Material, Erinnerung)"),
 ]
 
 
