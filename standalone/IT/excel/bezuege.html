@@ -1907,6 +1907,13 @@ const GENS = {
     return {intro:'Im Sportunterricht wurde Weitsprung gemessen. In B12 steht die durchschnittliche Weite.', cells:c,
       fill:['C5', 'C10'], ref:'=B5-$B$12', what:`berechnet, um wie viele Meter ${nm[0]} über (+) oder unter (−) dem Durchschnitt liegt`};
   }},
+  abweichung:{title:'Weitsprung ohne Durchschnitt', make(r){
+    const nm = pickN(r, NAMES, 6), c = {A4:'Name', B4:'Weite (m)', C4:'Abweichung'};
+    nm.forEach((x, i) => { c['A' + (5 + i)] = x; c['B' + (5 + i)] = rd(r, 2.4, 4.8, 2); });
+    return {intro:'Im Sportunterricht wurde Weitsprung gemessen. Diesmal steht der Durchschnitt in keiner eigenen Zelle.', cells:c,
+      fill:['C5', 'C10'], ref:'=B5-MITTELWERT($B$5:$B$10)', what:`mit MITTELWERT berechnet, um wie viele Meter ${nm[0]} über (+) oder unter (−) dem Durchschnitt aller sechs liegt`,
+      tip:'Der Bereich für MITTELWERT soll beim Übertragen fest bleiben – nur die eigene Weite wandert mit.'};
+  }},
   einmaleins:{title:'Einmaleins-Tabelle', make(r){
     const c = {A4:'·'}, s1 = ri(r, 2, 7), s2 = ri(r, 2, 7);
     cols('B', 5).forEach((L, i) => { c[L + 4] = s1 + i; });
@@ -2038,7 +2045,9 @@ const GROUPS = [null, 'Mitwandern oder ganz festhalten ($B$2)', 'Nur Spalte oder
 const STD = [
   ['einkauf', 11, 1], ['punkte', 12, 1], ['kurs', 13, 1], ['lohn', 14, 1], ['mwst', 15, 1], ['anteil', 16, 1], ['schnitt', 17, 1],
   ['einmaleins', 21, 2], ['eintritt', 22, 2], ['zins', 23, 2], ['rabatt', 24, 2], ['ausflug', 25, 2], ['wachstum', 26, 2], ['kiosk', 27, 2],
-  ['sparschwein', 31, 3], ['sparplan', 32, 3], ['brutto', 33, 3], ['temperatur', 34, 3]
+  ['sparschwein', 31, 3], ['sparplan', 32, 3], ['brutto', 33, 3], ['temperatur', 34, 3],
+  // neue Aufgaben nur hinten anhängen: der Fortschritt hängt an der Nummer
+  ['abweichung', 35, 3]
 ];
 
 const HELP_BZ = `<details class="help"><summary>Hilfe: Was bewirkt das $?</summary>

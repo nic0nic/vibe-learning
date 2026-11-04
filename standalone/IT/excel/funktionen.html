@@ -1916,7 +1916,11 @@ const SC = {
       {id:'best', k:'col', lv:[4], fn:c => c === 'B' ? 'MIN' : 'MAX', cols:'BCD', lab:'Bestes Ergebnis', goal:'das beste Ergebnis',
        q:p => `welches das beste Ergebnis ${p.h} ist`, hint:'Überlege genau: Ist beim Laufen eine kleine oder eine große Zahl besser?',
        after:p => p.c === 'B' ? 'Beim Laufen ist die <b>kleinste</b> Zeit die beste – deshalb MIN.' : ''},
-      {id:'diff', k:'x', cols:'BCD', make:diffMake(p => `wie groß der Unterschied zwischen dem größten und dem kleinsten Wert ${p.h} ist`)}
+      {id:'diff', k:'x', cols:'BCD', make:diffMake(p => `wie groß der Unterschied zwischen dem größten und dem kleinsten Wert ${p.h} ist`)},
+      {id:'spann', k:'x', cols:'BCD', make:x => {
+        const R = x.last + 2, c = x.c, t = c + R, rg = `${c}${x.first}:${c}${x.last}`;
+        x.cells['A' + R] = 'Unterschied';
+        return {target:t, ref:`=MAX(${rg})-MIN(${rg})`, text:`Berechne in ${B(t)} mit einer einzigen Formel, wie groß der Unterschied zwischen dem größten und dem kleinsten Wert ${x.p.h} ist.`}; }}
     ]},
 
   screen: {title:'Bildschirmzeit-Check', intro:'Drei Freunde haben eine Woche lang aufgeschrieben, wie viele Minuten sie am Handy waren.', top:3,
@@ -1965,7 +1969,11 @@ const SC = {
       {id:'avg', k:'col', fn:'MITTELWERT', cols:'BCD', lab:'Durchschnitt', q:{B:'wie warm es im Durchschnitt war', C:'wie viel es im Durchschnitt pro Monat geregnet hat', D:'wie viele Sonnenstunden es im Durchschnitt pro Monat gab'}},
       {id:'min', k:'col', fn:'MIN', cols:'BCD', lab:'Niedrigster Wert', q:{B:'welche Monatstemperatur am niedrigsten war', C:'wie viel es im trockensten Monat geregnet hat', D:'wie viele Sonnenstunden der trübste Monat hatte'}},
       {id:'max', k:'col', fn:'MAX', cols:'BCD', lab:'Höchster Wert', q:{B:'welche Monatstemperatur am höchsten war', C:'wie viel es im regenreichsten Monat geregnet hat', D:'wie viele Sonnenstunden der sonnigste Monat hatte'}},
-      {id:'sum', k:'col', fn:'SUMME', cols:'CD', lab:'Summe', q:{C:'wie viel es im Halbjahr insgesamt geregnet hat', D:'wie viele Sonnenstunden es im Halbjahr insgesamt gab'}}
+      {id:'sum', k:'col', fn:'SUMME', cols:'CD', lab:'Summe', q:{C:'wie viel es im Halbjahr insgesamt geregnet hat', D:'wie viele Sonnenstunden es im Halbjahr insgesamt gab'}},
+      {id:'abw', k:'x', rows:true, make:x => {
+        const r = x.p.r, t = 'E' + r;
+        x.cells['E' + x.top] = 'Abweichung (°C)';
+        return {target:t, ref:`=B${r}-MITTELWERT(B${x.first}:B${x.last})`, text:`Berechne in ${B(t)} mit einer einzigen Formel, um wie viel Grad die Temperatur im ${x.p.n} über (+) oder unter (−) dem Durchschnitt des Halbjahrs liegt.`}; }}
     ]},
 
   sport: {title:'Sporttest der 7b', intro:'Beim Sporttest gibt es in drei Disziplinen jeweils bis zu 10 Punkte. Eine leere Zelle heißt: Die Person war krank.', top:3,
@@ -1981,7 +1989,7 @@ const SC = {
       {id:'cnt', k:'col', fn:'ANZAHL', cols:'BCD', lab:'Mitgemacht', q:p => `wie viele beim ${p.h} mitgemacht haben`}
     ]},
 
-  sponsor: {title:'Sponsorenlauf – Anmeldeliste', intro:'Die Klasse 7c macht beim Sponsorenlauf mit. Nicht alle konnten laufen.', top:3,
+  sponsor: {title:'Sponsorenlauf – Anmeldeliste', intro:'Die Klasse 7c macht beim Sponsorenlauf mit. Nicht alle konnten laufen.', top:3, leer:true,
     head:['Name', 'Gelaufene Runden'], cols:'B', names:['Mia', 'Jonas', 'Tim', 'Aylin', 'Luca', 'Emma', 'Noah', 'Sophie'],
     data:[[12], [15], ['krank'], [10], ['krank'], [14], [null], [11]],
     g:{B:G.hole(0.3, ['krank', 'krank', null], G.n(6, 20))},
@@ -2075,6 +2083,12 @@ function buildCells(sc, t, p, data){
   o.cells = cells; o.fmt = fmt;
   return o;
 }
+/* Szenario mit leer:true: In den Prüfvarianten fehlen 1–3 ganze Zeilen (Name und Werte), damit sich auch die Länge
+   der Liste ändert und eine abgeschriebene Anzahl (z. B. =8-ANZAHL(…)) auffällt. Angezeigt wird die volle Liste. */
+function leereZeilen(cells, sc, p, r){
+  const rows = shuffle(sc.names.map((_, i) => sc.top + 1 + i).filter(x => x !== p.r), r).slice(0, 1 + Math.floor(r() * 3));
+  rows.forEach(x => { delete cells['A' + x]; sc.cols.split('').forEach(c => { delete cells[c + x]; }); });
+}
 const VERB = ['Berechne', 'Ermittle', 'Bestimme'];
 function makeTask(scId, tid, p0, lv, seed, named){
   const sc = SC[scId], t = sc.T.find(x => x.id === tid);
@@ -2086,7 +2100,11 @@ function makeTask(scId, tid, p0, lv, seed, named){
   if (p.r) p.n = sc.names[p.r - sc.top - 1];
   const o = buildCells(sc, t, p, seed == null ? sc.data : genData(sc, r));
   const variants = [];
-  for (let i = 0; i < 8; i++) variants.push(buildCells(sc, t, p, genData(sc, rng((seed == null ? 99 : seed) * 31 + i * 977 + 1))).cells);
+  for (let i = 0; i < 8; i++){
+    const vr = rng((seed == null ? 99 : seed) * 31 + i * 977 + 1), v = buildCells(sc, t, p, genData(sc, vr)).cells;
+    if (sc.leer) leereZeilen(v, sc, p, vr);
+    variants.push(v);
+  }
   const verb = VERB[(seed == null ? colN(o.target.match(/[A-Z]+/)[0]) + +o.target.match(/\d+/)[0] : Math.floor(r() * 3)) % 3];
   // Aufgaben mit Rechenzeichen gehen erst ab Stufe 3 (Bausteine)
   const simple = !!(o.fn && o.rng && o.ref === `=${o.fn}(${o.rng})`);
@@ -2104,14 +2122,16 @@ function makeTask(scId, tid, p0, lv, seed, named){
     goal:t.goal, after:t.after ? t.after(p) : ''};
 }
 
-/* ---- Übungen: 25 Aufgaben in drei Gruppen; die Stufe (Flamme) bestimmt die Hilfen ---- */
+/* ---- Übungen: 27 Aufgaben in drei Gruppen; die Stufe (Flamme) bestimmt die Hilfen ---- */
 const GROUPS = [null, 'Funktion wird genannt', 'Funktion selbst finden', 'Mit Rechenzeichen kombinieren'];
 const STD = [
   ['brezel', 'sum', {c:'B'}, 1], ['temp', 'min', {c:'C'}, 1], ['pfand', 'rsum', {r:5}, 1], ['vokabel', 'avg', {c:'B'}, 1], ['pfand', 'all', {}, 1],
   ['brezel', 'avg', {c:'C'}, 1], ['screen', 'max', {c:'B'}, 1], ['ha', 'rcnt', {r:4}, 1], ['wetter', 'sum', {c:'C'}, 1], ['einkauf', 'ges', {}, 1],
   ['screen', 'sum', {c:'C'}, 2], ['wetter', 'max', {c:'D'}, 2], ['bjs', 'min', {c:'C'}, 2], ['sport', 'ravg', {r:4}, 2], ['sponsor', 'cnt', {c:'B'}, 2],
   ['temp', 'avg', {c:'B'}, 2], ['sport', 'max', {c:'D'}, 2], ['lauf', 'ang', {c:'A'}, 2], ['bjs', 'best', {c:'B'}, 2], ['ha', 'cnt', {c:'G'}, 2],
-  ['screen', 'std', {c:'B'}, 3], ['bjs', 'diff', {c:'D'}, 3], ['einkauf', 'rest', {}, 3], ['sponsor', 'nicht', {}, 3], ['lauf', 'spende', {}, 3]
+  ['screen', 'std', {c:'B'}, 3], ['bjs', 'diff', {c:'D'}, 3], ['einkauf', 'rest', {}, 3], ['sponsor', 'nicht', {}, 3], ['lauf', 'spende', {}, 3],
+  // neue Aufgaben nur hinten anhängen: der Fortschritt hängt an der Nummer
+  ['bjs', 'spann', {c:'D'}, 3], ['wetter', 'abw', {r:6}, 3]
 ];
 
 const LEVELS = [null,
@@ -2198,15 +2218,16 @@ const TOPICS = [
      options:['12', '36', '14', '3'], correct:[0],
      why:{1:'36 ist die Summe. Der Durchschnitt ist Summe geteilt durch Anzahl: 36 : 3.', 2:'14 ist der beste Test – das wäre MAX.', 3:'3 ist die Anzahl der Tests.'},
      after:'(10 + 14 + 12) : 3 = 36 : 3 = 12.'},
-    {type:'info', title:'Leere Zellen', sheet:{sc:'vokabel', extra:{A11:'Summe', B11:'=SUMME(B4:B9)', A12:'Durchschnitt mit / 6', B12:'=B11/6', A13:'Durchschnitt mit MITTELWERT', B13:'=MITTELWERT(B4:B9)'}, sel:'B13'},
+    {type:'task', title:'MITTELWERT nach unten', task:['wetter', 'avg', {c:'B'}, 4], html:'<p>Die Wetter-AG will wissen, wie warm es im Halbjahr durchschnittlich war.</p>'},
+    {type:'info', title:'Leere Zellen', sheet:{sc:'vokabel', extra:{A11:'Summe', B11:'=SUMME(B4:B9)', A12:'Durchschnitt mit / 6', B12:'=B11/6', A13:'Durchschnitt mit SUMME / 5', B13:'=SUMME(B4:B9)/5', A14:'Durchschnitt mit MITTELWERT', B14:'=MITTELWERT(B4:B9)'}, sel:'B14'},
      html:`<p>Lena war beim Test 6 krank – die Zelle B9 ist <b>leer</b>.</p>
-     <p><code>MITTELWERT</code> zählt leere Zellen nicht mit und teilt deshalb nur durch 5. Die Rechnung mit <code>/6</code> in B12 ist jetzt falsch, weil sie stur durch 6 teilt.</p>`},
+     <p><code>MITTELWERT</code> zählt leere Zellen nicht mit und teilt deshalb nur durch 5. <b>Klicke</b> auf B12, B13 und B14 und vergleiche:</p>
+     <ul><li>B12 teilt stur durch 6 – das ist jetzt falsch.</li><li>B13 teilt die Summe durch 5 – genau so rechnet <code>MITTELWERT</code> in B14.</li></ul>`},
     {type:'choice', title:'Leer oder 0?', sheet:{sc:'vokabel'},
      html:'<p>Was passiert mit dem Durchschnitt, wenn man bei Test 6 statt einer leeren Zelle eine <code>0</code> einträgt?</p>',
      options:['Er wird kleiner, weil die 0 mitgezählt wird.', 'Nichts – eine 0 zählt MITTELWERT nicht mit.', 'Excel zeigt einen Fehler.'], correct:[0],
      why:{1:'Eine 0 ist eine Zahl – MITTELWERT rechnet sie mit und teilt dann durch 6.', 2:'0 ist eine ganz normale Zahl, damit kann Excel rechnen.'},
      after:'Deshalb: Wer krank war, bekommt eine leere Zelle – keine 0.'},
-    {type:'task', title:'MITTELWERT nach unten', task:['wetter', 'avg', {c:'B'}, 4], html:'<p>Die Wetter-AG will wissen, wie warm es im Halbjahr durchschnittlich war.</p>'},
     {type:'task', title:'MITTELWERT nach rechts', task:['sport', 'ravg', {r:6}, 4], html:'<p>Diesmal geht der Bereich nach rechts. Achtung: Tim war beim Weitsprung krank.</p>',
      after:'Tims Durchschnitt wurde nur aus zwei Zahlen berechnet – die leere Zelle zählt nicht mit.'},
     {type:'info', title:'Merkkasten MITTELWERT', final:true,
