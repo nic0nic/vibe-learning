@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Datenschutz – vibe learning</title>
+<!--
+  Datenschutzerklärung. Bei Änderungen an gespeicherten Daten (pb_migrations/, sync.js, pockettype)
+  diese Seite mitpflegen. Stand der Prüfung 05.11.2026: keine Cookies, keine Anfragen an fremde Server
+  (auch pockettype), Protokolle 7 Tage ohne IP (pb_migrations/1760860000_trainer_init.js).
+-->
+<script>
+(function(){var t=null;try{t=localStorage.getItem('wenn-theme');}catch(e){}
+document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');})();
+</script>
+<link rel="stylesheet" href="seite.css">
+<script src="katalog.js"></script>
+<script src="nav.js"></script>
+<script src="sync.js"></script>
+<style>
+main h2{font-size:18px;margin-top:24px}
+main p,main li{line-height:1.55}
+main ul{padding-left:22px}
+.fehlt{background:#ebcb8b;color:#2e3440;padding:0 4px;border-radius:4px}
+.kurz{border-left:4px solid var(--accent);background:var(--panel2,#eceff4);border-radius:0 10px 10px 0;padding:8px 14px;margin:14px 0}
+</style>
+</head>
+<body>
+<main>
+<h1>Datenschutz</h1>
+
+<div class="kurz"><p><b>Kurz gesagt:</b> Auf dem Server stehen keine Namen. Wer einen Zugang der Lehrkraft nutzt, wird nur über einen Code oder einen Benutzernamen ohne Klarnamen erkannt. Gespeichert wird, welche Aufgaben gelöst wurden. Es gibt keine Cookies, keine Werbung, kein Tracking und keine Dienste anderer Anbieter. Ohne Anmeldung bleibt alles im eigenen Browser.</p></div>
+
+<h2>1. Verantwortlicher</h2>
+<p>Nico Maier, Blumenstr. 11, 83714 Miesbach<br>E-Mail: <span class="fehlt">[E-Mail-Adresse eintragen]</span></p>
+
+<h2>2. Nutzung ohne Anmeldung</h2>
+<p>Alle Übungen lassen sich ohne Anmeldung nutzen („Seite ohne Anmeldung nutzen“). Der Übungsfortschritt wird dann nur im eigenen Browser gespeichert (siehe Nr. 5) und nicht an den Server übertragen.</p>
+
+<h2>3. Aufruf der Seiten (Server und Protokolle)</h2>
+<p>Beim Aufruf einer Seite verarbeitet der Server technisch notwendig die IP-Adresse des Geräts, den Zeitpunkt und die angeforderte Datei, um die Seite auszuliefern. Der Server führt ein Protokoll der Anfragen <b>ohne IP-Adressen</b>; es wird nach <b>7 Tagen</b> automatisch gelöscht. Zweck ist der sichere und fehlerfreie Betrieb. Rechtsgrundlage: Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse am sicheren Betrieb).</p>
+<p>Die Verbindung ist per HTTPS verschlüsselt.</p>
+
+<h2>4. Nutzung mit Zugang der Lehrkraft</h2>
+<p>Die Lehrkraft kann Zugänge ausgeben: einen <b>Zugangscode</b> (z. B. 8B-K7Q2-M4XZ) oder einen <b>Benutzernamen mit Passwort</b>. Benutzernamen enthalten keine echten Namen. Mit einem Zugang wird auf dem Server gespeichert:</p>
+<ul>
+<li>der Code bzw. der Benutzername, bei Benutzernamen das Passwort nur verschlüsselt (bcrypt),</li>
+<li>die Klassenbezeichnung (z. B. „8b“),</li>
+<li>der Übungsstand der einzelnen Übungen, damit man an anderen Geräten weiterarbeiten kann,</li>
+<li>welche Aufgaben und Erklärschritte gelöst wurden, jeweils mit Zeitpunkt,</li>
+<li>beim Tipptrainer: Ergebnisse der Tipp-Tests (z. B. Anschläge bzw. Wörter pro Minute, Genauigkeit, Dauer, Zeitpunkt) und der Stand bei Aufgaben der Lehrkraft.</li>
+</ul>
+<p><b>Nicht</b> gespeichert werden Namen, falsche Antworten oder wie lange jemand auf einer Seite war.</p>
+<p><b>Zweck:</b> Die Lehrkraft sieht für ihre Klassen, wer im gewählten Zeitraum welche Aufgaben gelöst hat (z. B. zur Kontrolle von Hausaufgaben). Die Zuordnung von Codes bzw. Benutzernamen zu Schülerinnen und Schülern kennt nur die Lehrkraft. Eine Namensliste dazu speichert die Verwaltung nur im Browser der Lehrkraft, nie auf dem Server. Lehrkräfte sehen nur ihre eigenen Klassen.</p>
+<p><b>Rechtsgrundlage:</b> Einwilligung (Art. 6 Abs. 1 lit. a DSGVO). Bei Schülerinnen und Schülern unter 16 Jahren willigen die Erziehungsberechtigten ein. Die Einwilligung ist freiwillig und kann jederzeit mit Wirkung für die Zukunft widerrufen werden; die Übungen bleiben ohne Anmeldung nutzbar.</p>
+<p><b>Speicherdauer:</b> Die Daten werden spätestens <b>am Ende des Schuljahres</b> gelöscht, bei einem Widerruf oder auf Wunsch früher. Mit dem Löschen eines Zugangs bzw. einer Klasse werden auch Fortschritt, Protokoll und Tipp-Ergebnisse gelöscht.</p>
+
+<h2>5. Speicherung im Browser</h2>
+<p>Die Seite setzt <b>keine Cookies</b>. Damit die Übungen funktionieren, speichert sie Daten im Browser des eigenen Geräts (localStorage, sessionStorage, IndexedDB):</p>
+<ul>
+<li>den Übungsfortschritt und Einstellungen der Übungen (z. B. hell/dunkel, zuletzt gewähltes Fach),</li>
+<li>nach einer Anmeldung den Code bzw. Benutzernamen, damit man angemeldet bleibt (bis zum Abmelden; Lehrkräfte bis zum Schließen des Browsers),</li>
+<li>beim Tipptrainer die eigenen Ergebnisse und Einstellungen.</li>
+</ul>
+<p>Diese Speicherung ist für die gewünschte Funktion unbedingt erforderlich (§ 25 Abs. 2 Nr. 2 TDDDG); eine Einwilligung ist dafür nicht nötig. Die Daten lassen sich jederzeit über die Browser-Einstellungen („Websitedaten löschen“) entfernen. <b>An gemeinsam genutzten Geräten (z. B. Schul-PCs) bitte nach dem Üben abmelden</b> – oben rechts auf den eigenen Code bzw. Namen klicken.</p>
+
+<h2>6. Keine Dienste anderer Anbieter</h2>
+<p>Alle Dateien (auch Schriften und Programmbibliotheken) kommen vom eigenen Server. Es werden keine Analyse-, Werbe- oder Social-Media-Dienste eingebunden und keine Daten an Dritte weitergegeben.</p>
+
+<h2>7. Hosting</h2>
+<p>Der Server wird bei der netcup GmbH, Daimlerstraße 25, 76185 Karlsruhe, betrieben. Mit netcup besteht ein Vertrag zur Auftragsverarbeitung nach Art. 28 DSGVO. Der Server steht in einem Rechenzentrum in <span class="fehlt">[Standort laut netcup eintragen, z. B. Nürnberg]</span>.</p>
+
+<h2>8. Ihre Rechte</h2>
+<p>Sie haben das Recht auf Auskunft (Art. 15 DSGVO), Berichtigung (Art. 16), Löschung (Art. 17), Einschränkung der Verarbeitung (Art. 18), Datenübertragbarkeit (Art. 20) und Widerspruch (Art. 21) sowie das Recht, eine Einwilligung jederzeit zu widerrufen (Art. 7 Abs. 3). Wenden Sie sich dazu an den Verantwortlichen (Nr. 1) oder an die Lehrkraft, die den Zugang ausgegeben hat.</p>
+<p>Sie können sich außerdem bei einer Datenschutz-Aufsichtsbehörde beschweren, z. B. beim Bayerischen Landesamt für Datenschutzaufsicht, Promenade 18, 91522 Ansbach.</p>
+
+<p class="small">Stand: November 2026</p>
+</main>
+</body>
+</html>

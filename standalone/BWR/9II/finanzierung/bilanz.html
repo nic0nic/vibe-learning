@@ -154,6 +154,7 @@ window.KATALOG = {
  * wenn der Server sie für den angemeldeten Schüler freigibt (Klasse pf-sichtbar).
  * In Einzeldateien (werkzeuge/einzeldateien.py, window.PF_EINZELDATEI) zeigt die
  * Leiste nur Name und Hell/Dunkel-Knopf, weil es keine anderen Seiten gibt.
+ * Unten auf jeder Seite (außer Einzeldateien) stehen Links zu Impressum und Datenschutz (pb_public/impressum.html, datenschutz.html).
  */
 (function () {
   'use strict';
@@ -186,6 +187,8 @@ window.KATALOG = {
   const fachUrl = f => BASE + f.id + '/index.html';
 
   const CSS = `
+.pf-fuss{max-width:1400px;margin:28px auto 0;padding:14px 16px 22px;text-align:center;font:13px system-ui,sans-serif;color:var(--muted,#5b6578)}
+.pf-fuss a{color:inherit}
 .pf-nav{background:var(--panel,#f6f8fb);color:var(--text,#2e3440);border-bottom:1px solid var(--border,#cdd3de);position:relative;z-index:60;font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 .pf-in{max-width:1400px;margin:0 auto;display:flex;align-items:center;gap:6px;padding:0 16px;min-height:50px}
 .pf-brand{font:800 18px ui-monospace,Consolas,"Liberation Mono",monospace;color:inherit;text-decoration:none;margin-right:14px;white-space:nowrap}
@@ -307,6 +310,12 @@ html[data-theme=dark] .pf-item{--bc:#88c0d0}
       </div>
     </div>`;
     document.body.insertBefore(nav, document.body.firstChild);
+    if (!EINZELN){
+      const fuss = document.createElement('footer');
+      fuss.className = 'pf-fuss';
+      fuss.innerHTML = `<a href="${BASE}impressum.html">Impressum</a> · <a href="${BASE}datenschutz.html">Datenschutz</a>`;
+      document.body.appendChild(fuss);
+    }
 
     // Passt die Leiste nicht in die Breite (Fach-Menü, lange Bereichsnamen, Anmeldung), kommt das Menü hinter ☰
     const innen = nav.querySelector('.pf-in');

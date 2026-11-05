@@ -9,6 +9,7 @@ Ausnahme: **pockettype** (Tipptrainer, eigenes Repo github.com/nic0nic/pockettyp
 - Antworten knapp und auf Deutsch. Vorschläge der Lehrkraft und eigene Vorschläge kritisch hinterfragen; wenn ein anderer Weg besser ist, das sagen.
 - Regeln für Code: [PRINZIPIEN.md](PRINZIPIEN.md), dort auch, auf welcher Ebene neuer gemeinsamer Code landet (`lib/`, Fach, Bereich). Neue Übungsseite: Skill `vibe-learning-uebung` (`.claude/skills/`); Standardaufgaben als Daten mit `lib/aufgaben.js`.
 - Offene Änderungen stehen in [notizen/fehlerliste.md](notizen/fehlerliste.md). Umgesetzt wird nur, was die Lehrkraft ausdrücklich freigibt. Erledigtes dort nach „Erledigt“ verschieben, neue Wünsche mit Datum eintragen.
+- Ändert sich, was gespeichert wird (pb_migrations/, sync.js, Speicher im Browser, externe Dienste), `pb_public/datenschutz.html` mitpflegen.
 - Hintergrund zu Unterrichtsmaterial: `notizen/`, Dateien in `material/`.
 
 ## Nach jeder Änderung

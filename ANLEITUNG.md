@@ -28,6 +28,7 @@ vibe-learning/
 │   ├── seite.css              Aussehen der Übersichtsseiten
 │   ├── sync.js                Anmeldung und Speichern auf dem Server
 │   ├── lehrer.html            Verwaltung für Lehrkräfte und Admin
+│   ├── impressum.html, datenschutz.html   rechtliche Angaben (unten auf jeder Seite verlinkt, über nav.js)
 │   ├── IT/                    ein Ordner pro Fach, darin ein Ordner pro Bereich
 │   │   ├── index.html             Übersicht des Fachs
 │   │   ├── excel/                 ein Ordner pro Bereich

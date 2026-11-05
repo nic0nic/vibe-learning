@@ -11,6 +11,12 @@ Gesammelt im Thread „Aufbau der Seite“. Umgesetzt wird erst, wenn die Lehrkr
 
 ## Erledigt
 
+### Version vom 05.11.
+
+37. **Impressum und Datenschutzerklärung** (gewünscht 05.11., vor dem Umzug auf den netcup-VPS)
+    - `pb_public/impressum.html`, `datenschutz.html`, unten auf jeder Seite verlinkt (nav.js, nicht in Einzeldateien). Kein Cookie-Banner nötig: geprüft am 05.11., keine Cookies und keine Anfragen an fremde Server, auch nicht in pockettype (Firebase-SDK ist nur mitgebaut, startet nicht).
+    - Offen: E-Mail-Adresse und Rechenzentrums-Standort eintragen (gelb markierte Platzhalter); Rechtsgrundlage Einwilligung mit Schulleitung/Datenschutzbeauftragtem abstimmen.
+
 ### Version vom 04.11.
 
 36. **Lern-Chat nach dem Vorbild von LearningSnacks** (gewünscht 04.11.)
