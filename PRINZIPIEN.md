@@ -7,7 +7,7 @@ Ziel: Das Projekt bleibt auf Dauer klein, damit Änderungen und neue Seiten weni
    | Ebene | Wofür | Bisher |
    |---|---|---|
    | `pb_public/` | Plattform, jede Seite | `katalog.js`, `nav.js`, `sync.js`, `seite.css` |
-   | `pb_public/lib/` | ohne Fachbezug, in jedem Fach denkbar: Aufgabenformen, Zahlen- und Datumsformat, Ziehen und Ablegen, fremde Bibliotheken für mehrere Fächer | `aufgaben.js` + `aufgaben.css` (Multiple Choice, Zahlen, Lückentext, Zuordnen, Buchungssatz, Erarbeitung aus Schritten) |
+   | `pb_public/lib/` | ohne Fachbezug, in jedem Fach denkbar: Aufgabenformen, Zahlen- und Datumsformat, Ziehen und Ablegen, fremde Bibliotheken für mehrere Fächer | `aufgaben.js` + `aufgaben.css` (Multiple Choice, Zahlen, Lückentext, Zuordnen, Freitext, Lern-Chat, Buchungssatz, Erarbeitung aus Schritten), `seite.js` (Seiten aus Aufgaben-JSON, auch auf dem Server) |
    | `<Fach>/` | gilt für alle Bereiche eines Fachs | `BWR/bwr.css` (Grundlayout) |
    | `<Fach>/<bereich>/` | nur dieser Bereich (eigene Bedienung, Fachlogik) | Excel: `IT/excel/basis.js` + `bausteine.js` oder `tabelle.js`; Python: `IT/python/lib/pykurs.js` |
 

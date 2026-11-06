@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Übung erstellen – vibe learning</title>
+<!--
+  Vorlage-Seite: Aufgaben-JSON (Format: lib/seite.js, erzeugt z. B. mit dem claude.ai-Skill „vibe-learning-seite-erstellen“)
+  einfügen, prüfen, in einem abgeschotteten iframe testen, als eigenständige Datei herunterladen oder als Lehrkraft
+  einreichen (POST /api/trainer/einreichen → Pull Request, pb_hooks/einreichen.pb.js).
+  Die Vorschau läuft mit sandbox="allow-scripts" ohne same-origin: eingefügtes HTML kommt nicht an Anmeldedaten.
+  Entwurf im Browser: vorlage-entwurf (localStorage).
+-->
+<script>
+(function(){var t=null;try{t=localStorage.getItem('wenn-theme');}catch(e){}
+document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');})();
+</script>
+<link rel="stylesheet" href="seite.css">
+<script src="katalog.js"></script>
+<script src="nav.js"></script>
+<script src="sync.js"></script>
+<script src="lib/seite.js"></script>
+<style>
+.vl{width:min(1500px,100%);margin:0 auto;padding:20px 16px 40px}
+.vl h1{margin-bottom:4px}
+.schritte{color:var(--muted);margin:0 0 16px;padding-left:20px}
+.raster{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:16px;align-items:start}
+@media (max-width:1000px){.raster{grid-template-columns:minmax(0,1fr)}}
+.kasten{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px 16px}
+.kasten h2{font-size:16px;margin:0 0 8px}
+textarea{width:100%;min-height:340px;resize:vertical;font:13px/1.45 ui-monospace,Consolas,"Liberation Mono",monospace;background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px}
+label{display:block;font-size:13px;color:var(--muted);margin:10px 0 3px}
+select,input[type=text]{width:100%;font:14px system-ui,sans-serif;background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:7px 8px}
+.knoepfe{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.btn{font:600 14px system-ui,sans-serif;background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:8px 13px;cursor:pointer}
+.btn.haupt{background:var(--accent);border-color:var(--accent);color:#fff}
+[data-theme=dark] .btn.haupt{color:#2e3440}
+.btn:disabled{opacity:.45;cursor:default}
+.meldung{margin-top:10px;border-radius:8px;padding:8px 12px;font-size:14px}
+.meldung.ok{background:color-mix(in srgb,#a3be8c 30%,var(--panel))}
+.meldung.fehler{background:color-mix(in srgb,#bf616a 22%,var(--panel))}
+.meldung ul{margin:4px 0 0;padding-left:18px}
+.hinweis{font-size:13px;color:var(--muted);margin:8px 0 0}
+iframe{width:100%;height:78vh;border:1px solid var(--border);border-radius:12px;background:var(--bg)}
+.leer{display:grid;place-items:center;height:78vh;border:2px dashed var(--border);border-radius:12px;color:var(--muted);text-align:center;padding:20px}
+</style>
+</head>
+<body>
+<div class="vl">
+  <h1>Übung erstellen</h1>
+  <ol class="schritte">
+    <li>Im Claude-Chat mit dem Skill <b>vibe-learning-seite-erstellen</b> die Aufgaben erzeugen lassen und den JSON-Block kopieren.</li>
+    <li>Hier einfügen, <b>Prüfen und Vorschau</b> klicken und die Übung rechts ausprobieren.</li>
+    <li>Bereich wählen und <b>Einreichen</b> (nur Lehrkräfte) – oder als Datei herunterladen und selbst nutzen.</li>
+  </ol>
+  <div class="raster">
+    <div>
+      <div class="kasten">
+        <h2>Aufgaben-JSON</h2>
+        <textarea id="json" spellcheck="false" placeholder='{"titel": "…", "schritte": [ … ]}' aria-label="Aufgaben-JSON"></textarea>
+        <div class="knoepfe"><button class="btn haupt" type="button" id="pruefen">Prüfen und Vorschau</button><button class="btn" type="button" id="beispiel">Beispiel laden</button></div>
+        <div id="meldung"></div>
+      </div>
+      <div class="kasten" style="margin-top:16px">
+        <h2>Einordnen und abgeben</h2>
+        <label for="bereich">Fach, Jahrgangsstufe und Bereich</label><select id="bereich"></select>
+        <label for="titel">Titel (im Menü)</label><input type="text" id="titel" maxlength="120">
+        <label for="kurztext">Kurztext (auf der Übersichtsseite)</label><input type="text" id="kurztext" maxlength="300">
+        <div class="knoepfe"><button class="btn" type="button" id="download">Als Datei herunterladen</button><button class="btn haupt" type="button" id="einreichen">Einreichen</button></div>
+        <p class="hinweis" id="einreichHinweis"></p>
+        <div id="ergebnis"></div>
+      </div>
+    </div>
+    <div id="vorschau"><div class="leer">Hier erscheint die Vorschau, sobald das JSON geprüft ist.</div></div>
+  </div>
+</div>
+<script>
+'use strict';
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;'}[c]));
+const BEISPIEL = {titel:'Beispiel: Kredite', kurztext:'Kurze Wiederholung', schritte:[
+  {kurz:'Erklärung', titel:'Was ist ein Kredit?', html:'<h2>Kredit</h2><p>Ein Kredit ist die <b>zeitweilige Überlassung von Geld</b> gegen <b>Zinsen</b>.</p>'},
+  {kurz:'1', titel:'Kreditfähigkeit', aufgaben:[{typ:'mc', frage:'Was bedeutet Kreditfähigkeit?', options:['rechtliche Fähigkeit, einen Kreditvertrag abzuschließen', 'Fähigkeit, den Kredit zurückzuzahlen'], correct:[0], why:{1:'Das ist die Kreditwürdigkeit.'}}]},
+  {kurz:'2', titel:'Lückentext', aufgaben:[{typ:'luecken', frage:'Vervollständige.', text:'Zinsen und Tilgung zusammen heißen [[Schuldendienst|Disagio|Skonto]].'}]}]};
+
+// Bereiche aus dem Katalog
+const BEREICHE = [];
+KATALOG.gruppen.forEach(g => g.bereiche.forEach(b => BEREICHE.push({id:b.id, pfad:b.pfad, name:g.titel + ' › ' + b.titel})));
+$('#bereich').innerHTML = '<option value="">– bitte wählen –</option>' + BEREICHE.map(b => `<option value="${esc(b.id)}">${esc(b.name)}</option>`).join('');
+
+// Entwurf im Browser
+const FELDER = ['json', 'bereich', 'titel', 'kurztext'];
+try { const e = JSON.parse(localStorage.getItem('vorlage-entwurf') || '{}'); FELDER.forEach(k => { if (e[k] != null) $('#' + k).value = e[k]; }); } catch (e) {}
+const merken = () => { try { localStorage.setItem('vorlage-entwurf', JSON.stringify(Object.fromEntries(FELDER.map(k => [k, $('#' + k).value])))); } catch (e) {} };
+FELDER.forEach(k => $('#' + k).addEventListener('input', merken));
+
+let LIB = null;
+async function lib(){
+  if (LIB) return LIB;
+  const t = p => fetch(p).then(r => { if (!r.ok) throw new Error(p); return r.text(); });
+  const [aufgabenJs, aufgabenCss, bwrCss] = await Promise.all([t('lib/aufgaben.js'), t('lib/aufgaben.css'), t('BWR/bwr.css')]);
+  return (LIB = {aufgabenJs, aufgabenCss, bwrCss});
+}
+const meldung = (ok, html) => { $('#meldung').innerHTML = `<div class="meldung ${ok ? 'ok' : 'fehler'}">${html}</div>`; };
+const bereich = () => BEREICHE.find(b => b.id === $('#bereich').value);
+
+// JSON lesen, mit Titel/Kurztext aus den Feldern; null bei Fehlern (Meldung wird angezeigt)
+function daten(){
+  let d;
+  try { d = JSON.parse($('#json').value); }
+  catch (err){ meldung(false, '<b>Das ist kein gültiges JSON.</b> ' + esc(err.message) + '<br>Tipp: den Block aus dem Chat vollständig kopieren, mit { am Anfang und } am Ende.'); return null; }
+  if (d && typeof d === 'object'){
+    if (!$('#titel').value && d.titel) $('#titel').value = d.titel;
+    if (!$('#kurztext').value && d.kurztext) $('#kurztext').value = d.kurztext;
+    if ($('#titel').value.trim()) d.titel = $('#titel').value.trim();
+    d.kurztext = $('#kurztext').value.trim();
+    merken();
+  }
+  const f = Seite.pruefe(d);
+  if (f.length){ meldung(false, `<b>Bitte noch korrigieren:</b><ul>${f.slice(0, 15).map(x => `<li>${esc(x)}</li>`).join('')}</ul>${f.length > 15 ? `… und ${f.length - 15} weitere` : ''}`); return null; }
+  return d;
+}
+async function seite(d){ return Seite.seiteHTML(d, {pfad:(bereich() || {}).pfad || '', toolId:'vorschau', einzeln:true, lib:await lib()}); }
+
+$('#pruefen').addEventListener('click', async () => {
+  const d = daten(); if (!d) return;
+  const n = Seite.normalisiere(d), anzahl = n.schritte.reduce((s, x) => s + (x.aufgaben || []).length, 0);
+  meldung(true, `✓ In Ordnung: ${n.schritte.length} ${n.schritte.length === 1 ? 'Schritt' : 'Schritte'}, ${anzahl} ${anzahl === 1 ? 'Aufgabe' : 'Aufgaben'}. Probiere die Übung rechts aus.`);
+  const f = document.createElement('iframe');
+  f.setAttribute('sandbox', 'allow-scripts'); f.title = 'Vorschau der Übung';
+  f.srcdoc = await seite(d);
+  $('#vorschau').replaceChildren(f);
+});
+$('#beispiel').addEventListener('click', () => { $('#json').value = JSON.stringify(BEISPIEL, null, 2); $('#titel').value = ''; $('#kurztext').value = ''; merken(); $('#pruefen').click(); });
+$('#download').addEventListener('click', async () => {
+  const d = daten(); if (!d) return;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([await seite(d)], {type:'text/html'}));
+  a.download = Seite.toolId(d.titel, 'x').replace(/-x$/, '') + '.html';
+  a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+});
+
+const lehrer = () => window.TrainerSync && TrainerSync.lehrer;
+function hinweis(){
+  const L = lehrer();
+  $('#einreichHinweis').innerHTML = L ? `Angemeldet als ${esc(L.name)}. Beim Einreichen entsteht ein Vorschlag (Pull Request) auf GitHub; nach der Freigabe erscheint die Übung im Menü. Dein Name wird dabei nicht übertragen.`
+    : 'Einreichen geht nur mit Lehrkräfte-Zugang: oben rechts anmelden.';
+  $('#einreichen').disabled = !L;
+}
+hinweis(); setTimeout(hinweis, 800);
+$('#einreichen').addEventListener('click', async () => {
+  const L = lehrer(); if (!L) return hinweis();
+  if (!bereich()){ $('#ergebnis').innerHTML = '<div class="meldung fehler">Bitte zuerst einen Bereich wählen.</div>'; return; }
+  const d = daten(); if (!d) return;
+  if (!confirm(`„${d.titel}“ für ${bereich().name} einreichen?`)) return;
+  $('#einreichen').disabled = true; $('#ergebnis').innerHTML = '<div class="meldung ok">Wird eingereicht …</div>';
+  try {
+    const r = await fetch('/api/trainer/einreichen', {method:'POST', headers:{'Content-Type':'application/json', ...(L.rolle === 'admin' ? {Authorization:L.token} : {'X-Lehrer-Token':L.token})},
+      body:JSON.stringify({json:JSON.stringify(d), bereich:bereich().id, titel:d.titel, kurztext:d.kurztext})});
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error((j.message || 'Fehler ' + r.status) + (j.fehler ? '<ul>' + j.fehler.map(x => `<li>${esc(x)}</li>`).join('') + '</ul>' : ''));
+    $('#ergebnis').innerHTML = j.url ? `<div class="meldung ok">✓ Eingereicht! Der Vorschlag liegt jetzt zur Freigabe bereit: <a href="${esc(j.url)}" target="_blank" rel="noopener">Pull Request ansehen</a></div>`
+      : `<div class="meldung ok">✓ Testlauf: Die Seite würde unter <code>${esc(j.pfad)}</code> angelegt.</div>`;
+  } catch (err){ $('#ergebnis').innerHTML = `<div class="meldung fehler">${err.message}</div>`; }
+  $('#einreichen').disabled = false;
+});
+</script>
+</body>
+</html>

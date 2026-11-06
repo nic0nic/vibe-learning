@@ -114,6 +114,10 @@ In der HTML-Datei eines Tools steht dieselbe id: <html lang="de" data-trainer="�
 Übersichtsseiten: Bereich <html data-bereich="IT/excel">, Fach bzw. Stufe <html data-gruppe="IT">
 bzw. data-gruppe="BWR/9II" mit <div id="pf-start">, Fach mit Stufen <html data-fach="BWR"> mit <div id="pf-fach">.
 
+Eingereichte Übungen (vorlage.html → Pull Request) stehen unten zwischen EINREICHUNGEN-ANFANG und -ENDE als
+reines JSON: [{"bereich": "<Bereich-id>", "tool": {id, datei, titel, text}}]. Der Server (pb_hooks/einreichen.pb.js)
+ergänzt dort; von Hand nur gültiges JSON eintragen. Sie werden an das Ende des Bereichs angehängt.
+
 Am Ende berechnet: KATALOG.gruppen = [{pfad, fach, stufe, titel, text, bereiche}] (Fach bzw. Fach + Stufe)
 und KATALOG.bereiche = alle Bereiche aller Fächer, jeweils mit pfad (Ordner) und gruppe.
 ```
@@ -140,6 +144,30 @@ wenn der Server sie für diesen Schüler freigibt (/api/trainer/sichtbar).
 Die Seite ruft auf:
   TrainerSync.changed()      nach jeder Änderung am gespeicherten Stand
   TrainerSync.event({...})   wenn eine Aufgabe richtig gelöst wurde
+```
+
+### lib/seite.js – Übungsseiten aus Aufgaben-JSON prüfen und bauen (vorlage.html, Einreichen)
+
+```text
+seite.js – Übungsseiten aus Aufgaben-JSON prüfen und bauen (Browser und PocketBase-Hooks)
+
+Wird genutzt von vorlage.html (Vorschau, Download) und pb_hooks/einreichen.pb.js (Pull Request).
+Im Browser: <script src="lib/seite.js"></script> → window.Seite; im Hook: require(…/pb_public/lib/seite.js).
+
+Aufgaben-JSON (reine Daten, kein JavaScript; Aufgabentypen wie in lib/aufgaben.js):
+  {"titel": "Kredite bei der Bank", "kurztext": "…",
+   "schritte": [{"kurz": "5.1", "titel": "…", "html": "<p>Erklärung</p>", "erinnerung": "…", "erinnerungZu": true,
+                 "material": "…", "aufgaben": [{"typ": "mc", …}, …]}, …]}
+  Statt "schritte" geht auch "aufgaben": [...] (wird ein einziger Schritt).
+
+API
+  Seite.TYPEN                     Aufgabentypen mit Pflichtfeldern (muss zu lib/aufgaben.js passen)
+  Seite.normalisiere(json)        → {titel, kurztext, schritte} (Schritte bekommen id und kurz)
+  Seite.pruefe(json)              → Liste von Fehlern (leer = in Ordnung), deutsch, mit Fundstelle
+  Seite.toolId(titel, zufall)     → id für katalog.js (a–z, 0–9, -, höchstens 20 Zeichen)
+  Seite.seiteHTML(json, opt)      → komplette HTML-Seite
+      opt = {pfad: 'BWR/9II/finanzierung', toolId, einzeln: false, lib: {aufgabenJs, aufgabenCss, bwrCss}}
+      einzeln: true → ohne Menü und Server, Bibliotheken eingebettet (Vorschau, Download)
 ```
 
 ### lib/aufgaben.js – Aufgabenbausteine für alle Fächer: Multiple Choice, Zahlen, Lückentext, Zuordnen, Buchungssatz, Erarbeitung (dazu aufgaben.css)

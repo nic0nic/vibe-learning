@@ -38,6 +38,10 @@
  * Übersichtsseiten: Bereich <html data-bereich="IT/excel">, Fach bzw. Stufe <html data-gruppe="IT">
  * bzw. data-gruppe="BWR/9II" mit <div id="pf-start">, Fach mit Stufen <html data-fach="BWR"> mit <div id="pf-fach">.
  *
+ * Eingereichte Übungen (vorlage.html → Pull Request) stehen unten zwischen EINREICHUNGEN-ANFANG und -ENDE als
+ * reines JSON: [{"bereich": "<Bereich-id>", "tool": {id, datei, titel, text}}]. Der Server (pb_hooks/einreichen.pb.js)
+ * ergänzt dort; von Hand nur gültiges JSON eintragen. Sie werden an das Ende des Bereichs angehängt.
+ *
  * Am Ende berechnet: KATALOG.gruppen = [{pfad, fach, stufe, titel, text, bereiche}] (Fach bzw. Fach + Stufe)
  * und KATALOG.bereiche = alle Bereiche aller Fächer, jeweils mit pfad (Ordner) und gruppe.
  */
@@ -115,6 +119,8 @@ window.KATALOG = {
   ]
 };
 
+window.KATALOG.einreichungen = /* EINREICHUNGEN-ANFANG */ [] /* EINREICHUNGEN-ENDE */;
+
 // Gruppen (Fach bzw. Fach + Jahrgangsstufe) und alle Bereiche mit Ordner, für nav.js, sync.js und lehrer.html
 (function (K) {
   K.gruppen = [];
@@ -122,6 +128,10 @@ window.KATALOG = {
     ? f.stufen.map(s => ({pfad: f.id + '/' + s.id, fach: f, stufe: s, titel: f.titel + ' ' + (s.kurz || s.titel), text: s.text || f.text, bereiche: s.bereiche}))
     : [{pfad: f.id, fach: f, stufe: null, titel: f.titel, text: f.text, bereiche: f.bereiche}]).forEach(g => K.gruppen.push(g)));
   K.bereiche = [].concat(...K.gruppen.map(g => g.bereiche.map(b => Object.assign(b, {pfad: g.pfad + '/' + b.id, gruppe: g}))));
+  (K.einreichungen || []).forEach(e => {
+    const b = K.bereiche.find(x => x.id === e.bereich);
+    if (b && e.tool && !b.tools.some(t => t.id === e.tool.id)) b.tools.push(e.tool);
+  });
 })(window.KATALOG);
 
 </script>
