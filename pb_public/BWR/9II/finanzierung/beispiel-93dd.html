@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="de" data-trainer="beispiel-93dd">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Beispiel: Kredite – vibe learning</title>
+<!--
+  Erzeugt mit lib/seite.js aus Aufgaben-JSON (vorlage.html, eingereicht).
+  Inhalt bearbeiten: nur DATEN unten ändern (Format: Kopfkommentar von lib/seite.js, Aufgabentypen: lib/aufgaben.js).
+  Gespeichert: beispiel-93dd-stand = {schritt, erledigt}.
+-->
+<script src="../../../katalog.js"></script>
+<script src="../../../nav.js"></script>
+<script src="../../../sync.js"></script>
+<script>
+(function(){var t=null;try{t=localStorage.getItem('wenn-theme');}catch(e){}document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');})();
+</script>
+<link rel="stylesheet" href="../../../BWR/bwr.css">
+<link rel="stylesheet" href="../../../lib/aufgaben.css">
+<script src="../../../lib/aufgaben.js"></script>
+<style>.info{border-left:4px solid var(--accent);padding:2px 0 2px 12px;margin:0 0 12px}.wrap{max-width:1000px}table{border-collapse:collapse}td,th{border:1px solid var(--border);padding:4px 8px}</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="bar"><div class="brand">Beispiel: Kredite</div><div class="muted">Kurze Wiederholung</div></div>
+  <div id="app"></div>
+</div>
+<script>
+'use strict';
+const DATEN = {
+ "titel": "Beispiel: Kredite",
+ "kurztext": "Kurze Wiederholung",
+ "schritte": [
+  {
+   "kurz": "Erklärung",
+   "titel": "Was ist ein Kredit?",
+   "html": "<h2>Kredit<\/h2><p>Ein Kredit ist die <b>zeitweilige Überlassung von Geld<\/b> gegen <b>Zinsen<\/b>.<\/p>",
+   "id": "s1"
+  },
+  {
+   "kurz": "1",
+   "titel": "Kreditfähigkeit",
+   "aufgaben": [
+    {
+     "typ": "mc",
+     "frage": "Was bedeutet Kreditfähigkeit?",
+     "options": [
+      "rechtliche Fähigkeit, einen Kreditvertrag abzuschließen",
+      "Fähigkeit, den Kredit zurückzuzahlen"
+     ],
+     "correct": [
+      0
+     ],
+     "why": {
+      "1": "Das ist die Kreditwürdigkeit."
+     }
+    }
+   ],
+   "id": "s2"
+  },
+  {
+   "kurz": "2",
+   "titel": "Lückentext",
+   "aufgaben": [
+    {
+     "typ": "luecken",
+     "frage": "Vervollständige.",
+     "text": "Zinsen und Tilgung zusammen heißen [[Schuldendienst|Disagio|Skonto]]."
+    }
+   ],
+   "id": "s3"
+  }
+ ]
+};
+Aufgaben.sequenz({el:'#app', key:"beispiel-93dd", schritte:DATEN.schritte});
+</script>
+</body>
+</html>
