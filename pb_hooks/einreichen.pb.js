@@ -51,12 +51,15 @@ routerAdd("POST", "/api/trainer/einreichen", (e) => {
     const m = katalogText.match(/\/\* EINREICHUNGEN-ANFANG \*\/([\s\S]*?)\/\* EINREICHUNGEN-ENDE \*\//);
     if (!m) throw new Error("katalog.js: Markierungen EINREICHUNGEN-ANFANG/-ENDE fehlen");
     const liste = JSON.parse(m[1]);
-    const K = { faecher: [] };
-    (new Function("window", katalogText.replace(/\(function \(K\) \{[\s\S]*$/, "")))({ set KATALOG(v) { K.faecher = v.faecher; }, get KATALOG() { return K; } });
-    let bereich = null, pfad = "";
-    K.faecher.forEach(f => (f.stufen ? f.stufen.map(s => ({ p: f.id + "/" + s.id, b: s.bereiche })) : [{ p: f.id, b: f.bereiche }])
-      .forEach(g => g.b.forEach(b => { if (b.id === body.bereich) { bereich = b; pfad = g.p + "/" + b.id; } })));
-    if (!bereich) return e.json(400, { message: "Unbekannter Bereich. Bitte einen Bereich aus der Liste wählen." });
+    // Bereich prüfen, ohne Code auszuführen: Ordner im erlaubten Format, letzte Stelle = Bereich-id, und auf diesem
+    // Server gibt es dort eine Bereichsseite (index.html mit data-bereich="<pfad>")
+    const pfad = String(body.pfad || "");
+    if (!/^[A-Za-z0-9]+(\/[A-Za-z0-9]+)?\/[a-z0-9-]+$/.test(pfad) || pfad.split("/").pop() !== body.bereich)
+      return e.json(400, { message: "Unbekannter Bereich. Bitte einen Bereich aus der Liste wählen." });
+    let seiteBereich = "";
+    try { seiteBereich = toString($os.readFile(`${__hooks}/../pb_public/${pfad}/index.html`)); } catch (err) {}
+    if (seiteBereich.indexOf(`data-bereich="${pfad}"`) < 0) return e.json(400, { message: "Unbekannter Bereich. Bitte einen Bereich aus der Liste wählen." });
+    const bereich = { id: body.bereich };
 
     const id = Seite.toolId(daten.titel, $security.randomStringWithAlphabet(4, "abcdefghijklmnopqrstuvwxyz0123456789"));
     const datei = id + ".html";

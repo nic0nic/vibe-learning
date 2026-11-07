@@ -13,6 +13,8 @@
  *   Seite.TYPEN                     Aufgabentypen mit Pflichtfeldern (muss zu lib/aufgaben.js passen)
  *   Seite.normalisiere(json)        → {titel, kurztext, schritte} (Schritte bekommen id und kurz)
  *   Seite.pruefe(json)              → Liste von Fehlern (leer = in Ordnung), deutsch, mit Fundstelle
+ *       HTML in Texten nur nach Erlaubtliste (Seite.ERLAUBT): Tags wie p, b, ul, table … mit höchstens class
+ *       (td/th auch colspan, rowspan); jedes andere „<“ + Buchstabe, „</“, „<!“ oder „<?“ wird abgelehnt.
  *   Seite.toolId(titel, zufall)     → id für katalog.js (a–z, 0–9, -, höchstens 20 Zeichen)
  *   Seite.seiteHTML(json, opt)      → komplette HTML-Seite
  *       opt = {pfad: 'BWR/9II/finanzierung', toolId, einzeln: false, lib: {aufgabenJs, aufgabenCss, bwrCss}}
@@ -25,6 +27,31 @@
     freitext: ['felder', 'antworten'], chat: ['nachrichten'], buchungssatz: ['konten', 'soll', 'haben']
   };
   const MAX = 150000;
+  // Erlaubtliste für HTML in eingereichten Texten (alles andere wird abgelehnt, auch unvollständige Tags)
+  const ERLAUBT = ['p', 'br', 'b', 'strong', 'i', 'em', 'u', 's', 'sub', 'sup', 'small', 'mark', 'span', 'div', 'hr',
+    'ul', 'ol', 'li', 'h2', 'h3', 'h4', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'code', 'pre', 'blockquote'];
+  const TAG = /^<(\/?)([a-zA-Z][a-zA-Z0-9]*)((?:\s+[a-z]+="[a-z0-9 _-]*")*)\s*(\/?)>/;
+  // Fehler im HTML eines Textes (leer = in Ordnung)
+  function htmlFehler(s) {
+    const f = [];
+    for (let i = s.indexOf('<'); i >= 0; i = s.indexOf('<', i + 1)) {
+      const n = s[i + 1] || '';
+      if (!/[a-zA-Z\/!?]/.test(n)) continue;                           // „3 < 5“ ist kein Tag
+      const m = s.slice(i).match(TAG);
+      const name = m && m[2].toLowerCase();
+      if (!m || !ERLAUBT.includes(name)) { f.push(`nicht erlaubtes HTML: ${s.slice(i, i + 40)}`); continue; }
+      const attrs = (m[3].match(/[a-z]+(?==)/g) || []);
+      const ok = attrs.every(a => a === 'class' || ((name === 'td' || name === 'th') && (a === 'colspan' || a === 'rowspan')));
+      if (!ok || (m[1] && attrs.length)) f.push(`nicht erlaubtes Attribut: ${m[0].slice(0, 60)}`);
+      if (/span="[^"]*[^0-9"]/.test(m[3])) f.push(`colspan/rowspan nur als Zahl: ${m[0].slice(0, 60)}`);
+    }
+    return f;
+  }
+  function alleTexte(x, wo, f) {
+    if (typeof x === 'string') { htmlFehler(x).forEach(e => f.push(`${wo}: ${e}`)); return; }
+    if (Array.isArray(x)) x.forEach((y, i) => alleTexte(y, wo, f));
+    else if (x && typeof x === 'object') Object.keys(x).forEach(k => alleTexte(x[k], wo, f));
+  }
   const istText = v => typeof v === 'string' && v.trim() !== '';
   const r2 = n => Math.round(n * 100) / 100;
 
@@ -75,6 +102,8 @@
     const roh = JSON.stringify(j);
     if (roh.length > MAX) f.push(`Zu groß (${Math.round(roh.length / 1000)} kB, höchstens ${MAX / 1000} kB).`);
     if (/<\s*script|\bon[a-z]+\s*=|javascript:|<\s*iframe|<\s*object|<\s*embed/i.test(roh)) f.push('Eigenes JavaScript (script, onclick=, javascript:, iframe …) ist nicht erlaubt.');
+    if (j.titel != null) alleTexte(j.titel, 'Titel', f);
+    if (j.kurztext != null) alleTexte(j.kurztext, 'Kurztext', f);
     if (!istText(j.titel)) f.push('„titel“ fehlt.');
     const n = normalisiere(j);
     if (!n.schritte.length) f.push('Keine Schritte bzw. Aufgaben gefunden („schritte“ oder „aufgaben“).');
@@ -84,6 +113,7 @@
       if (!s.html && !(s.aufgaben && s.aufgaben.length)) f.push(`${wo}: weder Erklärung („html“) noch Aufgaben`);
       if (s.aufgaben != null && !Array.isArray(s.aufgaben)) f.push(`${wo}: „aufgaben“ muss eine Liste sein`);
       (s.aufgaben || []).forEach((a, k) => pruefeAufgabe(a, `${wo}, Aufgabe ${k + 1}`, f));
+      alleTexte(s, wo, f);
     });
     return f;
   }
@@ -148,7 +178,7 @@ Aufgaben.sequenz({el:'#app', key:${JSON.stringify(id)}, schritte:DATEN.schritte}
 `;
   }
 
-  const Seite = {TYPEN, normalisiere, pruefe, toolId, seiteHTML, MAX};
+  const Seite = {TYPEN, ERLAUBT, normalisiere, pruefe, toolId, seiteHTML, MAX};
   if (typeof module !== 'undefined' && module.exports) module.exports = Seite;
   else window.Seite = Seite;
 })();

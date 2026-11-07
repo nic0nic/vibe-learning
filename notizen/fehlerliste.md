@@ -16,7 +16,8 @@ Gesammelt im Thread „Aufbau der Seite“. Umgesetzt wird erst, wenn die Lehrkr
 38. **Übungen aus dem Claude-Chat erstellen und einreichen** (gewünscht 06.11.)
     - `lib/seite.js`: Aufgaben-JSON prüfen und daraus Seiten bauen (Browser und Server). `vorlage.html`: einfügen, prüfen, Vorschau im abgeschotteten iframe, Download; Einreichen für Lehrkräfte. `pb_hooks/einreichen.pb.js`: Pull Request über die GitHub-API (Seite + katalog.js-Abschnitt EINREICHUNGEN), höchstens 10 pro Lehrkraft und Tag, Testmodus `VIBE_GITHUB_DRYRUN=1`.
     - Skill `vibe-learning-seite-erstellen` im Repo vibe-learning-skills; fehlende Aufgabentypen als Issue in vibe-learning.
-    - Offen: Token auf dem VPS hinterlegen (ANLEITUNG, Abschnitt 11), danach echten Pull Request testen.
+    - Token (klassisch, Bot-Konto admin-nimals) auf dem VPS hinterlegt, echter Pull Request am 06.11. getestet.
+    - Härtung 07.11.: HTML in Einreichungen nur nach Erlaubtliste (`Seite.ERLAUBT`, je `<` geprüft, nur class/colspan/rowspan); der Hook führt keinen Code aus GitHub mehr aus (Bereich wird über `pfad` und die lokale Bereichsseite geprüft). Offen: Branch-Schutz für main und live in GitHub (nur Nico darf mergen/pushen).
 
 ### Version vom 05.11.
 

@@ -164,6 +164,8 @@ API
   Seite.TYPEN                     Aufgabentypen mit Pflichtfeldern (muss zu lib/aufgaben.js passen)
   Seite.normalisiere(json)        → {titel, kurztext, schritte} (Schritte bekommen id und kurz)
   Seite.pruefe(json)              → Liste von Fehlern (leer = in Ordnung), deutsch, mit Fundstelle
+      HTML in Texten nur nach Erlaubtliste (Seite.ERLAUBT): Tags wie p, b, ul, table … mit höchstens class
+      (td/th auch colspan, rowspan); jedes andere „<“ + Buchstabe, „</“, „<!“ oder „<?“ wird abgelehnt.
   Seite.toolId(titel, zufall)     → id für katalog.js (a–z, 0–9, -, höchstens 20 Zeichen)
   Seite.seiteHTML(json, opt)      → komplette HTML-Seite
       opt = {pfad: 'BWR/9II/finanzierung', toolId, einzeln: false, lib: {aufgabenJs, aufgabenCss, bwrCss}}

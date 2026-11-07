@@ -156,7 +156,7 @@ $('#einreichen').addEventListener('click', async () => {
   $('#einreichen').disabled = true; $('#ergebnis').innerHTML = '<div class="meldung ok">Wird eingereicht …</div>';
   try {
     const r = await fetch('/api/trainer/einreichen', {method:'POST', headers:{'Content-Type':'application/json', ...(L.rolle === 'admin' ? {Authorization:L.token} : {'X-Lehrer-Token':L.token})},
-      body:JSON.stringify({json:JSON.stringify(d), bereich:bereich().id, titel:d.titel, kurztext:d.kurztext})});
+      body:JSON.stringify({json:JSON.stringify(d), bereich:bereich().id, pfad:bereich().pfad, titel:d.titel, kurztext:d.kurztext})});
     const j = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(esc(j.message || 'Fehler ' + r.status) + (j.fehler ? '<ul>' + j.fehler.map(x => `<li>${esc(x)}</li>`).join('') + '</ul>' : '') + (j.detail && L.rolle === 'admin' ? `<br><small>Für den Admin: ${esc(j.detail)}</small>` : ''));
     $('#ergebnis').innerHTML = j.url ? `<div class="meldung ok">✓ Eingereicht! Der Vorschlag liegt jetzt zur Freigabe bereit: <a href="${esc(j.url)}" target="_blank" rel="noopener">Pull Request ansehen</a></div>`
