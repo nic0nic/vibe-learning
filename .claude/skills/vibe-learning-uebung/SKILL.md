@@ -193,6 +193,10 @@ danach (weitere Aufgabe, erscheint erst nach richtiger Lösung, z. B. Handlungse
   luecken      text:'… [[richtig|falsch|falsch]] …' → Auswahllisten (erste Antwort richtig, wird gemischt)
   zuordnen     felder:[[id, Titel]], karten:[{t (Text), z (Feld-id)}]; Ziehen mit Maus/Finger oder
                erst Karte, dann Feld antippen. Richtige bleiben liegen, falsche gehen zurück.
+  tabelle      Tabelle zum Ausfüllen (z. B. Tilgungsplan): spalten:['Jahr', 'Zinsen', …],
+               zeilen:[['1', 40000, {l:2000}, …], …] – Text bzw. Zahl = vorgegeben (Zahlen mit 2 Nachkommastellen),
+               {l: Lösung} = Eingabefeld; hinweise:{Spaltenindex: 'Zinsen = Restschuld · 5 %'}, tol (Std. 0,005),
+               einheit (z. B. '€', erscheint im Spaltenkopf). Falsche Felder werden rot, Hinweise je Spalte.
   freitext     felder:['1. Sicherheit', '2. Sicherheit'] (Beschriftungen, je ein Eingabefeld),
                antworten:[['Grundschuld'], ['Zession', 'Abtretung von Forderungen'], …] (je Eintrag Schreibweisen);
                ein Feld ist richtig, wenn ein Begriff darin vorkommt (Groß/klein, ä/ae egal), jedes Feld braucht

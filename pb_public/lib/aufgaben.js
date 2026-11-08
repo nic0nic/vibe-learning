@@ -16,6 +16,10 @@
  *   luecken      text:'… [[richtig|falsch|falsch]] …' → Auswahllisten (erste Antwort richtig, wird gemischt)
  *   zuordnen     felder:[[id, Titel]], karten:[{t (Text), z (Feld-id)}]; Ziehen mit Maus/Finger oder
  *                erst Karte, dann Feld antippen. Richtige bleiben liegen, falsche gehen zurück.
+ *   tabelle      Tabelle zum Ausfüllen (z. B. Tilgungsplan): spalten:['Jahr', 'Zinsen', …],
+ *                zeilen:[['1', 40000, {l:2000}, …], …] – Text bzw. Zahl = vorgegeben (Zahlen mit 2 Nachkommastellen),
+ *                {l: Lösung} = Eingabefeld; hinweise:{Spaltenindex: 'Zinsen = Restschuld · 5 %'}, tol (Std. 0,005),
+ *                einheit (z. B. '€', erscheint im Spaltenkopf). Falsche Felder werden rot, Hinweise je Spalte.
  *   freitext     felder:['1. Sicherheit', '2. Sicherheit'] (Beschriftungen, je ein Eingabefeld),
  *                antworten:[['Grundschuld'], ['Zession', 'Abtretung von Forderungen'], …] (je Eintrag Schreibweisen);
  *                ein Feld ist richtig, wenn ein Begriff darin vorkommt (Groß/klein, ä/ae egal), jedes Feld braucht
@@ -48,6 +52,7 @@
 'use strict';
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;'}[c]));
 const r2 = n => Math.round(n * 100) / 100;
+const zahlText = n => r2(n).toLocaleString('de-DE', {minimumFractionDigits:2, maximumFractionDigits:2});
 const eur = n => r2(n).toLocaleString('de-DE', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' €';
 function zahl(s){
   s = String(s == null ? '' : s).replace(/€|%|Tage?|\s/g, '');
@@ -173,6 +178,32 @@ const TYPEN = {
       if (n === a.karten.length) return {ok:true, t:`✓ ${a.ok || `Alle ${n} Karten richtig zugeordnet!`}`};
       if (!n && !z.weg.length) return {ok:false, t:'Ziehe zuerst Karten in die Felder.'};
       return {ok:false, t:`${n} von ${a.karten.length} richtig. ${z.weg.length ? `${z.weg.length} ${z.weg.length === 1 ? 'Karte ist' : 'Karten sind'} zurück in den Stapel gewandert. ` : ''}Ordne die übrigen Karten zu.`};
+    }
+  },
+  tabelle:{
+    zustand:() => ({ein:{}, ok:{}}),
+    html(a, z){
+      const fmt = v => typeof v === 'number' ? zahlText(v) : esc(v == null ? '' : v);
+      const kopf = a.spalten.map(s => `<th>${esc(s)}${a.einheit && s !== a.spalten[0] ? ` <small>(${esc(a.einheit)})</small>` : ''}</th>`).join('');
+      const zeilen = a.zeilen.map((r, i) => '<tr>' + r.map((c, j) => {
+        if (!c || typeof c !== 'object') return `<td${typeof c === 'number' ? ' class="zahl"' : ''}>${fmt(c)}</td>`;
+        const k = i + '-' + j, s = z.ok[k];
+        return `<td><input class="feld af-zahl${s === true ? ' richtig' : s === false ? ' falsch' : ''}" data-f="${k}" value="${esc(z.ein[k] || '')}" inputmode="decimal" autocomplete="off" aria-label="${esc(a.spalten[j] + ', Zeile ' + (i + 1))}"${s === true ? ' readonly' : ''}></td>`;
+      }).join('') + '</tr>').join('');
+      const falsch = Object.keys(z.ok).filter(k => z.ok[k] === false).map(k => +k.split('-')[1]);
+      const hin = [...new Set(falsch)].filter(j => a.hinweise && a.hinweise[j]).map(j => `<div class="af-hinweis"><b>${esc(a.spalten[j])}:</b> ${a.hinweise[j]}</div>`).join('');
+      return `<div class="af-tabelle"><table><thead><tr>${kopf}</tr></thead><tbody>${zeilen}</tbody></table></div>${hin}`;
+    },
+    pruefen(a, z){
+      let alle = 0, richtig = 0, leer = 0;
+      a.zeilen.forEach((r, i) => r.forEach((c, j) => {
+        if (!c || typeof c !== 'object') return;
+        const k = i + '-' + j, v = zahl(z.ein[k]); alle++;
+        if (isNaN(v)){ leer++; delete z.ok[k]; return; }
+        z.ok[k] = Math.abs(v - c.l) <= (a.tol == null ? 0.005 : a.tol); if (z.ok[k]) richtig++;
+      }));
+      if (richtig === alle) return {ok:true, t:'✓ ' + (a.ok || 'Alles richtig ausgefüllt!')};
+      return {ok:false, t:`${richtig} von ${alle} Feldern richtig.${leer ? ` ${leer} ${leer === 1 ? 'Feld ist' : 'Felder sind'} noch leer.` : ''}${richtig < alle - leer ? ' Die rot markierten Felder stimmen nicht.' : ''}`};
     }
   },
   freitext:{

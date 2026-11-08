@@ -24,7 +24,7 @@
   'use strict';
   const TYPEN = {
     mc: ['options', 'correct'], zahlen: ['felder'], luecken: ['text'], zuordnen: ['felder', 'karten'],
-    freitext: ['felder', 'antworten'], chat: ['nachrichten'], buchungssatz: ['konten', 'soll', 'haben']
+    freitext: ['felder', 'antworten'], chat: ['nachrichten'], buchungssatz: ['konten', 'soll', 'haben'], tabelle: ['spalten', 'zeilen']
   };
   const MAX = 150000;
   // Erlaubtliste für HTML in eingereichten Texten (alles andere wird abgelehnt, auch unvollständige Tags)
@@ -92,6 +92,14 @@
       const summe = l => r2(l.reduce((s, x) => s + (Array.isArray(x) ? Number(x[1]) || 0 : 0), 0));
       [...a.soll, ...a.haben].forEach(x => { if (!Array.isArray(x) || !a.konten.includes(x[0]) || typeof x[1] !== 'number') f.push(`${wo}: Buchungszeile ${JSON.stringify(x)} – Konto muss in „konten“ stehen, Betrag als Zahl`); });
       if (summe(a.soll) !== summe(a.haben)) f.push(`${wo}: Soll (${summe(a.soll)}) und Haben (${summe(a.haben)}) sind nicht gleich groß`);
+    }
+    if (a.typ === 'tabelle' && Array.isArray(a.spalten) && Array.isArray(a.zeilen)) {
+      let felder = 0;
+      a.zeilen.forEach((r, i) => {
+        if (!Array.isArray(r) || r.length !== a.spalten.length) return f.push(`${wo}, Zeile ${i + 1}: braucht genau ${a.spalten.length} Zellen (wie „spalten“)`);
+        r.forEach((c, j) => { if (c && typeof c === 'object') { if (typeof c.l !== 'number') f.push(`${wo}, Zeile ${i + 1}, Spalte ${j + 1}: Eingabefeld braucht „l“ (Lösung als Zahl)`); else felder++; } });
+      });
+      if (!felder) f.push(`${wo}: keine Eingabefelder ({"l": Lösung}) in der Tabelle`);
     }
     if (a.danach) pruefeAufgabe(a.danach, wo + ' → danach', f);
   }

@@ -27,6 +27,15 @@
 .af .ohint{font-size:13px;color:var(--muted);margin-top:6px}
 /* Zahlen */
 .af-felder{display:flex;flex-direction:column;gap:8px;margin:8px 0}
+/* Tabelle zum Ausfüllen */
+.af-tabelle{overflow-x:auto;margin:8px 0}
+.af-tabelle table{border-collapse:collapse;min-width:100%;font-size:14px}
+.af-tabelle th,.af-tabelle td{border:1px solid var(--border);padding:4px 6px;text-align:right;white-space:nowrap}
+.af-tabelle th{background:var(--panel2);font-weight:700;text-align:center;white-space:normal}
+.af-tabelle th small{font-weight:400;color:var(--muted)}
+.af-tabelle td:first-child{text-align:center}
+.af-tabelle td.zahl{font-family:var(--mono,monospace)}
+.af-tabelle .af-zahl{width:112px}
 .af-zeile{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}
 .af-t{flex:1 1 300px}
 .af-zahl{width:130px;text-align:right;font-family:var(--mono,monospace)}

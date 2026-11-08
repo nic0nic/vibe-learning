@@ -11,6 +11,12 @@ Gesammelt im Thread „Aufbau der Seite“. Umgesetzt wird erst, wenn die Lehrkr
 
 ## Erledigt
 
+### Version vom 08.11.
+
+39. **Darlehensarten (BWR 9, Finanzierung)** (gewünscht 08.11.)
+    - `darlehensarten.html`: Abzahlungs-, Annuitäten- und Festdarlehen (40.000,00 €, 4 Jahre, 5 %), Tilgungspläne als Formular, Säulendiagramme, Vergleich (Zuordnen), Zinskosten und Entscheidungen; dazu Selbstlernheft „Darlehensarten“.
+    - Neuer Aufgabentyp `tabelle` in `lib/aufgaben.js` (Zellen vorgegeben oder Eingabefeld, Hinweise je Spalte), Prüfung in `lib/seite.js`, Skill `vibe-learning-seite-erstellen` ergänzt.
+
 ### Version vom 06.11.
 
 38. **Übungen aus dem Claude-Chat erstellen und einreichen** (gewünscht 06.11.)

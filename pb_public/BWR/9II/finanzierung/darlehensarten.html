@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="de" data-trainer="darlehen">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Darlehensarten – vibe learning</title>
+<!--
+  Erarbeitung Darlehensarten (BWR 9, Finanzierung; passend zum Selbstlernheft „Darlehensarten“, Saitgig):
+  Abzahlungs-, Annuitäten- und Festdarlehen über 40.000,00 €, 4 Jahre, 5 %. Kredittabellen als Formular
+  (Typ tabelle aus lib/aufgaben.js), Säulengrafiken (eigene Funktion saeulen), Vergleich, Kosten, Entscheidung.
+  Zahlen in PLAN, mit Python nachgerechnet (kaufmännisch gerundet; letzte Annuitätenrate 11.280,49 €).
+  Gespeichert: darlehen-stand = {schritt, erledigt}.
+-->
+<script src="../../../katalog.js"></script>
+<script src="../../../nav.js"></script>
+<script src="../../../sync.js"></script>
+<script>
+(function(){var t=null;try{t=localStorage.getItem('wenn-theme');}catch(e){}
+document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');})();
+</script>
+<link rel="stylesheet" href="../../bwr.css">
+<link rel="stylesheet" href="../../../lib/aufgaben.css">
+<script src="../../../lib/aufgaben.js"></script>
+<style>
+.wrap{max-width:1000px}
+.info{border-left:4px solid var(--accent);padding:2px 0 2px 12px;margin:0 0 12px}
+.alltag{background:var(--panel2);border-radius:10px;padding:8px 12px;margin:0 0 12px}
+.alltag b:first-child{display:block;font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.begriffe{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px;margin:0 0 12px}
+.begriffe div{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:8px 10px;font-size:14px}
+.formel{display:inline-block;border:2px solid var(--accent);border-radius:8px;padding:4px 12px;font-weight:700;margin:4px 0 10px}
+.saeulen{width:100%;max-width:420px;height:auto;display:block;margin:4px 0 12px}
+.saeulen text{fill:var(--text);font:12px system-ui,sans-serif;text-anchor:middle}
+.saeulen .t{fill:var(--accent)} .saeulen .z{fill:url(#dSchr)} .saeulen .z2{fill:var(--panel2)}
+.saeulen .rand{fill:none;stroke:var(--text);stroke-width:1} .saeulen .achse{stroke:var(--text)}
+.saeulen .schr{stroke:var(--text);stroke-opacity:.5;stroke-width:2}
+.legende{font-size:13px;color:var(--muted);margin:-6px 0 12px}
+.legende i{display:inline-block;width:12px;height:12px;border:1px solid var(--text);vertical-align:-1px;margin:0 4px 0 10px}
+.mini td,.mini th{padding:3px 8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="bar"><div class="brand">Darlehens<span>arten</span></div></div>
+  <div id="app"></div>
+</div>
+<script>
+'use strict';
+const {eur} = Aufgaben;
+// Darlehen über 40.000,00 €, 4 Jahre, 5 % Zinsen p. a.: [Restschuld Anfang, Zinsen, Tilgung, Rate, Restschuld Ende]
+const PLAN = {
+  abzahlung: [[40000, 2000, 10000, 12000, 30000], [30000, 1500, 10000, 11500, 20000], [20000, 1000, 10000, 11000, 10000], [10000, 500, 10000, 10500, 0]],
+  annuitaet: [[40000, 2000, 9280.47, 11280.47, 30719.53], [30719.53, 1535.98, 9744.49, 11280.47, 20975.04], [20975.04, 1048.75, 10231.72, 11280.47, 10743.32], [10743.32, 537.17, 10743.32, 11280.49, 0]],
+  fest: [[40000, 2000, 0, 2000, 40000], [40000, 2000, 0, 2000, 40000], [40000, 2000, 0, 2000, 40000], [40000, 2000, 40000, 42000, 0]]
+};
+const SPALTEN = ['Jahr', 'Restschuld am Jahresanfang', 'Zinsen (5 %)', 'Tilgung', 'Rate', 'Restschuld am Jahresende'];
+const HINWEISE = {1: 'Restschuld am Jahresanfang = Restschuld am Ende des Vorjahres', 2: 'Zinsen = Restschuld am Jahresanfang · 5 : 100 (auf Cent runden)',
+  3: 'Tilgung = Rate – Zinsen', 4: 'Rate = Zinsen + Tilgung', 5: 'Restschuld am Jahresende = Restschuld am Jahresanfang – Tilgung'};
+// Tabelle als Formular: vorgegeben sind die Spalten in „fest“ und die Restschuld am Anfang des 1. Jahres, der Rest sind Eingabefelder
+function tabelle(art, fest){
+  return {typ:'tabelle', einheit:'€', spalten:SPALTEN, hinweise:HINWEISE,
+    zeilen:PLAN[art].map((r, i) => [String(i + 1), ...r.map((v, j) => fest.includes(j + 1) || (i === 0 && j === 0) ? v : {l:v})])};
+}
+const ANGEBOT = '<div class="mt">Material: Angebot der Hausbank</div><p>Darlehen für einen Transporter: <b>40.000,00 €</b>, Laufzeit <b>4 Jahre</b>, Zinssatz <b>5 % pro Jahr</b>. Zinsen und Tilgung werden einmal am Jahresende gezahlt.</p>';
+
+// Säulen: je Jahr Tilgung (unten, Akzentfarbe) und Zinsen (oben, schraffiert), Höhe = Rate
+function saeulen(art, titel){
+  const p = PLAN[art], mx = Math.max(...p.map(r => r[3])), H = 140, sc = H / mx;   // je Grafik auf die höchste Rate skaliert
+  let h = `<svg class="saeulen" viewBox="0 0 320 210" role="img" aria-label="${titel}: Raten je Jahr aus Tilgung und Zinsen">
+    <defs><pattern id="dSchr" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="7" height="7" class="z2"/><line x1="0" y1="0" x2="0" y2="7" class="schr"/></pattern></defs>
+    <line class="achse" x1="30" y1="170" x2="310" y2="170"/>`;
+  p.forEach((r, i) => {
+    const x = 50 + i * 65, t = r[2] * sc, z = r[1] * sc, y = 170 - t - z;
+    h += `<rect class="t" x="${x}" y="${170 - t}" width="40" height="${t}"/><rect class="z" x="${x}" y="${y}" width="40" height="${z}"/><rect class="rand" x="${x}" y="${y}" width="40" height="${t + z}"/>`
+      + `<text x="${x + 20}" y="${y - 6}">${Math.round(r[3]).toLocaleString('de-DE')} €</text><text x="${x + 20}" y="186">${i + 1}. Jahr</text>`;
+  });
+  return h + `<text x="170" y="205" style="font-weight:700">${titel}</text></svg>`;
+}
+const LEGENDE = '<p class="legende"><i style="background:var(--accent)"></i>Tilgung <i style="background:repeating-linear-gradient(45deg,var(--panel2) 0 3px,var(--muted) 3px 5px)"></i>Zinsen · Höhe der Säule = Rate des Jahres</p>';
+
+Aufgaben.sequenz({el:'#app', key:'darlehen', schritte:[
+  {id:'grundlagen', kurz:'Grundlagen', titel:'Darlehen: die wichtigsten Begriffe', html:`<h2>Darlehen – worauf es ankommt</h2>
+    <div class="info"><p>Jakob Seite möchte für Saitgig einen <b>Transporter</b> kaufen und braucht dafür ein <b>Darlehen</b> über 40.000,00 €. Langfristige Darlehen unterscheiden sich vor allem darin, <b>wie getilgt wird</b>. Davon hängt ab, wie hoch die Belastung in jedem Jahr ist und wie viel Zinsen insgesamt anfallen.</p></div>
+    <div class="begriffe"><div><b>Kreditbetrag</b><br>die geliehene Summe</div><div><b>Zinsen</b><br>Preis für das Geld – immer von der <b>Restschuld</b> am Jahresanfang</div>
+    <div><b>Tilgung</b><br>Rückzahlung eines Teils der Schuld</div><div><b>Rate</b><br>was im Jahr insgesamt zu zahlen ist</div><div><b>Restschuld</b><br>was nach der Tilgung noch offen ist</div></div>
+    <p><span class="formel">Rate = Zinsen + Tilgung</span> &nbsp; <span class="formel">Zinsen = Restschuld · Zinssatz : 100</span></p>
+    <div class="alltag"><b>Aus dem Alltag · Geld von Oma</b>Oma leiht dir 1.000 € für ein Fahrrad und möchte 2 % Zinsen im Jahr. Zahlst du nach einem Jahr 500 € zurück, schuldest du nur noch 500 € – und im zweiten Jahr fallen Zinsen nur noch auf diese 500 € an.</div>`},
+  {id:'g1', kurz:'1', titel:'Zinsen berechnen', material:ANGEBOT,
+    erinnerung:'<p>Zinsen = Restschuld · Zinssatz : 100 &nbsp;·&nbsp; Rate = Zinsen + Tilgung</p>',
+    aufgaben:[
+      {typ:'zahlen', nr:'1.1', frage:'Berechne die Zinsen für das erste Jahr.', felder:[{t:'Zinsen im 1. Jahr', l:2000, e:'€', h:'40.000,00 € · 5 : 100'}],
+        ok:'Richtig: 40.000,00 € · 5 : 100 = 2.000,00 €.'},
+      {typ:'mc', nr:'1.2', frage:'Nach dem ersten Jahr hat Saitgig 10.000,00 € getilgt. Wovon werden die Zinsen im zweiten Jahr berechnet?',
+        options:['von der Restschuld von 30.000,00 €', 'vom ursprünglichen Kreditbetrag von 40.000,00 €', 'von der Tilgung von 10.000,00 €'], correct:[0],
+        why:{1:'Zinsen fallen nur für das Geld an, das man noch schuldet – also für die Restschuld.', 2:'Die Tilgung ist die Rückzahlung, nicht die Grundlage für die Zinsen.'},
+        after:'Je schneller getilgt wird, desto weniger Zinsen fallen an.'}]},
+  {id:'abzahlung', kurz:'Abzahlungsdarlehen', titel:'Abzahlungsdarlehen', html:() => `<h2>Abzahlungsdarlehen</h2>
+    <div class="info"><p>Jedes Jahr wird der <b>gleiche Betrag getilgt</b>: Kreditbetrag : Laufzeit = 40.000,00 € : 4 = <b>10.000,00 €</b>. Die Restschuld sinkt gleichmäßig, damit sinken auch die Zinsen – und die <b>Rate wird jedes Jahr kleiner</b>.</p></div>
+    ${saeulen('abzahlung', 'Abzahlungsdarlehen')}${LEGENDE}`,
+    material:ANGEBOT, erinnerung:'<p>Tilgung jedes Jahr 10.000,00 € · Zinsen = Restschuld am Jahresanfang · 5 : 100 · Rate = Zinsen + Tilgung · Restschuld am Ende = Restschuld am Anfang – Tilgung</p>',
+    aufgaben:[{...tabelle('abzahlung', [3]), nr:'2.1', frage:'Vervollständige den Tilgungsplan des Abzahlungsdarlehens.', ok:'Richtig! Die Tilgung bleibt gleich, Zinsen und Rate sinken.',
+      danach:{typ:'mc', frage:'Wie entwickelt sich die Rate beim Abzahlungsdarlehen?', options:['Sie sinkt jedes Jahr.', 'Sie bleibt gleich.', 'Sie steigt jedes Jahr.'], correct:[0], mischen:false,
+        why:{1:'Gleich bleibt hier die Tilgung, nicht die Rate.', 2:'Die Zinsen sinken, weil die Restschuld sinkt – damit sinkt auch die Rate.'}}}]},
+  {id:'annuitaet', kurz:'Annuitätendarlehen', titel:'Annuitätendarlehen', html:() => `<h2>Annuitätendarlehen</h2>
+    <div class="info"><p>Die <b>Rate</b> (Annuität = Zinsen + Tilgung) ist <b>jedes Jahr gleich hoch</b>, hier 11.280,47 €. Weil die Restschuld sinkt, werden die Zinsen kleiner – der <b>Tilgungsanteil steigt</b>. Die Bank nennt die Annuität im Angebot. Im letzten Jahr gleicht die Rate kleine Rundungsunterschiede aus (11.280,49 €).</p></div>
+    ${saeulen('annuitaet', 'Annuitätendarlehen')}${LEGENDE}
+    <div class="alltag"><b>Aus dem Alltag · Der Hauskredit deiner Eltern</b>Viele Familien zahlen ihr Haus über 20 bis 30 Jahre ab – jeden Monat mit der gleichen Rate. Am Anfang steckt darin viel Zins und wenig Tilgung, am Ende ist es umgekehrt.</div>`,
+    material:ANGEBOT + '<p>Annuität laut Bank: <b>11.280,47 €</b> pro Jahr (letztes Jahr 11.280,49 €).</p>',
+    erinnerung:'<p>Rate (Annuität) ist vorgegeben · Zinsen = Restschuld am Jahresanfang · 5 : 100 · <b>Tilgung = Rate – Zinsen</b> · Restschuld am Ende = Restschuld am Anfang – Tilgung</p>',
+    aufgaben:[{...tabelle('annuitaet', [4]), nr:'3.1', frage:'Vervollständige den Tilgungsplan des Annuitätendarlehens. Runde die Zinsen auf Cent.', ok:'Richtig! Die Rate bleibt gleich, die Tilgung steigt.',
+      danach:{typ:'mc', frage:'Was steigt beim Annuitätendarlehen von Jahr zu Jahr?', options:['die Tilgung', 'die Zinsen', 'die Rate'], correct:[0], mischen:false,
+        why:{1:'Die Zinsen sinken, weil die Restschuld sinkt.', 2:'Die Rate bleibt gleich – das ist das Besondere am Annuitätendarlehen.'}}}]},
+  {id:'fest', kurz:'Festdarlehen', titel:'Festdarlehen', html:() => `<h2>Festdarlehen (Fälligkeitsdarlehen)</h2>
+    <div class="info"><p>Während der Laufzeit werden <b>nur Zinsen</b> gezahlt. Getilgt wird <b>einmalig am Ende</b> – der ganze Kreditbetrag auf einmal. Weil die Schuld bis zum Schluss voll bestehen bleibt, sind die <b>Zinsen jedes Jahr gleich hoch</b>.</p></div>
+    ${saeulen('fest', 'Festdarlehen')}${LEGENDE}`,
+    material:ANGEBOT, erinnerung:'<p>Tilgung erst im letzten Jahr (40.000,00 €) · Zinsen = Restschuld am Jahresanfang · 5 : 100 · Rate = Zinsen + Tilgung</p>',
+    aufgaben:[{...tabelle('fest', [1, 5]), nr:'4.1', frage:'Vervollständige den Tilgungsplan des Festdarlehens.', ok:'Richtig! Bis zum Schluss nur Zinsen, am Ende die ganze Tilgung.',
+      danach:{typ:'mc', frage:'Was muss Jakob beim Festdarlehen unbedingt einplanen?', options:['Am Ende der Laufzeit muss er 42.000,00 € auf einmal zahlen können.', 'Die Rate steigt jedes Jahr ein wenig.', 'Die Zinsen werden jedes Jahr kleiner.'], correct:[0],
+        why:{1:'Die Rate bleibt bis zum letzten Jahr gleich (nur Zinsen) – dann kommt die ganze Tilgung dazu.', 2:'Die Restschuld bleibt bis zum Ende 40.000,00 €, deshalb bleiben auch die Zinsen gleich.'}}}]},
+  {id:'vergleich', kurz:'Vergleich', titel:'Darlehensarten vergleichen',
+    erinnerung:'<p><b>Abzahlung:</b> gleiche Tilgung · <b>Annuität:</b> gleiche Rate · <b>Festdarlehen:</b> Tilgung am Ende</p>',
+    aufgaben:[{typ:'zuordnen', nr:'5.1', frage:'Ordne die Merkmale der passenden Darlehensart zu.', ok:'Alle Merkmale richtig zugeordnet!',
+      felder:[['ab', 'Abzahlungsdarlehen'], ['an', 'Annuitätendarlehen'], ['fe', 'Festdarlehen']],
+      karten:[{t:'Die Tilgung ist jedes Jahr gleich hoch.', z:'ab'}, {t:'Die Rate sinkt von Jahr zu Jahr.', z:'ab'}, {t:'Insgesamt fallen die geringsten Zinsen an.', z:'ab'},
+        {t:'Die Rate ist jedes Jahr gleich hoch.', z:'an'}, {t:'Der Tilgungsanteil steigt von Jahr zu Jahr.', z:'an'}, {t:'Gut planbar, typisch für Hauskredite.', z:'an'},
+        {t:'Während der Laufzeit werden nur Zinsen gezahlt.', z:'fe'}, {t:'Die Zinsen sind jedes Jahr gleich hoch.', z:'fe'}, {t:'Am Ende muss eine große Summe auf einmal gezahlt werden.', z:'fe'}]}]},
+  {id:'kosten', kurz:'Kosten', titel:'Gesamtkosten und Entscheidung',
+    material:'<div class="mt">Material: Zinsen der drei Angebote (in €)</div><table class="beleg mini"><tr><td>Jahr</td><td>Abzahlung</td><td>Annuität</td><td>Festdarlehen</td></tr>'
+      + [0, 1, 2, 3].map(i => `<tr><td>${i + 1}</td><td>${eur(PLAN.abzahlung[i][1])}</td><td>${eur(PLAN.annuitaet[i][1])}</td><td>${eur(PLAN.fest[i][1])}</td></tr>`).join('') + '</table>',
+    erinnerung:'<p>Gesamte Zinskosten = Summe der Zinsen aller Jahre.</p>',
+    aufgaben:[
+      {typ:'zahlen', nr:'6.1', frage:'Ermittle für jedes Darlehen die gesamten Zinskosten.', felder:[
+        {t:'Abzahlungsdarlehen', l:5000, e:'€'}, {t:'Annuitätendarlehen', l:5121.90, e:'€'}, {t:'Festdarlehen', l:8000, e:'€'}],
+        ok:'Richtig! Das Festdarlehen ist am teuersten, weil die Schuld bis zum Ende voll bestehen bleibt.'},
+      {typ:'mc', nr:'6.2', frage:'Jakob möchte jedes Jahr mit einer gleich hohen Belastung planen können. Welches Darlehen passt?', options:['Annuitätendarlehen', 'Abzahlungsdarlehen', 'Festdarlehen'], correct:[0],
+        why:{1:'Beim Abzahlungsdarlehen sinkt die Rate jedes Jahr – gleich bleibt nur die Tilgung.', 2:'Beim Festdarlehen kommt am Ende eine sehr hohe Rate (42.000,00 €).'}},
+      {typ:'mc', nr:'6.3', frage:'Jakob möchte möglichst wenig Zinsen zahlen und kann in den ersten Jahren höhere Raten tragen. Welches Darlehen passt?', options:['Abzahlungsdarlehen', 'Annuitätendarlehen', 'Festdarlehen'], correct:[0],
+        why:{1:'Das Annuitätendarlehen ist etwas teurer (5.121,90 € statt 5.000,00 €), weil am Anfang langsamer getilgt wird.', 2:'Das Festdarlehen hat mit 8.000,00 € die höchsten Zinskosten.'}},
+      {typ:'mc', nr:'6.4', frage:'Jakob möchte in den nächsten Jahren möglichst wenig zahlen, weil in vier Jahren eine Geldanlage von 40.000,00 € frei wird. Welches Darlehen passt?', options:['Festdarlehen', 'Abzahlungsdarlehen', 'Annuitätendarlehen'], correct:[0],
+        why:{1:'Beim Abzahlungsdarlehen ist die Belastung am Anfang am höchsten (12.000,00 €).', 2:'Beim Annuitätendarlehen zahlt er jedes Jahr 11.280,47 € – deutlich mehr als nur die Zinsen.'},
+        after:'Das Festdarlehen schont die Liquidität während der Laufzeit, ist aber am teuersten.'}]},
+  {id:'ueberblick', kurz:'Überblick', titel:'Überblick Darlehensarten',
+    aufgaben:[{typ:'luecken', frage:'Vervollständige den Überblick.', ok:'Richtig! Übertrage den Überblick in dein Heft.',
+      text:'<b>Abzahlungsdarlehen:</b> Tilgung [[gleich|steigend|sinkend]], Zinsen [[sinkend|gleich|steigend]], Rate [[sinkend|gleich|steigend]] → geringste Zinskosten.<br>'
+        + '<b>Annuitätendarlehen:</b> Tilgung [[steigend|gleich|sinkend]], Zinsen [[sinkend|gleich|steigend]], Rate [[gleich|sinkend|steigend]] → gut planbar.<br>'
+        + '<b>Festdarlehen:</b> Tilgung [[einmalig am Ende|jedes Jahr gleich|steigend]], Zinsen [[gleich|sinkend|steigend]] → schont die Liquidität, aber [[höchste|geringste]] Zinskosten.'}]}
+]});
+</script>
+</body>
+</html>
