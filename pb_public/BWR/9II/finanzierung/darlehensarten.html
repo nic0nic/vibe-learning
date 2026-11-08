@@ -54,7 +54,7 @@ const PLAN = {
   fest: [[40000, 2000, 0, 2000, 40000], [40000, 2000, 0, 2000, 40000], [40000, 2000, 0, 2000, 40000], [40000, 2000, 40000, 42000, 0]]
 };
 const SPALTEN = ['Jahr', 'Restschuld am Jahresanfang', 'Zinsen (5 %)', 'Tilgung', 'Rate', 'Restschuld am Jahresende'];
-const HINWEISE = {1: 'Restschuld am Jahresanfang = Restschuld am Ende des Vorjahres', 2: 'Zinsen = Restschuld am Jahresanfang · 5 : 100 (auf Cent runden)',
+const HINWEISE = {1: 'Restschuld am Jahresanfang = Restschuld am Ende des Vorjahres', 2: 'Zinsen = <span class="bruch"><span>Restschuld am Jahresanfang · 5</span><span>100</span></span> (auf Cent runden)',
   3: 'Tilgung = Rate – Zinsen', 4: 'Rate = Zinsen + Tilgung', 5: 'Restschuld am Jahresende = Restschuld am Jahresanfang – Tilgung'};
 // Tabelle als Formular: vorgegeben sind die Spalten in „fest“ und die Restschuld am Anfang des 1. Jahres, der Rest sind Eingabefelder
 function tabelle(art, fest){
@@ -83,13 +83,13 @@ Aufgaben.sequenz({el:'#app', key:'darlehen', schritte:[
     <div class="info"><p>Jakob Seite möchte für Saitgig einen <b>Transporter</b> kaufen und braucht dafür ein <b>Darlehen</b> über 40.000,00 €. Langfristige Darlehen unterscheiden sich vor allem darin, <b>wie getilgt wird</b>. Davon hängt ab, wie hoch die Belastung in jedem Jahr ist und wie viel Zinsen insgesamt anfallen.</p></div>
     <div class="begriffe"><div><b>Kreditbetrag</b><br>die geliehene Summe</div><div><b>Zinsen</b><br>Preis für das Geld – immer von der <b>Restschuld</b> am Jahresanfang</div>
     <div><b>Tilgung</b><br>Rückzahlung eines Teils der Schuld</div><div><b>Rate</b><br>was im Jahr insgesamt zu zahlen ist</div><div><b>Restschuld</b><br>was nach der Tilgung noch offen ist</div></div>
-    <p><span class="formel">Rate = Zinsen + Tilgung</span> &nbsp; <span class="formel">Zinsen = Restschuld · Zinssatz : 100</span></p>
+    <p><span class="formel">Rate = Zinsen + Tilgung</span> &nbsp; <span class="formel">Zinsen = <span class="bruch"><span>Restschuld · Zinssatz</span><span>100</span></span></span></p>
     <div class="alltag"><b>Aus dem Alltag · Geld von Oma</b>Oma leiht dir 1.000 € für ein Fahrrad und möchte 2 % Zinsen im Jahr. Zahlst du nach einem Jahr 500 € zurück, schuldest du nur noch 500 € – und im zweiten Jahr fallen Zinsen nur noch auf diese 500 € an.</div>`},
   {id:'g1', kurz:'1', titel:'Zinsen berechnen', material:ANGEBOT,
-    erinnerung:'<p>Zinsen = Restschuld · Zinssatz : 100 &nbsp;·&nbsp; Rate = Zinsen + Tilgung</p>',
+    erinnerung:'<p>Zinsen = <span class="bruch"><span>Restschuld · Zinssatz</span><span>100</span></span> &nbsp;·&nbsp; Rate = Zinsen + Tilgung</p>',
     aufgaben:[
-      {typ:'zahlen', nr:'1.1', frage:'Berechne die Zinsen für das erste Jahr.', felder:[{t:'Zinsen im 1. Jahr', l:2000, e:'€', h:'40.000,00 € · 5 : 100'}],
-        ok:'Richtig: 40.000,00 € · 5 : 100 = 2.000,00 €.'},
+      {typ:'zahlen', nr:'1.1', frage:'Berechne die Zinsen für das erste Jahr.', felder:[{t:'Zinsen im 1. Jahr', l:2000, e:'€', h:'Zinsen = <span class="bruch"><span>40.000,00 € · 5</span><span>100</span></span>'}],
+        ok:'Richtig: <span class="bruch"><span>40.000,00 € · 5</span><span>100</span></span> = 2.000,00 €.'},
       {typ:'mc', nr:'1.2', frage:'Nach dem ersten Jahr hat Saitgig 10.000,00 € getilgt. Wovon werden die Zinsen im zweiten Jahr berechnet?',
         options:['von der Restschuld von 30.000,00 €', 'vom ursprünglichen Kreditbetrag von 40.000,00 €', 'von der Tilgung von 10.000,00 €'], correct:[0],
         why:{1:'Zinsen fallen nur für das Geld an, das man noch schuldet – also für die Restschuld.', 2:'Die Tilgung ist die Rückzahlung, nicht die Grundlage für die Zinsen.'},
@@ -97,7 +97,7 @@ Aufgaben.sequenz({el:'#app', key:'darlehen', schritte:[
   {id:'abzahlung', kurz:'Abzahlungsdarlehen', titel:'Abzahlungsdarlehen', html:() => `<h2>Abzahlungsdarlehen</h2>
     <div class="info"><p>Jedes Jahr wird der <b>gleiche Betrag getilgt</b>: Kreditbetrag : Laufzeit = 40.000,00 € : 4 = <b>10.000,00 €</b>. Die Restschuld sinkt gleichmäßig, damit sinken auch die Zinsen – und die <b>Rate wird jedes Jahr kleiner</b>.</p></div>
     ${saeulen('abzahlung', 'Abzahlungsdarlehen')}${LEGENDE}`,
-    material:ANGEBOT, erinnerung:'<p>Tilgung jedes Jahr 10.000,00 € · Zinsen = Restschuld am Jahresanfang · 5 : 100 · Rate = Zinsen + Tilgung · Restschuld am Ende = Restschuld am Anfang – Tilgung</p>',
+    material:ANGEBOT, erinnerung:'<p>Tilgung jedes Jahr 10.000,00 € · Zinsen = <span class="bruch"><span>Restschuld am Jahresanfang · 5</span><span>100</span></span> · Rate = Zinsen + Tilgung · Restschuld am Ende = Restschuld am Anfang – Tilgung</p>',
     aufgaben:[{...tabelle('abzahlung', [3]), nr:'2.1', frage:'Vervollständige den Tilgungsplan des Abzahlungsdarlehens.', ok:'Richtig! Die Tilgung bleibt gleich, Zinsen und Rate sinken.',
       danach:{typ:'mc', frage:'Wie entwickelt sich die Rate beim Abzahlungsdarlehen?', options:['Sie sinkt jedes Jahr.', 'Sie bleibt gleich.', 'Sie steigt jedes Jahr.'], correct:[0], mischen:false,
         why:{1:'Gleich bleibt hier die Tilgung, nicht die Rate.', 2:'Die Zinsen sinken, weil die Restschuld sinkt – damit sinkt auch die Rate.'}}}]},
@@ -106,14 +106,14 @@ Aufgaben.sequenz({el:'#app', key:'darlehen', schritte:[
     ${saeulen('annuitaet', 'Annuitätendarlehen')}${LEGENDE}
     <div class="alltag"><b>Aus dem Alltag · Der Hauskredit deiner Eltern</b>Viele Familien zahlen ihr Haus über 20 bis 30 Jahre ab – jeden Monat mit der gleichen Rate. Am Anfang steckt darin viel Zins und wenig Tilgung, am Ende ist es umgekehrt.</div>`,
     material:ANGEBOT + '<p>Annuität laut Bank: <b>11.280,47 €</b> pro Jahr (letztes Jahr 11.280,49 €).</p>',
-    erinnerung:'<p>Rate (Annuität) ist vorgegeben · Zinsen = Restschuld am Jahresanfang · 5 : 100 · <b>Tilgung = Rate – Zinsen</b> · Restschuld am Ende = Restschuld am Anfang – Tilgung</p>',
+    erinnerung:'<p>Rate (Annuität) ist vorgegeben · Zinsen = <span class="bruch"><span>Restschuld am Jahresanfang · 5</span><span>100</span></span> · <b>Tilgung = Rate – Zinsen</b> · Restschuld am Ende = Restschuld am Anfang – Tilgung</p>',
     aufgaben:[{...tabelle('annuitaet', [4]), nr:'3.1', frage:'Vervollständige den Tilgungsplan des Annuitätendarlehens. Runde die Zinsen auf Cent.', ok:'Richtig! Die Rate bleibt gleich, die Tilgung steigt.',
       danach:{typ:'mc', frage:'Was steigt beim Annuitätendarlehen von Jahr zu Jahr?', options:['die Tilgung', 'die Zinsen', 'die Rate'], correct:[0], mischen:false,
         why:{1:'Die Zinsen sinken, weil die Restschuld sinkt.', 2:'Die Rate bleibt gleich – das ist das Besondere am Annuitätendarlehen.'}}}]},
   {id:'fest', kurz:'Festdarlehen', titel:'Festdarlehen', html:() => `<h2>Festdarlehen (Fälligkeitsdarlehen)</h2>
     <div class="info"><p>Während der Laufzeit werden <b>nur Zinsen</b> gezahlt. Getilgt wird <b>einmalig am Ende</b> – der ganze Kreditbetrag auf einmal. Weil die Schuld bis zum Schluss voll bestehen bleibt, sind die <b>Zinsen jedes Jahr gleich hoch</b>.</p></div>
     ${saeulen('fest', 'Festdarlehen')}${LEGENDE}`,
-    material:ANGEBOT, erinnerung:'<p>Tilgung erst im letzten Jahr (40.000,00 €) · Zinsen = Restschuld am Jahresanfang · 5 : 100 · Rate = Zinsen + Tilgung</p>',
+    material:ANGEBOT, erinnerung:'<p>Tilgung erst im letzten Jahr (40.000,00 €) · Zinsen = <span class="bruch"><span>Restschuld am Jahresanfang · 5</span><span>100</span></span> · Rate = Zinsen + Tilgung</p>',
     aufgaben:[{...tabelle('fest', [1, 5]), nr:'4.1', frage:'Vervollständige den Tilgungsplan des Festdarlehens.', ok:'Richtig! Bis zum Schluss nur Zinsen, am Ende die ganze Tilgung.',
       danach:{typ:'mc', frage:'Was muss Jakob beim Festdarlehen unbedingt einplanen?', options:['Am Ende der Laufzeit muss er 42.000,00 € auf einmal zahlen können.', 'Die Rate steigt jedes Jahr ein wenig.', 'Die Zinsen werden jedes Jahr kleiner.'], correct:[0],
         why:{1:'Die Rate bleibt bis zum letzten Jahr gleich (nur Zinsen) – dann kommt die ganze Tilgung dazu.', 2:'Die Restschuld bleibt bis zum Ende 40.000,00 €, deshalb bleiben auch die Zinsen gleich.'}}}]},
