@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="de" data-trainer="zins">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zinsrechnung – vibe learning</title>
+<!--
+  Zinsrechnung (BWR 9, Finanzierung; passend zum Selbstlernheft „Zinsrechnung“ und zum Unterrichtsentwurf „Einführung Zinsrechnung“):
+  Erarbeitung: Prozentrechnung → Jahreszinsen mit der Prozentrechnung → Begriffe K, p, Z → Jahreszinsformel →
+  Teil des Jahres (Lern-Chat) → Tageszinsformel → Zinstage (kaufmännisch: Starttag zählt nicht, Endtag zählt mit,
+  Monat = 30 Tage, der 31. zählt wie der 30.) → alles zusammen → Vergleich Dispo/Ratenkredit → Überblick.
+  Endlos: 6 Stufen mit Zufallsaufgaben (Aufgaben.endlos aus lib/aufgaben.js), Generatoren in ENDLOS.
+  Zahlen der Erarbeitung mit Python nachgerechnet (kaufmännisch gerundet).
+  Gespeichert: zins-stand {schritt, erledigt}, zins-endlos {stufe, rekord}, zins-modus ('lernen' | 'endlos').
+-->
+<script src="../../../katalog.js"></script>
+<script src="../../../nav.js"></script>
+<script src="../../../sync.js"></script>
+<script>
+(function(){var t=null;try{t=localStorage.getItem('wenn-theme');}catch(e){}
+document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');})();
+</script>
+<link rel="stylesheet" href="../../bwr.css">
+<link rel="stylesheet" href="../../../lib/aufgaben.css">
+<script src="../../../lib/aufgaben.js"></script>
+<style>
+.wrap{max-width:1000px}
+.modi{display:inline-flex;gap:4px;margin-left:auto}
+.info{border-left:4px solid var(--accent);padding:2px 0 2px 12px;margin:0 0 12px}
+.alltag{background:var(--panel2);border-radius:10px;padding:8px 12px;margin:0 0 12px}
+.alltag b:first-child{display:block;font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.formel{display:inline-block;border:2px solid var(--accent);border-radius:8px;padding:6px 14px;font-weight:700;margin:4px 0 12px;font-size:17px}
+.sprech{display:flex;gap:10px;align-items:flex-start;margin:0 0 12px}
+.sprech .ava{flex:none;width:42px;height:42px;border-radius:50%;background:var(--panel2);border:1px solid var(--border);display:grid;place-items:center;font-size:24px}
+.sprech .blase{background:var(--panel2);border:1px solid var(--border);border-radius:4px 14px 14px 14px;padding:8px 12px}
+.vgl{border-collapse:collapse;margin:4px 0 12px;font-size:15px}
+.vgl th,.vgl td{border:1px solid var(--border);padding:5px 10px;text-align:left}
+.vgl th{background:var(--panel2)}
+.vgl td.pfeil{text-align:center;color:var(--muted);border-left:none;border-right:none}
+.zeit{width:100%;max-width:640px;height:auto;display:block;margin:4px 0 12px}
+.zeit text{fill:var(--text);font:12px system-ui,sans-serif;text-anchor:middle}
+.zeit .m{fill:var(--panel2);stroke:var(--border)} .zeit .on{fill:var(--accent);fill-opacity:.35;stroke:var(--accent)}
+.zeit .l{stroke:var(--text)} .zeit .k{font-weight:700}
+.regeln{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px;margin:0 0 12px}
+.regeln div{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:8px 10px;font-size:14px}
+.regeln b{display:block}
+.rw{font-family:var(--mono);font-size:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="bar"><div class="brand">Zins<span>rechnung</span></div>
+    <div class="modi" role="group" aria-label="Modus"><button class="btn" type="button" data-modus="lernen">Erarbeitung</button><button class="btn" type="button" data-modus="endlos">Endlos ∞</button></div></div>
+  <div id="app"></div>
+  <div id="endlos" hidden></div>
+</div>
+<script>
+'use strict';
+const {eur} = Aufgaben;
+const B = (z, n) => `<span class="bruch"><span>${z}</span><span>${n}</span></span>`;
+const ZF = 'Z = ' + B('K · p', '100'), TF = 'Z = ' + B('K · p · t', '100 · 360');
+const JONAS = '<div class="mt">Material: Kreditangebot für Jonas</div><p>Kreditbetrag: <b>2.500,00 €</b> · Zinssatz: <b>5,35 % p. a.</b> · Rückzahlung samt Zinsen am Ende der Laufzeit</p>';
+
+// Zeitleiste Juni bis Oktober für das Beispiel 01.06. bis 01.10. (Starttag zählt nicht, Endtag zählt mit)
+function zeitleiste(){
+  const M = [['Jun', '29'], ['Jul', '30'], ['Aug', '30'], ['Sep', '30'], ['Okt', '1']];
+  let h = '<svg class="zeit" viewBox="0 0 640 110" role="img" aria-label="Zeitleiste: 29 Tage im Juni, je 30 Tage im Juli, August und September, 1 Tag im Oktober, zusammen 120 Tage">';
+  M.forEach((m, i) => {
+    const x = 20 + i * 120, w = i === 4 ? 12 : i === 0 ? 116 : 120, x0 = i === 0 ? x + 4 : x;
+    h += `<rect class="m" x="${x}" y="30" width="120" height="34"/><rect class="on" x="${x0}" y="30" width="${w}" height="34"/>`
+      + `<text x="${x + 60}" y="22">${m[0]}</text><text class="k" x="${x + (i === 4 ? 6 : 60)}" y="84">${m[1]}</text>`;
+  });
+  return h + '<line class="l" x1="24" y1="26" x2="24" y2="70"/><text x="20" y="102" style="text-anchor:start">01.06. (zählt nicht)</text>'
+    + '<line class="l" x1="500" y1="26" x2="500" y2="70"/><text x="520" y="102">01.10. (zählt mit)</text></svg>';
+}
+
+/* ================= Erarbeitung ================= */
+const SCHRITTE = [
+  {id:'start', kurz:'Start', titel:'Jonas braucht Geld', html:`<h2>Jonas braucht Geld</h2>
+    <div class="sprech"><div class="ava">🧑</div><div class="blase">„Für meine erste eigene Wohnung brauche ich Möbel. Für Esszimmer und Sofa reicht mein Erspartes leider nicht ganz – mir fehlen <b>2.500,00 €</b>. Die Bank würde mir das Geld leihen. Aber <b>wie teuer wird das für mich?</b>“</div></div>
+    <div class="info"><p>Wer sich Geld leiht, muss es nicht nur zurückzahlen, sondern zahlt zusätzlich einen <b>Preis für das Leihen</b>: die <b>Zinsen</b>. Umgekehrt bekommst du Zinsen, wenn du der Bank dein Geld überlässt (z. B. auf einem Sparkonto).</p>
+    <p>Um Zinsen zu berechnen, brauchst du etwas, das du schon kannst: die <b>Prozentrechnung</b>. Deshalb fängst du damit an und lernst dann Schritt für Schritt Neues dazu.</p></div>
+    <div class="alltag"><b>Aus dem Alltag · Zinsen sind wie Miete</b>Leihst du dir ein Auto, zahlst du Miete dafür. Leihst du dir Geld, zahlst du Zinsen – je mehr Geld und je länger, desto teurer.</div>`},
+
+  {id:'prozent', kurz:'1 Prozent', titel:'Prozentrechnung wiederholen', html:`<h2>1 · Prozentrechnung wiederholen</h2>
+    <div class="info"><p>In der Prozentrechnung gibt es drei Größen:</p>
+    <ul><li><b>Grundwert (G)</b> – das Ganze, also 100 %</li><li><b>Prozentsatz (p)</b> – wie viel Prozent davon, z. B. 20 %</li><li><b>Prozentwert (P)</b> – der Teil in Euro, der zum Prozentsatz gehört</li></ul></div>
+    <p><span class="formel">P = ${B('G · p', '100')}</span></p>
+    <div class="alltag"><b>Aus dem Alltag · Sneaker im Sale</b>Sneaker kosten 80,00 € (Grundwert). Im Sale gibt es 20 % Rabatt (Prozentsatz). Der Rabatt beträgt ${B('80,00 € · 20', '100')} = <b>16,00 €</b> (Prozentwert).</div>`,
+    erinnerung:`<p>P = ${B('G · p', '100')} · Grundwert = das Ganze (100 %)</p>`,
+    aufgaben:[
+      {typ:'zuordnen', nr:'1.1', frage:'Ordne die Angaben der richtigen Größe der Prozentrechnung zu.', ok:'Richtig zugeordnet!',
+        felder:[['g', 'Grundwert'], ['p', 'Prozentsatz'], ['w', 'Prozentwert']],
+        karten:[{t:'Preis der Sneaker: 80,00 €', z:'g'}, {t:'20 % Rabatt', z:'p'}, {t:'Rabatt: 16,00 €', z:'w'},
+          {t:'Nettopreis einer Gitarre: 1.200,00 €', z:'g'}, {t:'19 % Umsatzsteuer', z:'p'}, {t:'Umsatzsteuer: 228,00 €', z:'w'}]},
+      {typ:'zahlen', nr:'1.2', frage:'Berechne jeweils den Prozentwert.', felder:[
+        {t:'a) 15 % Rabatt auf eine Jacke für 240,00 €', l:36, e:'€', h:B('240,00 € · 15', '100')},
+        {t:'b) 19 % Umsatzsteuer auf einen Nettobetrag von 1.500,00 €', l:285, e:'€', h:B('1.500,00 € · 19', '100')},
+        {t:'c) 2 % Skonto auf einen Rechnungsbetrag von 4.760,00 €', l:95.2, e:'€', h:B('4.760,00 € · 2', '100')}],
+        ok:'Richtig! Prozentwert = Grundwert · Prozentsatz : 100.'}]},
+
+  {id:'jahr', kurz:'2 Ein Jahr', titel:'Zinsen für ein Jahr', html:`<h2>2 · Zinsen für ein Jahr</h2>
+    <div class="info"><p>Jonas leiht sich die 2.500,00 € zunächst für <b>genau ein Jahr</b>. „p. a.“ heißt <b>pro anno</b> = pro Jahr: Der Zinssatz gilt immer für ein ganzes Jahr.</p>
+    <p>Berechne die Zinsen so, wie du in Schritt 1 den Prozentwert berechnet hast.</p></div>`,
+    material:JONAS,
+    aufgaben:[
+      {typ:'zahlen', nr:'2.1', frage:'Berechne mithilfe der Prozentrechnung, wie viele Zinsen Jonas für ein Jahr zahlen muss.', felder:[{t:'Zinsen für ein Jahr', l:133.75, e:'€', h:'Rechne wie beim Prozentwert: ' + B('2.500,00 € · 5,35', '100')}],
+        ok:`Richtig: ${B('2.500,00 € · 5,35', '100')} = 133,75 €. Jonas zahlt also nach einem Jahr 2.633,75 € zurück.`,
+        danach:{typ:'mc', frage:'Welche Angabe hat bei Jonas die Rolle des Grundwerts?', options:['der Kreditbetrag von 2.500,00 €', 'der Zinssatz von 5,35 %', 'die Zinsen von 133,75 €'], correct:[0], mischen:false,
+          why:{1:'Der Zinssatz entspricht dem Prozentsatz.', 2:'Die Zinsen sind der Teil in Euro – sie entsprechen dem Prozentwert.'}}}]},
+
+  {id:'begriffe', kurz:'3 Begriffe', titel:'Von der Prozent- zur Zinsrechnung', html:`<h2>3 · Von der Prozent- zur Zinsrechnung</h2>
+    <div class="info"><p>Die Zinsrechnung ist Prozentrechnung mit eigenen Namen:</p></div>
+    <table class="vgl"><tr><th>Prozentrechnung</th><th></th><th>Zinsrechnung</th><th>bei Jonas</th></tr>
+    <tr><td>Grundwert G</td><td class="pfeil">→</td><td><b>Kapital K</b> (Kreditbetrag oder Guthaben)</td><td>2.500,00 €</td></tr>
+    <tr><td>Prozentsatz p</td><td class="pfeil">→</td><td><b>Zinssatz p</b> (in % pro Jahr)</td><td>5,35 % p. a.</td></tr>
+    <tr><td>Prozentwert P</td><td class="pfeil">→</td><td><b>Zinsen Z</b> (Preis in €)</td><td>133,75 €</td></tr></table>`,
+    aufgaben:[
+      {typ:'zuordnen', nr:'3.1', frage:'Ordne die Begriffe und Beispiele der passenden Größe der Zinsrechnung zu.', ok:'Alles richtig zugeordnet!',
+        felder:[['k', 'Kapital K'], ['p', 'Zinssatz p'], ['z', 'Zinsen Z']],
+        karten:[{t:'entspricht dem Grundwert', z:'k'}, {t:'Kredit über 2.500,00 €', z:'k'}, {t:'Guthaben von 800,00 € auf dem Sparkonto', z:'k'},
+          {t:'entspricht dem Prozentsatz', z:'p'}, {t:'5,35 % p. a.', z:'p'}, {t:'gilt immer für ein ganzes Jahr', z:'p'},
+          {t:'entspricht dem Prozentwert', z:'z'}, {t:'Preis für das Leihen von Geld in Euro', z:'z'}, {t:'133,75 €, die Jonas zusätzlich zahlt', z:'z'}]}]},
+
+  {id:'jahresformel', kurz:'4 Jahreszinsen', titel:'Die Jahreszinsformel', html:`<h2>4 · Die Jahreszinsformel</h2>
+    <div class="info"><p>Ersetzt du in der Formel der Prozentrechnung die Begriffe, erhältst du die <b>Jahreszinsformel</b>. Sie gilt, wenn das Geld <b>ein ganzes Jahr</b> geliehen oder angelegt wird.</p></div>
+    <p><span class="formel">${ZF}</span></p>
+    <p class="muted">Beispiel Jonas: Z = ${B('2.500,00 € · 5,35', '100')} = 133,75 €</p>`,
+    erinnerung:`<p>${ZF} · K = Kapital, p = Zinssatz, Z = Zinsen · Ergebnis auf Cent runden</p>`,
+    material:'<div class="mt">Material: drei Kredite mit einem Jahr Laufzeit</div><p>a) 5.000,00 € zu 5 % p. a. · b) 134.500,00 € zu 3,92 % p. a. · c) 7.300,00 € zu 9,6 % p. a.</p>',
+    aufgaben:[
+      {typ:'zahlen', nr:'4.1', frage:'Berechne die Zinsen, die für diese Kredite in einem Jahr anfallen.', felder:[
+        {t:'a) 5.000,00 € zu 5 %', l:250, e:'€', h:'Z = ' + B('5.000,00 € · 5', '100')},
+        {t:'b) 134.500,00 € zu 3,92 %', l:5272.4, e:'€', h:'Z = ' + B('134.500,00 € · 3,92', '100')},
+        {t:'c) 7.300,00 € zu 9,6 %', l:700.8, e:'€', h:'Z = ' + B('7.300,00 € · 9,6', '100')}],
+        ok:'Richtig! Mit der Jahreszinsformel geht das schnell.'}]},
+
+  {id:'teil', kurz:'5 Teil des Jahres', titel:'Zinsen für einen Teil des Jahres', html:`<h2>5 · Zinsen für einen Teil des Jahres</h2>
+    <div class="info"><p>Jonas überlegt: Vielleicht braucht er das Geld gar nicht ein ganzes Jahr, weil er bald sein Weihnachtsgeld bekommt. Wie ändern sich dann die Zinsen?</p>
+    <p>Wichtig: Banken rechnen mit dem <b>kaufmännischen Jahr</b>: <b>1 Jahr = 360 Tage</b>, <b>1 Monat = 30 Tage</b>.</p></div>`,
+    aufgaben:[{typ:'chat', name:'Zins-Coach', bild:'🏦', nachrichten:[
+      'Hallo! Für ein ganzes Jahr zahlt Jonas 133,75 € Zinsen. Finden wir zusammen heraus, was kürzere Laufzeiten kosten.',
+      {bot:'Jonas leiht sich das Geld nur ein <b>halbes Jahr</b>. Wie viele Zinsen zahlt er?', antworten:[
+        {t:'die Hälfte der Jahreszinsen', ok:true, r:'Genau! Halbe Zeit – halbe Zinsen.'},
+        {t:'genauso viel wie für ein Jahr', r:'Nein – Zinsen sind der Preis für die <b>Zeit</b>, in der man das Geld hat. Halbe Zeit, halbe Zinsen.'},
+        {t:'das Doppelte', r:'Nein – kürzere Zeit heißt weniger Zinsen. Es ist die Hälfte.'}]},
+      {bot:'Wie viele Tage hat ein halbes Jahr im kaufmännischen Jahr?', zahl:{l:180, e:'Tage'}, r:'Richtig: 360 : 2 = 180 Tage.', rFalsch:'Das kaufmännische Jahr hat 360 Tage, die Hälfte sind 180 Tage.'},
+      {bot:'Welcher Anteil des Jahres sind 180 Tage?', antworten:[
+        {t:'180 von 360 Tagen (180/360)', ok:true, r:'Genau! 180/360 = ½.'},
+        {t:'180 von 365 Tagen (180/365)', r:'Banken rechnen mit 360 Tagen im Jahr – also 180/360.'},
+        {t:'360 von 180 Tagen (360/180)', r:'Andersherum: Der Teil (180 Tage) steht oben, das ganze Jahr (360 Tage) unten.'}]},
+      {bot:'Berechne die Zinsen für 180 Tage: 133,75 € · 180/360. Runde auf Cent.', zahl:{l:66.88, e:'€', tol:0.011}, r:'Richtig: 66,88 €.', rFalsch:'133,75 € · 180 : 360 = 66,875 € ≈ 66,88 €.'},
+      {bot:'Jonas möchte das Geld jetzt <b>130 Tage</b> leihen. Mit welchem Bruch multiplizierst du die Jahreszinsen?', antworten:[
+        {t:'130/360', ok:true, r:'Genau!'}, {t:'130/100', r:'Die 100 gehört zur Prozentrechnung. Für die Zeit rechnest du Tage durch 360.'},
+        {t:'360/130', r:'Der Teil (130 Tage) gehört nach oben, das Jahr (360 Tage) nach unten.'}]},
+      {bot:'Berechne die Zinsen für 130 Tage: 133,75 € · 130/360. Runde auf Cent.', zahl:{l:48.30, e:'€', tol:0.011}, r:'Richtig: 48,30 €.', rFalsch:'133,75 € · 130 : 360 = 48,298… € ≈ 48,30 €.'},
+      'Super! Du hast die Jahreszinsen mit dem Anteil des Jahres (Tage : 360) multipliziert. Genau daraus entsteht im nächsten Schritt die <b>Tageszinsformel</b>.']}]},
+
+  {id:'tagesformel', kurz:'6 Tageszinsen', titel:'Die Tageszinsformel', html:`<h2>6 · Die Tageszinsformel</h2>
+    <div class="info"><p>Jahreszinsen · Anteil des Jahres = ${B('K · p', '100')} · ${B('t', '360')}. Zusammengefasst ergibt das die <b>Tageszinsformel</b>. t steht für die Anzahl der <b>Zinstage</b>.</p></div>
+    <p><span class="formel">${TF}</span></p>
+    <p class="muted">Beispiel Jonas, 130 Tage: Z = ${B('2.500,00 € · 5,35 · 130', '100 · 360')} = 48,30 €</p>`,
+    erinnerung:`<p>${TF} · t = Zinstage (Jahr = 360 Tage)</p>`,
+    aufgaben:[
+      {typ:'luecken', nr:'6.1', frage:'Lies die Werte aus der Angabe ab und setze sie in die Tageszinsformel ein: „Kredit über 5.700,00 €; Zinssatz 5,2 % p. a.; Laufzeit 140 Tage“.',
+        text:'K = [[5.700,00 €|5,2|140|360]] &nbsp; p = [[5,2|5.700,00 €|140|100]] &nbsp; t = [[140|360|5,2|100]] &nbsp; Im Nenner steht [[100 · 360|100 · 365|140 · 360]].', ok:'Richtig eingesetzt!'},
+      {typ:'zahlen', nr:'6.2', frage:'Berechne die Zinsen.', material:'<div class="mt">Material</div><p>a) Kredit 5.700,00 €, 5,2 % p. a., 140 Tage · b) Kredit 67.000,00 €, 5,8 % p. a., 320 Tage</p>', felder:[
+        {t:'a) Zinsen', l:115.27, e:'€', tol:0.011, h:'Z = ' + B('5.700,00 € · 5,2 · 140', '100 · 360')},
+        {t:'b) Zinsen', l:3454.22, e:'€', tol:0.011, h:'Z = ' + B('67.000,00 € · 5,8 · 320', '100 · 360')}],
+        ok:'Richtig! a) 115,27 € · b) 3.454,22 €'}]},
+
+  {id:'tage', kurz:'7 Zinstage', titel:'Zinstage berechnen', html:`<h2>7 · Zinstage berechnen</h2>
+    <div class="info"><p>Oft steht in der Angabe nicht die Zahl der Tage, sondern ein <b>Datum</b>: „vom 01.06. bis 01.10.“. Dann zählst du die Zinstage nach festen Regeln:</p></div>
+    <div class="regeln"><div><b>Startmonat</b>Der Starttag zählt <b>nicht</b> mit: 30 – Starttag</div><div><b>Monate dazwischen</b>je <b>30 Tage</b></div>
+    <div><b>Endmonat</b>Der Endtag zählt <b>mit</b></div><div><b>Der 31.</b>zählt wie der 30.</div></div>
+    ${zeitleiste()}
+    <p class="muted">Beispiel 01.06. bis 01.10.: 29 (Jun) + 30 (Jul) + 30 (Aug) + 30 (Sep) + 1 (Okt) = 120 Tage</p>`,
+    erinnerung:'<p>Startmonat: 30 – Starttag · volle Monate dazwischen: je 30 Tage · Endmonat: Endtag · der 31. zählt wie der 30.</p>',
+    aufgaben:[
+      {typ:'tabelle', nr:'7.1', frage:'Ermittle die Zinstage. Vervollständige dazu die Tabelle.', ok:'Richtig! So zählst du Zinstage sicher.',
+        spalten:['Zeitraum', 'Startmonat', 'Monate dazwischen', 'Endmonat', 'Zinstage'],
+        zeilen:[['10.03. bis 25.05.', {l:20}, {l:30}, {l:25}, {l:75}], ['15.01. bis 30.04.', {l:15}, {l:60}, {l:30}, {l:105}],
+          ['20.02. bis 15.08.', {l:10}, {l:150}, {l:15}, {l:175}], ['05.09. bis 31.12.', {l:25}, {l:60}, {l:30}, {l:115}]],
+        hinweise:{1:'Startmonat: 30 – Starttag', 2:'nur volle Monate zwischen Start- und Endmonat, je 30 Tage', 3:'Endmonat: der Endtag zählt mit (der 31. zählt wie der 30.)', 4:'Zinstage = Summe der drei Spalten davor'}},
+      {typ:'mc', nr:'7.2', frage:'Ein Kredit läuft vom 01.07. bis 31.12. Wie viele Zinstage sind das?', options:['179 Tage', '180 Tage', '183 Tage', '184 Tage'], correct:[0], mischen:false,
+        why:{1:'Der Starttag 01.07. zählt nicht mit: Im Juli sind es nur 29 Tage.', 2:'Bei der Bank hat jeder Monat 30 Tage, nicht 31.', 3:'Bei der Bank hat jeder Monat 30 Tage, und der Starttag zählt nicht.'},
+        after:'29 (Jul) + 4 · 30 (Aug–Nov) + 30 (Dez, der 31. zählt wie der 30.) = 179 Tage'}]},
+
+  {id:'zusammen', kurz:'8 Zusammen', titel:'Zinstage und Zinsen', html:`<h2>8 · Alles zusammen</h2>
+    <div class="info"><p>Jetzt kombinierst du beides: Erst die <b>Zinstage</b> ermitteln, dann die <b>Tageszinsformel</b> anwenden.</p></div>`,
+    erinnerung:`<p>${TF} · Startmonat: 30 – Starttag · Monate dazwischen je 30 · Endtag zählt mit</p>`,
+    material:'<div class="mt">Material</div><p>a) Kredit 5.700,00 €, 5,2 % p. a., Laufzeit vom 15.01. bis 30.04.<br>b) Kredit 17.300,00 €, 3,2 % p. a., Laufzeit vom 01.07. bis 31.12.</p>',
+    aufgaben:[
+      {typ:'zahlen', nr:'8.1', frage:'Ermittle für beide Kredite die Zinstage und berechne die Zinsen.', felder:[
+        {t:'a) Zinstage', l:105, e:'Tage', tol:0, h:'15 (Jan) + 30 (Feb) + 30 (Mär) + 30 (Apr)'},
+        {t:'a) Zinsen', l:86.45, e:'€', tol:0.011, h:'Z = ' + B('5.700,00 € · 5,2 · 105', '100 · 360')},
+        {t:'b) Zinstage', l:179, e:'Tage', tol:0, h:'29 (Jul) + 4 · 30 (Aug–Nov) + 30 (Dez)'},
+        {t:'b) Zinsen', l:275.26, e:'€', tol:0.011, h:'Z = ' + B('17.300,00 € · 3,2 · 179', '100 · 360')}],
+        ok:'Richtig! a) 105 Tage, 86,45 € · b) 179 Tage, 275,26 €'}]},
+
+  {id:'vergleich', kurz:'9 Vergleich', titel:'Dispo oder Kredit?', html:`<h2>9 · Dispo oder Kredit?</h2>
+    <div class="info"><p>Jonas könnte sich auch einfach sein <b>Girokonto überziehen</b> (Dispositionskredit, kurz „Dispo“). Das ist bequem – aber ist es auch günstig?</p></div>
+    <div class="alltag"><b>Aus dem Alltag · Konto im Minus</b>Mit der ersten Bankkarte bekommen viele einen Dispo. Er ist schnell genutzt, die Zinsen sind aber meist <b>deutlich höher</b> als bei einem Ratenkredit.</div>`,
+    material:'<div class="mt">Material: zwei Möglichkeiten für 2.500,00 €, jeweils 130 Tage</div><p>A) Kredit der Bank: 5,35 % p. a. · B) Dispo auf dem Girokonto: 11,5 % p. a.</p>',
+    erinnerung:`<p>${TF}</p>`, erinnerungZu:true,
+    aufgaben:[
+      {typ:'zahlen', nr:'9.1', frage:'Berechne die Zinsen für beide Möglichkeiten und ermittle den Unterschied.', felder:[
+        {t:'A) Zinsen beim Kredit', l:48.30, e:'€', tol:0.011, h:'Das hast du in Schritt 6 schon berechnet.'},
+        {t:'B) Zinsen beim Dispo', l:103.82, e:'€', tol:0.011, h:'Z = ' + B('2.500,00 € · 11,5 · 130', '100 · 360')},
+        {t:'Unterschied', l:55.52, e:'€', tol:0.011, h:'Dispozinsen – Kreditzinsen'}],
+        ok:'Richtig! Der Dispo kostet mehr als doppelt so viel.',
+        danach:{typ:'mc', frage:'Wozu rätst du Jonas? Wähle die passende Begründung.', options:[
+          'Er sollte den Kredit nehmen, weil er damit 55,52 € Zinsen spart.',
+          'Er sollte den Dispo nehmen, weil er dort keine Zinsen zahlt.',
+          'Es ist egal, weil beide 130 Tage laufen.'], correct:[0],
+          why:{1:'Auch beim Dispo zahlt man Zinsen – sogar deutlich höhere.', 2:'Gleiche Laufzeit, aber verschiedene Zinssätze – das macht den Unterschied.'}}}]},
+
+  {id:'ueberblick', kurz:'Überblick', titel:'Überblick Zinsrechnung', aufgaben:[
+    {typ:'luecken', frage:'Vervollständige den Überblick und übertrage ihn in dein Heft.', ok:'Richtig! Weiter üben kannst du oben im Modus „Endlos ∞“.',
+      text:'Die Zinsrechnung ist [[Prozentrechnung|Bruchrechnung|Zinseszinsrechnung]] mit eigenen Begriffen: Das Kapital K entspricht dem [[Grundwert|Prozentwert|Prozentsatz]], die Zinsen Z entsprechen dem [[Prozentwert|Grundwert|Prozentsatz]].<br>'
+        + 'Der Zinssatz gilt immer für [[ein Jahr|einen Monat|einen Tag]]. Im kaufmännischen Jahr hat ein Jahr [[360|365|100]] Tage und ein Monat [[30|31|28]] Tage.<br>'
+        + 'Für Zinsen eines ganzen Jahres gilt Z = K · p : [[100|360|36.000]], für einzelne Tage Z = K · p · t : [[(100 · 360)|100|360]].<br>'
+        + 'Bei den Zinstagen zählt der Starttag [[nicht|doppelt|immer]] mit, der Endtag zählt [[mit|nicht mit|halb]].'}]}
+];
+
+/* ================= Endlos: Zufallsaufgaben ================= */
+const ri = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+const pick = l => l[Math.floor(Math.random() * l.length)];
+const r2 = n => Math.round((n + Number.EPSILON) * 100) / 100;
+const zs = n => n.toLocaleString('de-DE', {maximumFractionDigits:2}) + ' %';      // Zinssatz 5,35 %
+const zz = n => n.toLocaleString('de-DE', {maximumFractionDigits:2});            // Zahl ohne Einheit
+const MON = ['', 'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
+const MT = [0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+const dat = (d, m) => String(d).padStart(2, '0') + '.' + String(m).padStart(2, '0') + '.';
+const kapital = () => pick([ri(10, 60) * 50, ri(20, 200) * 100, ri(10, 160) * 500]);
+const satz = () => pick([ri(4, 24) / 2, ri(20, 120) / 10, ri(60, 240) * 5 / 100]);   // 2–12 % in 0,5-, 0,1- oder 0,05-Schritten
+const zinsen = (K, p, t) => r2(K * p * (t == null ? 360 : t) / 36000);
+// Zeitraum im selben Jahr: Februar nur bis zum 27. (Monatsende im Februar ist ein Sonderfall), der 31. kommt vor
+function zeitraum(){
+  for (;;){
+    const m1 = ri(1, 12), m2 = ri(m1, 12), tag = m => (MT[m] === 31 && Math.random() < 0.15) ? 31 : ri(1, m === 2 ? 27 : 30);
+    const d1 = tag(m1), d2 = tag(m2), t = (m2 - m1) * 30 + Math.min(d2, 30) - Math.min(d1, 30);
+    if (t >= 10 && t <= 355) return {d1, m1, d2, m2, t};
+  }
+}
+function tageWeg(z){
+  const a = 30 - Math.min(z.d1, 30), n = z.m2 - z.m1 - 1, e = Math.min(z.d2, 30);
+  if (z.m1 === z.m2) return `${e} – ${Math.min(z.d1, 30)} = ${z.t} Tage (gleicher Monat: Endtag – Starttag)`;
+  const m31 = (d, m) => MON[m] + (d === 31 ? ', der 31. zählt wie der 30.' : '');
+  return `${a} (${m31(z.d1, z.m1)})${n > 0 ? ` + ${n} · 30 (${n === 1 ? MON[z.m1 + 1] : MON[z.m1 + 1].slice(0, 3) + '–' + MON[z.m2 - 1].slice(0, 3)})` : ''} + ${e} (${m31(z.d2, z.m2)}) = ${z.t} Tage`;
+}
+const tageHinweis = z => z.m1 === z.m2 ? 'Gleicher Monat: Endtag – Starttag'
+  : `Startmonat ${MON[z.m1]}: 30 – ${Math.min(z.d1, 30)} = ${30 - Math.min(z.d1, 30)} Tage · dann je 30 Tage für jeden vollen Monat dazwischen · Endmonat: der Endtag zählt mit${z.d1 === 31 || z.d2 === 31 ? ' · der 31. zählt wie der 30.' : ''}`;
+const zf = (K, p, t) => t == null ? 'Z = ' + B(`${eur(K)} · ${zz(p)}`, '100') : 'Z = ' + B(`${eur(K)} · ${zz(p)} · ${t}`, '100 · 360');
+const weg = (K, p, t) => `<span class="rw">${zf(K, p, t)} = ${eur(zinsen(K, p, t))}</span>`;
+const kredit = () => pick(['Ein Kredit', 'Ein Darlehen', 'Ein Bankkredit']);
+
+const ENDLOS = [
+  {name:'Prozentrechnung', neu(){
+    const f = pick([
+      () => { const G = ri(4, 60) * 5, p = pick([10, 15, 20, 25, 30, 40]); return [G, p, `${pick(['Sneaker', 'Kopfhörer', 'Eine Jacke', 'Ein Fahrradhelm', 'Eine Smartwatch'])} für ${eur(G)} ${pick(['gibt es', 'wird'])} im Sale mit ${p} % Rabatt angeboten. Berechne den Rabatt in Euro.`, 'Rabatt']; },
+      () => { const G = ri(10, 500) * 10, p = pick([19, 19, 7]); return [G, p, `Saitgig kauft ${p === 7 ? 'Fachbücher' : pick(['Gitarrensaiten', 'Verstärker', 'Notenständer'])} für ${eur(G)} netto. Berechne die Umsatzsteuer (${p} %).`, 'Umsatzsteuer']; },
+      () => { const G = ri(20, 900) * 10, p = pick([2, 3]); return [G, p, `Eine Rechnung über ${eur(G)} wird innerhalb der Skontofrist bezahlt. Berechne den Skontobetrag (${p} % Skonto).`, 'Skonto']; },
+      () => { const G = ri(80, 140) * 10, p = pick([2, 2.5, 3, 4]); return [G, p, `Eine Auszubildende verdient ${eur(G)} im Monat. Ihr Gehalt steigt um ${zs(p)}. Berechne die Erhöhung in Euro.`, 'Erhöhung']; }]);
+    const [G, p, text, wort] = f(), P = r2(G * p / 100);
+    return {typ:'zahlen', frage:text, felder:[{t:wort, l:P, e:'€', tol:0.011, h:'P = ' + B(`${eur(G)} · ${zz(p)}`, '100')}],
+      ok:`Richtig! <span class="rw">P = ${B(`${eur(G)} · ${zz(p)}`, '100')} = ${eur(P)}</span>`};
+  }},
+  {name:'Jahreszinsen', neu(){
+    const K = kapital(), p = satz(), spar = Math.random() < 0.3, Z = zinsen(K, p);
+    const text = spar ? `Ein Guthaben von ${eur(K)} wird ein Jahr lang zu ${zs(p)} p. a. angelegt. Berechne die Zinsen, die die Bank gutschreibt.`
+      : `${kredit()} über ${eur(K)} läuft ein Jahr. Der Zinssatz beträgt ${zs(p)} p. a. Berechne die Zinsen.`;
+    return {typ:'zahlen', frage:text, felder:[{t:'Zinsen', l:Z, e:'€', tol:0.011, h:zf(K, p)}], ok:'Richtig! ' + weg(K, p)};
+  }},
+  {name:'Tageszinsen', neu(){
+    const K = kapital(), p = satz(), t = ri(10, 350), Z = zinsen(K, p, t);
+    return {typ:'zahlen', frage:`${kredit()} über ${eur(K)} zu ${zs(p)} p. a. läuft ${t} Tage. Berechne die Zinsen.`,
+      felder:[{t:'Zinsen', l:Z, e:'€', tol:0.011, h:zf(K, p, t)}], ok:'Richtig! ' + weg(K, p, t)};
+  }},
+  {name:'Zinstage', neu(){
+    const z = zeitraum();
+    return {typ:'zahlen', frage:`Ein Kredit läuft vom ${dat(z.d1, z.m1)} bis ${dat(z.d2, z.m2)} Ermittle die Zinstage.`,
+      felder:[{t:'Zinstage', l:z.t, e:'Tage', tol:0, h:tageHinweis(z)}], ok:`Richtig! <span class="rw">${tageWeg(z)}</span>`};
+  }},
+  {name:'Zinstage und Zinsen', neu(){
+    const z = zeitraum(), K = kapital(), p = satz(), Z = zinsen(K, p, z.t);
+    return {typ:'zahlen', frage:`${kredit()} über ${eur(K)} zu ${zs(p)} p. a. läuft vom ${dat(z.d1, z.m1)} bis ${dat(z.d2, z.m2)} Ermittle die Zinstage und berechne die Zinsen.`,
+      felder:[{t:'Zinstage', l:z.t, e:'Tage', tol:0, h:tageHinweis(z)}, {t:'Zinsen', l:Z, e:'€', tol:0.011, h:'Erst die Zinstage, dann ' + TF}],
+      ok:`Richtig! <span class="rw">${tageWeg(z)}</span><br>${weg(K, p, z.t)}`};
+  }},
+  {name:'Textaufgaben', neu(){
+    const z = zeitraum(), v = ri(0, 3);
+    let K, p, text, wort, end;
+    if (v === 0){ K = ri(10, 80) * 500; p = satz(); wort = 'Rückzahlungsbetrag'; end = 'Rückzahlungsbetrag = Kredit + Zinsen';
+      text = `Saitgig nimmt am ${dat(z.d1, z.m1)} einen kurzfristigen Bankkredit über ${eur(K)} zu ${zs(p)} p. a. auf. Am ${dat(z.d2, z.m2)} wird der Kredit samt Zinsen zurückgezahlt. Ermittle die Zinstage, die Zinsen und den Rückzahlungsbetrag.`; }
+    else if (v === 1){ K = ri(4, 40) * 50; p = ri(18, 26) / 2; wort = 'Zu zahlender Betrag'; end = 'Betrag = Überziehung + Zinsen';
+      text = `Lena überzieht ihr Girokonto vom ${dat(z.d1, z.m1)} bis ${dat(z.d2, z.m2)} um ${eur(K)}. Die Bank verlangt ${zs(p)} p. a. Dispozinsen. Ermittle die Zinstage, die Zinsen und den Betrag, den Lena insgesamt ausgleichen muss.`; }
+    else if (v === 2){ K = kapital(); p = ri(4, 16) / 4; wort = 'Guthaben am Ende'; end = 'Guthaben = Anlagebetrag + Zinsen';
+      text = `Mia legt am ${dat(z.d1, z.m1)} ${eur(K)} auf einem Tagesgeldkonto zu ${zs(p)} p. a. an. Am ${dat(z.d2, z.m2)} löst sie das Konto auf. Ermittle die Zinstage, die Zinsen und ihr Guthaben am Ende.`; }
+    else { K = ri(500, 9000) + pick([0, 0.5, 0.9]); p = pick([5, 6, 8, 9]); wort = 'Forderung mit Zinsen'; end = 'Rechnungsbetrag + Verzugszinsen';
+      text = `Ein Kunde von Saitgig sollte eine Rechnung über ${eur(K)} am ${dat(z.d1, z.m1)} bezahlen, zahlt aber erst am ${dat(z.d2, z.m2)} Saitgig berechnet ${zs(p)} p. a. Verzugszinsen. Ermittle die Zinstage, die Verzugszinsen und den Betrag, den der Kunde insgesamt zahlen muss.`; }
+    const Z = zinsen(K, p, z.t), G = r2(K + Z);
+    return {typ:'zahlen', frage:text, felder:[{t:'Zinstage', l:z.t, e:'Tage', tol:0, h:tageHinweis(z)}, {t:v === 3 ? 'Verzugszinsen' : 'Zinsen', l:Z, e:'€', tol:0.011, h:TF},
+      {t:wort, l:G, e:'€', tol:0.011, h:end}], ok:`Richtig! <span class="rw">${tageWeg(z)}</span><br>${weg(K, p, z.t)}<br><span class="rw">${end}: ${eur(K)} + ${eur(Z)} = ${eur(G)}</span>`};
+  }}
+];
+
+/* ================= Modus wechseln ================= */
+let endlos = null, modus = 'lernen';
+try { modus = localStorage.getItem('zins-modus') === 'endlos' ? 'endlos' : 'lernen'; } catch (e) {}
+function setModus(m){
+  modus = m; try { localStorage.setItem('zins-modus', m); } catch (e) {}
+  document.getElementById('app').hidden = m !== 'lernen';
+  document.getElementById('endlos').hidden = m !== 'endlos';
+  document.querySelectorAll('[data-modus]').forEach(b => { b.classList.toggle('on', b.dataset.modus === m); b.setAttribute('aria-pressed', b.dataset.modus === m); });
+  if (m === 'endlos' && !endlos) endlos = Aufgaben.endlos({el:'#endlos', key:'zins', stufen:ENDLOS});
+}
+document.querySelector('.modi').addEventListener('click', e => { const b = e.target.closest('[data-modus]'); if (b) setModus(b.dataset.modus); });
+Aufgaben.sequenz({el:'#app', key:'zins', schritte:SCHRITTE});
+setModus(modus);
+</script>
+</body>
+</html>

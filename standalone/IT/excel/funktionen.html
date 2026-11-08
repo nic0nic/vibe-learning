@@ -108,6 +108,7 @@ window.KATALOG = {
               tools: [
                 {id: 'bilanz', stufen: ['Bilanzposten', 'AV/UV · EK/FK', 'Goldene Regel'], datei: 'bilanz.html', titel: 'Bilanz-Modell', text: 'Wie Buchungen die Bilanz verändern: Aktivtausch, Passivtausch, Aktiv-Passiv-Mehrung und -Minderung – eingeteilt nach Bilanzposten, nach AV/UV und EK/FK oder nach der Goldenen Finanzierungsregel.'},
                 {id: 'bankkredit', datei: 'kredite-bank.html', titel: 'Kredite bei der Bank', text: 'Erarbeitung (Heft Kap. 5): Kreditfähigkeit und Kreditwürdigkeit zuordnen, Sicherheiten nennen, Disagio und Auszahlungsbetrag berechnen.'},
+                {id: 'zins', datei: 'zinsrechnung.html', titel: 'Zinsrechnung', text: 'Von der Prozentrechnung zur Tageszinsformel: Jahreszinsen, Tageszinsen und Zinstage selbstständig erarbeiten – mit Endlos-Modus (Heft Zinsrechnung).'},
                 {id: 'darlehen', datei: 'darlehensarten.html', titel: 'Darlehensarten', text: 'Abzahlungs-, Annuitäten- und Festdarlehen: Tilgungspläne als Formular ausfüllen, Zinskosten vergleichen und das passende Darlehen wählen (Heft Darlehensarten).'},
                 {id: 'kurzkredit', datei: 'kurzfristige-kredite.html', titel: 'Kontokorrent-, Dispo- und Lieferantenkredit', text: 'Erarbeitung zu kurzfristigen Krediten (Heft Kap. 7): Lieferantenkredit auf der Zeitleiste ausprobieren, Merkmale zuordnen, Skonto berechnen und Kosten vergleichen.'}
               ]},
@@ -1128,6 +1129,11 @@ main{max-width:1020px;margin:0 auto;padding:18px 16px}
  *                  aufgaben:[…], nach(el) (nach dem Zeichnen, für eigene Grafiken)}
  *       Schritte mit Aufgaben melden TrainerSync.event (modus 'erarbeitung', aufgabe = schritt.id),
  *       Info-Schritte gelten beim Weitergehen als erledigt. Gespeichert: <key>-stand {schritt, erledigt}.
+ *   Aufgaben.endlos({el, key, stufen})  Endlos-Modus wie in den Excel-Übungen: Stufen als Flammen, Serie und Rekord,
+ *       „Andere Aufgabe“ (Serie auf 0), „Nächste Aufgabe“ nach richtiger Lösung.
+ *       stufe = {name, neu() → Aufgabe (beliebiger Typ, frisch erzeugt; h/ok für Rechenweg nutzen)}
+ *       Meldet TrainerSync.event (modus 'endlos', stufe 1…n). Gespeichert: <key>-endlos {stufe, rekord:{stufe: n}}.
+ *       Rückgabe {neu() (neue Aufgabe), stufe(n) (Stufe wechseln)}. Vorbild: BWR/9II/finanzierung/zinsrechnung.html
  *   Aufgaben.mc.html(a, auswahl:Set, geprueft, reihenfolge?) / Aufgaben.mc.pruefen(a, auswahl) → {ok, gruende}
  *       für Seiten mit eigenem Ablauf (Excel-Erklärungen: tabelle.js, und-oder.html)
  *   Aufgaben.finde(antworten, text) → {i (Eintrag), wort, fast} oder null   (Freitext-Abgleich, auch einzeln nutzbar)
@@ -1555,7 +1561,48 @@ function sequenz(cfg){
   return {gehe, get schritt(){ return akt; }, stand};
 }
 
-window.Aufgaben = {baue, sequenz, mc, mehrfach, finde, zahl, eur, mischen, esc, bsText, TYPEN};
+/* ---------- Endlos (zufällige Aufgaben je Stufe, Serie und Rekord) ---------- */
+const FLAMME = n => `<svg viewBox="0 0 32 40" aria-hidden="true"><path d="M16 2C18 9 27 14 27 26C27 33 22 38 16 38C10 38 5 33 5 26C5 20 9 16 11 11C12 15 13 17 15 18C16 13 17 8 16 2Z"/><text x="16" y="32" text-anchor="middle">${n}</text></svg>`;
+function endlos(cfg){
+  const root = typeof cfg.el === 'string' ? document.querySelector(cfg.el) : cfg.el, ST = cfg.stufen, KEY = cfg.key + '-endlos';
+  let stand = {}; try { stand = JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) {}
+  if (!stand.rekord) stand.rekord = {};
+  let stufe = Math.min(Math.max(stand.stufe || 1, 1), ST.length), serie = 0, akt = null, geloest = false;
+  const speichern = () => { try { localStorage.setItem(KEY, JSON.stringify(stand)); } catch (e) {} if (window.TrainerSync) TrainerSync.changed(); };
+  root.innerHTML = '<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><linearGradient id="af-fg" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#d9230f"/><stop offset=".55" stop-color="#ff7a00"/><stop offset="1" stop-color="#ffd23f"/></linearGradient></defs></svg>'
+    + '<div class="af-kopf"><nav class="af-flammen" aria-label="Stufen"></nav><span class="af-serie"></span></div>'
+    + '<main class="karte af-inhalt" aria-live="polite"><h2 class="af-stufe"></h2><div class="af-aufgabe"></div>'
+    + '<div class="af-unten"><button class="btn" type="button" data-anders>↻ Andere Aufgabe</button><button class="btn haupt" type="button" data-naechste>Nächste Aufgabe ▶</button></div></main>';
+  const $ = s => root.querySelector(s);
+  function kopf(){
+    $('.af-flammen').innerHTML = ST.map((x, i) => `<button class="af-flamme${i + 1 === stufe ? ' on' : ''}" type="button" data-stufe="${i + 1}" title="Stufe ${i + 1}: ${esc(x.name)}" aria-label="Stufe ${i + 1}: ${esc(x.name)}" aria-pressed="${i + 1 === stufe}">${FLAMME(i + 1)}</button>`).join('');
+    $('.af-serie').innerHTML = `🔥 Serie: <b>${serie}</b> <span class="muted">· Rekord ${stand.rekord[stufe] || 0}</span>`;
+    $('.af-stufe').textContent = `Stufe ${stufe}: ${ST[stufe - 1].name}`;
+    $('[data-naechste]').disabled = !geloest;
+    $('[data-anders]').disabled = geloest;
+  }
+  function neu(){
+    geloest = false; akt = ST[stufe - 1].neu();
+    baue($('.af-aufgabe'), akt, {fertig:() => {
+      if (geloest) return;
+      geloest = true; serie++;
+      if (serie > (stand.rekord[stufe] || 0)){ stand.rekord[stufe] = serie; speichern(); }
+      if (window.TrainerSync) TrainerSync.event({modus:'endlos', stufe, aufgabe:'s' + stufe, titel:ST[stufe - 1].name, gesamt:0, erstmals:true});
+      kopf(); $('[data-naechste]').focus();
+    }});
+    kopf();
+  }
+  function setze(n){ stufe = n; stand.stufe = n; serie = 0; speichern(); neu(); }
+  root.addEventListener('click', e => {
+    const f = e.target.closest('[data-stufe]'); if (f) return setze(+f.dataset.stufe);
+    if (e.target.closest('[data-anders]')){ serie = 0; return neu(); }
+    if (e.target.closest('[data-naechste]') && geloest) return neu();
+  });
+  neu();
+  return {neu, stufe:setze};
+}
+
+window.Aufgaben = {baue, sequenz, endlos, mc, mehrfach, finde, zahl, eur, mischen, esc, bsText, TYPEN};
 })();
 
 </script>

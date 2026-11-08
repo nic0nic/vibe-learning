@@ -13,6 +13,11 @@ Gesammelt im Thread „Aufbau der Seite“. Umgesetzt wird erst, wenn die Lehrkr
 
 ### Version vom 08.11.
 
+40. **Zinsrechnung (BWR 9, Finanzierung)** (gewünscht 08.11.)
+    - `zinsrechnung.html`: Erarbeitung nach dem Unterrichtsentwurf „Einführung Zinsrechnung“ (Jonas, 2.500,00 €, 5,35 %): Prozentrechnung → Jahreszinsen → Begriffe K, p, Z → Jahreszinsformel → Teil des Jahres (Lern-Chat) → Tageszinsformel → Zinstage → Dispo oder Kredit → Überblick; dazu Selbstlernheft „Zinsrechnung“.
+    - Endlos-Modus mit 6 Stufen (Prozentrechnung, Jahreszinsen, Tageszinsen, Zinstage, Zinstage und Zinsen, Textaufgaben), Zufallsaufgaben mit Rechenweg.
+    - Neu in `lib/aufgaben.js`: `Aufgaben.endlos` (Stufen als Flammen, Serie, Rekord, „Andere Aufgabe“) für weitere Seiten mit Zufallsaufgaben.
+
 39. **Darlehensarten (BWR 9, Finanzierung)** (gewünscht 08.11.)
     - `darlehensarten.html`: Abzahlungs-, Annuitäten- und Festdarlehen (40.000,00 €, 4 Jahre, 5 %), Tilgungspläne als Formular, Säulendiagramme, Vergleich (Zuordnen), Zinskosten und Entscheidungen; dazu Selbstlernheft „Darlehensarten“.
     - Neuer Aufgabentyp `tabelle` in `lib/aufgaben.js` (Zellen vorgegeben oder Eingabefeld, Hinweise je Spalte), Prüfung in `lib/seite.js`, Skill `vibe-learning-seite-erstellen` ergänzt.

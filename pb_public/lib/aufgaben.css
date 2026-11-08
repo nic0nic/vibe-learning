@@ -83,6 +83,20 @@ pre.af-bs{font:13px/1.5 var(--mono,monospace);background:var(--panel2);border:1p
 .af-zaehler{color:var(--muted);font-size:14px}
 .af-erledigt{font-size:13px;color:var(--ok,#5e8a45);font-weight:700;margin:0 0 8px}
 .af-unten{display:flex;justify-content:space-between;gap:8px;margin-top:16px;border-top:1px solid var(--border);padding-top:12px}
+/* Endlos: Stufen als Flammen (wie in den Excel-Übungen), Serie und Rekord */
+.af-flammen{display:flex;flex-wrap:wrap;gap:4px;align-items:flex-end;flex:1}
+.af-flamme{background:none;border:0;padding:2px;cursor:pointer;transform-origin:50% 90%;line-height:0}
+.af-flamme svg{width:30px;height:38px;display:block}
+.af-flamme path{fill:var(--border);transition:fill .2s}
+.af-flamme text{fill:var(--muted);font:800 13px system-ui,sans-serif}
+.af-flamme:hover path{fill:#f0b27a}
+.af-flamme.on path{fill:url(#af-fg)}
+.af-flamme.on text{fill:#fff}
+.af-flamme.on{filter:drop-shadow(0 0 5px rgba(255,150,0,.95)) drop-shadow(0 0 12px rgba(255,70,0,.6));animation:af-flackern 1.4s ease-in-out infinite alternate}
+@keyframes af-flackern{0%{transform:scale(1) rotate(-2deg)}50%{transform:scale(1.05,1.1) rotate(0)}100%{transform:scale(1.02) rotate(2deg)}}
+@media (prefers-reduced-motion:reduce){.af-flamme.on{animation:none}}
+.af-serie{font-weight:600;font-size:15px}
+.af-stufe{font-size:16px!important;color:var(--muted)}
 /* Lern-Chat */
 .af-chat{border:1px solid var(--border);border-radius:14px;background:var(--panel2);overflow:hidden;max-width:720px}
 .af-chatkopf{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--panel);border-bottom:1px solid var(--border)}

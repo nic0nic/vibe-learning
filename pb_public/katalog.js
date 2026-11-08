@@ -100,6 +100,7 @@ window.KATALOG = {
               tools: [
                 {id: 'bilanz', stufen: ['Bilanzposten', 'AV/UV · EK/FK', 'Goldene Regel'], datei: 'bilanz.html', titel: 'Bilanz-Modell', text: 'Wie Buchungen die Bilanz verändern: Aktivtausch, Passivtausch, Aktiv-Passiv-Mehrung und -Minderung – eingeteilt nach Bilanzposten, nach AV/UV und EK/FK oder nach der Goldenen Finanzierungsregel.'},
                 {id: 'bankkredit', datei: 'kredite-bank.html', titel: 'Kredite bei der Bank', text: 'Erarbeitung (Heft Kap. 5): Kreditfähigkeit und Kreditwürdigkeit zuordnen, Sicherheiten nennen, Disagio und Auszahlungsbetrag berechnen.'},
+                {id: 'zins', datei: 'zinsrechnung.html', titel: 'Zinsrechnung', text: 'Von der Prozentrechnung zur Tageszinsformel: Jahreszinsen, Tageszinsen und Zinstage selbstständig erarbeiten – mit Endlos-Modus (Heft Zinsrechnung).'},
                 {id: 'darlehen', datei: 'darlehensarten.html', titel: 'Darlehensarten', text: 'Abzahlungs-, Annuitäten- und Festdarlehen: Tilgungspläne als Formular ausfüllen, Zinskosten vergleichen und das passende Darlehen wählen (Heft Darlehensarten).'},
                 {id: 'kurzkredit', datei: 'kurzfristige-kredite.html', titel: 'Kontokorrent-, Dispo- und Lieferantenkredit', text: 'Erarbeitung zu kurzfristigen Krediten (Heft Kap. 7): Lieferantenkredit auf der Zeitleiste ausprobieren, Merkmale zuordnen, Skonto berechnen und Kosten vergleichen.'}
               ]},

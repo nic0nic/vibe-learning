@@ -221,6 +221,11 @@ API
                  aufgaben:[…], nach(el) (nach dem Zeichnen, für eigene Grafiken)}
       Schritte mit Aufgaben melden TrainerSync.event (modus 'erarbeitung', aufgabe = schritt.id),
       Info-Schritte gelten beim Weitergehen als erledigt. Gespeichert: <key>-stand {schritt, erledigt}.
+  Aufgaben.endlos({el, key, stufen})  Endlos-Modus wie in den Excel-Übungen: Stufen als Flammen, Serie und Rekord,
+      „Andere Aufgabe“ (Serie auf 0), „Nächste Aufgabe“ nach richtiger Lösung.
+      stufe = {name, neu() → Aufgabe (beliebiger Typ, frisch erzeugt; h/ok für Rechenweg nutzen)}
+      Meldet TrainerSync.event (modus 'endlos', stufe 1…n). Gespeichert: <key>-endlos {stufe, rekord:{stufe: n}}.
+      Rückgabe {neu() (neue Aufgabe), stufe(n) (Stufe wechseln)}. Vorbild: BWR/9II/finanzierung/zinsrechnung.html
   Aufgaben.mc.html(a, auswahl:Set, geprueft, reihenfolge?) / Aufgaben.mc.pruefen(a, auswahl) → {ok, gruende}
       für Seiten mit eigenem Ablauf (Excel-Erklärungen: tabelle.js, und-oder.html)
   Aufgaben.finde(antworten, text) → {i (Eintrag), wort, fast} oder null   (Freitext-Abgleich, auch einzeln nutzbar)
