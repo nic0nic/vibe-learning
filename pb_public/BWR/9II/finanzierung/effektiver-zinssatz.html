@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="de" data-trainer="effzins">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Effektiver Zinssatz – vibe learning</title>
+<!--
+  Effektiver Zinssatz (BWR 9, Finanzierung; LB 9.3, passend zum Selbstlernheft „Effektiver Zinssatz“):
+  Saitgig braucht 30.000,00 € für 240 Tage, drei Angebote (Stadtbank 4,5 % + 1 % Disagio, Klickbank 3,6 % + 2 % Disagio,
+  Bürgerbank 5,1 % ohne Disagio). Disagio wiederholen → tatsächliche Kreditkosten → Formel (aus p = Z · 100 · 360 : (K · t))
+  → berechnen → vergleichen → Laufzeit in Jahren → Kreditaufnahme buchen (7510 ZAW) → Grenzen → Überblick.
+  Effektiver Zinssatz = tatsächliche Kreditkosten · 100 · 360 : (Auszahlungsbetrag · Tage), Kreditkosten = Zinsen + Disagio.
+  Endlos: 6 Stufen (Aufgaben.endlos aus lib/aufgaben.js). Zahlen mit Python nachgerechnet.
+  Gespeichert: effzins-stand {schritt, erledigt}, effzins-endlos {stufe, rekord}, effzins-modus.
+-->
+<script src="../../../katalog.js"></script>
+<script src="../../../nav.js"></script>
+<script src="../../../sync.js"></script>
+<script>
+(function(){var t=null;try{t=localStorage.getItem('wenn-theme');}catch(e){}
+document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');})();
+</script>
+<link rel="stylesheet" href="../../bwr.css">
+<link rel="stylesheet" href="../../../lib/aufgaben.css">
+<script src="../../../lib/aufgaben.js"></script>
+<style>
+.wrap{max-width:1000px}
+.modi{display:inline-flex;gap:4px;margin-left:auto}
+.info{border-left:4px solid var(--accent);padding:2px 0 2px 12px;margin:0 0 12px}
+.alltag{background:var(--panel2);border-radius:10px;padding:8px 12px;margin:0 0 12px}
+.alltag b:first-child{display:block;font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.formel{display:inline-block;border:2px solid var(--accent);border-radius:8px;padding:6px 14px;font-weight:700;margin:4px 0 12px;font-size:17px}
+.vgl{border-collapse:collapse;margin:4px 0 12px;font-size:15px}
+.vgl th,.vgl td{border:1px solid var(--border);padding:5px 10px;text-align:left}
+.vgl th{background:var(--panel2)}
+.vgl td.z{text-align:right;font-family:var(--mono)}
+.balken{width:100%;max-width:620px;height:auto;display:block;margin:4px 0 12px}
+.balken text{fill:var(--text);font:12px system-ui,sans-serif}
+.balken .aus{fill:var(--accent);fill-opacity:.35;stroke:var(--accent)} .balken .dis{fill:url(#eSchr);stroke:var(--text)}
+.balken .z2{fill:var(--panel2)} .balken .schr{stroke:var(--text);stroke-opacity:.6;stroke-width:2}
+.rw{font-family:var(--mono);font-size:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="bar"><div class="brand">Effektiver <span>Zinssatz</span></div>
+    <div class="modi" role="group" aria-label="Modus"><button class="btn" type="button" data-modus="lernen">Erarbeitung</button><button class="btn" type="button" data-modus="endlos">Endlos ∞</button></div></div>
+  <div id="app"></div>
+  <div id="endlos" hidden></div>
+</div>
+<script>
+'use strict';
+const {eur} = Aufgaben;
+const B = (z, n) => `<span class="bruch"><span>${z}</span><span>${n}</span></span>`;
+const PF = 'p = ' + B('Z · 100 · 360', 'K · t');
+const EF = 'p<sub>eff</sub> = ' + B('tatsächliche Kreditkosten · 100 · 360', 'Auszahlungsbetrag · Tage');
+// Angebote: [Bank, Zinssatz, Disagio %, Zinsen, Disagio, Auszahlungsbetrag, Kreditkosten, effektiver Zinssatz]
+const ANG = [['Stadtbank', 4.5, 1, 900, 300, 29700, 1200, 6.06], ['Klickbank', 3.6, 2, 720, 600, 29400, 1320, 6.73], ['Bürgerbank', 5.1, 0, 1020, 0, 30000, 1020, 5.10]];
+const pz = n => n.toLocaleString('de-DE', {maximumFractionDigits:2}) + ' %';
+const ANGEBOTE = '<div class="mt">Material: Angebote für Saitgig – Kreditbetrag 30.000,00 €, Laufzeit 240 Tage</div><table class="vgl"><tr><th>Bank</th><th>Zinssatz</th><th>Disagio</th></tr>'
+  + ANG.map(a => `<tr><td>${a[0]}</td><td>${pz(a[1])} p. a.</td><td>${a[2] ? pz(a[2]) : 'kein Disagio'}</td></tr>`).join('') + '</table>';
+
+// Balken: Kreditbetrag = Auszahlungsbetrag + Disagio (Beispiel Klickbank)
+function balken(){
+  const w = 560, d = w * 0.02 * 5;   // Disagio-Anteil zur Verdeutlichung 5-fach vergrößert
+  return `<svg class="balken" viewBox="0 0 620 104" role="img" aria-label="Kreditbetrag 30.000 Euro, davon Disagio 600 Euro einbehalten, ausgezahlt 29.400 Euro">
+    <defs><pattern id="eSchr" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="7" height="7" class="z2"/><line x1="0" y1="0" x2="0" y2="7" class="schr"/></pattern></defs>
+    <text x="30" y="18" style="font-weight:700">Kreditbetrag 30.000,00 € (wird getilgt, davon werden die Zinsen berechnet)</text>
+    <rect class="aus" x="30" y="28" width="${w - d}" height="38"/><rect class="dis" x="${30 + w - d}" y="28" width="${d}" height="38"/>
+    <text x="${30 + (w - d) / 2}" y="52" text-anchor="middle" style="font-weight:700">Auszahlungsbetrag 29.400,00 € (98 %)</text>
+    <text x="${30 + w - d / 2}" y="86" text-anchor="middle">Disagio 600,00 €</text><text x="${30 + w - d / 2}" y="100" text-anchor="middle">(2 %, einbehalten)</text><text x="30" y="86">Disagio zur Verdeutlichung vergrößert</text></svg>`;
+}
+
+/* ================= Erarbeitung ================= */
+const SCHRITTE = [
+  {id:'start', kurz:'Start', titel:'Drei Angebote', html:`<h2>Welcher Kredit ist am günstigsten?</h2>
+    <div class="info"><p>Jakob Seite möchte für Saitgig ein großes Lager an Instrumenten für das Weihnachtsgeschäft einkaufen. Dafür braucht er <b>30.000,00 € für 240 Tage</b>. Drei Banken haben ihm ein Angebot gemacht. Zwei davon behalten ein <b>Disagio</b> ein.</p></div>`,
+    material:ANGEBOTE,
+    aufgaben:[{typ:'chat', name:'Jakob', bild:'🎸', nachrichten:[
+      'Hi! Ich muss mich bis morgen für einen Kredit entscheiden. Kannst du mir helfen?',
+      {bot:'Welches Angebot würdest du ganz spontan nehmen?', antworten:[
+        {t:'Klickbank – der niedrigste Zinssatz', ok:true, r:'Das dachte ich auch zuerst. Aber dort behalten sie 2 % Disagio ein … Ob das trotzdem günstiger ist?'},
+        {t:'Bürgerbank – kein Disagio', ok:true, r:'Interessant! Dafür ist der Zinssatz dort am höchsten. Ob sich das lohnt?'},
+        {t:'Stadtbank – irgendwas dazwischen', ok:true, r:'Ein Kompromiss also. Mal sehen, ob das stimmt.'}]},
+      'Ich merke schon: Mit dem Zinssatz allein kann ich die Angebote nicht vergleichen. Lass uns das Schritt für Schritt herausfinden – am Ende kennen wir den <b>effektiven Zinssatz</b> jedes Angebots.']}]},
+
+  {id:'disagio', kurz:'1 Disagio', titel:'Disagio wiederholen', html:`<h2>1 · Disagio wiederholen</h2>
+    <div class="info"><p>Beim <b>Disagio</b> behält die Bank bei der Auszahlung einen Teil des Kreditbetrags ein. Saitgig bekommt nur den <b>Auszahlungsbetrag</b>. Trotzdem gilt:</p>
+    <ul><li>Die <b>Zinsen</b> werden vom <b>vollen Kreditbetrag</b> berechnet.</li><li>Zurückgezahlt (getilgt) wird der <b>volle Kreditbetrag</b>.</li></ul>
+    <p>Das Disagio ist also ein <b>vorausbezahlter Zins</b>: zusätzliche Kosten für den Kredit.</p></div>${balken()}`,
+    erinnerung:`<p>Disagio = ${B('Kreditbetrag · Disagiosatz', '100')} · Auszahlungsbetrag = Kreditbetrag – Disagio</p>`,
+    material:ANGEBOTE,
+    aufgaben:[
+      {typ:'tabelle', nr:'1.1', frage:'Berechne für jedes Angebot das Disagio und den Auszahlungsbetrag.', einheit:'€', ok:'Richtig! Bei der Klickbank bekommt Saitgig 600,00 € weniger ausgezahlt.',
+        spalten:['Bank', 'Kreditbetrag', 'Disagio', 'Auszahlungsbetrag'], zeilen:ANG.map(a => [a[0], 30000, {l:a[4]}, {l:a[5]}]),
+        hinweise:{2:'Disagio = Kreditbetrag · Disagiosatz : 100', 3:'Auszahlungsbetrag = Kreditbetrag – Disagio'}},
+      {typ:'mc', nr:'1.2', frage:'Saitgig nimmt den Kredit der Klickbank. Welche Aussage stimmt?', options:[
+        'Saitgig erhält 29.400,00 €, muss aber 30.000,00 € zurückzahlen.', 'Saitgig erhält 29.400,00 € und muss auch nur 29.400,00 € zurückzahlen.',
+        'Die Zinsen werden von 29.400,00 € berechnet.'], correct:[0],
+        why:{1:'Getilgt wird immer der volle Kreditbetrag – das Disagio ist ein Kostenteil.', 2:'Die Zinsen werden vom vollen Kreditbetrag (30.000,00 €) berechnet.'}}]},
+
+  {id:'kosten', kurz:'2 Kreditkosten', titel:'Tatsächliche Kreditkosten', html:`<h2>2 · Tatsächliche Kreditkosten</h2>
+    <div class="info"><p>Was kostet der Kredit wirklich? Zu den <b>Zinsen</b> kommt das <b>Disagio</b> dazu:</p></div>
+    <p><span class="formel">tatsächliche Kreditkosten = Zinsen + Disagio</span></p>`,
+    erinnerung:`<p>Zinsen = ${B('K · p · t', '100 · 360')} (vom vollen Kreditbetrag) · Kreditkosten = Zinsen + Disagio</p>`,
+    material:ANGEBOTE,
+    aufgaben:[{typ:'tabelle', nr:'2.1', frage:'Berechne für jedes Angebot die Zinsen und die tatsächlichen Kreditkosten.', einheit:'€', ok:'Richtig! Nach den Kosten in Euro ist die Bürgerbank am günstigsten.',
+      spalten:['Bank', 'Zinsen', 'Disagio', 'Kreditkosten'], zeilen:ANG.map(a => [a[0], {l:a[3]}, a[4], {l:a[6]}]),
+      hinweise:{1:'Zinsen = 30.000,00 · Zinssatz · 240 : (100 · 360)', 3:'Kreditkosten = Zinsen + Disagio'}}]},
+
+  {id:'formel', kurz:'3 Formel', titel:'Die Formel für den effektiven Zinssatz', html:`<h2>3 · Die Formel für den effektiven Zinssatz</h2>
+    <div class="info"><p>Der <b>effektive Zinssatz</b> zeigt, wie viel Prozent pro Jahr der Kredit <b>wirklich</b> kostet – bezogen auf das Geld, das Saitgig <b>tatsächlich bekommt</b>. So lassen sich Angebote mit und ohne Disagio vergleichen.</p>
+    <p>Du kennst schon die Formel für den Zinssatz: <b>${PF}</b>. Für den effektiven Zinssatz setzt du statt der Zinsen die <b>tatsächlichen Kreditkosten</b> ein und statt des Kreditbetrags den <b>Auszahlungsbetrag</b>.</p></div>
+    <p><span class="formel">${EF}</span></p>`,
+    aufgaben:[{typ:'luecken', nr:'3.1', frage:'Vervollständige: Was wird in der Formel für den Zinssatz ersetzt?', ok:'Richtig!',
+      text:'Statt der Zinsen Z setzt du die [[tatsächlichen Kreditkosten|Tilgung|Disagio-Prozent]] ein. Statt des Kreditbetrags K setzt du den [[Auszahlungsbetrag|Disagio|Rückzahlungsbetrag]] ein. Die Kreditkosten sind [[Zinsen + Disagio|Zinsen – Disagio|Kreditbetrag + Zinsen]].'}]},
+
+  {id:'berechnen', kurz:'4 Berechnen', titel:'Effektiven Zinssatz berechnen', html:`<h2>4 · Effektiven Zinssatz berechnen</h2>
+    <div class="alltag"><b>Beispiel · Stadtbank</b>1. Auszahlungsbetrag: 30.000,00 € – 300,00 € = 29.700,00 €<br>2. Kreditkosten: 900,00 € + 300,00 € = 1.200,00 €<br>
+    3. p<sub>eff</sub> = ${B('1.200,00 · 100 · 360', '29.700,00 · 240')} = <b>6,06 %</b><br><span class="muted">Obwohl die Bank 4,5 % verlangt, kostet der Kredit effektiv 6,06 % pro Jahr.</span></div>`,
+    erinnerung:`<p>${EF} · auf zwei Nachkommastellen runden</p>`,
+    material:'<div class="mt">Material: deine Ergebnisse aus Schritt 1 und 2</div><table class="vgl"><tr><th>Bank</th><th>Auszahlungsbetrag</th><th>Kreditkosten</th></tr>'
+      + ANG.map(a => `<tr><td>${a[0]}</td><td class="z">${eur(a[5])}</td><td class="z">${eur(a[6])}</td></tr>`).join('') + '</table><p>Laufzeit: 240 Tage</p>',
+    aufgaben:[{typ:'zahlen', nr:'4.1', frage:'Berechne den effektiven Zinssatz der Klickbank und der Bürgerbank.', felder:[
+      {t:'Klickbank', l:6.73, e:'%', tol:0.011, h:'p<sub>eff</sub> = ' + B('1.320,00 · 100 · 360', '29.400,00 · 240')},
+      {t:'Bürgerbank', l:5.10, e:'%', tol:0.011, h:'p<sub>eff</sub> = ' + B('1.020,00 · 100 · 360', '30.000,00 · 240')}],
+      ok:'Richtig! Klickbank 6,73 % · Bürgerbank 5,10 % – ohne Disagio ist der effektive Zinssatz gleich dem Zinssatz.'}]},
+
+  {id:'vergleich', kurz:'5 Vergleich', titel:'Angebote vergleichen', html:`<h2>5 · Angebote vergleichen</h2>
+    <table class="vgl"><tr><th>Bank</th><th>Zinssatz</th><th>Disagio</th><th>effektiver Zinssatz</th></tr>
+    ${ANG.map(a => `<tr><td>${a[0]}</td><td>${pz(a[1])}</td><td>${a[2] ? pz(a[2]) : '–'}</td><td><b>${pz(a[7])}</b></td></tr>`).join('')}</table>`,
+    aufgaben:[
+      {typ:'mc', nr:'5.1', frage:'Welches Angebot sollte Jakob wählen?', options:['Bürgerbank', 'Stadtbank', 'Klickbank'], correct:[0], mischen:false,
+        why:{1:'Die Stadtbank kostet effektiv 6,06 % – mehr als die Bürgerbank mit 5,10 %.', 2:'Die Klickbank hat zwar den niedrigsten Zinssatz, ist effektiv mit 6,73 % aber am teuersten.'},
+        after:'Die Bürgerbank hat den niedrigsten effektiven Zinssatz (5,10 %) und die geringsten Kreditkosten (1.020,00 €).'},
+      {typ:'mc', nr:'5.2', frage:'Warum ist die Klickbank trotz des niedrigsten Zinssatzes am teuersten?', options:[
+        'Das hohe Disagio erhöht die Kosten und verringert gleichzeitig den Auszahlungsbetrag.', 'Die Zinsen werden dort für 360 statt 240 Tage berechnet.', 'Bei der Klickbank muss mehr getilgt werden als bei den anderen.'], correct:[0],
+        why:{1:'Alle Angebote laufen 240 Tage.', 2:'Bei allen drei Banken werden 30.000,00 € getilgt.'},
+        after:'Merke: Angebote mit Disagio vergleichst du immer über den effektiven Zinssatz, nicht über den Zinssatz.'}]},
+
+  {id:'jahre', kurz:'6 Jahre', titel:'Laufzeit in Jahren', html:`<h2>6 · Laufzeit in Jahren</h2>
+    <div class="info"><p>Bei Darlehen ist die Laufzeit oft in <b>Jahren</b> angegeben. Dann rechnest du sie in Tage um: <b>1 Jahr = 360 Tage</b>, 2 Jahre = 720 Tage. Wird erst am Ende getilgt, fallen jedes Jahr Zinsen vom vollen Kreditbetrag an.</p></div>`,
+    erinnerung:`<p>${EF} · Tage = Jahre · 360</p>`, erinnerungZu:true,
+    material:'<div class="mt">Material: Darlehen für einen Transporter</div><p>Kreditbetrag 50.000,00 € · Zinssatz 4 % p. a. · Disagio 3 % · Laufzeit 2 Jahre · Tilgung in einer Summe am Ende der Laufzeit</p>',
+    aufgaben:[{typ:'zahlen', nr:'6.1', frage:'Ermittle den effektiven Zinssatz des Darlehens. Berechne dazu zuerst die Zwischenergebnisse.', felder:[
+      {t:'Zinsen für 2 Jahre', l:4000, e:'€', tol:0.011, h:'50.000,00 · 4 · 720 : (100 · 360) – oder 2.000,00 € pro Jahr · 2'},
+      {t:'Disagio', l:1500, e:'€', tol:0.011, h:'50.000,00 · 3 : 100'},
+      {t:'Auszahlungsbetrag', l:48500, e:'€', tol:0.011, h:'Kreditbetrag – Disagio'},
+      {t:'tatsächliche Kreditkosten', l:5500, e:'€', tol:0.011, h:'Zinsen + Disagio'},
+      {t:'effektiver Zinssatz', l:5.67, e:'%', tol:0.011, h:'p<sub>eff</sub> = ' + B('5.500,00 · 100 · 360', '48.500,00 · 720')}],
+      ok:`Richtig! p<sub>eff</sub> = ${B('5.500,00 · 100 · 360', '48.500,00 · 720')} = 5,67 % – deutlich mehr als die 4 % im Angebot.`}]},
+
+  {id:'buchen', kurz:'7 Buchen', titel:'Kreditaufnahme mit Disagio buchen', html:`<h2>7 · Kreditaufnahme mit Disagio buchen</h2>
+    <div class="info"><p>Bei der Auszahlung bucht Saitgig den <b>vollen Kreditbetrag</b> als Verbindlichkeit, denn so viel muss zurückgezahlt werden. Auf dem Bankkonto kommt nur der <b>Auszahlungsbetrag</b> an. Das <b>Disagio</b> ist vorausbezahlter Zins, also Aufwand auf <b>7510 ZAW</b>.</p>
+    <p>Laufzeit bis 1 Jahr: <b>4200 KBKV</b> (kurzfristige Bankverbindlichkeiten) · länger als 1 Jahr: <b>4250 LBKV</b> (langfristige Bankverbindlichkeiten)</p></div>`,
+    aufgaben:[
+      {typ:'buchungssatz', nr:'7.1', frage:'Saitgig nimmt den Kredit der Stadtbank auf (30.000,00 €, 240 Tage, 1 % Disagio). Die Bank schreibt den Auszahlungsbetrag gut. Bilde den Buchungssatz.',
+        konten:['2800 BK', '7510 ZAW', '4200 KBKV', '4250 LBKV', '6750 KGV'], soll:[['2800 BK', 29700], ['7510 ZAW', 300]], haben:[['4200 KBKV', 30000]],
+        nebenrechnung:'Disagio: 30.000,00 · 1 : 100 = 300,00 € · Auszahlungsbetrag: 30.000,00 – 300,00 = 29.700,00 €'},
+      {typ:'buchungssatz', nr:'7.2', frage:'Saitgig nimmt das Darlehen für den Transporter auf (50.000,00 €, 2 Jahre, 3 % Disagio). Bilde den Buchungssatz für die Gutschrift auf dem Bankkonto.',
+        konten:['2800 BK', '7510 ZAW', '4200 KBKV', '4250 LBKV', '6750 KGV'], soll:[['2800 BK', 48500], ['7510 ZAW', 1500]], haben:[['4250 LBKV', 50000]],
+        nebenrechnung:'Disagio: 50.000,00 · 3 : 100 = 1.500,00 € · Auszahlungsbetrag: 50.000,00 – 1.500,00 = 48.500,00 €'}]},
+
+  {id:'grenzen', kurz:'8 Grenzen', titel:'Was der effektive Zinssatz nicht zeigt', html:`<h2>8 · Was der effektive Zinssatz nicht zeigt</h2>
+    <div class="info"><p>Der effektive Zinssatz macht Angebote vergleichbar – aber nur, soweit die Kosten in der Rechnung stecken. <b>Nebenkosten</b> wie Kontoführungsgebühren, Kreditversicherungen oder Bereitstellungszinsen fließen nicht ein. Deshalb solltest du auch das Kleingedruckte lesen.</p></div>`,
+    aufgaben:[{typ:'zuordnen', nr:'8.1', frage:'Ordne zu: Fließt der Betrag in unsere Berechnung des effektiven Zinssatzes ein?', ok:'Richtig zugeordnet!',
+      felder:[['ja', 'fließt ein'], ['nein', 'fließt nicht ein']],
+      karten:[{t:'Zinsen', z:'ja'}, {t:'Disagio', z:'ja'}, {t:'Kontoführungsgebühren', z:'nein'}, {t:'Kreditversicherung', z:'nein'}, {t:'Bereitstellungszinsen', z:'nein'}]}]},
+
+  {id:'ueberblick', kurz:'Überblick', titel:'Überblick effektiver Zinssatz', aufgaben:[
+    {typ:'luecken', frage:'Vervollständige den Überblick und übertrage ihn in dein Heft.', ok:'Richtig! Weiter üben kannst du oben im Modus „Endlos ∞“.',
+      text:'Beim Disagio erhält der Kreditnehmer nur den [[Auszahlungsbetrag|Kreditbetrag|Zinsbetrag]]. Zinsen und Tilgung richten sich nach dem [[vollen Kreditbetrag|Auszahlungsbetrag|Disagio]].<br>'
+        + 'Tatsächliche Kreditkosten = Zinsen [[+|–|·]] Disagio.<br>'
+        + 'Effektiver Zinssatz = tatsächliche Kreditkosten · 100 · 360 : ([[Auszahlungsbetrag · Tage|Kreditbetrag · Tage|Zinsen · Tage]]).<br>'
+        + 'Angebote mit Disagio vergleicht man über den [[effektiven Zinssatz|Zinssatz|Disagiosatz]]. Das günstigste Angebot hat den [[niedrigsten|höchsten]] effektiven Zinssatz.<br>'
+        + 'Das Disagio wird bei der Auszahlung auf dem Konto [[7510 ZAW|2800 BK|4250 LBKV]] gebucht.'}]}
+];
+
+/* ================= Endlos: Zufallsaufgaben ================= */
+const ri = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+const pick = l => l[Math.floor(Math.random() * l.length)];
+const r2 = n => Math.round((n + Number.EPSILON) * 100) / 100;
+const zz = n => n.toLocaleString('de-DE', {maximumFractionDigits:2});
+const BANKEN = ['Stadtbank', 'Klickbank', 'Bürgerbank', 'Hausbank', 'Direktbank', 'Landbank'];
+// Angebot würfeln; jahre = true: Laufzeit 1–5 Jahre (Tilgung am Ende), sonst 30–350 Tage
+// realistisch: effektiver Zinssatz höchstens 3 Prozentpunkte über dem Zinssatz (sonst neu würfeln)
+function angebot(jahre){
+  for (;;){
+    const K = pick([ri(5, 60) * 1000, ri(10, 200) * 500]), p = pick([ri(4, 20) / 2, ri(20, 90) / 10, ri(10, 36) / 4]), d = pick([0.5, 1, 1.5, 2, 2.5, 3, 4]);
+    const n = jahre ? ri(1, 5) : 0, t = jahre ? n * 360 : pick([ri(3, 11) * 30, ri(6, 35) * 10, ri(60, 350)]);
+    const Z = r2(K * p * t / 36000), D = r2(K * d / 100), A = r2(K - D), KK = r2(Z + D), E = r2(KK * 36000 / (A * t));
+    if (E - p <= 3) return {K, p, d, n, t, Z, D, A, KK, E};
+  }
+}
+const laufzeit = x => x.n ? `${x.n} ${x.n === 1 ? 'Jahr' : 'Jahre'}` : `${x.t} Tage`;
+const kond = x => `Kreditbetrag ${eur(x.K)}, Zinssatz ${zz(x.p)} % p. a., Disagio ${zz(x.d)} %, Laufzeit ${laufzeit(x)}`;
+const wegEff = x => `<span class="rw">Disagio: ${eur(x.K)} · ${zz(x.d)} : 100 = ${eur(x.D)}<br>Auszahlungsbetrag: ${eur(x.K)} – ${eur(x.D)} = ${eur(x.A)}<br>`
+  + `Zinsen: ${eur(x.K)} · ${zz(x.p)} · ${x.t} : (100 · 360) = ${eur(x.Z)}<br>Kreditkosten: ${eur(x.Z)} + ${eur(x.D)} = ${eur(x.KK)}<br>`
+  + `p<sub>eff</sub> = ${B(`${eur(x.KK)} · 100 · 360`, `${eur(x.A)} · ${x.t}`)} = ${zz(x.E)} %</span>`;
+const effFelder = x => [{t:'Auszahlungsbetrag', l:x.A, e:'€', tol:0.011, h:'Kreditbetrag – Disagio'},
+  {t:'tatsächliche Kreditkosten', l:x.KK, e:'€', tol:0.011, h:'Zinsen (vom vollen Kreditbetrag' + (x.n ? `, ${x.t} Tage` : '') + ') + Disagio'},
+  {t:'effektiver Zinssatz', l:x.E, e:'%', tol:0.011, h:EF + (x.n ? ` · Tage = ${x.n} · 360 = ${x.t}` : '')}];
+
+const ENDLOS = [
+  {name:'Disagio und Auszahlungsbetrag', neu(){ const x = angebot();
+    return {typ:'zahlen', frage:`Saitgig nimmt einen Kredit über ${eur(x.K)} auf. Die Bank behält ${zz(x.d)} % Disagio ein. Berechne das Disagio und den Auszahlungsbetrag.`,
+      felder:[{t:'Disagio', l:x.D, e:'€', tol:0.011, h:`${eur(x.K)} · ${zz(x.d)} : 100`}, {t:'Auszahlungsbetrag', l:x.A, e:'€', tol:0.011, h:'Kreditbetrag – Disagio'}],
+      ok:`Richtig! <span class="rw">${eur(x.K)} – ${eur(x.D)} = ${eur(x.A)}</span>`};
+  }},
+  {name:'Tatsächliche Kreditkosten', neu(){ const x = angebot();
+    return {typ:'zahlen', frage:`Angebot: ${kond(x)}. Berechne die Zinsen und die tatsächlichen Kreditkosten.`,
+      felder:[{t:'Zinsen', l:x.Z, e:'€', tol:0.011, h:`${eur(x.K)} · ${zz(x.p)} · ${x.t} : (100 · 360) – vom vollen Kreditbetrag`}, {t:'tatsächliche Kreditkosten', l:x.KK, e:'€', tol:0.011, h:'Zinsen + Disagio'}],
+      ok:`Richtig! <span class="rw">Zinsen ${eur(x.Z)} + Disagio ${eur(x.D)} = ${eur(x.KK)}</span>`};
+  }},
+  {name:'Effektiver Zinssatz (Tage)', neu(){ const x = angebot();
+    return {typ:'zahlen', frage:`Angebot: ${kond(x)}. Ermittle den effektiven Zinssatz.`, felder:effFelder(x), ok:'Richtig!<br>' + wegEff(x)};
+  }},
+  {name:'Effektiver Zinssatz (Jahre)', neu(){ const x = angebot(true);
+    return {typ:'zahlen', frage:`Darlehen: ${kond(x)}, Tilgung in einer Summe am Ende. Ermittle den effektiven Zinssatz.`, felder:effFelder(x), ok:'Richtig!<br>' + wegEff(x)};
+  }},
+  {name:'Angebote vergleichen', neu(){
+    let a, b;
+    do {
+      a = angebot(); b = angebot();
+      b.K = a.K; b.t = a.t; b.d = pick([0, 0, 0.5, 1, 2, 3]);
+      b.p = r2(a.p + pick([-1.5, -1, -0.5, 0.5, 1, 1.5])); if (b.p <= 0.5) continue;
+      Object.assign(b, (() => { const Z = r2(b.K * b.p * b.t / 36000), D = r2(b.K * b.d / 100), A = r2(b.K - D), KK = r2(Z + D); return {Z, D, A, KK, E:r2(KK * 36000 / (A * b.t))}; })());
+    } while (!b.p || b.p <= 0.5 || b.E - b.p > 3 || Math.abs(a.E - b.E) < 0.1);
+    const [n1, n2] = Aufgaben.mischen(BANKEN).slice(0, 2), besser = a.E < b.E ? 0 : 1;
+    return {typ:'zahlen', frage:`Saitgig braucht ${eur(a.K)} für ${a.t} Tage. Ermittle für beide Angebote den effektiven Zinssatz.`,
+      material:`<div class="mt">Material</div><p><b>${n1}:</b> ${zz(a.p)} % p. a., Disagio ${a.d ? zz(a.d) + ' %' : 'keines'}<br><b>${n2}:</b> ${zz(b.p)} % p. a., Disagio ${b.d ? zz(b.d) + ' %' : 'keines'}</p>`,
+      felder:[{t:n1, l:a.E, e:'%', tol:0.011, h:EF}, {t:n2, l:b.E, e:'%', tol:0.011, h:EF}],
+      ok:`Richtig!<br>${n1}:<br>${wegEff(a)}<br>${n2}:<br>${wegEff(b)}`,
+      danach:{typ:'mc', frage:'Welches Angebot ist günstiger?', options:[n1, n2], correct:[besser], mischen:false,
+        why:{[1 - besser]:'Günstiger ist das Angebot mit dem niedrigeren effektiven Zinssatz.'}}};
+  }},
+  {name:'Kreditaufnahme buchen', neu(){ const x = angebot(Math.random() < 0.5); if (!x.d) x.d = 2;
+    const D = r2(x.K * x.d / 100), A = r2(x.K - D), kv = x.n ? '4250 LBKV' : '4200 KBKV';
+    return {typ:'buchungssatz', frage:`Saitgig nimmt einen Kredit über ${eur(x.K)} mit einer Laufzeit von ${x.n ? `${x.n} ${x.n === 1 ? 'Jahr' : 'Jahren'}` : `${x.t} Tagen`} auf. Die Bank behält ${zz(x.d)} % Disagio ein und schreibt den Rest auf dem Bankkonto gut. Bilde den Buchungssatz.`,
+      konten:['2800 BK', '7510 ZAW', '4200 KBKV', '4250 LBKV', '6750 KGV'], soll:[['2800 BK', A], ['7510 ZAW', D]], haben:[[kv, x.K]],
+      nebenrechnung:`Disagio: ${eur(x.K)} · ${zz(x.d)} : 100 = ${eur(D)} · Auszahlungsbetrag: ${eur(A)} · ${x.n ? 'Laufzeit über 1 Jahr → 4250 LBKV' : 'Laufzeit bis 1 Jahr → 4200 KBKV'}`};
+  }}
+];
+
+/* ================= Modus wechseln ================= */
+let endlos = null, modus = 'lernen';
+try { modus = localStorage.getItem('effzins-modus') === 'endlos' ? 'endlos' : 'lernen'; } catch (e) {}
+function setModus(m){
+  modus = m; try { localStorage.setItem('effzins-modus', m); } catch (e) {}
+  document.getElementById('app').hidden = m !== 'lernen';
+  document.getElementById('endlos').hidden = m !== 'endlos';
+  document.querySelectorAll('[data-modus]').forEach(b => { b.classList.toggle('on', b.dataset.modus === m); b.setAttribute('aria-pressed', b.dataset.modus === m); });
+  if (m === 'endlos' && !endlos) endlos = Aufgaben.endlos({el:'#endlos', key:'effzins', stufen:ENDLOS});
+}
+document.querySelector('.modi').addEventListener('click', e => { const b = e.target.closest('[data-modus]'); if (b) setModus(b.dataset.modus); });
+Aufgaben.sequenz({el:'#app', key:'effzins', schritte:SCHRITTE});
+setModus(modus);
+</script>
+</body>
+</html>

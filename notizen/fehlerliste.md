@@ -13,6 +13,10 @@ Gesammelt im Thread „Aufbau der Seite“. Umgesetzt wird erst, wenn die Lehrkr
 
 ### Version vom 08.11.
 
+41. **Effektiver Zinssatz (BWR 9, Finanzierung)** (gewünscht 08.11.)
+    - `effektiver-zinssatz.html`: drei Angebote mit/ohne Disagio (Saitgig, 30.000,00 €, 240 Tage), Disagio wiederholen, tatsächliche Kreditkosten, Formel aus der Zinssatzformel, berechnen, vergleichen, Laufzeit in Jahren, Kreditaufnahme mit Disagio buchen (7510 ZAW, 4200 KBKV/4250 LBKV), Grenzen; Endlos mit 6 Stufen; dazu Selbstlernheft „Effektiver Zinssatz“.
+    - Zinsrechnung: Umstellen nach K, p und t (Erarbeitung, 3 Endlos-Stufen, Heft Kap. 5).
+
 40. **Zinsrechnung (BWR 9, Finanzierung)** (gewünscht 08.11.)
     - `zinsrechnung.html`: Erarbeitung nach dem Unterrichtsentwurf „Einführung Zinsrechnung“ (Jonas, 2.500,00 €, 5,35 %): Prozentrechnung → Jahreszinsen → Begriffe K, p, Z → Jahreszinsformel → Teil des Jahres (Lern-Chat) → Tageszinsformel → Zinstage → Dispo oder Kredit → Überblick; dazu Selbstlernheft „Zinsrechnung“.
     - Endlos-Modus mit 6 Stufen (Prozentrechnung, Jahreszinsen, Tageszinsen, Zinstage, Zinstage und Zinsen, Textaufgaben), Zufallsaufgaben mit Rechenweg.
