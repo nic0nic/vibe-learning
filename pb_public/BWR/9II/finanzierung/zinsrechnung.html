@@ -7,9 +7,9 @@
 <!--
   Zinsrechnung (BWR 9, Finanzierung; passend zum Selbstlernheft „Zinsrechnung“ und zum Unterrichtsentwurf „Einführung Zinsrechnung“):
   Erarbeitung: Prozentrechnung → Jahreszinsen mit der Prozentrechnung → Begriffe K, p, Z → Jahreszinsformel →
-  Teil des Jahres (Lern-Chat) → Tageszinsformel → Zinstage (kaufmännisch: Starttag zählt nicht, Endtag zählt mit,
-  Monat = 30 Tage, der 31. zählt wie der 30.) → alles zusammen → Vergleich Dispo/Ratenkredit → Überblick.
-  Endlos: 6 Stufen mit Zufallsaufgaben (Aufgaben.endlos aus lib/aufgaben.js), Generatoren in ENDLOS.
+  Teil des Jahres (Lern-Chat) → Tageszinsformel → Zinstage (deutsche Zinsmethode: Starttag zählt nicht, Endtag zählt mit,
+  Monat = 30 Tage, der 31. zählt wie der 30.) → alles zusammen → Umstellen nach K, p, t → Vergleich Dispo/Kredit → Überblick.
+  Endlos: 9 Stufen mit Zufallsaufgaben (auch Umstellen nach K, p, t) (Aufgaben.endlos aus lib/aufgaben.js), Generatoren in ENDLOS.
   Zahlen der Erarbeitung mit Python nachgerechnet (kaufmännisch gerundet).
   Gespeichert: zins-stand {schritt, erledigt}, zins-endlos {stufe, rekord}, zins-modus ('lernen' | 'endlos').
 -->
@@ -198,13 +198,50 @@ const SCHRITTE = [
         {t:'b) Zinsen', l:275.26, e:'€', tol:0.011, h:'Z = ' + B('17.300,00 € · 3,2 · 179', '100 · 360')}],
         ok:'Richtig! a) 105 Tage, 86,45 € · b) 179 Tage, 275,26 €'}]},
 
-  {id:'vergleich', kurz:'9 Vergleich', titel:'Dispo oder Kredit?', html:`<h2>9 · Dispo oder Kredit?</h2>
+  {id:'umstellen', kurz:'9 Umstellen', titel:'Die Formel umstellen', html:`<h2>9 · Die Formel umstellen: K, p und t berechnen</h2>
+    <div class="info"><p>In der Tageszinsformel stecken vier Größen: Z, K, p und t. Sind <b>drei davon bekannt</b>, kannst du die vierte berechnen. Dazu stellst du die Formel um:</p></div>
+    <table class="vgl"><tr><td>Tageszinsformel</td><td>Z = ${B('K · p · t', '100 · 360')}</td></tr>
+    <tr><td>beide Seiten · 100 · 360</td><td>Z · 100 · 360 = K · p · t</td></tr>
+    <tr><td>durch die zwei bekannten Größen teilen</td><td>z. B. durch p · t → K = ${B('Z · 100 · 360', 'p · t')}</td></tr></table>
+    <p><span class="formel">K = ${B('Z · 100 · 360', 'p · t')}</span> &nbsp; <span class="formel">p = ${B('Z · 100 · 360', 'K · t')}</span> &nbsp; <span class="formel">t = ${B('Z · 100 · 360', 'K · p')}</span></p>
+    <div class="alltag"><b>Merkhilfe</b>Oben steht immer <b>Z · 100 · 360</b>. Unten stehen die <b>beiden anderen bekannten Größen</b>.</div>`,
+    aufgaben:[{typ:'luecken', nr:'9.1', frage:'Vervollständige die umgestellten Formeln.', ok:'Richtig! Oben immer Z · 100 · 360, unten die beiden anderen Größen.',
+      text:'K = Z · 100 · 360 : ([[p · t|K · t|K · p]]) &nbsp;·&nbsp; p = Z · 100 · 360 : ([[K · t|p · t|K · p]]) &nbsp;·&nbsp; t = Z · 100 · 360 : ([[K · p|K · t|p · t]])'}]},
+
+  {id:'kapital', kurz:'10 K', titel:'Kapital berechnen',
+    erinnerung:`<p>K = ${B('Z · 100 · 360', 'p · t')}</p>`,
+    material:'<div class="mt">Material</div><p>a) Saitgig hat für einen Kredit 600,00 € Zinsen gezahlt. Zinssatz 6 % p. a., Laufzeit 120 Tage.<br>b) Lea hat für ihr Tagesgeld 15,00 € Zinsen erhalten. Zinssatz 1,5 % p. a., Anlagedauer 180 Tage.</p>',
+    aufgaben:[{typ:'zahlen', nr:'10.1', frage:'Berechne jeweils das Kapital (Kreditbetrag bzw. Guthaben).', felder:[
+      {t:'a) Kreditbetrag', l:30000, e:'€', tol:0.011, h:'K = ' + B('600,00 · 100 · 360', '6 · 120')},
+      {t:'b) Guthaben', l:2000, e:'€', tol:0.011, h:'K = ' + B('15,00 · 100 · 360', '1,5 · 180')}],
+      ok:`Richtig! a) ${B('600,00 · 100 · 360', '6 · 120')} = 30.000,00 € · b) ${B('15,00 · 100 · 360', '1,5 · 180')} = 2.000,00 €`}]},
+
+  {id:'zinssatz', kurz:'11 p', titel:'Zinssatz berechnen',
+    erinnerung:`<p>p = ${B('Z · 100 · 360', 'K · t')}</p>`,
+    material:'<div class="mt">Material</div><p>a) Saitgig hat einen Kredit über 24.000,00 € für 90 Tage aufgenommen und 330,00 € Zinsen gezahlt.<br>b) Jonas hat sein Girokonto 60 Tage lang um 1.200,00 € überzogen. Die Bank belastet ihn mit 23,00 € Zinsen.</p>',
+    aufgaben:[{typ:'zahlen', nr:'11.1', frage:'Berechne jeweils den Zinssatz.', felder:[
+      {t:'a) Zinssatz', l:5.5, e:'%', tol:0.011, h:'p = ' + B('330,00 · 100 · 360', '24.000,00 · 90')},
+      {t:'b) Zinssatz', l:11.5, e:'%', tol:0.011, h:'p = ' + B('23,00 · 100 · 360', '1.200,00 · 60')}],
+      ok:'Richtig! a) 5,5 % p. a. · b) 11,5 % p. a. – der Dispo ist mehr als doppelt so teuer.'}]},
+
+  {id:'zeit', kurz:'12 t', titel:'Zinstage berechnen',
+    erinnerung:`<p>t = ${B('Z · 100 · 360', 'K · p')}</p>`,
+    material:'<div class="mt">Material</div><p>a) Ein Kredit über 12.000,00 € zu 4,5 % p. a. kostet 135,00 € Zinsen.<br>b) Ein Kredit über 5.400,00 € zu 6 % p. a. kostet 72,00 € Zinsen.</p>',
+    aufgaben:[{typ:'zahlen', nr:'12.1', frage:'Berechne jeweils die Laufzeit in Tagen.', felder:[
+      {t:'a) Laufzeit', l:90, e:'Tage', tol:0, h:'t = ' + B('135,00 · 100 · 360', '12.000,00 · 4,5')},
+      {t:'b) Laufzeit', l:80, e:'Tage', tol:0, h:'t = ' + B('72,00 · 100 · 360', '5.400,00 · 6')}],
+      ok:'Richtig! a) 90 Tage · b) 80 Tage',
+      danach:{typ:'mc', frage:'Kredit a) wurde am 10.02. aufgenommen und läuft 90 Tage. An welchem Tag endet er?', options:['10.05.', '11.05.', '09.05.', '10.04.'], correct:[0], mischen:false,
+        why:{1:'Rechne nach: 20 (Feb) + 30 (Mär) + 30 (Apr) = 80 Tage, es fehlen noch 10 Tage – also der 10.05.', 2:'Der Endtag zählt mit: 20 + 30 + 30 + 10 = 90 Tage, das ist der 10.05.', 3:'Bis zum 10.04. sind es erst 20 + 30 + 10 = 60 Tage.'},
+        after:'20 (Februar) + 30 (März) + 30 (April) + 10 (Mai) = 90 Tage'}}]},
+
+  {id:'vergleich', kurz:'13 Vergleich', titel:'Dispo oder Kredit?', html:`<h2>13 · Dispo oder Kredit?</h2>
     <div class="info"><p>Jonas könnte sich auch einfach sein <b>Girokonto überziehen</b> (Dispositionskredit, kurz „Dispo“). Das ist bequem – aber ist es auch günstig?</p></div>
     <div class="alltag"><b>Aus dem Alltag · Konto im Minus</b>Mit der ersten Bankkarte bekommen viele einen Dispo. Er ist schnell genutzt, die Zinsen sind aber meist <b>deutlich höher</b> als bei einem Ratenkredit.</div>`,
     material:'<div class="mt">Material: zwei Möglichkeiten für 2.500,00 €, jeweils 130 Tage</div><p>A) Kredit der Bank: 5,35 % p. a. · B) Dispo auf dem Girokonto: 11,5 % p. a.</p>',
     erinnerung:`<p>${TF}</p>`, erinnerungZu:true,
     aufgaben:[
-      {typ:'zahlen', nr:'9.1', frage:'Berechne die Zinsen für beide Möglichkeiten und ermittle den Unterschied.', felder:[
+      {typ:'zahlen', nr:'13.1', frage:'Berechne die Zinsen für beide Möglichkeiten und ermittle den Unterschied.', felder:[
         {t:'A) Zinsen beim Kredit', l:48.30, e:'€', tol:0.011, h:'Das hast du in Schritt 6 schon berechnet.'},
         {t:'B) Zinsen beim Dispo', l:103.82, e:'€', tol:0.011, h:'Z = ' + B('2.500,00 € · 11,5 · 130', '100 · 360')},
         {t:'Unterschied', l:55.52, e:'€', tol:0.011, h:'Dispozinsen – Kreditzinsen'}],
@@ -220,7 +257,8 @@ const SCHRITTE = [
       text:'Die Zinsrechnung ist [[Prozentrechnung|Bruchrechnung|Zinseszinsrechnung]] mit eigenen Begriffen: Das Kapital K entspricht dem [[Grundwert|Prozentwert|Prozentsatz]], die Zinsen Z entsprechen dem [[Prozentwert|Grundwert|Prozentsatz]].<br>'
         + 'Der Zinssatz gilt immer für [[ein Jahr|einen Monat|einen Tag]]. Im kaufmännischen Jahr hat ein Jahr [[360|365|100]] Tage und ein Monat [[30|31|28]] Tage.<br>'
         + 'Für Zinsen eines ganzen Jahres gilt Z = K · p : [[100|360|36.000]], für einzelne Tage Z = K · p · t : [[(100 · 360)|100|360]].<br>'
-        + 'Bei den Zinstagen zählt der Starttag [[nicht|doppelt|immer]] mit, der Endtag zählt [[mit|nicht mit|halb]].'}]}
+        + 'Bei den Zinstagen zählt der Starttag [[nicht|doppelt|immer]] mit, der Endtag zählt [[mit|nicht mit|halb]].<br>'
+        + 'Zum Umstellen steht oben immer [[Z · 100 · 360|K · p · t|100 · 360]], unten die beiden anderen bekannten Größen.'}]}
 ];
 
 /* ================= Endlos: Zufallsaufgaben ================= */
@@ -253,6 +291,13 @@ const tageHinweis = z => z.m1 === z.m2 ? 'Gleicher Monat: Endtag – Starttag'
   : `Startmonat ${MON[z.m1]}: 30 – ${Math.min(z.d1, 30)} = ${30 - Math.min(z.d1, 30)} Tage · dann je 30 Tage für jeden vollen Monat dazwischen · Endmonat: der Endtag zählt mit${z.d1 === 31 || z.d2 === 31 ? ' · der 31. zählt wie der 30.' : ''}`;
 const zf = (K, p, t) => t == null ? 'Z = ' + B(`${eur(K)} · ${zz(p)}`, '100') : 'Z = ' + B(`${eur(K)} · ${zz(p)} · ${t}`, '100 · 360');
 const weg = (K, p, t) => `<span class="rw">${zf(K, p, t)} = ${eur(zinsen(K, p, t))}</span>`;
+// Für das Umstellen: K, p, t so wählen, dass die Zinsen genau auf Cent aufgehen (dann ist die Rückrechnung exakt)
+function umkehr(){
+  for (;;){
+    const K = pick([ri(10, 200) * 100, ri(10, 120) * 500]), pc = pick([ri(4, 24) * 50, ri(20, 120) * 10, ri(8, 48) * 25]), t = pick([ri(1, 12) * 30, ri(2, 35) * 10, ri(10, 350)]);
+    if ((K * pc * t) % 36000 === 0) return {K, p:pc / 100, t, Z:K * pc * t / 3600000};
+  }
+}
 const kredit = () => pick(['Ein Kredit', 'Ein Darlehen', 'Ein Bankkredit']);
 
 const ENDLOS = [
@@ -287,6 +332,18 @@ const ENDLOS = [
     return {typ:'zahlen', frage:`${kredit()} über ${eur(K)} zu ${zs(p)} p. a. läuft vom ${dat(z.d1, z.m1)} bis ${dat(z.d2, z.m2)} Ermittle die Zinstage und berechne die Zinsen.`,
       felder:[{t:'Zinstage', l:z.t, e:'Tage', tol:0, h:tageHinweis(z)}, {t:'Zinsen', l:Z, e:'€', tol:0.011, h:'Erst die Zinstage, dann ' + TF}],
       ok:`Richtig! <span class="rw">${tageWeg(z)}</span><br>${weg(K, p, z.t)}`};
+  }},
+  {name:'Kapital berechnen', neu(){ const x = umkehr(), K = x.K;
+    return {typ:'zahlen', frage:`${pick(['Für einen Kredit', 'Für ein Darlehen'])} wurden bei ${zs(x.p)} p. a. und einer Laufzeit von ${x.t} Tagen ${eur(x.Z)} Zinsen gezahlt. Berechne den Kreditbetrag.`,
+      felder:[{t:'Kreditbetrag', l:K, e:'€', tol:0.011, h:'K = ' + B('Z · 100 · 360', 'p · t')}], ok:'Richtig! <span class="rw">K = ' + B(`${eur(x.Z)} · 100 · 360`, `${zz(x.p)} · ${x.t}`) + ` = ${eur(K)}</span>`};
+  }},
+  {name:'Zinssatz berechnen', neu(){ const x = umkehr();
+    return {typ:'zahlen', frage:`Ein Kredit über ${eur(x.K)} läuft ${x.t} Tage. Die Bank verlangt ${eur(x.Z)} Zinsen. Berechne den Zinssatz.`,
+      felder:[{t:'Zinssatz', l:x.p, e:'%', tol:0.011, h:'p = ' + B('Z · 100 · 360', 'K · t')}], ok:'Richtig! <span class="rw">p = ' + B(`${eur(x.Z)} · 100 · 360`, `${eur(x.K)} · ${x.t}`) + ` = ${zs(x.p)}</span>`};
+  }},
+  {name:'Laufzeit berechnen', neu(){ const x = umkehr();
+    return {typ:'zahlen', frage:`Ein Kredit über ${eur(x.K)} zu ${zs(x.p)} p. a. kostet ${eur(x.Z)} Zinsen. Berechne die Laufzeit in Tagen.`,
+      felder:[{t:'Laufzeit', l:x.t, e:'Tage', tol:0, h:'t = ' + B('Z · 100 · 360', 'K · p')}], ok:'Richtig! <span class="rw">t = ' + B(`${eur(x.Z)} · 100 · 360`, `${eur(x.K)} · ${zz(x.p)}`) + ` = ${x.t} Tage</span>`};
   }},
   {name:'Textaufgaben', neu(){
     const z = zeitraum(), v = ri(0, 3);
