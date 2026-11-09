@@ -17,6 +17,9 @@
  * Unten rechts im Editor öffnet ein Zahnrad die Optionen (OPTIONEN weiter unten: Tags automatisch
  * schließen, Zeilen umbrechen, große Schrift). Sie gelten für alle HTML-Seiten und stehen im Browser
  * unter dem Schlüssel hw-optionen. Neue Option: Eintrag in OPTIONEN ergänzen.
+ * „Vorschau ausblenden“ (z. B. für den Beamer) gilt nur bis zum Neuladen der Seite.
+ * Die Grenze zwischen Editor und Vorschau lässt sich mit der Maus ziehen (Doppelklick: wieder halb und halb);
+ * das Verhältnis steht im Browser unter hw-teiler, getrennt für „neben“ und „unten“.
  * HtmlWerk.themaKnopf(button)          Hell/Dunkel-Knopf
  * HtmlWerk.dokument(html, css)         fertige Seite als Text (für Vorschau und Download)
  * HtmlWerk.pruefeHtml(html), HtmlWerk.pruefeCss(css, doc)   Regelprüfung → [{zeile, text, art}]
@@ -78,7 +81,16 @@ code{font-family:var(--mono);background:var(--panel2);padding:1px 5px;border-rad
 .hw-schalter button.an{background:var(--accent);color:#fff}
 [data-theme=dark] .hw-schalter button.an{color:#2e3440}
 .hw-schalter.klein button{font-size:12px;padding:2px 10px;text-transform:none;letter-spacing:0}
-.hw-flaeche{flex:1;display:flex;flex-direction:column;gap:12px;min-height:0}
+.hw-flaeche{flex:1;display:flex;flex-direction:column;min-height:0}
+.hw-teiler{flex:none;height:12px;cursor:row-resize;display:grid;place-items:center;touch-action:none}
+.hw-teiler::after{content:"";width:48px;height:4px;border-radius:2px;background:var(--border)}
+.hw-teiler:hover::after,.hw-teiler:focus-visible::after,.hw-zieht .hw-teiler::after{background:var(--accent)}
+.hw-teiler:focus-visible{outline:none}
+.hw-neben .hw-teiler{height:auto;width:12px;cursor:col-resize}
+.hw-neben .hw-teiler::after{width:4px;height:48px}
+.hw-zieht iframe{pointer-events:none}
+.hw-zieht{user-select:none}
+.hw-ohne-vorschau .hw-vor,.hw-ohne-vorschau .hw-teiler{display:none}
 .hw-neben .hw-flaeche{flex-direction:row}
 .pane{background:var(--panel);border:1px solid var(--border);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;min-height:0;min-width:0;flex:1 1 0}
 .pane-head{display:flex;align-items:center;gap:10px;padding:4px 12px;min-height:30px;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700;border-bottom:1px solid var(--border);background:var(--panel2)}
@@ -123,7 +135,8 @@ code{font-family:var(--mono);background:var(--panel2);padding:1px 5px;border-rad
 .hw-bilder button:hover{border-color:var(--accent)}
 .hw-bilder img{width:100%;height:80px;object-fit:contain;background:#fff;border-radius:6px}
 [hidden]{display:none!important}
-@media (max-width:900px){.hw-neben .hw-flaeche{flex-direction:column}}`;
+@media (max-width:900px){.hw-neben .hw-flaeche{flex-direction:column}
+  .hw-neben .hw-teiler{width:auto;height:12px;cursor:row-resize} .hw-neben .hw-teiler::after{width:48px;height:4px}}`;
   document.head.appendChild(Object.assign(document.createElement('style'), {textContent: CSS_TEXT}));
 
   /* ---------- Seite zusammenbauen ---------- */
@@ -517,13 +530,14 @@ code{font-family:var(--mono);background:var(--panel2);padding:1px 5px;border-rad
   const OPTIONEN = [
     {id: 'tags', text: 'Tags automatisch schließen', an: false, setze: (cm, el, v) => cm.setOption('autoCloseTags', v ? {whenOpening: true, whenClosing: true, indentTags: []} : false)},
     {id: 'umbruch', text: 'Lange Zeilen umbrechen', an: true, setze: (cm, el, v) => cm.setOption('lineWrapping', v)},
-    {id: 'gross', text: 'Große Schrift', an: false, setze: (cm, el, v) => { el.classList.toggle('hw-gross', v); cm.refresh(); }}
+    {id: 'gross', text: 'Große Schrift', an: false, setze: (cm, el, v) => { el.classList.toggle('hw-gross', v); cm.refresh(); }},
+    {id: 'ohneVorschau', text: 'Vorschau ausblenden', an: false, fluechtig: true, setze: (cm, el, v) => { el.classList.toggle('hw-ohne-vorschau', v); cm.refresh(); }}
   ];
   function optionen(){
     let o = {};
     try { o = JSON.parse(localStorage.getItem('hw-optionen') || '{}') || {}; } catch (e) {}
     const erg = {};
-    OPTIONEN.forEach(x => { erg[x.id] = typeof o[x.id] === 'boolean' ? o[x.id] : x.an; });
+    OPTIONEN.forEach(x => { erg[x.id] = typeof o[x.id] === 'boolean' && !x.fluechtig ? o[x.id] : x.an; });
     return erg;
   }
 
@@ -543,6 +557,7 @@ code{font-family:var(--mono);background:var(--panel2);padding:1px 5px;border-rad
       </div>
       <div class="hw-flaeche">
         <section class="pane hw-ed"><div class="pane-head"><span class="hw-datei">index.html</span><span class="status hw-stand"></span></div><textarea aria-label="Code"></textarea><div class="hw-hinweise" aria-live="polite"></div></section>
+        <div class="hw-teiler" role="separator" tabindex="0" aria-label="Größe von Editor und Vorschau ändern" title="Ziehen, um die Größe zu ändern. Doppelklick: halb und halb."></div>
         <section class="pane hw-vor"><div class="pane-head">Vorschau<span class="status hw-notiz"></span>
           <div class="hw-schalter klein hw-geraet" role="group" aria-label="Breite der Vorschau"><button type="button" data-b="" class="an">Computer</button><button type="button" data-b="handy">Handy</button></div></div>
           <div class="hw-buehne"><iframe title="Vorschau der Webseite"></iframe></div></section>
@@ -574,11 +589,46 @@ code{font-family:var(--mono);background:var(--panel2);padding:1px 5px;border-rad
       if (!x) return;
       werte[x.id] = e.target.checked;
       x.setze(cm, el, werte[x.id]);
-      try { localStorage.setItem('hw-optionen', JSON.stringify(werte)); } catch (err) {}
+      const fest = {};
+      OPTIONEN.forEach(y => { if (!y.fluechtig) fest[y.id] = werte[y.id]; });
+      try { localStorage.setItem('hw-optionen', JSON.stringify(fest)); } catch (err) {}
     });
     ['mousedown', 'touchstart'].forEach(n => { rad.addEventListener(n, e => e.stopPropagation()); optFeld.addEventListener(n, e => e.stopPropagation()); });
     document.addEventListener('click', e => { if (!optFeld.hidden && !optFeld.contains(e.target)) optZu(); });
     document.addEventListener('keydown', e => { if (e.key === 'Escape') optZu(); });
+
+    // Grenze zwischen Editor und Vorschau ziehen
+    const teiler = $('.hw-teiler'), flaeche = $('.hw-flaeche'), edPane = $('.hw-ed'), vorPane = $('.hw-vor');
+    const lage = opt.anordnung === 'neben' ? 'neben' : 'unten';
+    let anteile = {};
+    try { anteile = JSON.parse(localStorage.getItem('hw-teiler') || '{}') || {}; } catch (e) {}
+    function teile(r, merken){
+      r = Math.min(0.85, Math.max(0.15, r));
+      edPane.style.flex = `${r * 100} 1 0`; vorPane.style.flex = `${(1 - r) * 100} 1 0`;
+      teiler.setAttribute('aria-valuenow', Math.round(r * 100));
+      cm.refresh();
+      if (merken){ anteile[lage] = r; try { localStorage.setItem('hw-teiler', JSON.stringify(anteile)); } catch (e) {} }
+    }
+    const anteil = () => typeof anteile[lage] === 'number' ? anteile[lage] : 0.5;
+    function ausZeiger(e){
+      const k = flaeche.getBoundingClientRect(), quer = getComputedStyle(flaeche).flexDirection === 'row';
+      return quer ? (e.clientX - k.left) / k.width : (e.clientY - k.top) / k.height;
+    }
+    teiler.addEventListener('pointerdown', e => {
+      e.preventDefault(); teiler.setPointerCapture(e.pointerId); el.classList.add('hw-zieht');
+      const zieh = ev => teile(ausZeiger(ev), false);
+      const ende = ev => {
+        teiler.removeEventListener('pointermove', zieh); teiler.removeEventListener('pointerup', ende); teiler.removeEventListener('pointercancel', ende);
+        el.classList.remove('hw-zieht'); teile(ausZeiger(ev), true);
+      };
+      teiler.addEventListener('pointermove', zieh); teiler.addEventListener('pointerup', ende); teiler.addEventListener('pointercancel', ende);
+    });
+    teiler.addEventListener('dblclick', () => teile(0.5, true));
+    teiler.addEventListener('keydown', e => {
+      const d = {ArrowLeft: -0.03, ArrowUp: -0.03, ArrowRight: 0.03, ArrowDown: 0.03}[e.key];
+      if (d){ e.preventDefault(); teile(anteil() + d, true); }
+    });
+    if (typeof anteile[lage] === 'number') teile(anteile[lage], false);
 
     let docs = {html: cm.getDoc(), css: CodeMirror.Doc('', 'css')};
     let datei = 'html', mitCss = true, laden = false, timer = null, markiert = [], meld = {html: [], css: []};

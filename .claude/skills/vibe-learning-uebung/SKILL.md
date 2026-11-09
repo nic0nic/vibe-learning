@@ -419,6 +419,9 @@ w.download('seite.html')             eine Datei, CSS und Bilder eingebettet
 Unten rechts im Editor öffnet ein Zahnrad die Optionen (OPTIONEN weiter unten: Tags automatisch
 schließen, Zeilen umbrechen, große Schrift). Sie gelten für alle HTML-Seiten und stehen im Browser
 unter dem Schlüssel hw-optionen. Neue Option: Eintrag in OPTIONEN ergänzen.
+„Vorschau ausblenden“ (z. B. für den Beamer) gilt nur bis zum Neuladen der Seite.
+Die Grenze zwischen Editor und Vorschau lässt sich mit der Maus ziehen (Doppelklick: wieder halb und halb);
+das Verhältnis steht im Browser unter hw-teiler, getrennt für „neben“ und „unten“.
 HtmlWerk.themaKnopf(button)          Hell/Dunkel-Knopf
 HtmlWerk.dokument(html, css)         fertige Seite als Text (für Vorschau und Download)
 HtmlWerk.pruefeHtml(html), HtmlWerk.pruefeCss(css, doc)   Regelprüfung → [{zeile, text, art}]

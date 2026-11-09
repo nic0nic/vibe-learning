@@ -14,6 +14,9 @@ Gesammelt im Thread „Aufbau der Seite“. Umgesetzt wird erst, wenn die Lehrkr
 
 ### Version vom 09.11.
 
+46. **HTML-Editor: Grenze ziehen, Vorschau ausblenden** (gewünscht 09.11.)
+    Die Grenze zwischen Editor und Vorschau lässt sich mit der Maus ziehen (Doppelpfeil als Zeiger, Doppelklick: halb und halb; auch im Kurs, dort nach oben und unten). Das Verhältnis bleibt im Browser gespeichert (`hw-teiler`). Neue Option im Zahnrad: „Vorschau ausblenden“, gilt nur bis zum Neuladen der Seite. Getestet in Chromium.
+
 45. **HTML: Zahnrad mit Editor-Optionen und Fehlersuche** (gewünscht 09.11.)
     Unten rechts im Editor (freier Editor und Kurs) öffnet ein Zahnrad die Optionen: Tags automatisch schließen (aus), lange Zeilen umbrechen (an), große Schrift (aus); gespeichert im Browser unter `hw-optionen`, weitere Optionen in `OPTIONEN` in htmlwerk.js. Neue Seite fehlersuche.html: Endlosmodus, das Skript baut in 16 richtige Beispiele je einen von 21 Fehlerarten ein (über 350 verschiedene Aufgaben); erst Zeile anklicken, dann verbessern. Getestet in Chromium.
 
