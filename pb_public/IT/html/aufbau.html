@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="de" data-trainer="htmlaufbau">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aufbau einer Webseite – vibe learning</title>
+<!--
+  HTML-Kurs, Seite 1: Tags, Elemente, Attribute, Grundgerüst und Verschachtelung.
+  Durchgehendes Beispiel des Kurses: die Webseite der Rockband „Mouse Rat“.
+  Aufgaben stehen unten in HTMLKURS, die Technik steckt in lib/htmlkurs.js (Aufbau dort oben beschrieben).
+-->
+<script src="../../katalog.js"></script>
+<script src="../../nav.js"></script>
+<script src="../../sync.js"></script>
+<script>
+(function(){var t=null;try{t=localStorage.getItem('wenn-theme');}catch(e){}
+document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');})();
+</script>
+<link rel="stylesheet" href="../python/lib/codemirror.css">
+<script src="../python/lib/codemirror.min.js"></script>
+<script src="lib/codemirror-html.js"></script>
+<script src="lib/mediathek.js"></script>
+<script src="lib/htmlwerk.js"></script>
+</head>
+<body>
+<noscript><p>Bitte JavaScript aktivieren.</p></noscript>
+<script>
+// Grundgerüst mit beliebigem Inhalt im body
+const SEITE = body => `<!DOCTYPE html>
+<html>
+  <head>
+    <title>Mouse Rat</title>
+  </head>
+  <body>
+${body}
+  </body>
+</html>
+`;
+
+window.HTMLKURS = {
+  id: 'htmlaufbau',
+  titel: 'Aufbau einer Webseite',
+  logo: 'Aufbau',
+  aufgaben: [
+    {
+      titel: 'Tags und Elemente', stufe: 1,
+      wissen: `
+<p>Die Rockband <b>Mouse Rat</b> aus Pawnee braucht eine Webseite. In diesem Kurs baust du sie Schritt für Schritt.</p>
+<p>Eine Webseite wird in der Sprache <b>HTML</b> geschrieben. HTML zeichnet Text aus: Es sagt dem Browser, <i>was</i> ein Text ist, zum Beispiel eine Überschrift oder ein Absatz. Dafür gibt es <b>Tags</b> in spitzen Klammern.</p>
+~~~html
+<h1>Willkommen</h1>
+<p>Das ist ein Absatz.</p>
+~~~
+<table class="k-tab">
+  <tr><th>Teil</th><th>Beispiel</th></tr>
+  <tr><td>öffnendes Tag</td><td>{{<h1>}}</td></tr>
+  <tr><td>Inhalt</td><td>Willkommen</td></tr>
+  <tr><td>schließendes Tag (mit Schrägstrich)</td><td>{{</h1>}}</td></tr>
+</table>
+<p>Alles zusammen heißt <b>Element</b>. {{h1}} ist die wichtigste Überschrift, {{p}} ein Absatz (englisch <i>paragraph</i>).</p>`,
+      auftrag: `
+<p>Schreibe in den {{body}} (zwischen {{<body>}} und {{</body>}}):</p>
+<ul>
+  <li>die Überschrift {{h1}} mit dem Text <b>Mouse Rat</b></li>
+  <li>darunter einen Absatz {{p}} mit dem Text <b>Die beste Rockband aus Pawnee.</b></li>
+</ul>
+<p>Unten in der Vorschau siehst du sofort, wie der Browser deine Seite zeigt.</p>`,
+      start: SEITE('    '),
+      tipps: ['Die Überschrift lautet {{<h1>Mouse Rat</h1>}}.', 'Der Absatz: {{<p>Die beste Rockband aus Pawnee.</p>}}'],
+      tests: [
+        {sel: 'body h1', enthaelt: 'Mouse Rat', text: 'Überschrift <code>h1</code> mit dem Text „Mouse Rat“'},
+        {sel: 'body p', enthaelt: 'beste Rockband aus Pawnee', text: 'Absatz <code>p</code> mit dem Text „Die beste Rockband aus Pawnee.“'}
+      ]
+    },
+    {
+      titel: 'Jedes Tag wird geschlossen', stufe: 1,
+      wissen: `
+<p><b>Regel:</b> Zu jedem öffnenden Tag gehört ein schließendes Tag mit demselben Namen und einem Schrägstrich.</p>
+~~~html nur
+<p>Richtig: Der Absatz wird geschlossen.</p>
+<p>Falsch: Hier fehlt das Ende.
+~~~
+<p>Browser sind gutmütig und zeigen fehlerhafte Seiten oft trotzdem an. Verlassen kann man sich darauf nicht: Jeder Browser rät anders. Deshalb gibt es gemeinsame Regeln, die das <b>W3C</b> (World Wide Web Consortium) festlegt.</p>
+<p>Der Editor prüft diese Regeln, während du schreibst. Fehler stehen unter dem Code, die Zeile ist rot markiert. Ein Klick auf den Hinweis springt zur Zeile.</p>`,
+      auftrag: `
+<p>Andy hat angefangen, die Seite zu schreiben. Dabei sind ihm <b>drei Fehler</b> passiert.</p>
+<p>Lies die Hinweise unter dem Code und verbessere alle Fehler. Die Texte sollen gleich bleiben.</p>`,
+      start: SEITE(`    <h1>Mouse Rat</h2>
+    <p>Die beste Rockband aus Pawnee.
+    <p>Wir spielen Rock, wie er sein muss: laut und mit Gefühl.</p>
+    <p>Unser nächstes Konzert findest du bald hier.</p`),
+      tipps: ['Eine Überschrift, die mit {{<h1>}} beginnt, endet mit {{</h1>}}.', 'Der erste Absatz hat kein {{</p>}}. Beim letzten Absatz fehlt die spitze Klammer {{>}} am Ende.'],
+      tests: [
+        {sel: 'body h1', enthaelt: 'Mouse Rat', text: 'Überschrift <code>h1</code> „Mouse Rat“'},
+        {sel: 'body p', anzahl: 3, text: 'genau drei Absätze'},
+        {sel: 'body p', enthaelt: 'nächstes Konzert', text: 'Der letzte Absatz ist vollständig'}
+      ]
+    },
+    {
+      titel: 'Das Grundgerüst', stufe: 2,
+      wissen: `
+<p>Jede HTML-Seite hat dasselbe <b>Grundgerüst</b>:</p>
+~~~html nur
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Titel der Seite</title>
+  </head>
+  <body>
+    Hier steht alles, was man sieht.
+  </body>
+</html>
+~~~
+<table class="k-tab">
+  <tr><th>Teil</th><th>Bedeutung</th></tr>
+  <tr><td>{{<!DOCTYPE html>}}</td><td>erste Zeile: „Diese Datei ist HTML.“</td></tr>
+  <tr><td>{{html}}</td><td>umschließt die ganze Seite</td></tr>
+  <tr><td>{{head}}</td><td>Kopf: Angaben <i>über</i> die Seite, nicht sichtbar</td></tr>
+  <tr><td>{{title}}</td><td>Titel, steht oben im Reiter (Tab) des Browsers</td></tr>
+  <tr><td>{{body}}</td><td>Körper: der sichtbare Inhalt</td></tr>
+</table>
+<p>Die Zeilen sind <b>eingerückt</b>. Dem Browser ist das egal, aber du siehst so sofort, was wozu gehört.</p>`,
+      auftrag: `
+<p>Vom Grundgerüst steht nur der Anfang da. Ergänze:</p>
+<ul>
+  <li>im {{head}} den Titel <b>Mouse Rat</b></li>
+  <li>den {{body}} mit der Überschrift {{h1}} <b>Mouse Rat</b> und einem Absatz deiner Wahl</li>
+</ul>`,
+      start: `<!DOCTYPE html>
+<html>
+  <head>
+
+  </head>
+
+</html>
+`,
+      tipps: ['Der Titel: {{<title>Mouse Rat</title>}} zwischen {{<head>}} und {{</head>}}.', 'Der {{body}} beginnt nach {{</head>}} und endet vor {{</html>}}.'],
+      tests: [
+        {sel: 'head title', enthaelt: 'Mouse Rat', text: 'Titel „Mouse Rat“ im <code>head</code>'},
+        {sel: 'body h1', enthaelt: 'Mouse Rat', text: 'Überschrift <code>h1</code> „Mouse Rat“ im <code>body</code>'},
+        {test: doc => [...doc.querySelectorAll('body p')].some(p => p.textContent.trim().length >= 5), text: 'ein Absatz <code>p</code> mit eigenem Text'}
+      ]
+    },
+    {
+      titel: 'Elemente verschachteln', stufe: 2,
+      wissen: `
+<p>Elemente können <b>ineinander</b> stehen. Mit {{strong}} hebst du etwas Wichtiges hervor, mit {{em}} betonst du ein Wort.</p>
+~~~html
+<p>Der Eintritt ist <strong>frei</strong>, aber komm <em>pünktlich</em>.</p>
+~~~
+<p><b>Regel:</b> Was zuletzt geöffnet wurde, wird zuerst geschlossen. Wie bei Schachteln: Die innere Schachtel muss zu sein, bevor du die äußere schließt.</p>
+~~~html nur
+<p>Richtig: <strong>erst innen schließen,</strong> dann außen.</p>
+<p>Falsch: <strong>außen vor innen geschlossen.</p></strong>
+~~~`,
+      auftrag: `
+<p>Zwei Dinge sind zu tun:</p>
+<ul>
+  <li>Im ersten Absatz ist die Verschachtelung falsch. Verbessere sie.</li>
+  <li>Hebe im zweiten Absatz die Wörter <b>laut und mit Gefühl</b> mit {{strong}} hervor.</li>
+</ul>`,
+      start: SEITE(`    <h1>Mouse Rat</h1>
+    <p>Die <em>beste</em> Rockband aus <strong>Pawnee.</p></strong>
+    <p>Wir spielen Rock, wie er sein muss: laut und mit Gefühl.</p>`),
+      tipps: ['Im ersten Absatz muss {{</strong>}} vor {{</p>}} stehen.', 'Zweiter Absatz: {{<strong>laut und mit Gefühl</strong>}}'],
+      tests: [
+        {sel: 'body p', anzahl: 2, text: 'zwei Absätze'},
+        {sel: 'p strong', enthaelt: 'Pawnee', text: '„Pawnee“ ist im ersten Absatz hervorgehoben'},
+        {sel: 'p strong', enthaelt: 'laut und mit Gefühl', text: '„laut und mit Gefühl“ ist mit <code>strong</code> hervorgehoben'}
+      ]
+    },
+    {
+      titel: 'Attribute', stufe: 2,
+      wissen: `
+<p>Ein öffnendes Tag kann <b>Attribute</b> tragen. Sie geben dem Element zusätzliche Eigenschaften.</p>
+~~~html nur
+<html lang="de">
+~~~
+<table class="k-tab">
+  <tr><th>Teil</th><th>Beispiel</th></tr>
+  <tr><td>Name des Attributs</td><td>{{lang}}</td></tr>
+  <tr><td>Gleichheitszeichen</td><td>{{=}}</td></tr>
+  <tr><td>Attributwert in Anführungszeichen</td><td>{{"de"}}</td></tr>
+</table>
+<p>{{lang="de"}} sagt: Diese Seite ist auf Deutsch. Das brauchen zum Beispiel Vorleseprogramme für blinde Menschen, damit sie die richtige Aussprache wählen.</p>
+<p>In den {{head}} gehört außerdem diese Zeile:</p>
+~~~html nur
+<meta charset="utf-8">
+~~~
+<p>Sie legt den Zeichensatz fest, damit ä, ö, ü und ß überall richtig erscheinen. {{meta}} hat <b>keinen Inhalt</b> und deshalb auch kein schließendes Tag.</p>`,
+      auftrag: `
+<p>Ergänze die Seite von Mouse Rat:</p>
+<ul>
+  <li>Gib dem Element {{html}} das Attribut {{lang}} mit dem Wert {{de}}.</li>
+  <li>Schreibe in den {{head}} die Zeile mit dem Zeichensatz {{utf-8}}.</li>
+</ul>`,
+      start: SEITE(`    <h1>Mouse Rat</h1>
+    <p>Die beste Rockband aus Pawnee.</p>
+    <p>Wir spielen Rock, wie er sein muss: <strong>laut und mit Gefühl</strong>.</p>`),
+      tipps: ['Das Attribut steht im öffnenden Tag: {{<html lang="de">}}', 'In den head: {{<meta charset="utf-8">}}'],
+      tests: [
+        {sel: 'html[lang="de"]', text: '<code>html</code> hat das Attribut <code>lang="de"</code>'},
+        {sel: 'head meta[charset="utf-8" i]', text: 'Zeichensatz <code>utf-8</code> im <code>head</code>'},
+        {sel: 'body h1', enthaelt: 'Mouse Rat', text: 'Der Inhalt der Seite ist noch da'}
+      ]
+    },
+    {
+      titel: 'Eine Seite von Anfang an', stufe: 3,
+      wissen: `
+<p>Jetzt kannst du alles, was eine einfache Seite braucht:</p>
+<ul>
+  <li>Grundgerüst: {{<!DOCTYPE html>}}, {{html}}, {{head}}, {{body}}</li>
+  <li>im Kopf: {{meta}} mit dem Zeichensatz und {{title}}</li>
+  <li>im Körper: Überschrift {{h1}}, Absätze {{p}}, Hervorhebung mit {{strong}} oder {{em}}</li>
+</ul>
+<p>Denk an die Regeln: jedes Tag schließen, richtig verschachteln, Attributwerte in Anführungszeichen.</p>`,
+      auftrag: `
+<p>Der Editor ist leer. Schreibe die Startseite von Mouse Rat ganz allein:</p>
+<ul>
+  <li>vollständiges Grundgerüst, Sprache Deutsch, Zeichensatz {{utf-8}}</li>
+  <li>Titel der Seite: <b>Mouse Rat</b></li>
+  <li>Überschrift {{h1}}: <b>Mouse Rat</b></li>
+  <li>mindestens zwei Absätze über die Band</li>
+  <li>mindestens ein hervorgehobenes Wort ({{strong}} oder {{em}})</li>
+</ul>
+<p>Ideen für den Text: Sänger Andy, vier Mitglieder, Proberaum in einer Garage, der größte Hit heißt „5000 Kerzen im Wind“.</p>`,
+      start: '',
+      tipps: ['Beginne mit {{<!DOCTYPE html>}} und schreibe zuerst das leere Grundgerüst. Fülle es danach.', 'Schau bei Aufgabe 3 nach, wie das Grundgerüst aussieht.'],
+      tests: [
+        {sel: 'html[lang="de"]', text: 'Sprache Deutsch: <code>lang="de"</code>'},
+        {sel: 'head meta[charset="utf-8" i]', text: 'Zeichensatz <code>utf-8</code>'},
+        {sel: 'head title', enthaelt: 'Mouse Rat', text: 'Titel „Mouse Rat“'},
+        {sel: 'body h1', enthaelt: 'Mouse Rat', text: 'Überschrift <code>h1</code> „Mouse Rat“'},
+        {test: doc => [...doc.querySelectorAll('body p')].filter(p => p.textContent.trim().length >= 5).length >= 2, text: 'mindestens zwei Absätze'},
+        {sel: 'body strong, body em', text: 'mindestens ein hervorgehobenes Wort'}
+      ]
+    }
+  ]
+};
+</script>
+<script src="lib/htmlkurs.js"></script>
+</body>
+</html>

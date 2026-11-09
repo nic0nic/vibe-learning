@@ -48,6 +48,14 @@ vibe-learning/
 │   │   │   ├── bedingungen.html       geführte Übung if/elif/else; Aufgaben und Tests stehen in der Datei
 │   │   │   └── lib/                   Skulpt (Python), CodeMirror (Editor) und pykurs.js (Technik der
 │   │   │                              geführten Übungen, Aufbau einer Aufgabe dort oben beschrieben)
+│   │   ├── html/                  Webseiten mit HTML und CSS
+│   │   │   ├── index.html             Übersicht des Bereichs
+│   │   │   ├── editor.html            freier HTML-Editor: Schalter HTML/CSS, Vorschau, Download als eine Datei
+│   │   │   ├── aufbau.html …          Kurs in sechs Seiten (Aufbau, Text, Links und Bilder, CSS-Grundlagen,
+│   │   │   │                          Klassen und Abstände, Design und Projekt); Aufgaben und Tests in der Datei
+│   │   │   └── lib/                   htmlwerk.js (Editor, Vorschau, Regelprüfung, Tests), htmlkurs.js (Technik
+│   │   │                              der Kursseiten), mediathek.js (Bilder), mouserat.js (Beispielseite),
+│   │   │                              codemirror-html.js (Modi für HTML und CSS; CodeMirror selbst liegt in python/lib/)
 │   │   ├── datenbanken/
 │   │   │   ├── index.html             Übersicht des Bereichs
 │   │   │   ├── filmdatenbank.html     freie Abfragen an die Filmdatenbank

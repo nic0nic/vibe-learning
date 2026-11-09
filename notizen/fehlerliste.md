@@ -7,11 +7,15 @@ Gesammelt im Thread „Aufbau der Seite“. Umgesetzt wird erst, wenn die Lehrkr
 18. **Vorschlag: gemeinsame Teile in einen Ordner für alle Bereiche** (vorgeschlagen 02.11.)
     Die Datenbank-Seiten (abfragen.html, datenight.html, filmdatenbank.html in `IT/datenbanken/`) binden `../excel/basis.js`/`basis.css` (Stufen, Modi, Dock) und `../python/lib/codemirror.*` ein. Sauberer wäre z. B. `pb_public/lib/` für alles, was mehrere Bereiche nutzen. Seit dem 04.11. gibt es mehrere Fächer: Der Ordner gälte dann auch für BWR-Übungen (z. B. basis.js für Stufen und Modi). Betrifft alle Excel-, Python- und Datenbank-Seiten unter `IT/`.
     Stand 04.11.: `pb_public/lib/` gibt es jetzt (aufgaben.js/.css). basis.js und codemirror liegen noch in den Bereichen.
+    Stand 09.11.: Auch der neue Bereich `IT/html/` bindet `../python/lib/codemirror.*` ein (dazu eigene Modi in `IT/html/lib/codemirror-html.js`).
 
 
 ## Erledigt
 
 ### Version vom 09.11.
+
+44. **Neuer Bereich IT → HTML** (gewünscht 09.11.)
+    Freier HTML-Editor (Schalter HTML/CSS, Vorschau beim Tippen, Regelprüfung, Handy-Ansicht, Download als eine Datei) und Kurs in sechs Seiten nach Lehrplan (Aufbau, Text, Links und Bilder, CSS-Grundlagen, Klassen und Abstände, Design und Projekt), je 6 Aufgaben mit automatischer Prüfung. Durchgehendes Beispiel: Webseite der Band Mouse Rat. Aus den „z. B.“-Inhalten des Lehrplans bewusst weggelassen: Audio, Video, Tabellen, Formulare. Getestet in Chromium (36 Aufgaben mit Startcode und Musterlösung, auch als Einzeldatei und über PocketBase), nicht in Firefox.
 
 43. **Formeln in Erinnerungen nicht mit „·“ trennen** (gefunden 09.11.)
     Der Trennpunkt zwischen zwei Formeln sah aus wie ein Malpunkt (z. B. „Zinsen = Restschuld · Zinssatz / 100 · Rate = Zinsen + Tilgung“). Jetzt Zeilenumbruch: darlehensarten.html (4 Erinnerungen), zinsrechnung.html (Lückentext Umstellen), kredite-bank.html, kurzfristige-kredite.html.

@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="de" data-trainer="htmlklassen">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Klassen und Abstände – vibe learning</title>
+<!--
+  HTML-Kurs, Seite 5: Klassenselektor, Rahmen, Innen- und Außenabstand (Boxmodell), Bereiche mit div.
+  Durchgehendes Beispiel des Kurses: die Webseite der Rockband „Mouse Rat“ (Ausgangsstand in lib/mouserat.js).
+  Aufgaben stehen unten in HTMLKURS, die Technik steckt in lib/htmlkurs.js (Aufbau dort oben beschrieben).
+-->
+<script src="../../katalog.js"></script>
+<script src="../../nav.js"></script>
+<script src="../../sync.js"></script>
+<script>
+(function(){var t=null;try{t=localStorage.getItem('wenn-theme');}catch(e){}
+document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');})();
+</script>
+<link rel="stylesheet" href="../python/lib/codemirror.css">
+<script src="../python/lib/codemirror.min.js"></script>
+<script src="lib/codemirror-html.js"></script>
+<script src="lib/mediathek.js"></script>
+<script src="lib/htmlwerk.js"></script>
+<script src="lib/mouserat.js"></script>
+</head>
+<body>
+<noscript><p>Bitte JavaScript aktivieren.</p></noscript>
+<script>
+const CSS = window.MOUSERAT.css;
+// Stand der HTML-Datei nach Aufgabe 1 (Hinweis) und Aufgabe 2 (Mitglieder)
+const MR1 = window.MOUSERAT.html.replace('<p>Nächstes Konzert', '<p class="hinweis">Nächstes Konzert');
+const MR2 = MR1.replace(/<li>(Andy|Burly|Chang|Rivers)/g, '<li class="mitglied">$1');
+const HINWEIS = `
+.hinweis {
+  color: #f2c94c;
+  font-weight: bold;
+}
+`;
+const MITGLIED = `
+.mitglied {
+  font-size: 20px;
+}
+`;
+const KASTEN = `
+.hinweis {
+  color: #f2c94c;
+  font-weight: bold;
+  border: 2px solid #f2c94c;
+  border-radius: 8px;
+  background-color: #2b2e3f;
+  padding: 12px;
+}
+`;
+const BOX = `<div style="font:13px sans-serif;text-align:center;background:#f6d7a8;padding:14px;color:#222">Außenabstand (margin)
+<div style="background:#444;padding:4px;color:#fff">Rahmen (border)
+<div style="background:#b9dba0;padding:14px;color:#222">Innenabstand (padding)
+<div style="background:#a9c7ea;padding:8px">Inhalt</div></div></div></div>`;
+
+window.HTMLKURS = {
+  id: 'htmlklassen',
+  titel: 'Klassen und Abstände',
+  logo: 'Klassen',
+  css: true, bilder: true, datei: 'css',
+  aufgaben: [
+    {
+      titel: 'Eine Klasse vergeben', stufe: 1, datei: 'html',
+      wissen: `
+<p>Der Selektor {{p}} trifft <b>alle</b> Absätze. Oft soll aber nur ein bestimmter Absatz anders aussehen. Dafür gibst du ihm im HTML einen Namen: eine <b>Klasse</b>.</p>
+~~~html
+<p>Einlass ab 19 Uhr.</p>
+<p class="wichtig">Das Konzert ist ausverkauft!</p>
+~~~css
+.wichtig {
+  color: red;
+}
+~~~
+<table class="k-tab">
+  <tr><th>Wo?</th><th>Schreibweise</th></tr>
+  <tr><td>HTML</td><td>Attribut {{class="wichtig"}} im öffnenden Tag</td></tr>
+  <tr><td>CSS</td><td>Selektor mit <b>Punkt</b> davor: {{.wichtig}}</td></tr>
+</table>
+<p>Den Namen der Klasse denkst du dir selbst aus: klein geschrieben, ohne Leerzeichen und Umlaute. Er sagt am besten, <i>was</i> das Element ist, nicht wie es aussieht.</p>`,
+      auftrag: `
+<p>Das nächste Konzert soll auffallen.</p>
+<ul>
+  <li><b>HTML:</b> Gib dem Absatz „Nächstes Konzert: …“ die Klasse {{hinweis}}.</li>
+  <li><b>CSS:</b> Schreibe eine Regel für diese Klasse: Schriftfarbe {{#f2c94c}}, fett.</li>
+</ul>`,
+      start: window.MOUSERAT.html, startCss: CSS,
+      tipps: ['HTML: {{<p class="hinweis">Nächstes Konzert: …</p>}}', 'CSS: Der Selektor ist {{.hinweis}} mit Punkt. Fett heißt {{font-weight: bold;}}'],
+      tests: [
+        {sel: 'p.hinweis', enthaelt: 'Nächstes Konzert', text: 'Der Absatz „Nächstes Konzert“ hat die Klasse <code>hinweis</code>'},
+        {sel: '.hinweis', anzahl: 1, text: 'Nur dieser eine Absatz hat die Klasse'},
+        {regel: '.hinweis', text: 'Regel mit dem Selektor <code>.hinweis</code>'},
+        {stil: '.hinweis', attribut: 'color', wert: '#f2c94c', text: 'Der Hinweis ist gelb'},
+        {stil: '.hinweis', attribut: 'font-weight', wert: 'bold', text: 'Der Hinweis ist fett'}
+      ]
+    },
+    {
+      titel: 'Eine Klasse für mehrere Elemente', stufe: 1, datei: 'html',
+      wissen: `
+<p>Dieselbe Klasse darf <b>beliebig oft</b> vorkommen. Eine einzige Regel gestaltet dann alle Elemente mit dieser Klasse.</p>
+~~~html
+<ul>
+  <li class="neu">Die Grube</li>
+  <li>5000 Kerzen im Wind</li>
+  <li class="neu">Fang deinen Traum</li>
+</ul>
+~~~css
+.neu {
+  color: green;
+}
+~~~
+<table class="k-tab">
+  <tr><th>Selektor</th><th>trifft</th></tr>
+  <tr><td>{{li}}</td><td>alle Listenpunkte der Seite</td></tr>
+  <tr><td>{{.neu}}</td><td>nur Elemente mit {{class="neu"}}</td></tr>
+</table>`,
+      auftrag: `
+<p>Die Namen der Bandmitglieder sollen größer sein als die Songtitel.</p>
+<ul>
+  <li><b>HTML:</b> Gib allen vier Listenpunkten der Mitglieder die Klasse {{mitglied}}.</li>
+  <li><b>CSS:</b> Schreibe eine Regel für die Klasse: Schriftgröße {{20px}}.</li>
+</ul>`,
+      start: MR1, startCss: CSS + HINWEIS,
+      tipps: ['Jedes der vier {{li}} bekommt das Attribut: {{<li class="mitglied">Andy: …</li>}}', 'CSS: {{.mitglied { font-size: 20px; }}}'],
+      tests: [
+        {sel: 'ul li.mitglied', anzahl: 4, text: 'vier Listenpunkte mit der Klasse <code>mitglied</code>'},
+        {regel: '.mitglied', attribut: 'font-size', text: 'Regel mit dem Selektor <code>.mitglied</code>'},
+        {stil: '.mitglied', attribut: 'font-size', wert: '20px', text: 'Die Mitglieder stehen in 20 Pixel'},
+        {stil: 'ol li', attribut: 'font-size', ungleich: '20px', text: 'Die Songtitel bleiben, wie sie waren'}
+      ]
+    },
+    {
+      titel: 'Rahmen', stufe: 2,
+      wissen: `
+<p>Mit {{border}} bekommt ein Element einen Rahmen. Der Wert besteht aus <b>drei Teilen</b>, getrennt durch Leerzeichen:</p>
+~~~html
+<p class="karte">Eintritt frei</p>
+~~~css
+.karte {
+  border: 3px dashed darkorange;
+  border-radius: 10px;
+}
+~~~
+<table class="k-tab">
+  <tr><th>Teil</th><th>Beispiel</th><th>mögliche Werte</th></tr>
+  <tr><td>Breite</td><td>{{3px}}</td><td>Zahl mit Einheit</td></tr>
+  <tr><td>Art</td><td>{{dashed}}</td><td>{{solid}} (durchgezogen), {{dashed}} (gestrichelt), {{dotted}} (gepunktet)</td></tr>
+  <tr><td>Farbe</td><td>{{darkorange}}</td><td>Name oder Farbcode</td></tr>
+</table>
+<p>{{border-radius}} rundet die Ecken ab. Je größer der Wert, desto runder.</p>`,
+      auftrag: `
+<p>Der Hinweis auf das nächste Konzert bekommt einen Rahmen. Ergänze die Regel {{.hinweis}}:</p>
+<ul>
+  <li>Rahmen: {{2px}} breit, durchgezogen, Farbe {{#f2c94c}}</li>
+  <li>abgerundete Ecken: {{8px}}</li>
+</ul>`,
+      start: MR2, startCss: CSS + HINWEIS + MITGLIED,
+      tipps: ['Durchgezogen heißt {{solid}}.', '{{border: 2px solid #f2c94c;}} und {{border-radius: 8px;}}'],
+      tests: [
+        {regel: '.hinweis', attribut: 'border', text: 'Rahmen in der Regel <code>.hinweis</code>'},
+        {stil: '.hinweis', attribut: 'border', wert: '2px solid #f2c94c', text: 'Rahmen: 2 Pixel, durchgezogen, gelb'},
+        {stil: '.hinweis', attribut: 'border-radius', wert: '8px', text: 'Ecken mit 8 Pixel abgerundet'}
+      ]
+    },
+    {
+      titel: 'Innenabstand', stufe: 2,
+      wissen: `
+<p>Der Text klebt jetzt am Rahmen. Den Abstand zwischen Inhalt und Rahmen regelt {{padding}} (Innenabstand).</p>
+~~~html
+<p class="eng">ohne Innenabstand</p>
+<p class="luftig">mit Innenabstand</p>
+~~~css
+.eng, .luftig {
+  border: 2px solid darkorange;
+  background-color: #fff3d6;
+}
+
+.luftig {
+  padding: 16px;
+}
+~~~
+<p>Die Hintergrundfarbe füllt den Inhalt <b>und</b> den Innenabstand, bis zum Rahmen.</p>`,
+      auftrag: `
+<p>Gib dem Hinweis mehr Luft. Ergänze die Regel {{.hinweis}}:</p>
+<ul>
+  <li>Innenabstand: {{12px}}</li>
+  <li>Hintergrundfarbe: {{#2b2e3f}} (etwas heller als die Seite)</li>
+</ul>`,
+      start: MR2, startCss: CSS + HINWEIS.replace('bold;\n', 'bold;\n  border: 2px solid #f2c94c;\n  border-radius: 8px;\n') + MITGLIED,
+      tipps: ['{{padding: 12px;}} und {{background-color: #2b2e3f;}}'],
+      tests: [
+        {stil: '.hinweis', attribut: 'padding', wert: '12px', text: 'Innenabstand: 12 Pixel'},
+        {stil: '.hinweis', attribut: 'background-color', wert: '#2b2e3f', text: 'Hintergrundfarbe: <code>#2b2e3f</code>'},
+        {stil: '.hinweis', attribut: 'border', wert: '2px solid #f2c94c', text: 'Der Rahmen ist geblieben'}
+      ]
+    },
+    {
+      titel: 'Außenabstand und Boxmodell', stufe: 2,
+      wissen: `
+<p>Für den Browser ist jedes Element ein Kasten aus vier Schichten. Das nennt man <b>Boxmodell</b>:</p>
+${BOX}
+<p></p>
+<table class="k-tab">
+  <tr><th>Attribut</th><th>Bedeutung</th></tr>
+  <tr><td>{{padding}}</td><td>Innenabstand: zwischen Inhalt und Rahmen</td></tr>
+  <tr><td>{{border}}</td><td>Rahmen</td></tr>
+  <tr><td>{{margin}}</td><td>Außenabstand: zwischen Rahmen und den Nachbarn</td></tr>
+</table>
+<p>Abstände kannst du auch nur für <b>eine Seite</b> angeben: {{margin-top}} (oben), {{margin-bottom}} (unten), {{margin-left}} (links), {{margin-right}} (rechts). Dasselbe gilt für {{padding}}.</p>`,
+      auftrag: `
+<p>Die Abschnitte der Seite stehen zu dicht aufeinander.</p>
+<ul>
+  <li>Schreibe eine neue Regel für {{h2}}: Außenabstand nach <b>oben</b> {{40px}}.</li>
+  <li>Ergänze die Regel {{.mitglied}}: Außenabstand nach <b>unten</b> {{8px}}.</li>
+</ul>`,
+      start: MR2, startCss: CSS + KASTEN + MITGLIED,
+      tipps: ['{{h2 { margin-top: 40px; }}}', 'In die Regel {{.mitglied}} kommt {{margin-bottom: 8px;}}'],
+      tests: [
+        {stil: 'h2', attribut: 'margin-top', wert: '40px', text: 'Über jeder <code>h2</code> sind 40 Pixel Abstand'},
+        {stil: '.mitglied', attribut: 'margin-bottom', wert: '8px', text: 'Unter jedem Mitglied sind 8 Pixel Abstand'},
+        {stil: 'h2', attribut: 'color', wert: '#f2c94c', text: 'Die <code>h2</code> sind weiterhin gelb'}
+      ]
+    },
+    {
+      titel: 'Konzertkarten', stufe: 3, datei: 'html',
+      wissen: `
+<p>Manchmal gehören mehrere Elemente zusammen, etwa eine Überschrift und ein Absatz. Mit {{div}} (englisch <i>division</i>, Bereich) fasst du sie zu einem Kasten zusammen. Ein {{div}} hat selbst keine Bedeutung und kein Aussehen. Es ist dazu da, mit einer Klasse gestaltet zu werden.</p>
+~~~html
+<div class="karte">
+  <h3>Erntefest</h3>
+  <p>12. Juli, Eintritt frei</p>
+</div>
+~~~css
+.karte {
+  border: 2px solid darkorange;
+  padding: 10px;
+}
+~~~`,
+      auftrag: `
+<p>Unter „Konzerte“ stehen jetzt drei Termine, jeder in einem {{div}}. Mache daraus drei Karten:</p>
+<ul>
+  <li><b>HTML:</b> Gib allen drei {{div}} die Klasse {{konzert}}.</li>
+  <li><b>CSS:</b> Schreibe die Regel {{.konzert}} mit einem Rahmen, einer Hintergrundfarbe, mindestens {{10px}} Innenabstand und mindestens {{10px}} Außenabstand nach unten.</li>
+</ul>
+<p>Farben und Art des Rahmens wählst du selbst. Achte darauf, dass der Text gut lesbar bleibt.</p>`,
+      start: MR2.replace(/(<p class="hinweis">.*<\/p>\n)/, `$1    <div>
+      <h3>Schlangenloch-Lounge</h3>
+      <p>Samstag, 20 Uhr</p>
+    </div>
+    <div>
+      <h3>Erntefest Pawnee</h3>
+      <p>12. Juli, 18 Uhr</p>
+    </div>
+    <div>
+      <h3>Einheitskonzert</h3>
+      <p>30. August, 19 Uhr</p>
+    </div>
+`),
+      startCss: CSS + KASTEN + MITGLIED.replace('20px;\n', '20px;\n  margin-bottom: 8px;\n') + '\nh2 {\n  margin-top: 40px;\n}\n',
+      tipps: ['HTML: {{<div class="konzert">}}, dreimal.', 'CSS: vier Angaben in der Regel {{.konzert}}: {{border}}, {{background-color}}, {{padding}}, {{margin-bottom}}.'],
+      tests: [
+        {sel: 'div.konzert', anzahl: 3, text: 'drei <code>div</code> mit der Klasse <code>konzert</code>'},
+        {regel: '.konzert', attribut: 'border', text: 'Regel <code>.konzert</code> mit Rahmen'},
+        {stil: '.konzert', attribut: 'border-top-style', ungleich: 'none', text: 'Der Rahmen ist sichtbar'},
+        {stil: '.konzert', attribut: 'background-color', ungleich: 'transparent', text: 'Die Karten haben eine Hintergrundfarbe'},
+        {stil: '.konzert', attribut: 'padding-top', minPx: 10, text: 'mindestens 10 Pixel Innenabstand'},
+        {stil: '.konzert', attribut: 'margin-bottom', minPx: 10, text: 'mindestens 10 Pixel Außenabstand nach unten'},
+        {kontrast: '.konzert h3, .konzert p', min: 4.5, text: 'Der Text auf den Karten ist gut lesbar (Kontrast)'}
+      ]
+    }
+  ]
+};
+</script>
+<script src="lib/htmlkurs.js"></script>
+</body>
+</html>

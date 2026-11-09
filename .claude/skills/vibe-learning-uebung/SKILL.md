@@ -1,6 +1,6 @@
 ---
 name: vibe-learning-uebung
-description: Neue Übungsseite für die Plattform „vibe learning“ (IT: Excel, Python, Datenbanken, Tippen, Tools; BWR Jahrgangsstufe 9) bauen, passend zu Bibliotheken, Katalog und Speicherung.
+description: Neue Übungsseite für die Plattform „vibe learning“ (IT: Excel, Python, HTML, Datenbanken, Tippen, Tools; BWR Jahrgangsstufe 9) bauen, passend zu Bibliotheken, Katalog und Speicherung.
 ---
 
 # Neue Übung für vibe learning
@@ -355,6 +355,108 @@ PYKURS = {
 
 Verglichen wird ohne Groß-/Kleinschreibung, Satzzeichen und doppelte Leerzeichen,
 ä/ö/ü/ß zählen wie ae/oe/ue/ss. Texte in input("…") gehören nicht zur Ausgabe.
+```
+
+### IT/html/lib/htmlkurs.js – Geführte HTML- und CSS-Übungen
+
+```text
+vibe learning – geführte HTML- und CSS-Übungen mit Vorschau und automatischer Prüfung
+
+Eine Übungsseite (z. B. aufbau.html) legt window.HTMLKURS an und bindet danach ein:
+../python/lib/codemirror.min.js (+ .css), lib/codemirror-html.js, lib/mediathek.js,
+lib/htmlwerk.js und diese Datei.
+
+HTMLKURS = {
+  id:     'htmlaufbau',            Tool-id aus katalog.js (Speicherstand, Auswertung)
+  titel:  'Aufbau einer Webseite',
+  logo:   'Aufbau',                kurzer Text im Logo
+  css:    true,                    Schalter HTML/CSS zeigen (Standard: nein, nur HTML)
+  bilder: true,                    Knopf „Bilder“ zeigen (Standard: nein)
+  datei:  'css',                   welche Datei beim Öffnen einer Aufgabe zu sehen ist (Standard: 'html');
+                                   auch je Aufgabe möglich
+  aufgaben: [{
+    titel, stufe (1 einfach, 2 mittel, 3 schwer),
+    wissen:   Erklärung, auftrag: Aufgabe (beide HTML, dazu die Kurzformen unten)
+    start:    HTML im Editor, startCss: CSS im Editor
+              Mit css: true steht in start an der Stelle der Einbindung von style.css das Kürzel %CSS%.
+              (Die Zeile selbst darf nicht in der Seite stehen, sonst stolpert einzeldateien.py.)
+    tipps:    ['…', '…']           werden nacheinander aufgedeckt
+    tests:    [{…, text: 'Anzeige'}]   Arten siehe htmlwerk.js; zusätzlich müssen alle Regeln
+              von HTML und CSS eingehalten sein (Regelprüfung des Editors)
+    projekt:  true                 freie Abschlussaufgabe: zusätzlich Knopf „Herunterladen“
+  }]
+}
+
+Kurzformen in wissen und auftrag (Code muss dort nicht mit &lt; geschrieben werden):
+  {{<h1>}}                         Code im Satz
+  ~~~html                          Beispiel: Code und darunter das Ergebnis im Browser.
+  <h1>Hallo</h1>                   Die Zeilen ~~~ stehen allein am Zeilenanfang.
+  ~~~css                           optional: CSS zum Beispiel
+  h1 { color: red; }
+  ~~~
+  ~~~html nur   bzw.   ~~~css      nur Code zeigen, ohne Ergebnis
+```
+
+### IT/html/lib/htmlwerk.js – HTML: Editor mit Vorschau, Regelprüfung und Tests (Grundlage von htmlkurs.js und editor.html)
+
+```text
+vibe learning – HTML und CSS im Browser: Editor mit Vorschau, Regelprüfung und Bildern
+
+Grundlage für editor.html (freier Editor) und htmlkurs.js (geführte Übungen).
+Vorher einbinden: ../python/lib/codemirror.css, ../python/lib/codemirror.min.js,
+lib/codemirror-html.js, lib/mediathek.js (window.HTML_BILDER), dann diese Datei.
+
+const w = HtmlWerk.arbeitsplatz(host, {
+  anordnung: 'unten' | 'neben',      Vorschau unter oder neben dem Editor
+  onChange(html, css) {}             nach jeder Eingabe (zum Speichern)
+});
+w.lade({html, css, mitCss, bilder})  neuen Inhalt zeigen; mitCss: Schalter HTML/CSS sichtbar,
+                                     bilder: Knopf „Bilder“ sichtbar
+w.html(), w.css()                    aktueller Inhalt
+w.links, w.rechts                    Plätze in der Leiste für eigene Knöpfe
+w.pruefe(tests)                      → Promise {ok, regeln: [{datei, zeile, text}], tests: [{ok, text}]}
+w.download('seite.html')             eine Datei, CSS und Bilder eingebettet
+HtmlWerk.themaKnopf(button)          Hell/Dunkel-Knopf
+HtmlWerk.dokument(html, css)         fertige Seite als Text (für Vorschau und Download)
+HtmlWerk.pruefeHtml(html), HtmlWerk.pruefeCss(css, doc)   Regelprüfung → [{zeile, text, art}]
+
+Die CSS-Datei heißt immer style.css. Die Zeile <link rel="stylesheet" href="style.css">
+im HTML ist gesperrt und lässt sich nicht ändern oder löschen.
+Bilder: src="bilder/<name>" mit einem Namen aus mediathek.js.
+Die Vorschau führt kein JavaScript aus; Links öffnen sich dort nicht.
+
+Tests (Daten, jeweils mit text = Anzeige in der Rückmeldung):
+  {sel: 'ul li', min: 3}                 Elemente zum Selektor; min (Standard 1), anzahl (genau) oder keine: true
+  {sel: 'h1', enthaelt: 'Mouse Rat'}     … deren Text das enthält (Groß-/Kleinschreibung egal)
+  {stil: 'h1', attribut: 'color', wert: 'red'}    berechneter Stil aller Treffer; statt wert auch
+                                         ungleich: 'black', minPx: 18, maxPx: 40
+  {regel: '.mitglied', attribut: 'border'}        CSS-Regel mit diesem Selektor (auch /RegExp/), attribut optional
+  {quelle: /…/}, {quelleNicht: /…/}      Muster im HTML-Text
+  {css: /…/}, {cssNicht: /…/}            Muster im CSS-Text (ohne Kommentare)
+  {kontrast: 'p', min: 4.5}              Kontrast Schrift zu Hintergrund
+  {passt: 375}                           kein Querrollen bei dieser Breite in px
+  {test: (doc, html, css) => true}       Sonderfall als Funktion
+```
+
+### IT/html/lib/mediathek.js – HTML: Bilder für Editor und Kurs
+
+```text
+vibe learning – Bilder für den HTML-Editor und den HTML-Kurs (Band „Mouse Rat“)
+
+window.HTML_BILDER = {'<dateiname>': {titel, svg}}. Im HTML der Schüler heißt die Datei bilder/<dateiname>.
+Eigene Zeichnungen als SVG, damit alles ohne Server und in der Einzeldatei läuft.
+Neues Bild: hier ergänzen, es erscheint dann von selbst unter „Bilder“.
+```
+
+### IT/html/lib/mouserat.js – HTML: Beispielseite des Kurses als Ausgangsstand
+
+```text
+vibe learning – HTML-Kurs: die Seite der Band „Mouse Rat“, wie sie nach den HTML-Kapiteln aussieht
+
+Ausgangsstand für die Kursseiten zu CSS und Design (nach htmlwerk.js einbinden, vor der Aufgabenliste):
+  MOUSERAT.html   ganze Seite; %CSS% steht für die Einbindung von style.css (ersetzt htmlkurs.js)
+  MOUSERAT.css    Stilvorlage nach dem Kapitel „CSS-Grundlagen“
+Varianten für einzelne Aufgaben bildet die Kursseite mit .replace(…).
 ```
 
 ### IT/datenbanken/abfragen.js – Datenbanken: SQL-Abfragen mit Entwurfsansicht und Editor (dazu abfragen.css)

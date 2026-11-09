@@ -1,6 +1,6 @@
 # vibe learning
 
-Übungen für den Unterricht: IT (Excel, Python, Datenbanken, Tippen und Tools) und BWR (Jahrgangsstufe 9). Mit KI erstellt.
+Übungen für den Unterricht: IT (Excel, Python, HTML, Datenbanken, Tippen und Tools) und BWR (Jahrgangsstufe 9). Mit KI erstellt.
 
 ## Einzelne Übung nutzen (ohne Server)
 

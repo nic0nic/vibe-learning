@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="de" data-trainer="htmlcss">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CSS-Grundlagen – vibe learning</title>
+<!--
+  HTML-Kurs, Seite 4: Stilvorlagen mit CSS – Regel aus Selektor, Attribut und Attributwert; Farbe, Schrift, Ausrichtung.
+  Durchgehendes Beispiel des Kurses: die Webseite der Rockband „Mouse Rat“ (Ausgangsstand in lib/mouserat.js).
+  Aufgaben stehen unten in HTMLKURS, die Technik steckt in lib/htmlkurs.js (Aufbau dort oben beschrieben).
+-->
+<script src="../../katalog.js"></script>
+<script src="../../nav.js"></script>
+<script src="../../sync.js"></script>
+<script>
+(function(){var t=null;try{t=localStorage.getItem('wenn-theme');}catch(e){}
+document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');})();
+</script>
+<link rel="stylesheet" href="../python/lib/codemirror.css">
+<script src="../python/lib/codemirror.min.js"></script>
+<script src="lib/codemirror-html.js"></script>
+<script src="lib/mediathek.js"></script>
+<script src="lib/htmlwerk.js"></script>
+<script src="lib/mouserat.js"></script>
+</head>
+<body>
+<noscript><p>Bitte JavaScript aktivieren.</p></noscript>
+<script>
+const MR = window.MOUSERAT.html;
+const BODY = `body {
+  background-color: #1d1f2b;
+  color: white;
+}
+`;
+const SCHRIFT = `body {
+  background-color: #1d1f2b;
+  color: white;
+  font-family: Arial, sans-serif;
+}
+
+h1 {
+  color: red;
+  font-size: 48px;
+}
+`;
+
+window.HTMLKURS = {
+  id: 'htmlcss',
+  titel: 'CSS-Grundlagen',
+  logo: 'CSS',
+  css: true, bilder: true, datei: 'css',
+  aufgaben: [
+    {
+      titel: 'Die erste Regel', stufe: 1,
+      wissen: `
+<p>HTML legt fest, <b>was</b> auf der Seite steht: Überschriften, Absätze, Listen. Wie das <b>aussieht</b>, bestimmt eine zweite Sprache: <b>CSS</b>. Sie steht in einer eigenen Datei, der Stilvorlage {{style.css}}.</p>
+<p>Über dem Code gibt es jetzt einen Schalter zwischen <b>HTML</b> und <b>CSS</b>. In der HTML-Datei bindet diese Zeile im {{head}} die Stilvorlage ein. Sie ist fest und lässt sich nicht löschen:</p>
+~~~html nur
+%CSS%
+~~~
+<p>Eine Stilvorlage besteht aus <b>Regeln</b>:</p>
+~~~html
+<h2>Konzerte</h2>
+<p>Samstag, 20 Uhr</p>
+~~~css
+h2 {
+  color: blue;
+}
+~~~
+<table class="k-tab">
+  <tr><th>Teil</th><th>Beispiel</th><th>Bedeutung</th></tr>
+  <tr><td>Selektor</td><td>{{h2}}</td><td>Für welche Elemente gilt die Regel?</td></tr>
+  <tr><td>Attribut</td><td>{{color}}</td><td>Was wird eingestellt? Hier die Schriftfarbe.</td></tr>
+  <tr><td>Attributwert</td><td>{{blue}}</td><td>Auf welchen Wert?</td></tr>
+</table>
+<p>Die Angaben stehen in geschweiften Klammern. Nach dem Attribut folgt ein Doppelpunkt, am Ende jeder Angabe ein Strichpunkt. Farbnamen sind englisch: {{red}}, {{blue}}, {{green}}, {{orange}}, {{white}}, {{black}} …</p>`,
+      auftrag: `
+<p>Die Seite von Mouse Rat sieht noch aus wie ein Schulaufsatz. Das ändert sich jetzt.</p>
+<p>Schreibe in die Datei {{style.css}} eine Regel, die die Überschrift {{h1}} <b>rot</b> färbt.</p>`,
+      start: MR, startCss: '',
+      tipps: ['Der Selektor ist {{h1}}, das Attribut {{color}}, der Wert {{red}}.', 'Die ganze Regel: {{h1 { color: red; }}}'],
+      tests: [
+        {regel: 'h1', attribut: 'color', text: 'Regel mit dem Selektor <code>h1</code> und dem Attribut <code>color</code>'},
+        {stil: 'h1', attribut: 'color', wert: 'red', text: 'Die Überschrift <code>h1</code> ist rot'}
+      ]
+    },
+    {
+      titel: 'Hintergrund und Schriftfarbe', stufe: 1,
+      wissen: `
+<p>Eine Regel kann <b>mehrere Angaben</b> enthalten, jede in einer eigenen Zeile.</p>
+~~~html
+<p>Heute Abend: Mouse Rat live!</p>
+~~~css
+p {
+  background-color: black;
+  color: #ffd700;
+}
+~~~
+<table class="k-tab">
+  <tr><th>Attribut</th><th>Bedeutung</th></tr>
+  <tr><td>{{color}}</td><td>Schriftfarbe</td></tr>
+  <tr><td>{{background-color}}</td><td>Hintergrundfarbe</td></tr>
+</table>
+<p>Mit Namen kommt man nicht weit. Jede beliebige Farbe schreibst du als <b>Farbcode</b>: ein {{#}} und sechs Zeichen, je zwei für den Anteil Rot, Grün und Blau. {{#000000}} ist Schwarz, {{#ffffff}} Weiß, {{#ff0000}} reines Rot.</p>
+<p>Der Selektor {{body}} trifft die ganze Seite. Was du dort einstellst, <b>erben</b> die Elemente darin, zum Beispiel die Schriftfarbe.</p>`,
+      auftrag: `
+<p>Eine Rockband braucht eine dunkle Seite. Ergänze eine Regel für {{body}}:</p>
+<ul>
+  <li>Hintergrundfarbe: {{#1d1f2b}} (fast schwarz)</li>
+  <li>Schriftfarbe: {{white}}</li>
+</ul>`,
+      start: MR, startCss: 'h1 {\n  color: red;\n}\n',
+      tipps: ['Beginne mit {{body {}} und schließe mit {{}}}. Dazwischen stehen zwei Zeilen.', '{{background-color: #1d1f2b;}} und {{color: white;}}'],
+      tests: [
+        {regel: 'body', text: 'Regel mit dem Selektor <code>body</code>'},
+        {stil: 'body', attribut: 'background-color', wert: '#1d1f2b', text: 'Hintergrundfarbe der Seite: <code>#1d1f2b</code>'},
+        {stil: 'body', attribut: 'color', wert: 'white', text: 'Schriftfarbe der Seite: weiß'},
+        {stil: 'p', attribut: 'color', wert: 'white', text: 'Die Absätze haben die Schriftfarbe geerbt'}
+      ]
+    },
+    {
+      titel: 'Schrift', stufe: 2,
+      wissen: `
+<p>Auch die Schrift stellst du mit CSS ein.</p>
+~~~html
+<h2>Konzerte</h2>
+<p>Samstag, 20 Uhr</p>
+~~~css
+h2 {
+  font-family: Georgia, serif;
+  font-size: 30px;
+}
+~~~
+<table class="k-tab">
+  <tr><th>Attribut</th><th>Bedeutung</th><th>Beispielwert</th></tr>
+  <tr><td>{{font-family}}</td><td>Schriftart</td><td>{{Arial, sans-serif}}</td></tr>
+  <tr><td>{{font-size}}</td><td>Schriftgröße</td><td>{{20px}}</td></tr>
+</table>
+<ul>
+  <li>Bei {{font-family}} nennst du mehrere Schriften mit Komma. Fehlt die erste auf einem Gerät, nimmt der Browser die nächste. Am Ende steht immer eine allgemeine Angabe: {{sans-serif}} (ohne Füßchen) oder {{serif}} (mit Füßchen).</li>
+  <li>Größen brauchen eine <b>Einheit</b>. {{px}} steht für Pixel und folgt ohne Leerzeichen auf die Zahl.</li>
+</ul>`,
+      auftrag: `
+<p>Gib der Seite eine moderne Schrift:</p>
+<ul>
+  <li>ganze Seite ({{body}}): Schriftart {{Arial, sans-serif}}</li>
+  <li>Überschrift {{h1}}: Schriftgröße {{48px}}</li>
+</ul>
+<p>Ergänze dafür die Regeln, die es schon gibt.</p>`,
+      start: MR, startCss: 'h1 {\n  color: red;\n}\n\n' + BODY,
+      tipps: ['In die Regel für {{body}} kommt eine dritte Zeile: {{font-family: Arial, sans-serif;}}', 'In die Regel für {{h1}}: {{font-size: 48px;}}'],
+      tests: [
+        {stil: 'body', attribut: 'font-family', wert: 'Arial, sans-serif', text: 'Schriftart der Seite: <code>Arial, sans-serif</code>'},
+        {stil: 'h1', attribut: 'font-size', wert: '48px', text: 'Schriftgröße von <code>h1</code>: 48 Pixel'},
+        {stil: 'body', attribut: 'background-color', wert: '#1d1f2b', text: 'Der dunkle Hintergrund ist geblieben'}
+      ]
+    },
+    {
+      titel: 'Mehrere Selektoren, Ausrichtung', stufe: 2,
+      wissen: `
+<p>Sollen verschiedene Elemente gleich aussehen, schreibst du die Selektoren mit <b>Komma</b> vor eine gemeinsame Regel. So musst du eine Farbe später nur an einer Stelle ändern.</p>
+~~~html
+<h2>Konzerte</h2>
+<h3>Im Sommer</h3>
+<p>Erntefest Pawnee</p>
+~~~css
+h2, h3 {
+  color: darkorange;
+}
+
+h2 {
+  text-align: center;
+}
+~~~
+<p>{{text-align}} richtet Text aus: {{left}} (links), {{center}} (mittig) oder {{right}} (rechts).</p>
+<p>Für ein Element dürfen mehrere Regeln gelten. Der Browser fasst sie zusammen: {{h2}} ist hier orange <b>und</b> mittig.</p>`,
+      auftrag: `
+<p>Die Farbe der Band ist Gelb. Ändere die Stilvorlage:</p>
+<ul>
+  <li>{{h1}} und {{h2}} bekommen in <b>einer gemeinsamen Regel</b> die Schriftfarbe {{#f2c94c}}.</li>
+  <li>{{h1}} steht mittig. Die Angabe {{color: red;}} bei {{h1}} brauchst du nicht mehr.</li>
+</ul>`,
+      start: MR, startCss: SCHRIFT,
+      tipps: ['Die gemeinsame Regel beginnt mit {{h1, h2 {}}.', 'In die Regel für {{h1}} kommt {{text-align: center;}}. Lösche dort die Zeile mit {{color: red;}}.'],
+      tests: [
+        {css: /(^|\})\s*h[12]\s*,\s*h[12]\s*\{/, text: 'gemeinsame Regel für <code>h1, h2</code>'},
+        {stil: 'h1', attribut: 'color', wert: '#f2c94c', text: '<code>h1</code> ist gelb (<code>#f2c94c</code>)'},
+        {stil: 'h2', attribut: 'color', wert: '#f2c94c', text: 'alle <code>h2</code> sind gelb'},
+        {stil: 'h1', attribut: 'text-align', wert: 'center', text: '<code>h1</code> steht mittig'},
+        {stil: 'h2', attribut: 'text-align', ungleich: 'center', text: '<code>h2</code> bleibt linksbündig'}
+      ]
+    },
+    {
+      titel: 'Fehler in der Stilvorlage', stufe: 2,
+      wissen: `
+<p>Auch für CSS legt das W3C die Regeln fest. Anders als bei HTML rät der Browser hier nicht: Eine Angabe, die er nicht versteht, <b>lässt er einfach weg</b>. Die Seite sieht dann anders aus als geplant, ohne Fehlermeldung.</p>
+<p>Die häufigsten Fehler:</p>
+<ul>
+  <li>Strichpunkt am Ende einer Angabe vergessen</li>
+  <li>Doppelpunkt zwischen Attribut und Wert vergessen</li>
+  <li>schließende Klammer {{}}} vergessen</li>
+  <li>Einheit vergessen: {{48}} statt {{48px}}</li>
+  <li>deutsche statt englische Wörter</li>
+</ul>
+<p>Der Editor zeigt solche Fehler unter dem Code an, genau wie bei HTML.</p>`,
+      auftrag: `
+<p>Chang hat an der Stilvorlage weitergeschrieben, und jetzt ist die Seite kaputt.</p>
+<p>Finde alle <b>fünf Fehler</b> in {{style.css}} und verbessere sie. Nach jedem behobenen Fehler zeigt der Editor den nächsten.</p>`,
+      start: MR,
+      startCss: `body {
+  background-color: #1d1f2b
+  color: weiß;
+  font-family: Arial, sans-serif;
+}
+
+h1, h2 {
+  color: #f2c94c;
+
+h1 {
+  font-size: 48;
+  text-align center;
+}
+`,
+      tipps: ['Zeile 2 endet ohne Strichpunkt. Weiß heißt auf Englisch {{white}}.', 'Die Regel für {{h1, h2}} wird nie geschlossen. Bei {{font-size}} fehlt die Einheit, bei {{text-align}} der Doppelpunkt.'],
+      tests: [
+        {stil: 'body', attribut: 'background-color', wert: '#1d1f2b', text: 'dunkler Hintergrund'},
+        {stil: 'body', attribut: 'color', wert: 'white', text: 'weiße Schrift'},
+        {stil: 'h2', attribut: 'color', wert: '#f2c94c', text: 'gelbe Überschriften'},
+        {stil: 'h1', attribut: 'font-size', wert: '48px', text: '<code>h1</code> ist 48 Pixel groß'},
+        {stil: 'h1', attribut: 'text-align', wert: 'center', text: '<code>h1</code> steht mittig'}
+      ]
+    },
+    {
+      titel: 'Links und Text gestalten', stufe: 3,
+      wissen: `
+<p>Jedes HTML-Element lässt sich gestalten, auch Links und Absätze. Drei weitere Attribute:</p>
+<table class="k-tab">
+  <tr><th>Attribut</th><th>Bedeutung</th><th>Beispielwerte</th></tr>
+  <tr><td>{{font-weight}}</td><td>Schriftstärke</td><td>{{bold}} (fett), {{normal}}</td></tr>
+  <tr><td>{{text-decoration}}</td><td>Linie am Text</td><td>{{underline}} (unterstrichen), {{none}} (keine)</td></tr>
+  <tr><td>{{line-height}}</td><td>Zeilenabstand als Vielfaches der Schriftgröße</td><td>{{1.5}}</td></tr>
+</table>
+~~~html
+<p>Karten gibt es <a href="#karten">an der Abendkasse</a>.</p>
+~~~css
+a {
+  color: darkorange;
+  font-weight: bold;
+}
+~~~
+<p>Blaue Links auf dunklem Grund sind schwer zu lesen. Genug <b>Kontrast</b> zwischen Schrift und Hintergrund gehört zu einer gut bedienbaren Seite.</p>`,
+      auftrag: `
+<p>Schreibe zwei neue Regeln:</p>
+<ul>
+  <li>Links ({{a}}): Schriftfarbe {{#f2c94c}}, fett</li>
+  <li>Absätze ({{p}}): Zeilenabstand {{1.5}}</li>
+</ul>`,
+      start: MR, startCss: window.MOUSERAT.css.replace(/\na \{[\s\S]*$/, ''),
+      tipps: ['Die erste Regel: Selektor {{a}}, darin {{color}} und {{font-weight}}.', '{{p { line-height: 1.5; }}} Der Wert hat keine Einheit und einen Punkt statt Komma.'],
+      tests: [
+        {regel: 'a', attribut: 'color', text: 'Regel für <code>a</code>'},
+        {stil: 'a', attribut: 'color', wert: '#f2c94c', text: 'Links sind gelb (<code>#f2c94c</code>)'},
+        {stil: 'a', attribut: 'font-weight', wert: 'bold', text: 'Links sind fett'},
+        {stil: 'p', attribut: 'line-height', wert: '1.5', text: 'Zeilenabstand der Absätze: 1.5'}
+      ]
+    }
+  ]
+};
+</script>
+<script src="lib/htmlkurs.js"></script>
+</body>
+</html>

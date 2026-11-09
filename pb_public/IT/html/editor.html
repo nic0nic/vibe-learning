@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="de" data-trainer="htmled">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HTML-Editor – vibe learning</title>
+<!--
+  Freier HTML-Editor: links Code (Schalter HTML/CSS), rechts die Vorschau, die sich beim Tippen aktualisiert.
+  Die Technik steckt in lib/htmlwerk.js (Aufbau dort oben beschrieben).
+  Der Code wird im Browser gespeichert (Schlüssel htmled-html, htmled-css), über PocketBase pro Schüler.
+-->
+<script src="../../katalog.js"></script>
+<script src="../../nav.js"></script>
+<script src="../../sync.js"></script>
+<script>
+(function(){var t=null;try{t=localStorage.getItem('wenn-theme');}catch(e){}
+document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');})();
+</script>
+<link rel="stylesheet" href="../python/lib/codemirror.css">
+<script src="../python/lib/codemirror.min.js"></script>
+<script src="lib/codemirror-html.js"></script>
+<script src="lib/mediathek.js"></script>
+<script src="lib/htmlwerk.js"></script>
+<style>
+.wrap{flex:1;display:flex;flex-direction:column;min-height:0;width:min(1700px,100%);margin:0 auto;padding:12px 16px 16px}
+.brand{font:800 20px var(--mono);letter-spacing:-.5px;margin-right:8px}
+.brand span{color:var(--accent)}
+@media (max-width:900px){html,body{height:auto} .wrap{height:160vh}}
+</style>
+</head>
+<body>
+<noscript><p>Bitte JavaScript aktivieren.</p></noscript>
+<div class="wrap" id="wrap"></div>
+<script>
+(function () {
+  'use strict';
+  const W = window.HtmlWerk, P = 'htmled-';
+  const START_HTML = `<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8">
+    <title>Meine Seite</title>
+    ${W.LINK}
+  </head>
+  <body>
+    <h1>Hallo Welt</h1>
+    <p>Schreibe hier deine eigene Webseite.</p>
+  </body>
+</html>
+`;
+  const START_CSS = `body {
+  font-family: Arial, sans-serif;
+}
+
+h1 {
+  color: darkorange;
+}
+`;
+  const ls = {
+    get(k){ try { return localStorage.getItem(P + k); } catch (e) { return null; } },
+    set(k, v){ try { localStorage.setItem(P + k, v); } catch (e) {} if (window.TrainerSync) TrainerSync.changed(); }
+  };
+  let timer = null;
+  function speichere(){
+    clearTimeout(timer); timer = null;
+    ls.set('html', platz.html()); ls.set('css', platz.css());
+    platz.stand.textContent = 'gespeichert';
+  }
+  const platz = W.arbeitsplatz(document.getElementById('wrap'), {
+    anordnung: 'neben',
+    onChange(){ platz.stand.textContent = ''; clearTimeout(timer); timer = setTimeout(speichere, 600); }
+  });
+  window.addEventListener('beforeunload', () => { if (timer) speichere(); });
+  platz.links.innerHTML = '<div class="brand"><span>&lt;/&gt;</span> HTML-Editor</div>';
+  platz.rechts.innerHTML = '<button class="btn" id="dlBtn" title="Deine Seite als eine HTML-Datei speichern (CSS und Bilder sind darin enthalten)">Herunterladen</button>' +
+    '<button class="btn" id="neuBtn" title="Alles löschen und mit einer leeren Seite beginnen">Neue Seite</button><button class="iconbtn" id="themeBtn"></button>';
+  W.themaKnopf(document.getElementById('themeBtn'));
+  document.getElementById('dlBtn').addEventListener('click', () => platz.download('meine-seite.html'));
+  document.getElementById('neuBtn').addEventListener('click', () => {
+    if (!confirm('Deine Seite löschen und neu anfangen? HTML und CSS gehen verloren.')) return;
+    platz.lade({html: START_HTML, css: START_CSS, bilder: true});
+    speichere();
+  });
+  // Die Zeile mit style.css muss vorhanden sein, sonst wirkt das CSS nicht
+  let html = ls.get('html');
+  if (html == null || !/href\s*=\s*["']style\.css["']/i.test(html)) html = START_HTML;
+  platz.lade({html, css: ls.get('css') ?? START_CSS, bilder: true});
+
+  window.HTMLED_API = {platz};   // für Tests von außen
+})();
+</script>
+</body>
+</html>

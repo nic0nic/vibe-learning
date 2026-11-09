@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="de" data-trainer="htmltext">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Text strukturieren – vibe learning</title>
+<!--
+  HTML-Kurs, Seite 2: Überschriften, Absätze, Zeilenumbruch und Listen.
+  Durchgehendes Beispiel des Kurses: die Webseite der Rockband „Mouse Rat“.
+  Aufgaben stehen unten in HTMLKURS, die Technik steckt in lib/htmlkurs.js (Aufbau dort oben beschrieben).
+-->
+<script src="../../katalog.js"></script>
+<script src="../../nav.js"></script>
+<script src="../../sync.js"></script>
+<script>
+(function(){var t=null;try{t=localStorage.getItem('wenn-theme');}catch(e){}
+document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');})();
+</script>
+<link rel="stylesheet" href="../python/lib/codemirror.css">
+<script src="../python/lib/codemirror.min.js"></script>
+<script src="lib/codemirror-html.js"></script>
+<script src="lib/mediathek.js"></script>
+<script src="lib/htmlwerk.js"></script>
+</head>
+<body>
+<noscript><p>Bitte JavaScript aktivieren.</p></noscript>
+<script>
+// Grundgerüst mit beliebigem Inhalt im body
+const SEITE = body => `<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8">
+    <title>Mouse Rat</title>
+  </head>
+  <body>
+${body}
+  </body>
+</html>
+`;
+const KOPF = `    <h1>Mouse Rat</h1>
+    <p>Die beste Rockband aus Pawnee.</p>
+`;
+const BAND = `
+    <h2>Die Band</h2>
+    <p>Wir spielen Rock, wie er sein muss: <strong>laut und mit Gefühl</strong>.</p>
+`;
+const MITGLIEDER = `    <ul>
+      <li>Andy: Gesang und Gitarre</li>
+      <li>Burly: Gitarre</li>
+      <li>Chang: Bass</li>
+      <li>Rivers: Schlagzeug</li>
+    </ul>
+`;
+const KONZERTE = `
+    <h2>Konzerte</h2>
+    <p>Nächstes Konzert: Samstag, 20 Uhr, Schlangenloch-Lounge</p>
+    <p>Mouse Rat<br>Garagenweg 5<br>Pawnee</p>
+`;
+
+window.HTMLKURS = {
+  id: 'htmltext',
+  titel: 'Text strukturieren',
+  logo: 'Text',
+  aufgaben: [
+    {
+      titel: 'Überschriften', stufe: 1,
+      wissen: `
+<p>Überschriften gliedern eine Seite wie die Kapitel ein Buch. HTML kennt sechs Ebenen, von {{h1}} (am wichtigsten) bis {{h6}}.</p>
+~~~html
+<h1>Titel der Seite</h1>
+<h2>Ein Abschnitt</h2>
+<h3>Ein Unterabschnitt</h3>
+~~~
+<ul>
+  <li>{{h1}} gibt es auf jeder Seite <b>genau einmal</b>: Sie sagt, worum es geht.</li>
+  <li>{{h2}} leitet die Abschnitte ein, {{h3}} Unterabschnitte.</li>
+  <li>Wähle die Ebene nach der <b>Bedeutung</b>, nicht nach der Schriftgröße. Die Größe stellst du später mit CSS ein.</li>
+</ul>`,
+      auftrag: `
+<p>Die Seite von Mouse Rat bekommt drei Abschnitte. Ihre Titel stehen schon da, aber nur als Absätze.</p>
+<p>Mache aus <b>Die Band</b>, <b>Konzerte</b> und <b>Musik</b> jeweils eine Überschrift der zweiten Ebene.</p>`,
+      start: SEITE(KOPF + `
+    <p>Die Band</p>
+    <p>Wir spielen Rock, wie er sein muss: <strong>laut und mit Gefühl</strong>.</p>
+
+    <p>Konzerte</p>
+    <p>Nächstes Konzert: Samstag, 20 Uhr, Schlangenloch-Lounge</p>
+
+    <p>Musik</p>
+    <p>Unser größter Hit: 5000 Kerzen im Wind</p>`),
+      tipps: ['Ersetze {{<p>Die Band</p>}} durch {{<h2>Die Band</h2>}}. Denk auch an das schließende Tag.'],
+      tests: [
+        {sel: 'h1', anzahl: 1, text: 'genau eine Überschrift <code>h1</code>'},
+        {sel: 'h2', enthaelt: 'Die Band', text: '„Die Band“ ist eine Überschrift <code>h2</code>'},
+        {sel: 'h2', enthaelt: 'Konzerte', text: '„Konzerte“ ist eine Überschrift <code>h2</code>'},
+        {sel: 'h2', enthaelt: 'Musik', text: '„Musik“ ist eine Überschrift <code>h2</code>'},
+        {sel: 'p', anzahl: 4, text: 'Die vier Absätze mit Text sind geblieben'}
+      ]
+    },
+    {
+      titel: 'Absätze und Zeilenumbruch', stufe: 1,
+      wissen: `
+<p>Ob du im Code die Eingabetaste drückst oder zehn Leerzeichen tippst, ist dem Browser egal: Er macht daraus <b>ein</b> Leerzeichen.</p>
+~~~html
+<p>Diese Zeile
+steht im Code
+in drei Zeilen.</p>
+~~~
+<p>Einen neuen Absatz bekommst du nur mit einem neuen {{p}}. Für einen Zeilenumbruch <i>innerhalb</i> eines Absatzes gibt es {{<br>}} (englisch <i>break</i>):</p>
+~~~html
+<p>Rathaus Pawnee<br>Hauptstraße 1<br>Pawnee</p>
+~~~
+<p>{{br}} hat keinen Inhalt und deshalb kein schließendes Tag. Verwende es sparsam, etwa für Adressen oder Gedichte, nicht um Abstände zu erzeugen.</p>`,
+      auftrag: `
+<p>Unter „Konzerte“ steht die Adresse des Proberaums in einer einzigen Zeile.</p>
+<p>Setze zwei Zeilenumbrüche, sodass im Browser drei Zeilen erscheinen:</p>
+<p>Mouse Rat<br>Garagenweg 5<br>Pawnee</p>`,
+      start: SEITE(KOPF + BAND + `
+    <h2>Konzerte</h2>
+    <p>Nächstes Konzert: Samstag, 20 Uhr, Schlangenloch-Lounge</p>
+    <p>Mouse Rat Garagenweg 5 Pawnee</p>`),
+      tipps: ['Der Zeilenumbruch steht dort, wo die Zeile enden soll: {{Mouse Rat<br>Garagenweg 5}}'],
+      tests: [
+        {test: doc => [...doc.querySelectorAll('p')].some(p => /Garagenweg/.test(p.textContent) && p.querySelectorAll('br').length === 2), text: 'Die Adresse steht in einem Absatz mit zwei Zeilenumbrüchen'},
+        {quelle: /Mouse Rat\s*<br\s*\/?>\s*Garagenweg 5\s*<br\s*\/?>\s*Pawnee/i, text: 'Umbruch nach „Mouse Rat“ und nach „Garagenweg 5“'}
+      ]
+    },
+    {
+      titel: 'Aufzählung', stufe: 1,
+      wissen: `
+<p>Gleichartige Dinge gehören in eine <b>Liste</b>. Eine Aufzählung mit Punkten heißt {{ul}} (englisch <i>unordered list</i>, ungeordnete Liste). Jeder Eintrag ist ein {{li}} (<i>list item</i>).</p>
+~~~html
+<ul>
+  <li>Gitarre</li>
+  <li>Bass</li>
+  <li>Schlagzeug</li>
+</ul>
+~~~
+<p><b>Regel:</b> Direkt in {{ul}} stehen nur {{li}}-Elemente, und jedes {{li}} steht in einer Liste.</p>`,
+      auftrag: `
+<p>Stelle unter „Die Band“ die vier Mitglieder als Aufzählung vor:</p>
+<ul>
+  <li>Andy: Gesang und Gitarre</li>
+  <li>Burly: Gitarre</li>
+  <li>Chang: Bass</li>
+  <li>Rivers: Schlagzeug</li>
+</ul>`,
+      start: SEITE(KOPF + BAND + '\n' + KONZERTE),
+      tipps: ['Beginne nach dem Absatz mit {{<ul>}} und schließe am Ende mit {{</ul>}}.', 'Ein Eintrag: {{<li>Andy: Gesang und Gitarre</li>}}'],
+      tests: [
+        {sel: 'ul li', anzahl: 4, text: 'Aufzählung <code>ul</code> mit vier Einträgen <code>li</code>'},
+        {sel: 'ul li', enthaelt: 'Andy', text: 'Andy steht in der Liste'},
+        {sel: 'ul li', enthaelt: 'Burly', text: 'Burly steht in der Liste'},
+        {sel: 'ul li', enthaelt: 'Chang', text: 'Chang steht in der Liste'},
+        {sel: 'ul li', enthaelt: 'Rivers', text: 'Rivers steht in der Liste'}
+      ]
+    },
+    {
+      titel: 'Nummerierte Liste', stufe: 2,
+      wissen: `
+<p>Kommt es auf die <b>Reihenfolge</b> an, nimmst du {{ol}} (<i>ordered list</i>, geordnete Liste). Der Browser nummeriert selbst.</p>
+~~~html
+<ol>
+  <li>Gitarre stimmen</li>
+  <li>Verstärker aufdrehen</li>
+  <li>Losrocken</li>
+</ol>
+~~~
+<p>Fügst du später einen Eintrag ein, stimmen die Nummern automatisch wieder. Tippe die Zahlen deshalb nie selbst.</p>`,
+      auftrag: `
+<p>Ergänze ganz unten einen neuen Abschnitt:</p>
+<ul>
+  <li>Überschrift der zweiten Ebene: <b>Musik</b></li>
+  <li>darunter die drei beliebtesten Songs als nummerierte Liste, in dieser Reihenfolge:<br>5000 Kerzen im Wind, Die Grube, Fang deinen Traum</li>
+</ul>`,
+      start: SEITE(KOPF + BAND + MITGLIEDER + KONZERTE),
+      tipps: ['Der Abschnitt beginnt mit {{<h2>Musik</h2>}}.', 'Die Liste: {{<ol>}}, darin drei {{li}}, dann {{</ol>}}. Zahlen schreibst du nicht.'],
+      tests: [
+        {sel: 'h2', enthaelt: 'Musik', text: 'Überschrift <code>h2</code> „Musik“'},
+        {sel: 'ol li', anzahl: 3, text: 'nummerierte Liste <code>ol</code> mit drei Einträgen'},
+        {sel: 'ol li:nth-child(1)', enthaelt: '5000 Kerzen im Wind', text: 'Platz 1: 5000 Kerzen im Wind'},
+        {sel: 'ol li:nth-child(2)', enthaelt: 'Die Grube', text: 'Platz 2: Die Grube'},
+        {sel: 'ol li:nth-child(3)', enthaelt: 'Fang deinen Traum', text: 'Platz 3: Fang deinen Traum'},
+        {quelleNicht: /<li>\s*\d\s*[.)]/, text: 'Die Nummern stammen vom Browser, nicht von dir'}
+      ]
+    },
+    {
+      titel: 'Listen reparieren', stufe: 2,
+      wissen: `
+<p>Bei Listen passieren leicht Fehler, weil mehrere Elemente ineinander stehen. Achte auf diese drei Punkte:</p>
+<ul>
+  <li>Jedes {{li}} wird geschlossen, bevor das nächste beginnt.</li>
+  <li>Kein {{li}} steht außerhalb von {{ul}} oder {{ol}}.</li>
+  <li>Die Liste endet mit dem Tag, mit dem sie begonnen hat: {{<ul>}} … {{</ul>}}.</li>
+</ul>
+<p>Das <b>Einrücken</b> hilft: Stehen alle {{li}} gleich weit rechts, siehst du sofort, wenn etwas fehlt.</p>`,
+      auftrag: `
+<p>Burly wollte die Konzerttermine als Liste eintragen. Das ging schief.</p>
+<p>Verbessere die Liste, bis unter dem Code kein Fehler mehr steht. Am Ende soll es eine Aufzählung mit <b>drei</b> Terminen sein.</p>`,
+      start: SEITE(KOPF + `
+    <h2>Konzerte</h2>
+    <ul>
+      <li>Samstag, 20 Uhr: Schlangenloch-Lounge
+      <li>12. Juli: Erntefest Pawnee</li>
+    </ol>
+    <li>30. August: Einheitskonzert</li>`),
+      tipps: ['Dem ersten Eintrag fehlt {{</li>}}.', 'Die Liste beginnt mit {{<ul>}}, endet aber mit {{</ol>}}. Und der dritte Termin steht hinter dem Ende der Liste.'],
+      tests: [
+        {sel: 'ul', anzahl: 1, text: 'genau eine Aufzählung <code>ul</code>'},
+        {sel: 'ul > li', anzahl: 3, text: 'drei Termine in der Liste'},
+        {sel: 'ul > li', enthaelt: 'Einheitskonzert', text: 'Das Einheitskonzert steht in der Liste'},
+        {sel: 'ol', keine: true, text: 'keine nummerierte Liste'}
+      ]
+    },
+    {
+      titel: 'Ein neuer Abschnitt', stufe: 3,
+      wissen: `
+<p>Du kennst jetzt die Bausteine, um Text zu gliedern:</p>
+<table class="k-tab">
+  <tr><th>Element</th><th>Bedeutung</th></tr>
+  <tr><td>{{h1}} bis {{h6}}</td><td>Überschriften</td></tr>
+  <tr><td>{{p}}</td><td>Absatz</td></tr>
+  <tr><td>{{br}}</td><td>Zeilenumbruch im Absatz</td></tr>
+  <tr><td>{{ul}}, {{ol}} mit {{li}}</td><td>Aufzählung, nummerierte Liste</td></tr>
+  <tr><td>{{strong}}, {{em}}</td><td>wichtig, betont</td></tr>
+</table>`,
+      auftrag: `
+<p>Mouse Rat hieß nicht immer so. Ergänze ganz unten einen Abschnitt über die früheren Bandnamen:</p>
+<ul>
+  <li>Überschrift der zweiten Ebene: <b>Früher hießen wir</b></li>
+  <li>ein Absatz als Einleitung, in dem mindestens ein Wort betont oder hervorgehoben ist</li>
+  <li>eine Aufzählung mit mindestens vier früheren Namen</li>
+</ul>
+<p>Zur Auswahl: Vogelscheuchenboot, Nichts reimt sich auf Orange, Alles reimt sich auf Orange, Radwagen, Engelssnack, Welpenpendel</p>`,
+      start: SEITE(KOPF + BAND + MITGLIEDER + KONZERTE + `
+    <h2>Musik</h2>
+    <ol>
+      <li>5000 Kerzen im Wind</li>
+      <li>Die Grube</li>
+      <li>Fang deinen Traum</li>
+    </ol>
+`),
+      tipps: ['Reihenfolge: erst {{h2}}, dann {{p}}, dann {{ul}} mit den {{li}}.', 'Betonen kannst du mit {{<em>…</em>}}, hervorheben mit {{<strong>…</strong>}}.'],
+      tests: [
+        {sel: 'h2', enthaelt: 'Früher hießen wir', text: 'Überschrift <code>h2</code> „Früher hießen wir“'},
+        {test: doc => { const h = [...doc.querySelectorAll('h2')].find(x => /früher/i.test(x.textContent)); let e = h && h.nextElementSibling; return !!e && e.tagName === 'P' && !!e.querySelector('strong, em'); }, text: 'direkt darunter ein Absatz mit einem betonten oder hervorgehobenen Wort'},
+        {test: doc => { const h = [...doc.querySelectorAll('h2')].find(x => /früher/i.test(x.textContent)); for (let e = h && h.nextElementSibling; e && e.tagName !== 'H2'; e = e.nextElementSibling) if (e.tagName === 'UL' && e.querySelectorAll(':scope > li').length >= 4) return true; return false; }, text: 'im Abschnitt eine Aufzählung mit mindestens vier Namen'},
+        {sel: 'ul', anzahl: 2, text: 'Die Liste der Mitglieder ist geblieben'}
+      ]
+    }
+  ]
+};
+</script>
+<script src="lib/htmlkurs.js"></script>
+</body>
+</html>

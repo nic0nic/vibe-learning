@@ -1,6 +1,6 @@
 ---
 name: vibe-learning-uebung
-description: Neue Übungsseite für die Plattform „vibe learning“ (IT: Excel, Python, Datenbanken, Tippen, Tools; BWR Jahrgangsstufe 9) bauen, passend zu Bibliotheken, Katalog und Speicherung.
+description: Neue Übungsseite für die Plattform „vibe learning“ (IT: Excel, Python, HTML, Datenbanken, Tippen, Tools; BWR Jahrgangsstufe 9) bauen, passend zu Bibliotheken, Katalog und Speicherung.
 ---
 
 # Neue Übung für vibe learning
