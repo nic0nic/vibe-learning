@@ -1,0 +1,378 @@
+<!doctype html>
+<html lang="de" data-trainer="htmlfehler">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fehlersuche – vibe learning</title>
+<!--
+  Fehlersuche zu HTML und CSS im Endlosmodus: In einem richtigen Beispiel (BEISPIELE) baut das Skript
+  genau einen Fehler ein (FEHLER). Erst die Zeile anklicken, dann die Zeile verbessern.
+  Geprüft wird mit der Regelprüfung aus lib/htmlwerk.js: Jede Verbesserung zählt, nach der die Regeln eingehalten sind.
+  Neue Beispiele oder Fehlerarten: unten in BEISPIELE bzw. FEHLER ergänzen. Das Skript verwirft selbst alles,
+  was die Regelprüfung nicht als Fehler erkennt.
+-->
+<script src="../../katalog.js"></script>
+<script src="../../nav.js"></script>
+<script src="../../sync.js"></script>
+<script>
+(function(){var t=null;try{t=localStorage.getItem('wenn-theme');}catch(e){}
+document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');})();
+</script>
+<link rel="stylesheet" href="../python/lib/codemirror.css">
+<script src="../python/lib/codemirror.min.js"></script>
+<script src="lib/codemirror-html.js"></script>
+<script src="lib/mediathek.js"></script>
+<script src="lib/htmlwerk.js"></script>
+<style>
+.f-wrap{width:min(900px,100%);margin:0 auto;padding:12px 16px 24px}
+.f-bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:14px}
+.f-brand{font:800 20px var(--mono);letter-spacing:-.5px;margin-right:6px}
+.f-brand span{color:var(--accent)}
+.f-bar .sp{flex:1}
+.f-zahl{font-size:14px;color:var(--muted);font-weight:600}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin-bottom:12px}
+.card p{margin:0 0 8px} .card p:last-child{margin-bottom:0}
+.f-datei{font:700 12px var(--mono);color:var(--muted);margin-bottom:6px}
+.f-code{border:1px solid var(--border);border-radius:9px;overflow:hidden;background:var(--ed-bg)}
+.f-zeile{display:flex;width:100%;text-align:left;border:0;background:transparent;color:var(--text);font:15px/1.6 var(--mono);padding:0;cursor:pointer}
+.f-zeile .nr{flex:none;width:38px;text-align:right;padding-right:8px;color:var(--gutter-text);background:var(--gutter);border-right:1px solid var(--border);user-select:none}
+.f-zeile .tx{padding:0 10px;white-space:pre-wrap;word-break:break-word}
+.f-zeile:hover:not(:disabled) .tx,.f-zeile:focus-visible .tx{background:var(--sel)}
+.f-zeile:disabled{cursor:default}
+.f-zeile.falsch .tx{text-decoration:line-through;text-decoration-color:var(--err);opacity:.55}
+.f-zeile.falsch .nr{color:var(--err)}
+/* Zeilen werden einzeln eingefärbt: Rot für „Fehler“ wäre oft falsch und sonst ein Verrat */
+.f-code .cm-error{color:var(--tag)}
+.f-zeile.treffer{background:var(--err-bg)}
+.f-zeile.geloest{background:var(--ok-bg)}
+.f-ein{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.f-ein input{flex:1;min-width:240px;font:15px/1.5 var(--mono);padding:7px 10px;border-radius:10px;border:1px solid var(--border);background:var(--ed-bg);color:var(--text)}
+.f-ein input:focus{outline:2px solid var(--accent);outline-offset:1px}
+.f-meld{border-radius:10px;padding:8px 12px;margin-top:10px}
+.f-meld.ok{background:var(--ok-bg)} .f-meld.no{background:var(--err-bg)} .f-meld.tipp{background:var(--panel2)}
+.f-knopf{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+</style>
+</head>
+<body>
+<noscript><p>Bitte JavaScript aktivieren.</p></noscript>
+<div class="f-wrap">
+  <div class="f-bar">
+    <div class="f-brand"><span>&lt;/&gt;</span> Fehlersuche</div>
+    <div class="hw-schalter" id="art" role="group" aria-label="Sprache wählen"><button type="button" data-a="html">HTML</button><button type="button" data-a="css">CSS</button><button type="button" data-a="beides">Gemischt</button></div>
+    <span class="sp"></span>
+    <span class="f-zahl" id="zahl"></span>
+    <button class="iconbtn" id="themeBtn"></button>
+  </div>
+  <div class="card" id="aufgabe"></div>
+</div>
+<script>
+(function () {
+  'use strict';
+  const W = window.HtmlWerk, esc = W.esc, P = 'htmlfehler-';
+  const $ = s => document.querySelector(s);
+
+  /* ---------- Richtige Beispiele (rund um Mouse Rat) ---------- */
+  // HTML: Ausschnitte aus dem body; ganz: true = vollständige Seite
+  const BEISPIELE = {
+    html: [
+      {ganz: true, code: `<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8">
+    <title>Mouse Rat</title>
+  </head>
+  <body>
+    <h1>Mouse Rat</h1>
+    <p>Die beste Rockband aus Pawnee.</p>
+  </body>
+</html>`},
+      {code: `<h1>Mouse Rat</h1>
+<p>Die <em>beste</em> Rockband aus <strong>Pawnee</strong>.</p>
+<p>Wir spielen Rock: <strong>laut und mit Gefühl</strong>.</p>`},
+      {code: `<h2>Die Band</h2>
+<ul>
+  <li>Andy: Gesang und Gitarre</li>
+  <li>Burly: Gitarre</li>
+  <li>Chang: Bass</li>
+  <li>Rivers: Schlagzeug</li>
+</ul>`},
+      {code: `<h2 id="musik">Musik</h2>
+<p>Unsere <strong>drei</strong> beliebtesten Songs:</p>
+<ol>
+  <li>5000 Kerzen im Wind</li>
+  <li>Die Grube</li>
+  <li>Fang deinen Traum</li>
+</ol>`},
+      {code: `<img src="bilder/logo.svg" alt="Logo von Mouse Rat" width="120">
+<h1>Mouse Rat</h1>
+<p><a href="#band">Die Band</a> <a href="#konzerte">Konzerte</a></p>
+<h2 id="band">Die Band</h2>
+<p>Vier Freunde aus Pawnee.</p>`},
+      {code: `<h2 id="konzerte">Konzerte</h2>
+<p class="hinweis">Nächstes Konzert: Samstag, 20 Uhr</p>
+<p>Mouse Rat<br>Garagenweg 5<br>Pawnee</p>
+<p>Booking: <a href="mailto:band@mouserat.example">Schreib uns</a></p>`},
+      {code: `<h2>Früher hießen wir</h2>
+<p>Wir hatten <em>viele</em> Namen.</p>
+<ul>
+  <li>Vogelscheuchenboot</li>
+  <li>Engelssnack</li>
+  <li>Radwagen</li>
+</ul>`},
+      {code: `<div class="konzert">
+  <h3>Erntefest Pawnee</h3>
+  <p>12. Juli, <strong>Eintritt frei</strong></p>
+  <img src="bilder/konzert.svg" alt="Publikum mit erhobenen Armen" width="300">
+</div>`},
+      {code: `<h2>Das Album</h2>
+<a href="#musik"><img src="bilder/album.svg" alt="Cover von Das Hammer-Album" width="200"></a>
+<p>Mehr über <a href="https://de.wikipedia.org/wiki/Rockmusik">Rockmusik</a> lesen.</p>`}
+    ],
+    css: [
+      {code: `body {
+  background-color: #1d1f2b;
+  color: white;
+  font-family: Arial, sans-serif;
+}`},
+      {code: `h1 {
+  color: #f2c94c;
+  font-size: 48px;
+  text-align: center;
+}`},
+      {code: `h1, h2 {
+  color: #f2c94c;
+}
+
+p {
+  line-height: 1.5;
+  margin-bottom: 12px;
+}`},
+      {code: `.hinweis {
+  border: 2px solid #f2c94c;
+  border-radius: 8px;
+  padding: 12px;
+  font-weight: bold;
+}`},
+      {code: `a {
+  color: red;
+  font-weight: bold;
+}
+
+.mitglied {
+  font-size: 20px;
+  margin-bottom: 8px;
+}`},
+      {code: `.konzert {
+  background-color: #2b2e3f;
+  border: 1px solid white;
+  padding: 10px;
+  margin-bottom: 16px;
+}`},
+      {code: `img {
+  max-width: 100%;
+}
+
+h2 {
+  margin-top: 40px;
+  color: blue;
+}`}
+    ]
+  };
+
+  /* ---------- Fehlerarten ---------- */
+  // mach(zeile) → veränderte Zeile oder null, wenn die Fehlerart hier nicht passt.
+  // tipp: Hinweis vor der Lösung, regel: Erklärung danach.
+  const z = a => a[Math.floor(Math.random() * a.length)];
+  const treffer = (s, re) => { const t = []; let m; re.lastIndex = 0; while ((m = re.exec(s))) t.push(m); return t; };
+  const ersetze = (s, m, neu) => s.slice(0, m.index) + neu + s.slice(m.index + m[0].length);
+  const FEHLER = {
+    html: [
+      {tipp: 'Achte auf die schließenden Tags.', regel: 'Jedes geöffnete Tag wird wieder geschlossen.',
+        mach: s => { const t = treffer(s, /<\/(p|li|h[1-3]|strong|em|a|title)>/g); return t.length ? ersetze(s, z(t), '') : null; }},
+      {tipp: 'Vergleiche bei jedem Element das öffnende mit dem schließenden Tag.', regel: 'Das schließende Tag trägt denselben Namen wie das öffnende.',
+        mach: s => { const t = treffer(s, /<\/(h[1-3]|strong|em)>/g); if (!t.length) return null; const m = z(t);
+          const neu = {h1: 'h2', h2: 'h1', h3: 'h2', strong: 'em', em: 'strong'}[m[1]]; return ersetze(s, m, `</${neu}>`); }},
+      {tipp: 'Woran erkennt man ein schließendes Tag?', regel: 'Ein schließendes Tag beginnt mit </ – ohne den Schrägstrich öffnet es ein neues Element.',
+        mach: s => { const t = treffer(s, /<\/(p|li|h[1-3]|strong|em|title|head)>/g); if (!t.length) return null; const m = z(t); return ersetze(s, m, `<${m[1]}>`); }},
+      {tipp: 'Zähle die spitzen Klammern.', regel: 'Jedes Tag beginnt mit < und endet mit >.',
+        mach: s => { const t = treffer(s, /<\/?[a-z][a-z0-9]*>/g); if (!t.length) return null; const m = z(t); return ersetze(s, m, m[0].slice(0, -1)); }},
+      {tipp: 'Welches Element wurde zuletzt geöffnet?', regel: 'Verschachtelung: Was zuletzt geöffnet wurde, wird zuerst geschlossen.',
+        mach: s => { const t = treffer(s, /<\/(strong|em|a)>([^<]*)<\/(p|li)>/g); if (!t.length) return null; const m = z(t); return ersetze(s, m, `${m[2]}</${m[3]}></${m[1]}>`); }},
+      {tipp: 'Sieh dir die Attribute genau an.', regel: 'Attributwerte stehen in Anführungszeichen, vorne und hinten.',
+        mach: s => { const t = treffer(s, /="[^"]*"/g); if (!t.length) return null; const m = z(t); return ersetze(s, m, m[0].slice(0, -1)); }},
+      {tipp: 'Sieh dir die Attribute genau an.', regel: 'Attributwerte stehen in Anführungszeichen.',
+        mach: s => { const t = treffer(s, /="([^" ]+)"/g); if (!t.length) return null; const m = z(t); return ersetze(s, m, '=' + m[1]); }},
+      {tipp: 'Sind alle Elemente richtig geschrieben?', regel: 'Der Browser kennt nur die festgelegten HTML-Elemente. Ein Tippfehler im Namen macht das Tag unbekannt.',
+        mach: s => { const t = treffer(s, /<(strong|img|title|body|li)\b/g); if (!t.length) return null; const m = z(t);
+          const neu = {strong: 'stong', img: 'image', title: 'titel', body: 'bodi', li: 'il'}[m[1]]; return s.split(`<${m[1]}`).join(`<${neu}`).split(`</${m[1]}>`).join(`</${neu}>`); }},
+      {tipp: 'Was braucht jedes Bild, damit die Seite barrierefrei ist?', regel: 'Jedes Bild hat einen Alternativtext: alt="…"',
+        mach: s => { const t = treffer(s, / alt="[^"]*"/g); return t.length ? ersetze(s, t[0], '') : null; }},
+      {tipp: 'Manche Elemente haben keinen Inhalt.', regel: '<br> hat keinen Inhalt und deshalb kein schließendes Tag.',
+        mach: s => { const t = treffer(s, /<br>/g); return t.length ? ersetze(s, z(t), '</br>') : null; }}
+    ],
+    css: [
+      {tipp: 'Wie endet jede Angabe?', regel: 'Jede Angabe endet mit einem Strichpunkt.',
+        mach: s => /;\s*$/.test(s) ? s.replace(/;\s*$/, '') : null},
+      {tipp: 'Was steht zwischen Attribut und Wert?', regel: 'Zwischen Attribut und Attributwert steht ein Doppelpunkt.',
+        mach: s => /^\s+[a-z-]+:/.test(s) ? s.replace(':', '') : null},
+      {tipp: 'Achte auf die Zahlen.', regel: 'Größen brauchen eine Einheit, zum Beispiel px.',
+        mach: s => /\d+px/.test(s) ? s.replace(/(\d+)px/, '$1') : null},
+      {tipp: 'Achte auf die Zahlen.', regel: 'Zwischen Zahl und Einheit steht kein Leerzeichen.',
+        mach: s => /\d+px/.test(s) ? s.replace(/(\d+)px/, '$1 px') : null},
+      {tipp: 'In welcher Sprache sind die Werte geschrieben?', regel: 'Farbnamen sind in CSS englisch.',
+        mach: s => { const m = /\b(red|white|blue)\b/.exec(s); return m ? s.replace(m[1], {red: 'rot', white: 'weiß', blue: 'blau'}[m[1]]) : null; }},
+      {tipp: 'In welcher Sprache sind die Werte geschrieben?', regel: 'Auch Werte wie bold oder center sind englisch.',
+        mach: s => { const m = /\b(bold|center|solid)\b/.exec(s); return m ? s.replace(m[1], {bold: 'fett', center: 'mitte', solid: 'linie'}[m[1]]) : null; }},
+      {tipp: 'Wo beginnen die Angaben einer Regel?', regel: 'Die Angaben einer Regel stehen in geschweiften Klammern: { … }',
+        mach: s => /\s\{\s*$/.test(s) ? s.replace(/\s\{\s*$/, '') : null},
+      {tipp: 'Sind alle Attribute richtig geschrieben?', regel: 'Der Browser kennt nur die festgelegten Attribute. Eine Angabe mit Tippfehler lässt er weg.',
+        mach: s => { const m = /^\s+(color|font-size|margin-bottom|margin-top|padding|border|text-align|font-weight)\s*:/.exec(s); if (!m) return null;
+          return s.replace(m[1], {color: 'colour', 'font-size': 'font-sice', 'margin-bottom': 'margin-botom', 'margin-top': 'margin-oben', padding: 'pading', border: 'boarder', 'text-align': 'text-allign', 'font-weight': 'font-wight'}[m[1]]); }},
+      {tipp: 'Sieh dir die Selektoren an: Element oder Klasse?', regel: 'Der Selektor für eine Klasse beginnt mit einem Punkt.',
+        mach: s => /^\.[a-z]+ \{/.test(s) ? s.slice(1) : null},
+      {tipp: 'Achte auf die Zahlen.', regel: 'Kommazahlen schreibt man in CSS mit Punkt.',
+        mach: s => /\d\.\d/.test(s) ? s.replace(/(\d)\.(\d)/, '$1,$2') : null},
+      {tipp: 'Sieh dir die Farbcodes an.', regel: 'Ein Farbcode beginnt mit # und hat sechs Zeichen.',
+        mach: s => { const m = /#([0-9a-f]{6})\b/.exec(s); return m ? s.replace(m[0], Math.random() < .5 ? m[1] : m[0].slice(0, -1)) : null; }}
+    ]
+  };
+
+  /* ---------- Regelprüfung ---------- */
+  const VOR = '<!DOCTYPE html>\n<html lang="de">\n<head>\n<meta charset="utf-8">\n<title>Mouse Rat</title>\n</head>\n<body>\n', NACH = '\n</body>\n</html>';
+  function fehlerIn(art, bsp, code){
+    if (art === 'css') return W.pruefeCss(code, null).filter(x => x.art === 'fehler');
+    return W.pruefeHtml(bsp.ganz ? code : VOR + code + NACH);
+  }
+
+  /* ---------- Aufgabe erzeugen ---------- */
+  let letzte = [];
+  function erzeuge(art){
+    for (let versuch = 0; versuch < 200; versuch++){
+      const bsp = z(BEISPIELE[art]), f = z(FEHLER[art]);
+      const zeilen = bsp.code.split('\n');
+      const moeglich = zeilen.map((t, i) => ({i, neu: f.mach(t)})).filter(x => x.neu != null && x.neu !== zeilen[x.i] && x.neu.trim());
+      if (!moeglich.length) continue;
+      const m = z(moeglich);
+      const schluessel = BEISPIELE[art].indexOf(bsp) + '/' + FEHLER[art].indexOf(f) + '/' + m.i;
+      if (letzte.includes(schluessel) && versuch < 150) continue;
+      const kaputt = zeilen.slice(); kaputt[m.i] = m.neu;
+      if (!fehlerIn(art, bsp, kaputt.join('\n')).length) continue;      // die Regelprüfung muss den Fehler erkennen
+      letzte.push(schluessel); if (letzte.length > 12) letzte.shift();
+      return {art, bsp, f, zeilen: kaputt, zeile: m.i, richtig: zeilen[m.i]};
+    }
+    return null;
+  }
+
+  /* ---------- Stand ---------- */
+  const ls = {
+    get(k){ try { return localStorage.getItem(P + k); } catch (e) { return null; } },
+    set(k, v){ try { localStorage.setItem(P + k, v); } catch (e) {} if (window.TrainerSync) TrainerSync.changed(); }
+  };
+  let stand = {geloest: 0, serie: 0, beste: 0};
+  try { stand = Object.assign(stand, JSON.parse(ls.get('stand') || '{}')); } catch (e) {}
+  let art = ['html', 'css', 'beides'].includes(ls.get('art')) ? ls.get('art') : 'html';
+  let A = null, schritt = 1, falsch = [], fehlklicks = 0, tippOffen = false, meldung = null, sauber = true;
+
+  function zeigeZahl(){ $('#zahl').textContent = `${stand.geloest} gefunden · Serie ${stand.serie}` + (stand.beste > 1 ? ` (beste ${stand.beste})` : ''); }
+
+  /* ---------- Anzeige ---------- */
+  function zeichne(){
+    document.querySelectorAll('#art button').forEach(b => b.classList.toggle('an', b.dataset.a === art));
+    zeigeZahl();
+    if (!A){ $('#aufgabe').innerHTML = '<p>Es konnte keine Aufgabe erzeugt werden.</p>'; return; }
+    const modus = A.art === 'css' ? 'css' : 'htmlmixed';
+    const fest = schritt > 1;
+    $('#aufgabe').innerHTML = `
+      <p>${schritt === 1 ? '<b>In genau einer Zeile steckt ein Fehler.</b> Klicke die Zeile an.' : schritt === 2 ? `<b>Richtig, der Fehler steckt in Zeile ${A.zeile + 1}.</b> Verbessere die Zeile.` : '<b>Gelöst!</b>'}</p>
+      <div class="f-datei">${A.art === 'css' ? 'style.css' : 'index.html'}</div>
+      <div class="f-code cm-s-default" id="code"></div>
+      ${schritt === 2 ? `<div class="f-ein"><input id="ein" aria-label="Zeile ${A.zeile + 1} verbessern" spellcheck="false" autocomplete="off" autocapitalize="off"><button class="btn prim" id="okBtn">Prüfen</button></div>` : ''}
+      ${meldung ? `<div class="f-meld ${meldung.art}">${meldung.html}</div>` : ''}
+      ${tippOffen && schritt < 3 ? `<div class="f-meld tipp"><b>Tipp:</b> ${esc(A.f.tipp)}</div>` : ''}
+      <div class="f-knopf">
+        ${schritt < 3 && !tippOffen ? '<button class="btn" id="tippBtn">Tipp</button>' : ''}
+        ${schritt < 3 ? '<button class="btn" id="loesBtn">Lösung zeigen</button>' : '<button class="btn prim" id="weiterBtn">Nächste Aufgabe →</button>'}
+      </div>`;
+    const code = $('#code');
+    A.zeilen.forEach((t, i) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'f-zeile' + (falsch.includes(i) ? ' falsch' : '') + (fest && i === A.zeile ? (schritt === 3 ? ' geloest' : ' treffer') : '');
+      b.disabled = fest || falsch.includes(i);
+      b.setAttribute('aria-label', 'Zeile ' + (i + 1));
+      const nr = Object.assign(document.createElement('span'), {className: 'nr', textContent: i + 1});
+      const tx = document.createElement('span'); tx.className = 'tx';
+      CodeMirror.runMode(schritt === 3 && i === A.zeile ? A.gezeigt : t || ' ', modus, tx);
+      b.append(nr, tx);
+      b.addEventListener('click', () => klick(i));
+      code.appendChild(b);
+    });
+    if ($('#tippBtn')) $('#tippBtn').onclick = () => { tippOffen = true; sauber = false; zeichne(); };
+    if ($('#loesBtn')) $('#loesBtn').onclick = aufloesen;
+    if ($('#weiterBtn')){ $('#weiterBtn').onclick = neu; $('#weiterBtn').focus(); }
+    const ein = $('#ein');
+    if (ein){
+      ein.value = A.eingabe != null ? A.eingabe : A.zeilen[A.zeile];
+      ein.focus();
+      ein.addEventListener('keydown', e => { if (e.key === 'Enter'){ e.preventDefault(); verbessere(); } });
+      $('#okBtn').onclick = verbessere;
+    }
+  }
+  function klick(i){
+    if (schritt !== 1) return;
+    if (i === A.zeile){ schritt = 2; meldung = null; }
+    else {
+      falsch.push(i); fehlklicks++; sauber = false;
+      meldung = {art: 'no', html: `Zeile ${i + 1} ist in Ordnung. Sieh noch einmal genau hin.`};
+      if (fehlklicks >= 2) tippOffen = true;
+    }
+    zeichne();
+  }
+  function verbessere(){
+    const v = $('#ein').value;
+    A.eingabe = v;
+    const neu = A.zeilen.slice(); neu[A.zeile] = v;
+    const rest = fehlerIn(A.art, A.bsp, neu.join('\n'));
+    if (v.trim().length < A.richtig.trim().length - 12 || !v.trim()){
+      meldung = {art: 'no', html: 'Hier fehlt etwas: Der Inhalt der Zeile soll erhalten bleiben.'}; sauber = false;
+    } else if (rest.length){
+      sauber = false;
+      meldung = {art: 'no', html: 'Noch nicht richtig: ' + esc(rest[0].text)};
+    } else return geschafft(v);
+    zeichne();
+  }
+  function geschafft(v){
+    schritt = 3; A.gezeigt = v;
+    stand.geloest++;
+    stand.serie = sauber ? stand.serie + 1 : 0;
+    stand.beste = Math.max(stand.beste, stand.serie);
+    ls.set('stand', JSON.stringify(stand));
+    const stufe = A.art === 'css' ? 2 : 1;
+    if (window.TrainerSync) TrainerSync.event({modus: 'endlos', stufe, aufgabe: 's' + stufe, titel: stufe === 2 ? 'CSS' : 'HTML', gesamt: 0, erstmals: true});
+    meldung = {art: 'ok', html: `<b>✓ Richtig.</b> ${esc(A.f.regel)}`};
+    zeichne();
+  }
+  function aufloesen(){
+    schritt = 3; A.gezeigt = A.richtig;
+    stand.serie = 0; ls.set('stand', JSON.stringify(stand));
+    meldung = {art: 'tipp', html: `<b>Lösung:</b> Der Fehler war in Zeile ${A.zeile + 1}. Falsch stand dort <code>${esc(A.zeilen[A.zeile].trim())}</code>. ${esc(A.f.regel)}`};
+    zeichne();
+  }
+  function neu(){
+    A = erzeuge(art === 'beides' ? z(['html', 'css']) : art);
+    schritt = 1; falsch = []; fehlklicks = 0; tippOffen = false; meldung = null; sauber = true;
+    zeichne();
+  }
+  $('#art').addEventListener('click', e => {
+    const b = e.target.closest('button');
+    if (!b || b.dataset.a === art) return;
+    art = b.dataset.a; ls.set('art', art); neu();
+  });
+  W.themaKnopf($('#themeBtn'));
+  neu();
+
+  window.FEHLER_API = {erzeuge, neu, aufgabe: () => A, klick, BEISPIELE, FEHLER, fehlerIn};   // für Tests von außen
+})();
+</script>
+</body>
+</html>

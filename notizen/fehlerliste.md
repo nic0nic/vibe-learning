@@ -14,6 +14,9 @@ Gesammelt im Thread „Aufbau der Seite“. Umgesetzt wird erst, wenn die Lehrkr
 
 ### Version vom 09.11.
 
+45. **HTML: Zahnrad mit Editor-Optionen und Fehlersuche** (gewünscht 09.11.)
+    Unten rechts im Editor (freier Editor und Kurs) öffnet ein Zahnrad die Optionen: Tags automatisch schließen (aus), lange Zeilen umbrechen (an), große Schrift (aus); gespeichert im Browser unter `hw-optionen`, weitere Optionen in `OPTIONEN` in htmlwerk.js. Neue Seite fehlersuche.html: Endlosmodus, das Skript baut in 16 richtige Beispiele je einen von 21 Fehlerarten ein (über 350 verschiedene Aufgaben); erst Zeile anklicken, dann verbessern. Getestet in Chromium.
+
 44. **Neuer Bereich IT → HTML** (gewünscht 09.11.)
     Freier HTML-Editor (Schalter HTML/CSS, Vorschau beim Tippen, Regelprüfung, Handy-Ansicht, Download als eine Datei) und Kurs in sechs Seiten nach Lehrplan (Aufbau, Text, Links und Bilder, CSS-Grundlagen, Klassen und Abstände, Design und Projekt), je 6 Aufgaben mit automatischer Prüfung. Durchgehendes Beispiel: Webseite der Band Mouse Rat. Aus den „z. B.“-Inhalten des Lehrplans bewusst weggelassen: Audio, Video, Tabellen, Formulare. Getestet in Chromium (36 Aufgaben mit Startcode und Musterlösung, auch als Einzeldatei und über PocketBase), nicht in Firefox.
 

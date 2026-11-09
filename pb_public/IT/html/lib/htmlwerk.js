@@ -14,6 +14,9 @@
  * w.links, w.rechts                    Plätze in der Leiste für eigene Knöpfe
  * w.pruefe(tests)                      → Promise {ok, regeln: [{datei, zeile, text}], tests: [{ok, text}]}
  * w.download('seite.html')             eine Datei, CSS und Bilder eingebettet
+ * Unten rechts im Editor öffnet ein Zahnrad die Optionen (OPTIONEN weiter unten: Tags automatisch
+ * schließen, Zeilen umbrechen, große Schrift). Sie gelten für alle HTML-Seiten und stehen im Browser
+ * unter dem Schlüssel hw-optionen. Neue Option: Eintrag in OPTIONEN ergänzen.
  * HtmlWerk.themaKnopf(button)          Hell/Dunkel-Knopf
  * HtmlWerk.dokument(html, css)         fertige Seite als Text (für Vorschau und Download)
  * HtmlWerk.pruefeHtml(html), HtmlWerk.pruefeCss(css, doc)   Regelprüfung → [{zeile, text, art}]
@@ -106,6 +109,14 @@ code{font-family:var(--mono);background:var(--panel2);padding:1px 5px;border-rad
 .hw-buehne iframe{border:0;background:#fff;width:100%;height:100%;flex:none}
 .hw-buehne.handy{padding:10px 0}
 .hw-buehne.handy iframe{width:375px;border-radius:14px;box-shadow:0 0 0 6px var(--panel2),0 0 0 7px var(--muted)}
+.hw-rad{position:absolute;right:14px;bottom:10px;z-index:8;width:32px;height:32px;border-radius:50%;border:1px solid var(--border);background:var(--panel2);color:var(--muted);display:grid;place-items:center;cursor:pointer;opacity:.75;padding:0}
+.hw-rad:hover,.hw-rad[aria-expanded=true]{opacity:1;color:var(--text);border-color:var(--accent)}
+.hw-rad svg{width:18px;height:18px}
+.hw-opt{position:absolute;right:14px;bottom:48px;z-index:9;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:10px 14px;box-shadow:0 8px 24px rgba(0,0,0,.25);font:15px/1.4 system-ui,sans-serif;color:var(--text);display:grid;gap:6px;white-space:nowrap}
+.hw-opt b{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.hw-opt label{display:flex;align-items:center;gap:8px;cursor:pointer}
+.hw-opt input{width:17px;height:17px;accent-color:var(--accent)}
+.hw-gross .CodeMirror{font-size:19px}
 .hw-bilder{position:absolute;z-index:20;top:100%;left:0;margin-top:4px;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:10px;box-shadow:0 8px 24px rgba(0,0,0,.25);display:grid;grid-template-columns:repeat(2,1fr);gap:8px;width:min(380px,92vw)}
 .hw-bilder p{grid-column:1/-1;margin:0;font-size:14px;color:var(--muted)}
 .hw-bilder button{font:600 13px var(--mono);color:var(--text);background:var(--panel2);border:1px solid var(--border);border-radius:9px;padding:6px;cursor:pointer;display:flex;flex-direction:column;gap:4px;align-items:center}
@@ -502,6 +513,20 @@ code{font-family:var(--mono);background:var(--panel2);padding:1px 5px;border-rad
     zeichne();
   }
 
+  /* ---------- Optionen des Editors (Zahnrad) ---------- */
+  const OPTIONEN = [
+    {id: 'tags', text: 'Tags automatisch schließen', an: false, setze: (cm, el, v) => cm.setOption('autoCloseTags', v ? {whenOpening: true, whenClosing: true, indentTags: []} : false)},
+    {id: 'umbruch', text: 'Lange Zeilen umbrechen', an: true, setze: (cm, el, v) => cm.setOption('lineWrapping', v)},
+    {id: 'gross', text: 'Große Schrift', an: false, setze: (cm, el, v) => { el.classList.toggle('hw-gross', v); cm.refresh(); }}
+  ];
+  function optionen(){
+    let o = {};
+    try { o = JSON.parse(localStorage.getItem('hw-optionen') || '{}') || {}; } catch (e) {}
+    const erg = {};
+    OPTIONEN.forEach(x => { erg[x.id] = typeof o[x.id] === 'boolean' ? o[x.id] : x.an; });
+    return erg;
+  }
+
   /* ---------- Arbeitsplatz: Editor, Hinweise, Vorschau ---------- */
   function arbeitsplatz(host, opt){
     opt = opt || {};
@@ -533,6 +558,28 @@ code{font-family:var(--mono);background:var(--panel2);padding:1px 5px;border-rad
         'Shift-Tab': c => c.indentSelection('subtract')
       }
     });
+    // Zahnrad unten rechts im Editor
+    const werte = optionen(), huelle = cm.getWrapperElement();
+    const rad = Object.assign(document.createElement('button'), {type: 'button', className: 'hw-rad', title: 'Optionen des Editors',
+      innerHTML: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3h.1a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8v.1a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>'});
+    rad.setAttribute('aria-label', 'Optionen des Editors'); rad.setAttribute('aria-expanded', 'false');
+    const optFeld = Object.assign(document.createElement('div'), {className: 'hw-opt', hidden: true,
+      innerHTML: '<b>Editor</b>' + OPTIONEN.map(x => `<label><input type="checkbox" data-o="${x.id}"${werte[x.id] ? ' checked' : ''}>${esc(x.text)}</label>`).join('')});
+    huelle.appendChild(rad); huelle.appendChild(optFeld);
+    OPTIONEN.forEach(x => x.setze(cm, el, werte[x.id]));
+    const optZu = () => { optFeld.hidden = true; rad.setAttribute('aria-expanded', 'false'); };
+    rad.addEventListener('click', e => { e.stopPropagation(); optFeld.hidden = !optFeld.hidden; rad.setAttribute('aria-expanded', String(!optFeld.hidden)); });
+    optFeld.addEventListener('change', e => {
+      const x = OPTIONEN.find(y => y.id === e.target.dataset.o);
+      if (!x) return;
+      werte[x.id] = e.target.checked;
+      x.setze(cm, el, werte[x.id]);
+      try { localStorage.setItem('hw-optionen', JSON.stringify(werte)); } catch (err) {}
+    });
+    ['mousedown', 'touchstart'].forEach(n => { rad.addEventListener(n, e => e.stopPropagation()); optFeld.addEventListener(n, e => e.stopPropagation()); });
+    document.addEventListener('click', e => { if (!optFeld.hidden && !optFeld.contains(e.target)) optZu(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') optZu(); });
+
     let docs = {html: cm.getDoc(), css: CodeMirror.Doc('', 'css')};
     let datei = 'html', mitCss = true, laden = false, timer = null, markiert = [], meld = {html: [], css: []};
 

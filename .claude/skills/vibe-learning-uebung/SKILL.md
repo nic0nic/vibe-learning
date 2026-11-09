@@ -416,6 +416,9 @@ w.html(), w.css()                    aktueller Inhalt
 w.links, w.rechts                    Plätze in der Leiste für eigene Knöpfe
 w.pruefe(tests)                      → Promise {ok, regeln: [{datei, zeile, text}], tests: [{ok, text}]}
 w.download('seite.html')             eine Datei, CSS und Bilder eingebettet
+Unten rechts im Editor öffnet ein Zahnrad die Optionen (OPTIONEN weiter unten: Tags automatisch
+schließen, Zeilen umbrechen, große Schrift). Sie gelten für alle HTML-Seiten und stehen im Browser
+unter dem Schlüssel hw-optionen. Neue Option: Eintrag in OPTIONEN ergänzen.
 HtmlWerk.themaKnopf(button)          Hell/Dunkel-Knopf
 HtmlWerk.dokument(html, css)         fertige Seite als Text (für Vorschau und Download)
 HtmlWerk.pruefeHtml(html), HtmlWerk.pruefeCss(css, doc)   Regelprüfung → [{zeile, text, art}]

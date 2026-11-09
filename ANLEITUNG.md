@@ -53,6 +53,8 @@ vibe-learning/
 │   │   │   ├── editor.html            freier HTML-Editor: Schalter HTML/CSS, Vorschau, Download als eine Datei
 │   │   │   ├── aufbau.html …          Kurs in sechs Seiten (Aufbau, Text, Links und Bilder, CSS-Grundlagen,
 │   │   │   │                          Klassen und Abstände, Design und Projekt); Aufgaben und Tests in der Datei
+│   │   │   ├── fehlersuche.html       Fehler in HTML und CSS finden und verbessern (Endlosmodus, erzeugt
+│   │   │   │                          Aufgaben aus Beispielen und Fehlerarten in der Datei)
 │   │   │   └── lib/                   htmlwerk.js (Editor, Vorschau, Regelprüfung, Tests), htmlkurs.js (Technik
 │   │   │                              der Kursseiten), mediathek.js (Bilder), mouserat.js (Beispielseite),
 │   │   │                              codemirror-html.js (Modi für HTML und CSS; CodeMirror selbst liegt in python/lib/)
