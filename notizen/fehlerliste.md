@@ -13,6 +13,9 @@ Gesammelt im Thread „Aufbau der Seite“. Umgesetzt wird erst, wenn die Lehrkr
 
 ### Version vom 09.11.
 
+43. **Formeln in Erinnerungen nicht mit „·“ trennen** (gefunden 09.11.)
+    Der Trennpunkt zwischen zwei Formeln sah aus wie ein Malpunkt (z. B. „Zinsen = Restschuld · Zinssatz / 100 · Rate = Zinsen + Tilgung“). Jetzt Zeilenumbruch: darlehensarten.html (4 Erinnerungen), zinsrechnung.html (Lückentext Umstellen), kredite-bank.html, kurzfristige-kredite.html.
+
 42. **Übungs-Editor mit Ziehen und Ablegen** (gewünscht 09.11.)
     - `vorlage.html` („Übung erstellen“) mit Umschalter **Editor | JSON**: beide bearbeiten dieselbe Übung; JSON aus dem Claude-Chat einfügen → im Editor weiterbearbeiten → JSON kopieren oder „Speichern“ (.json), „Öffnen“. Vorschau und Herunterladen/Einreichen als Dialog, Einreichen technisch unverändert (Pull Request).
     - Baukasten wie beim Struktogramm-Editor (`vorlage-editor.js`, Formulare je Typ in `vorlage-typen.js`): Bausteine aus der Leiste ziehen oder anklicken, Schritte als Reiter (verschiebbar), Aufgaben als Karten (verschiebbar, auch auf einen anderen Reiter), Folgeaufgabe (`danach`) per Ablegen, Rückgängig/Wiederholen, laufende Prüfung mit Sprung zur Fundstelle. Texteditor mit Fett, Liste, Tabelle, Bruch; Eingefügtes (z. B. aus Word) wird auf die Erlaubtliste bereinigt. Unbekannte Felder aus dem JSON bleiben erhalten.
