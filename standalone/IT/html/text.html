@@ -72,7 +72,7 @@ window.KATALOG = {
             {id: 'pyif', stufen: 3, datei: 'bedingungen.html', titel: 'Bedingte Anweisung', text: 'if, elif und else: 10 Aufgaben mit Erklärung und automatischer Prüfung.'}
           ]
         },
-        {id: 'html', titel: 'HTML', farbe: '#d08770', farbeHell: '#b0631f', text: 'Webseiten gestalten mit HTML und CSS.',
+        {id: 'html', titel: 'HTML', farbe: '#e8a5c0', farbeHell: '#ad4c7a', text: 'Webseiten gestalten mit HTML und CSS.',
           tools: [
             {id: 'htmled', datei: 'editor.html', titel: 'HTML-Editor', text: 'HTML und CSS schreiben und sofort die Vorschau sehen – mit Regelprüfung, Handy-Ansicht und Download der fertigen Seite.'},
             {id: 'htmlaufbau', gruppe: 'Kurs', stufen: 3, datei: 'aufbau.html', titel: '1 Aufbau einer Webseite', text: 'Tags, Elemente, Attribute und das Grundgerüst: 6 Aufgaben an der Webseite der Band Mouse Rat.'},
@@ -1260,12 +1260,12 @@ function(e){"object"==typeof exports&&"object"==typeof module?e(require("../../l
   /* ---------- Aussehen ---------- */
   const CSS_TEXT = `
 :root{--bg:#e5e9f0;--panel:#f6f8fb;--panel2:#eceff4;--text:#2e3440;--muted:#5b6578;--border:#cdd3de;
-  --accent:#b0631f;--err:#a8434d;--ok:#5e8a45;--ok-bg:#dfe9d6;--err-bg:#f1d9db;
+  --accent:#ad4c7a;--accent-bg:#f2bcd2;--err:#a8434d;--ok:#5e8a45;--ok-bg:#dfe9d6;--err-bg:#f1d9db;
   --ed-bg:#f6f8fb;--gutter:#e5e9f0;--gutter-text:#7b88a1;--active:#e9ecf2;--sel:#d8dee9;
   --tag:#4f73a3;--attr:#8a5f84;--str:#5e8a45;--num:#b0631f;--com:#7b88a1;--prop:#3b7f8c;
   --mono:ui-monospace,"Cascadia Mono","SF Mono",Consolas,"Liberation Mono",monospace}
 [data-theme=dark]{--bg:#2e3440;--panel:#3b4252;--panel2:#434c5e;--text:#eceff4;--muted:#a9b3c4;--border:#4c566a;
-  --accent:#d08770;--err:#d4848b;--ok:#a3be8c;--ok-bg:#3e4a45;--err-bg:#4a3c45;
+  --accent:#e8a5c0;--accent-bg:#e8a5c0;--err:#d4848b;--ok:#a3be8c;--ok-bg:#3e4a45;--err-bg:#4a3c45;
   --ed-bg:#2e3440;--gutter:#2a2f3a;--gutter-text:#616e88;--active:#353b49;--sel:#434c5e;
   --tag:#81a1c1;--attr:#b48ead;--str:#a3be8c;--num:#d08770;--com:#7b88a1;--prop:#88c0d0}
 *{box-sizing:border-box}
@@ -1275,8 +1275,7 @@ code{font-family:var(--mono);background:var(--panel2);padding:1px 5px;border-rad
 .btn{font:600 15px system-ui,sans-serif;background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:7px 14px;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
 .btn:hover{border-color:var(--accent)}
 .btn:disabled{opacity:.45;cursor:default;border-color:var(--border)}
-.btn.prim{background:var(--accent);border-color:var(--accent);color:#fff}
-[data-theme=dark] .btn.prim{color:#2e3440}
+.btn.prim{background:var(--accent-bg);border-color:var(--accent);color:#2e3440}
 .btn svg{width:16px;height:16px}
 .iconbtn{background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:10px;width:38px;height:38px;display:grid;place-items:center;cursor:pointer}
 .iconbtn svg{width:20px;height:20px}
@@ -1287,8 +1286,7 @@ code{font-family:var(--mono);background:var(--panel2);padding:1px 5px;border-rad
 .hw-schalter{display:inline-flex;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--panel2)}
 .hw-schalter button{font:600 15px system-ui,sans-serif;border:0;background:transparent;color:var(--text);padding:7px 16px;cursor:pointer}
 .hw-schalter button+button{border-left:1px solid var(--border)}
-.hw-schalter button.an{background:var(--accent);color:#fff}
-[data-theme=dark] .hw-schalter button.an{color:#2e3440}
+.hw-schalter button.an{background:var(--accent-bg);color:#2e3440}
 .hw-schalter.klein button{font-size:12px;padding:2px 10px;text-transform:none;letter-spacing:0}
 .hw-flaeche{flex:1;display:flex;flex-direction:column;min-height:0}
 .hw-teiler{flex:none;height:12px;cursor:row-resize;display:grid;place-items:center;touch-action:none}
