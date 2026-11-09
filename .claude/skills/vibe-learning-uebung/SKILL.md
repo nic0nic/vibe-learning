@@ -192,6 +192,9 @@ danach (weitere Aufgabe, erscheint erst nach richtiger Lösung, z. B. Handlungse
   zahlen       felder:[{t (Text), l (Lösung), e (Einheit), h (Hinweis bei Fehler), tol (Toleranz, Std. 0,005)}]
                Eingabe im deutschen Format (1.234,50 €), Knopftext über knopf:'…'
   luecken      text:'… [[richtig|falsch|falsch]] …' → Auswahllisten (erste Antwort richtig, wird gemischt)
+               ziehen:true → Wortbank statt Auswahllisten: Wörter in die Lücken ziehen oder erst Wort, dann Lücke
+               antippen (Wort in der Lücke antippen = zurück). Bank: je Lücke das richtige Wort, dazu die falschen
+               Antworten der Lücken und extra:['…'] (weitere Ablenker), Doppelte nur einmal. [[Wort]] ohne | reicht hier.
   zuordnen     felder:[[id, Titel]], karten:[{t (Text), z (Feld-id)}]; Ziehen mit Maus/Finger oder
                erst Karte, dann Feld antippen. Richtige bleiben liegen, falsche gehen zurück.
   tabelle      Tabelle zum Ausfüllen (z. B. Tilgungsplan): spalten:['Jahr', 'Zinsen', …],

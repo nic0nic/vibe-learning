@@ -73,7 +73,9 @@
     if (a.typ === 'luecken' && typeof a.text === 'string') {
       const l = a.text.match(/\[\[(.*?)\]\]/g) || [];
       if (!l.length) f.push(`${wo}: keine Lücke [[richtig|falsch]] im Text`);
-      l.forEach(x => { if (x.split('|').length < 2) f.push(`${wo}: Lücke ${x} braucht mindestens zwei Antworten, die richtige zuerst`); });
+      if (!a.ziehen) l.forEach(x => { if (x.split('|').length < 2) f.push(`${wo}: Lücke ${x} braucht mindestens zwei Antworten, die richtige zuerst`); });
+      l.forEach(x => { if (!x.slice(2, -2).split('|')[0].trim()) f.push(`${wo}: Lücke ${x} ohne richtiges Wort`); });
+      if (a.extra != null && !(Array.isArray(a.extra) && a.extra.every(istText))) f.push(`${wo}: „extra“ muss eine Liste von Wörtern sein`);
     }
     if (a.typ === 'zuordnen' && Array.isArray(a.felder) && Array.isArray(a.karten)) {
       const ids = a.felder.map(x => Array.isArray(x) ? x[0] : null);

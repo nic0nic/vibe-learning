@@ -981,6 +981,12 @@ pre.af-bs{font:13px/1.5 var(--mono,monospace);background:var(--panel2);border:1p
 .bruch{display:inline-flex;flex-direction:column;vertical-align:middle;text-align:center;margin:0 .15em;line-height:1.3}
 .bruch>span{padding:0 .25em}
 .bruch>span:first-child{border-bottom:1.5px solid currentColor}
+/* Lückentext mit Wortbank (luecken, ziehen:true) */
+.af-bank .af-karte{flex:0 0 auto;border-left-width:1px;border-bottom:3px solid var(--accent)}
+.af-luecken.af-ziehen{line-height:2.6}
+.af-luecke{display:inline-flex;vertical-align:middle;align-items:center;min-width:110px;min-height:38px;margin:2px 3px;padding:2px;border:2px dashed var(--border);border-radius:9px;background:var(--panel2);flex-direction:row}
+.af-luecke .af-karte{line-height:1.3;padding:5px 9px;border-left-width:1px;border-bottom:3px solid var(--accent)}
+.af-luecke.richtig{border-style:solid;border-color:var(--af-ok)}
 
 </style>
 <script>/* ../../../lib/aufgaben.js */
@@ -1001,6 +1007,9 @@ pre.af-bs{font:13px/1.5 var(--mono,monospace);background:var(--panel2);border:1p
  *   zahlen       felder:[{t (Text), l (Lösung), e (Einheit), h (Hinweis bei Fehler), tol (Toleranz, Std. 0,005)}]
  *                Eingabe im deutschen Format (1.234,50 €), Knopftext über knopf:'…'
  *   luecken      text:'… [[richtig|falsch|falsch]] …' → Auswahllisten (erste Antwort richtig, wird gemischt)
+ *                ziehen:true → Wortbank statt Auswahllisten: Wörter in die Lücken ziehen oder erst Wort, dann Lücke
+ *                antippen (Wort in der Lücke antippen = zurück). Bank: je Lücke das richtige Wort, dazu die falschen
+ *                Antworten der Lücken und extra:['…'] (weitere Ablenker), Doppelte nur einmal. [[Wort]] ohne | reicht hier.
  *   zuordnen     felder:[[id, Titel]], karten:[{t (Text), z (Feld-id)}]; Ziehen mit Maus/Finger oder
  *                erst Karte, dann Feld antippen. Richtige bleiben liegen, falsche gehen zurück.
  *   tabelle      Tabelle zum Ausfüllen (z. B. Tilgungsplan): spalten:['Jahr', 'Zinsen', …],
@@ -1137,11 +1146,34 @@ const TYPEN = {
   },
   luecken:{
     zustand(a){
-      const teile = String(a.text).split(/\[\[(.*?)\]\]/).map((s, i) => i % 2 ? s.split('|') : s);
-      return {teile, wahl:{}, ok:{}, ord:teile.map(t => Array.isArray(t) ? mischen(nummern(t.length)) : null)};
+      const teile = String(a.text).split(/\[\[(.*?)\]\]/).map((s, i) => i % 2 ? s.split('|').map(w => w.trim()) : s);
+      const z = {teile, wahl:{}, ok:{}, ord:teile.map(t => Array.isArray(t) ? mischen(nummern(t.length)) : null)};
+      if (a.ziehen){   // Wortbank: je Lücke das richtige Wort, dazu die falschen Antworten und extra (ohne Doppelte)
+        const richtig = teile.filter(Array.isArray).map(t => t[0]);
+        const sonst = [...new Set([...teile.filter(Array.isArray).flatMap(t => t.slice(1)), ...(a.extra || [])])].filter(w => w && !richtig.includes(w));
+        Object.assign(z, {woerter:[...richtig, ...sonst], platz:{}, fix:{}, weg:[], wahl:null});
+        z.ord = mischen(nummern(z.woerter.length));
+      }
+      return z;
+    },
+    // Wortbank: Wort i in Lücke 'L<n>' bzw. zurück (zone ''); höchstens ein Wort pro Lücke
+    legen(z, i, zone){
+      const drin = Object.keys(z.platz).find(k => z.platz[k] === zone);
+      if (zone && drin != null){ if (z.fix[drin]) return; delete z.platz[drin]; }
+      if (!zone) delete z.platz[i]; else z.platz[i] = zone;
     },
     html(a, z){
       let n = 0;
+      if (a.ziehen){
+        const karte = i => `<span class="af-karte${z.fix[i] ? ' fix' : ''}${z.wahl === i ? ' gewaehlt' : ''}${z.weg.includes(i) ? ' weg' : ''}" data-karte="${i}" tabindex="0" role="button">${esc(z.woerter[i])}</span>`;
+        const frei = z.ord.filter(i => z.platz[i] == null);
+        return `<div class="af-pool af-bank" data-zone="">${frei.map(karte).join('') || '<span class="af-leer">Alle Wörter sind verteilt.</span>'}</div>`
+          + '<p class="af-luecken af-ziehen">' + z.teile.map(t => {
+            if (!Array.isArray(t)) return t;
+            const i = n++, w = Object.keys(z.platz).find(k => z.platz[k] === 'L' + i);
+            return `<span class="af-zone af-luecke${z.ok[i] === true ? ' richtig' : ''}" data-zone="L${i}" aria-label="Lücke ${i + 1}">${w != null ? karte(+w) : ''}</span>`;
+          }).join('') + '</p>';
+      }
       return '<p class="af-luecken">' + z.teile.map((t, j) => {
         if (!Array.isArray(t)) return t;
         const i = n++, r = z.ok[i];
@@ -1151,6 +1183,18 @@ const TYPEN = {
     },
     pruefen(a, z){
       const n = z.teile.filter(Array.isArray).length;
+      if (a.ziehen){
+        z.weg = []; z.wahl = null;
+        const richtig = z.teile.filter(Array.isArray).map(t => t[0]);
+        Object.keys(z.platz).forEach(w => {
+          const i = +z.platz[w].slice(1);
+          if (z.woerter[w] === richtig[i]){ z.fix[w] = true; z.ok[i] = true; } else { z.weg.push(+w); delete z.platz[w]; }
+        });
+        const k = nummern(n).filter(i => z.ok[i]).length;
+        if (k === n) return {ok:true, t:'✓ ' + (a.ok || 'Alles richtig!')};
+        if (!k && !z.weg.length) return {ok:false, t:'Ziehe zuerst Wörter in die Lücken.'};
+        return {ok:false, t:`${k} von ${n} Lücken richtig. ${z.weg.length ? `${z.weg.length} ${z.weg.length === 1 ? 'Wort ist' : 'Wörter sind'} zurück in die Wortbank gewandert.` : ''}`};
+      }
       for (let i = 0; i < n; i++) z.ok[i] = String(z.wahl[i]) === '0';
       return nummern(n).every(i => z.ok[i]) ? {ok:true, t:'✓ ' + (a.ok || 'Alles richtig!')} : {ok:false, t:'Noch nicht alles richtig. Die rot markierten Lücken stimmen nicht.'};
     }
@@ -1355,9 +1399,12 @@ document.addEventListener('click', e => {
     z.geprueft = false; z.fb = null;
     return ctx.typ.sofort(a) ? pruefe(ctx) : ctx.zeichne();
   }
-  if (a.typ === 'zuordnen'){
+  if (a.typ === 'zuordnen' || (a.typ === 'luecken' && a.ziehen)){
     const k = t.closest('[data-karte]'), zo = t.closest('[data-zone]');
-    if (k && !z.fix[+k.dataset.karte]){ z.wahl = z.wahl === +k.dataset.karte ? null : +k.dataset.karte; z.weg = []; return ctx.zeichne(); }
+    // Lückentext: Wort in einer Lücke antippen (nichts gewählt) → zurück in die Wortbank
+    if (k && a.typ === 'luecken' && z.wahl == null && z.platz[+k.dataset.karte] != null && !z.fix[+k.dataset.karte]){ legen(ctx, +k.dataset.karte, ''); return ctx.zeichne(); }
+    const inLuecke = k && a.typ === 'luecken' && z.platz[+k.dataset.karte] != null && z.wahl != null && z.wahl !== +k.dataset.karte;
+    if (k && !z.fix[+k.dataset.karte] && !inLuecke){ z.wahl = z.wahl === +k.dataset.karte ? null : +k.dataset.karte; z.weg = []; return ctx.zeichne(); }
     if (zo && z.wahl != null){ legen(ctx, z.wahl, zo.dataset.zone); z.wahl = null; return ctx.zeichne(); }
   }
   if (a.typ === 'buchungssatz'){
@@ -1386,7 +1433,11 @@ document.addEventListener('keydown', e => {
 
 /* Zuordnen: Ziehen mit Maus, Stift oder Finger */
 let zieht = false, zug = null;
-function legen(ctx, i, zone){ const z = ctx.z; if (z.fix[i]) return; if (!zone) delete z.platz[i]; else z.platz[i] = zone; z.weg = []; z.fb = null; }
+function legen(ctx, i, zone){
+  const z = ctx.z; if (z.fix[i]) return;
+  if (ctx.typ.legen) ctx.typ.legen(z, i, zone); else if (!zone) delete z.platz[i]; else z.platz[i] = zone;
+  z.weg = []; z.fb = null;
+}
 document.addEventListener('pointerdown', e => {
   const k = e.target.closest && e.target.closest('.af-karte'); if (!k || k.classList.contains('fix')) return;
   zug = {ctx:ctxVon(k), i:+k.dataset.karte, el:k, x:e.clientX, y:e.clientY, geist:null};

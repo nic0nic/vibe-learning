@@ -11,6 +11,14 @@ Gesammelt im Thread „Aufbau der Seite“. Umgesetzt wird erst, wenn die Lehrkr
 
 ## Erledigt
 
+### Version vom 09.11.
+
+42. **Übungs-Editor mit Ziehen und Ablegen** (gewünscht 09.11.)
+    - `vorlage.html` („Übung erstellen“) mit Umschalter **Editor | JSON**: beide bearbeiten dieselbe Übung; JSON aus dem Claude-Chat einfügen → im Editor weiterbearbeiten → JSON kopieren oder „Speichern“ (.json), „Öffnen“. Vorschau und Herunterladen/Einreichen als Dialog, Einreichen technisch unverändert (Pull Request).
+    - Baukasten wie beim Struktogramm-Editor (`vorlage-editor.js`, Formulare je Typ in `vorlage-typen.js`): Bausteine aus der Leiste ziehen oder anklicken, Schritte als Reiter (verschiebbar), Aufgaben als Karten (verschiebbar, auch auf einen anderen Reiter), Folgeaufgabe (`danach`) per Ablegen, Rückgängig/Wiederholen, laufende Prüfung mit Sprung zur Fundstelle. Texteditor mit Fett, Liste, Tabelle, Bruch; Eingefügtes (z. B. aus Word) wird auf die Erlaubtliste bereinigt. Unbekannte Felder aus dem JSON bleiben erhalten.
+    - Lückentext im Editor: Wort doppelklicken oder `/Lücke(richtig, falsch, …)` tippen → Lücke als Chip (verschiebbar, anklicken zum Bearbeiten). Zuordnen: Karten in die Felder ziehen. Tabelle: je Zelle Text, Zahl oder Eingabefeld.
+    - Neu für Schüler: Lückentext mit Wortbank (`luecken`, `ziehen:true`, optional `extra`) in `lib/aufgaben.js`, Ziehen-Code gemeinsam mit Zuordnen; Prüfung in `lib/seite.js`; Skill `vibe-learning-seite-erstellen` ergänzt.
+
 ### Version vom 08.11.
 
 41. **Effektiver Zinssatz (BWR 9, Finanzierung)** (gewünscht 08.11.)

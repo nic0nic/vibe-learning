@@ -29,7 +29,9 @@ vibe-learning/
 │   ├── seite.css              Aussehen der Übersichtsseiten
 │   ├── sync.js                Anmeldung und Speichern auf dem Server
 │   ├── lehrer.html            Verwaltung für Lehrkräfte und Admin
-│   ├── vorlage.html           Übung aus Aufgaben-JSON testen, herunterladen, einreichen (Pull Request)
+│   ├── vorlage.html           Übung erstellen: Baukasten (Ziehen und Ablegen) oder Aufgaben-JSON, testen, herunterladen, einreichen
+│   ├── vorlage-editor.js      Baukasten der Seite „Übung erstellen“ (Schritte, Karten, Ziehen, Rückgängig)
+│   ├── vorlage-typen.js       Formulare je Aufgabentyp für den Baukasten
 │   ├── lib/                   für alle Fächer: aufgaben.js/.css (Aufgabentypen), seite.js (Seiten aus Aufgaben-JSON)
 │   ├── impressum.html, datenschutz.html   rechtliche Angaben (unten auf jeder Seite verlinkt, über nav.js)
 │   ├── IT/                    ein Ordner pro Fach, darin ein Ordner pro Bereich
@@ -444,7 +446,7 @@ sudo chown -R vibe-learning:vibe-learning /srv/vibe-learning/pb_public
 - **Neuen Bereich anlegen:** in `katalog.js` beim Fach (bzw. bei der Jahrgangsstufe) einen Eintrag bei `bereiche` ergänzen (mit `farbe`/`farbeHell` als Akzentfarbe, siehe Kommentar dort) und einen gleichnamigen Ordner mit einer `index.html` anlegen (am einfachsten `IT/python/index.html` kopieren und dort `data-bereich` auf den Ordner setzen, z. B. `BWR/9II/anlagen`, und die Pfade zum Hauptordner anpassen).
 - **Neues Fach oder neue Jahrgangsstufe:** in `katalog.js` bei `faecher` eintragen (Aufbau im Kommentar oben dort), Ordner anlegen und darin eine `index.html` mit `data-gruppe="Fach"` bzw. `data-gruppe="Fach/Stufe"` (Vorlage `IT/index.html`). Fach mit Stufen bekommt zusätzlich `Fach/index.html` mit `data-fach` (Vorlage `BWR/index.html`). Neue Fachordner in `werkzeuge/einzeldateien.py` bei `FAECHER` eintragen.
 - **Name der Plattform:** in `katalog.js` bei `name` und `untertitel`.
-- **Übungen von Lehrkräften einreichen lassen** (`vorlage.html`): Lehrkräfte erzeugen im Claude-Chat mit dem Skill `vibe-learning-seite-erstellen` (Repo github.com/nic0nic/vibe-learning-skills) ein Aufgaben-JSON, testen es auf `/vorlage.html` und reichen es ein. Der Server stellt dann einen Pull Request mit der fertigen Seite und dem Eintrag in `katalog.js` (Abschnitt EINREICHUNGEN). Einrichten auf dem Server:
+- **Übungen von Lehrkräften einreichen lassen** (`vorlage.html`): Lehrkräfte erzeugen im Claude-Chat mit dem Skill `vibe-learning-seite-erstellen` (Repo github.com/nic0nic/vibe-learning-skills) ein Aufgaben-JSON oder bauen die Übung direkt im Baukasten auf `/vorlage.html` (Umschalter Editor | JSON), testen sie dort und reichen sie ein. Der Server stellt dann einen Pull Request mit der fertigen Seite und dem Eintrag in `katalog.js` (Abschnitt EINREICHUNGEN). Einrichten auf dem Server:
   1. Ein eigenes GitHub-Konto für die Einreichungen anlegen (z. B. ein Bot-Konto), in `vibe-learning` unter *Settings → Collaborators* mit Schreibrechten einladen und die Einladung annehmen. In diesem Konto unter *Settings → Developer settings → Tokens (classic)* einen Token mit nur dem Scope `public_repo` anlegen (Ablauf z. B. ein Jahr). Fine-grained Tokens gehen hier nicht: Sie erreichen keine Repos, in denen das Konto nur Collaborator ist (Fehler 403 „Resource not accessible by personal access token“). Alternativ ein fine-grained Token im Konto des Repo-Besitzers (Contents und Pull requests: Read and write).
   2. Auf dem Server: `sudo nano /etc/vibe-learning.env` mit der Zeile `VIBE_GITHUB_TOKEN=ghp_…`, dann `sudo chmod 600 /etc/vibe-learning.env`.
   3. `sudo systemctl edit vibe-learning` und eintragen: `[Service]` und darunter `EnvironmentFile=/etc/vibe-learning.env`. Danach `sudo systemctl restart vibe-learning`.
