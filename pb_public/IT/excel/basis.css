@@ -174,7 +174,9 @@ body.dragging,body.dragging *{cursor:grabbing!important}
 .card.solved .wthint{display:none}
 .hdr-left{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
 .modes{display:inline-flex;background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:3px}
-.modes button{border:0;background:none;color:var(--muted);font:600 14px system-ui,sans-serif;padding:7px 14px;border-radius:7px;cursor:pointer}
+.modes button,.modes a{border:0;background:none;color:var(--muted);font:600 14px system-ui,sans-serif;padding:7px 14px;border-radius:7px;cursor:pointer}
+.modes a{text-decoration:none;display:inline-block}
+.modes a:hover{color:var(--text)}
 .modes button.on{background:var(--panel);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.18)}
 .btn:disabled{opacity:.45;cursor:not-allowed;filter:none}
 .dock{position:fixed;left:22px;bottom:22px;z-index:30}

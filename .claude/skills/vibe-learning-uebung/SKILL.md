@@ -318,11 +318,42 @@ API
   caret, setCaret, focusInp, applyPT, cellAt, endPT, gridEl, trackCaret   Bezüge mit der Maus einfügen
   Verdrahtet: #ovBtn, #prevBtn, #resetBtn, Eingabe in .pin → syncInput, Maus-Ende im #grid
 
+Vergleiche und WENN/UND/ODER: logikAn() einmal aufrufen (vor dem ersten Rechnen). Dann gibt es = <> < > <= >=
+  (Ergebnis WAHR/FALSCH, Texte ohne Groß-/Kleinschreibung) und die Funktionen WENN, UND, ODER.
+
 Braucht ../../lib/aufgaben.js (Multiple Choice: Aufgaben.mc), vor basis.js einbinden.
 
 Die Seite liefert
   TOPICS, GROUPS, AC_FN; let learn, endPick, CUR, S, LS, PT
   render, resetS, loadStep, newEndless, setLevel, clearMarks, syncInput(inp, keepSel), logSolved
+```
+
+### IT/excel/uebertragen.js – Excel: Formeln übertragen und $ setzen (wie Bezüge, UND/ODER mit $; dazu uebertragen.css)
+
+```text
+uebertragen.js – Formeln übertragen und $-Zeichen setzen, wie in Excel (Seiten: bezuege, und-oder-bezuege)
+Laden nach basis.js, tabelle.js und dem Skript der Seite; dazu basis.css + tabelle.css.
+Markup: wie in bezuege.html (#taskcard, #sheetcard mit #fbar/#pools/#grid/#chips, #workcard, #actions, #fb, #dock).
+
+Stufen (fest, LEVELS): 1 $-Zeichen setzen · 2 Zellen auswählen und $ setzen · 3 Rechnung aus Bausteinen ·
+  4 Zeichen als Bausteine · 5 freie Eingabe mit Hinweisen · 6 freie Eingabe ohne Hinweise.
+Modi: pfad (Übungen aus STD), endlos (Zufall aus GENS), lernen (nur wenn TOPICS nicht leer).
+  Ein Modus lässt sich über die Adresse wählen: seite.html#pfad bzw. #endlos.
+Geprüft wird, ob die Formel nach dem Übertragen in allen Zellen dasselbe ergibt wie die Musterlösung,
+  auch mit 8 veränderten Zahlentabellen (abgeschriebene Zahlen fallen auf). Hinweise nennen falsche $-Zeichen.
+
+Die Seite liefert (vor dieser Datei)
+  KEY = 'bz-'                      Speicherschlüssel
+  GENS = {id: {title, make(r)}}    Aufgaben-Generator; make(r) mit Zufall r() liefert
+    {intro, cells: {A4:'Name', B5:12, C5:'=…'}, fmt: {B2:'eur'|'usd'|'pct'}, ffmt (Format der Ergebnisse),
+     fill: ['D5', 'D9'] (Formel in D5, übertragen bis D9), ref: '=B5*$B$2' (Musterlösung),
+     what: '… berechnet' (ergänzt „Schreibe in D5 eine Formel, die …“), tip (optional, bis Stufe 4)}
+  STD = [[gid, seed, gruppe]]      Übungen; GROUPS = [null, 'Gruppenname', …]
+  TOPICS = [{id, name, desc, steps}] Erklärung (oder []), OV_INTRO (Text der Übersicht)
+  HILFE    HTML, das bis Stufe 5 unter der Aufgabe steht (z. B. <details> zum $)
+  SYM4     Zeichen-Bausteine auf Stufe 4, z. B. ['=', '+', '(', ')', 'SUMME(']; Zahlen und Texte der Lösung kommen dazu
+  AC_FN    Funktionen für die Autovervollständigung (siehe basis.js)
+Hilfen für Generatoren: rd(r, a, b, Stellen), pickN(r, liste, n), cols('B', 5) → ['B', … 'F']
 ```
 
 ### IT/python/lib/pykurs.js – Geführte Python-Übungen

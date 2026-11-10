@@ -14,6 +14,13 @@ Gesammelt im Thread „Aufbau der Seite“. Umgesetzt wird erst, wenn die Lehrkr
 
 ### Version vom 10.11.
 
+48. **Excel: UND / ODER mit $** (gewünscht 10.11.)
+    Neue Seite `IT/excel/und-oder-bezuege.html` mit „Übungen $“ (10 Aufgaben) und „Endlos $“: WENN mit UND/ODER auf eine Spalte bzw. einen Bereich übertragen, Grenzwerte mit $ festhalten (Pizza-Kette Domi-No’s wie in der Erarbeitung). Bedienung wie bei Zellbezüge/SUMME: Zellen und Bereiche in der Tabelle anklicken bzw. ziehen, F4 für $, Stufen 1–6 ($ setzen … freie Eingabe ohne Hinweise). Die Moduswahl von und-oder.html und der neuen Seite verlinkt beide („Erarbeitung | Übungen | Endlos | Übungen $ | Endlos $“).
+    - Technik von bezuege.html nach `uebertragen.js`/`uebertragen.css` ausgelagert (beide Seiten nutzen sie). Neu: Aufgaben werden neu gewürfelt, bis jeder einzelne falsche $-Bezug schon in der gezeigten Tabelle auffällt; die Aufgaben der Zellbezüge-Seite bleiben dabei unverändert (geprüft).
+    - `tabelle.js`: `logikAn()` schaltet Vergleiche (= <> < > <= >=, WAHR/FALSCH) und WENN/UND/ODER ein; SUMME/MIN/MAX und Zellbezüge rechnen unverändert.
+    - Eigene Seite statt neuer Modi in und-oder.html, weil `tabelle.js` und die Bausteine-Technik dort 19 gleiche globale Namen haben. Eigener Eintrag im Katalog (`uobz`, Auswertung getrennt).
+    Getestet in Chromium: 400 Zufallsaufgaben (Musterlösung richtig, jeder $-Fehler fällt auf), alle Übungen auf allen 6 Stufen, Endlos, Rückmeldungen, Klick in die Tabelle und F4; Zellbezüge (Erklärung und Übungen), SUMME/MIN/MAX und UND/ODER weiter in Ordnung. Nicht in Firefox.
+
 47. **Python: Fehlersuche** (gewünscht 10.11.)
     Neue Seite `IT/python/fehlersuche.html` nach dem Vorbild der HTML-Fehlersuche: Endlosmodus, das Skript baut in 15 richtige Programme (Eingabe/Ausgabe, Rechnen, if/elif/else, and) je einen von 22 Fehlerarten ein, rund 340 verschiedene Aufgaben. Schalter Syntax | Laufzeit | Logik | Gemischt; zu jedem Programm steht, was es tun soll (nötig für Logikfehler). Erst Zeile anklicken, dann verbessern; geprüft wird mit Skulpt über Testeingaben (gleiche Ausgabe wie das richtige Programm). „Ausführen“ zeigt Ausgabe bzw. Python-Fehlermeldung, zählt vor dem Anklicken als Hilfe (Serie beginnt neu). Getestet in Chromium (alle Kombinationen, Ablauf je Fehlerart), nicht in Firefox.
 

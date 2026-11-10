@@ -1,0 +1,14 @@
+/* uebertragen.css – zu uebertragen.js: übertragene Zellen, Bausteine der Stufen 2 bis 4, Hilfe-Tabelle */
+.xl td.fill{background:color-mix(in srgb,var(--then) 6%,var(--cell));outline:1px dashed color-mix(in srgb,var(--then) 70%,transparent);outline-offset:-4px}
+.xl td.good{background:color-mix(in srgb,var(--then) 22%,var(--cell));text-align:right;cursor:pointer}
+.xl td.bad{background:color-mix(in srgb,var(--else) 18%,var(--cell));outline:2px solid var(--else);outline-offset:-3px;text-align:right;cursor:pointer}
+.xl td.peekc{outline:3px solid var(--cond);outline-offset:-3px}
+.peek{font:15px system-ui,sans-serif;align-self:center}
+.peek code{font-size:15px}
+.dbtn{font-family:var(--mono);white-space:nowrap}
+.cg{width:5.6em;font-size:18px;padding:5px 8px}
+.block .cg{background:var(--slot);border-style:solid}
+.fixrow{display:flex;flex-wrap:wrap;align-items:center;gap:4px;font:700 20px var(--mono)}
+.dl{border-collapse:collapse;font-size:15px;margin:6px 0}
+.dl td,.dl th{border:1px solid var(--border);padding:3px 10px;text-align:left}
+.dl td:first-child{font:700 15px var(--mono)}

@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="de" data-trainer="uobz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UND / ODER mit $ – vibe learning</title>
+<script src="../../katalog.js"></script>
+<script src="../../nav.js"></script>
+<script src="../../sync.js"></script>
+<script>
+(function(){var t=null;try{t=localStorage.getItem('wenn-theme');}catch(e){}
+document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');})();
+</script>
+<link rel="stylesheet" href="basis.css">
+<link rel="stylesheet" href="tabelle.css">
+<link rel="stylesheet" href="uebertragen.css">
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <linearGradient id="fg" x1="0" y1="1" x2="0" y2="0">
+    <stop offset="0" stop-color="#d9230f"/><stop offset=".55" stop-color="#ff7a00"/><stop offset="1" stop-color="#ffd23f"/>
+  </linearGradient></defs></svg>
+
+<header>
+  <div class="hdr-left">
+    <div class="brand"><span>UND</span>/<span>ODER</span> <span>$</span></div>
+    <div class="modes" role="group" aria-label="Modus">
+      <a href="und-oder.html#lernen">Erarbeitung</a><a href="und-oder.html#pfad">Übungen</a><a href="und-oder.html#endlos">Endlos</a><button data-mode="pfad">Übungen $</button><button data-mode="endlos">Endlos $</button>
+    </div>
+  </div>
+  <div class="hdr-right">
+    <button class="iconbtn" id="themeBtn" aria-label="Hell/Dunkel umschalten"></button>
+    <div class="flames" id="flames" aria-label="Stufe wählen"></div>
+  </div>
+</header>
+
+<main>
+  <section class="card" id="taskcard">
+    <div class="meta">
+      <span class="lvlname" id="lvlname"></span>
+      <span id="taskmeta"></span>
+    </div>
+    <div class="tasktext" id="tasktext"></div>
+  </section>
+
+  <section class="card" id="sheetcard">
+    <div class="fbar" id="fbar"></div>
+    <div class="selhint" id="selhint"></div>
+    <div class="pools" id="pools"></div>
+    <div class="tscroll"><div id="grid"></div></div>
+    <div class="chips" id="chips"></div>
+  </section>
+
+  <section class="card" id="workcard">
+    <div class="worktitle">Deine Antwort</div>
+    <div id="work"></div>
+  </section>
+
+  <div class="actions" id="actions">
+    <button class="btn primary" id="checkBtn">Prüfen</button>
+    <button class="btn" id="resetBtn">Zurücksetzen</button>
+    <button class="btn" id="ovBtn">Übersicht</button>
+    <span class="spacer"></span>
+    <button class="btn" id="skipBtn" title="Neue Aufgabe – die Serie beginnt wieder bei 0">Andere Aufgabe</button>
+    <button class="btn" id="prevBtn" aria-label="Zurück">◀</button>
+    <button class="btn" id="nextBtn">Nächste Aufgabe ▶</button>
+  </div>
+  <div id="fb"></div>
+</main>
+
+<div class="dock" id="dock"></div>
+
+<script src="../../lib/aufgaben.js"></script>
+<script src="basis.js"></script>
+<script src="tabelle.js"></script>
+
+<!-- ===================== Übertragen, Aufgaben, Erklärung ===================== -->
+<script id="tasks">
+/* UND / ODER mit $: Formeln mit WENN, UND, ODER übertragen und $-Zeichen setzen (Pizza-Kette Domi-No's).
+   Die Technik steckt in uebertragen.js (Aufbau dort oben), Vergleiche und WENN/UND/ODER rechnet tabelle.js (logikAn).
+   Erarbeitung, Übungen und Endlos ohne $ stehen in und-oder.html; die Moduswahl oben verlinkt beide Seiten. */
+logikAn();
+const KEY = 'uobz-';
+const TOPICS = [], OV_INTRO = '';
+const SYM4 = ['=', '<', '>', '<=', '>=', '<>', '(', ')', ';', '*', '+', 'WENN(', 'UND(', 'ODER('];
+const AC_FN = [
+  {n:'ODER', v:'Wahrheitswert', d:'Prüft, ob mindestens eine Bedingung erfüllt ist.'},
+  {n:'UND',  v:'Wahrheitswert', d:'Prüft, ob alle Bedingungen erfüllt sind.'},
+  {n:'WENN', v:'Wert', d:'Liefert den Dann-Wert, wenn die Bedingung erfüllt ist, sonst den Sonst-Wert.'}
+];
+const HILFE = `<details class="help"><summary>Hilfe: WENN mit UND/ODER und das $</summary>
+<p><code>=WENN(UND(Bedingung1;Bedingung2);Dann-Wert;Sonst-Wert)</code> – bei UND müssen beide Bedingungen erfüllt sein, bei ODER reicht eine. Texte stehen in Anführungszeichen, z. B. <code>"ja"</code>.</p>
+<table class="dl"><tr><th>Bezug</th><th>beim Übertragen nach rechts</th><th>beim Übertragen nach unten</th></tr>
+<tr><td>B5</td><td>Spalte wandert mit</td><td>Zeile wandert mit</td></tr>
+<tr><td>$B$2</td><td>bleibt B</td><td>bleibt 2</td></tr>
+<tr><td>$B5</td><td>bleibt B</td><td>Zeile wandert mit</td></tr>
+<tr><td>B$4</td><td>Spalte wandert mit</td><td>bleibt 4</td></tr></table>
+<p>Merke: Grenzwerte, die für alle Zeilen gelten (z. B. ein Mindestalter in B2), brauchen ein $. Setze den Cursor in einen Bezug und drücke <b>F4</b> (oder <code>$ F4</code>).</p></details>`;
+
+const NAMES = ['Mia', 'Ben', 'Lea', 'Tim', 'Emma', 'Noah', 'Lina', 'Paul', 'Zoe', 'Finn', 'Ella', 'Luca', 'Hanna', 'Jonas', 'Aylin', 'Elias'];
+const FILIALEN = ['Altstadt', 'Bahnhof', 'Uni', 'Hafen', 'Markt', 'Nord'];
+const jn = b => b ? 'ja' : 'nein';
+// Zeilen mit festen Mustern (damit jeder falsche Bezug auffällt) plus Zufall, gemischt
+const mische = (r, muster, n, frei) => { const a = muster.slice(); while (a.length < n) a.push(frei()); return shuffle(a, r).slice(0, n); };
+
+const GENS = {
+  fahrer:{title:'Lieferfahrer gesucht', make(r){
+    const min = pick1(r, [18, 19, 21]), nm = pickN(r, NAMES, 6);
+    const p = mische(r, [[min + 2, 1], [min - 1, 1], [min - 2, 1], [min + 3, 0], [min, 1]], 6, () => [ri(r, min - 3, min + 6), ri(r, 0, 1)]);
+    const c = {A2:'Mindestalter', B2:min, A4:'Name', B4:'Alter', C4:'Führerschein', D4:'Kommt in Frage'};
+    nm.forEach((x, i) => { const n = 5 + i; c['A' + n] = x; c['B' + n] = p[i][0]; c['C' + n] = jn(p[i][1]); });
+    return {intro:'Domi-No’s sucht Lieferfahrer. Sie müssen mindestens so alt sein wie das Mindestalter in B2 und einen Führerschein haben.', cells:c,
+      fill:['D5', 'D10'], ref:'=WENN(UND(B5>=$B$2;C5="ja");"ja";"nein")', what:`prüft, ob ${nm[0]} in Frage kommt. Ausgegeben werden soll „ja“ bzw. „nein“`};
+  }},
+  bonus:{title:'Bonus für Fahrer', make(r){
+    const lmin = ri(r, 8, 12) * 5, bmin = pick1(r, [4, 4.2, 4.5]), nm = pickN(r, NAMES, 6);
+    const p = mische(r, [[lmin + 6, bmin + 0.3], [lmin - 4, bmin + 0.4], [lmin + 10, bmin - 0.4], [lmin, bmin], [lmin - 9, bmin - 0.6]], 6,
+      () => [lmin + ri(r, -10, 15), +(bmin + rd(r, -0.8, 0.5, 1)).toFixed(1)]);
+    const c = {A2:'Mindestens Lieferungen', B2:lmin, A3:'Mindestens Bewertung', B3:bmin, A5:'Fahrer', B5:'Lieferungen', C5:'Bewertung', D5:'Bonus'};
+    nm.forEach((x, i) => { const n = 6 + i; c['A' + n] = x; c['B' + n] = p[i][0]; c['C' + n] = Math.min(5, +p[i][1].toFixed(1)); });
+    return {intro:'Fahrer bekommen einen Bonus, wenn sie im Monat mindestens so viele Lieferungen wie in B2 geschafft haben und ihre Bewertung mindestens so gut ist wie in B3.', cells:c,
+      fill:['D6', 'D11'], ref:'=WENN(UND(B6>=$B$2;C6>=$B$3);"Bonus";"kein Bonus")', what:`prüft, ob ${nm[0]} den Bonus bekommt. Ausgegeben werden soll „Bonus“ bzw. „kein Bonus“`};
+  }},
+  ofen:{title:'Ofentemperatur', make(r){
+    const lo = ri(r, 24, 26) * 10, hi = lo + ri(r, 4, 6) * 10;
+    const t = mische(r, [lo + 15, lo - 12, hi + 8, hi, lo + 30, lo - 25], 6, () => ri(r, lo - 30, hi + 30));
+    const c = {A2:'Mindesttemperatur', B2:lo, A3:'Höchsttemperatur', B3:hi, A5:'Uhrzeit', B5:'Temperatur', C5:'Ofen'};
+    t.forEach((x, i) => { const n = 6 + i; c['A' + n] = `${11 + i}:00 Uhr`; c['B' + n] = x; });
+    return {intro:'Jede Stunde wird die Temperatur im Pizzaofen gemessen. Sie muss zwischen der Mindesttemperatur (B2) und der Höchsttemperatur (B3) liegen – beide Grenzen gehören noch dazu.', cells:c,
+      fill:['C6', 'C11'], ref:'=WENN(UND(B6>=$B$2;B6<=$B$3);"ok";"prüfen")', what:'prüft, ob die Temperatur um 11:00 Uhr passt. Ausgegeben werden soll „ok“ bzw. „prüfen“'};
+  }},
+  gutschein:{title:'Gutschein für Stammkunden', make(r){
+    const min = ri(r, 4, 8), wert = pick1(r, [5, 8, 10]), nm = pickN(r, NAMES, 6);
+    const p = mische(r, [[min + 3, 1], [min - 1, 1], [min + 5, 0], [min, 1], [min - 3, 0]], 6, () => [ri(r, 0, min + 6), ri(r, 0, 1)]);
+    const c = {A2:'Mindestens Bestellungen', B2:min, A3:'Wert des Gutscheins', B3:wert, A5:'Kunde', B5:'Bestellungen', C5:'Newsletter', D5:'Gutschein'}, fmt = {B3:'eur'};
+    nm.forEach((x, i) => { const n = 6 + i; c['A' + n] = x; c['B' + n] = p[i][0]; c['C' + n] = jn(p[i][1]); });
+    return {intro:'Wer im Jahr mindestens so oft bestellt hat wie in B2 und den Newsletter bekommt, erhält einen Gutschein. Sein Wert steht in B3.', cells:c, fmt, ffmt:'eur',
+      fill:['D6', 'D11'], ref:'=WENN(UND(B6>=$B$2;C6="ja");$B$3;0)', what:`den Wert des Gutscheins für ${nm[0]} ausgibt – oder 0, wenn es keinen gibt`,
+      tip:'Auch der Wert des Gutscheins steht in einer Zelle, die für alle Zeilen gilt.'};
+  }},
+  rabatt:{title:'Rabatt', make(r){
+    const ab = pick1(r, [30, 40, 50]), nm = pickN(r, NAMES, 6);
+    const p = mische(r, [[ab - 12.5, 0], [ab + 8, 0], [ab - 20.9, 1], [ab, 0], [ab - 5.5, 0]], 6, () => [rd(r, ab - 25, ab + 20, 2), ri(r, 0, 1)]);
+    const c = {A2:'Rabatt ab Bestellwert', B2:ab, A4:'Kunde', B4:'Bestellwert', C4:'Stammkunde', D4:'Rabatt'}, fmt = {B2:'eur'};
+    nm.forEach((x, i) => { const n = 5 + i; c['A' + n] = x; c['B' + n] = +p[i][0].toFixed(2); fmt['B' + n] = 'eur'; c['C' + n] = jn(p[i][1]); });
+    return {intro:'Einen Rabatt gibt es, wenn der Bestellwert mindestens so hoch ist wie in B2 oder wenn jemand Stammkunde ist.', cells:c, fmt,
+      fill:['D5', 'D10'], ref:'=WENN(ODER(B5>=$B$2;C5="ja");"Rabatt";"kein Rabatt")', what:`prüft, ob ${nm[0]} einen Rabatt bekommt. Ausgegeben werden soll „Rabatt“ bzw. „kein Rabatt“`};
+  }},
+  lieferung:{title:'Liefergebühr', make(r){
+    const km = pick1(r, [2, 3, 4]), ab = pick1(r, [25, 30, 35]), geb = pick1(r, [2.5, 3, 3.5]), nm = pickN(r, NAMES, 6);
+    const p = mische(r, [[km + 3, ab - 10], [km - 1, ab - 12], [km + 5, ab + 4], [km, ab - 3], [km + 2, ab - 1]], 6, () => [ri(r, 1, km + 6), rd(r, 10, ab + 15, 2)]);
+    const c = {A2:'Kostenlos bis Entfernung (km)', B2:km, A3:'oder ab Bestellwert', B3:ab, A4:'sonst Liefergebühr', B4:geb,
+      A6:'Bestellung von', B6:'Entfernung (km)', C6:'Bestellwert', D6:'Liefergebühr'}, fmt = {B3:'eur', B4:'eur'};
+    nm.forEach((x, i) => { const n = 7 + i; c['A' + n] = x; c['B' + n] = p[i][0]; c['C' + n] = +p[i][1].toFixed(2); fmt['C' + n] = 'eur'; });
+    return {intro:'Die Lieferung ist kostenlos, wenn der Kunde höchstens so weit entfernt wohnt wie in B2 oder für mindestens den Betrag in B3 bestellt. Sonst kostet sie die Gebühr aus B4.', cells:c, fmt, ffmt:'eur',
+      fill:['D7', 'D12'], ref:'=WENN(ODER(B7<=$B$2;C7>=$B$3);0;$B$4)', what:`die Liefergebühr für die Bestellung von ${nm[0]} ausgibt (0 € oder die Gebühr aus B4)`};
+  }},
+  pause:{title:'Pause für Fahrer', make(r){
+    const h = pick1(r, [5, 6]), lf = ri(r, 3, 5) * 5, nm = pickN(r, NAMES, 6);
+    const p = mische(r, [[h - 2, lf - 4], [h + 1, lf - 8], [h - 1, lf + 3], [h, lf - 2], [h - 3, lf - 10]], 6, () => [ri(r, 1, h + 3), ri(r, 3, lf + 8)]);
+    const c = {A2:'Pause ab Stunden', B2:h, A3:'oder ab Lieferungen', B3:lf, A5:'Fahrer', B5:'Stunden im Dienst', C5:'Lieferungen', D5:'Status'};
+    nm.forEach((x, i) => { const n = 6 + i; c['A' + n] = x; c['B' + n] = p[i][0]; c['C' + n] = p[i][1]; });
+    return {intro:'Ein Fahrer muss Pause machen, wenn er mindestens so viele Stunden im Dienst ist wie in B2 oder mindestens so viele Lieferungen wie in B3 gefahren hat.', cells:c,
+      fill:['D6', 'D11'], ref:'=WENN(ODER(B6>=$B$2;C6>=$B$3);"Pause";"weiter")', what:`prüft, ob ${nm[0]} Pause machen muss. Ausgegeben werden soll „Pause“ bzw. „weiter“`};
+  }},
+  zuschlag:{title:'Lohn mit Zuschlag', make(r){
+    const lohn = pick1(r, [12.5, 13, 13.5, 14]), zu = pick1(r, [0.2, 0.25, 0.3]), nm = pickN(r, NAMES, 6);
+    const p = mische(r, [[1, 0], [0, 1], [0, 0], [1, 1], [0, 0]], 6, () => [ri(r, 0, 1), ri(r, 0, 1)]);
+    const c = {A2:'Stundenlohn', B2:lohn, A3:'Zuschlag', B3:zu, A5:'Name', B5:'Stunden', C5:'Wochenende', D5:'Nachtschicht', E5:'Lohn'}, fmt = {B2:'eur', B3:'pct'};
+    nm.forEach((x, i) => { const n = 6 + i; c['A' + n] = x; c['B' + n] = ri(r, 3, 9); c['C' + n] = jn(p[i][0]); c['D' + n] = jn(p[i][1]); });
+    return {intro:'Wer am Wochenende oder in der Nacht arbeitet, bekommt einen Zuschlag auf den Stundenlohn (B2). Der Zuschlag steht in B3. Lohn mit Zuschlag = Stunden · Stundenlohn · (1 + Zuschlag).', cells:c, fmt, ffmt:'eur',
+      fill:['E6', 'E11'], ref:'=WENN(ODER(C6="ja";D6="ja");B6*$B$2*(1+$B$3);B6*$B$2)', what:`den Lohn von ${nm[0]} berechnet – mit Zuschlag, wenn ${nm[0]} am Wochenende oder nachts gearbeitet hat`};
+  }},
+  filialen:{title:'Bonus für Filialen', make(r){
+    const fi = pickN(r, FILIALEN, 4), m = ['Jan', 'Feb', 'Mär', 'Apr'], bmin = pick1(r, [4, 4.2]);
+    const ziele = shuffle([18, 20, 22, 24], r).map(x => x * 1000);
+    const c = {A2:'Mindestbewertung', B2:bmin, A4:'Monatsziel', A5:'Umsatz', F5:'Bewertung', A11:'Bonus?'}, fmt = {};
+    const bw = mische(r, [bmin + 0.4, bmin - 0.3, bmin + 0.6, bmin], 4, () => bmin);
+    m.forEach((x, j) => { const L = colL(1 + j); c[L + 4] = ziele[j]; fmt[L + 4] = 'eur'; c[L + 5] = x; c[L + 11] = x; });
+    fi.forEach((x, i) => { const n = 6 + i; c['A' + n] = x; c['A' + (12 + i)] = x; c['F' + n] = +bw[i].toFixed(1);
+      m.forEach((_, j) => { const L = colL(1 + j); c[L + n] = ziele[j] + ri(r, -5, 5) * 1000 + (i + j) % 3 * 500; fmt[L + n] = 'eur'; }); });
+    return {intro:'Eine Filiale bekommt in einem Monat einen Bonus, wenn ihr Umsatz mindestens das Monatsziel (Zeile 4) erreicht und ihre Bewertung (Spalte F) mindestens so gut ist wie die Mindestbewertung in B2.', cells:c, fmt,
+      fill:['B12', 'E15'], ref:'=WENN(UND(B6>=B$4;$F6>=$B$2);"ja";"nein")', what:`prüft, ob die Filiale ${fi[0]} im Januar den Bonus bekommt. Ausgegeben werden soll „ja“ bzw. „nein“`,
+      tip:'Das Monatsziel steht für jeden Monat in Zeile 4, die Bewertung für jede Filiale in Spalte F.'};
+  }},
+  jugendschutz:{title:'Schichtplan und Jugendschutz', make(r){
+    const nm = pickN(r, NAMES, 5), bis = pick1(r, [20, 22]), ends = [14, 18, bis, bis + 2];
+    const alter = mische(r, [16, 17, 18, 21, 15], 5, () => ri(r, 15, 22));
+    const c = {A2:'Volljährig ab', B2:18, A3:'Jüngere arbeiten bis', B3:bis, C4:'Schicht bis … Uhr', A5:'Name', B5:'Alter'};
+    ends.forEach((x, j) => { c[colL(2 + j) + 5] = x; });
+    nm.forEach((x, i) => { const n = 6 + i; c['A' + n] = x; c['B' + n] = alter[i]; });
+    return {intro:'Wer volljährig ist (B2), darf jede Schicht übernehmen. Jüngere dürfen nur Schichten übernehmen, die spätestens um die Uhrzeit in B3 enden. Wann eine Schicht endet, steht in Zeile 5.', cells:c,
+      fill:['C6', 'F10'], ref:'=WENN(ODER($B6>=$B$2;C$5<=$B$3);"ja";"nein")', what:`prüft, ob ${nm[0]} die Schicht bis ${ends[0]} Uhr übernehmen darf. Ausgegeben werden soll „ja“ bzw. „nein“`,
+      tip:'Das Alter steht für jede Person in Spalte B, das Schichtende für jede Schicht in Zeile 5.'};
+  }}
+};
+
+const GROUPS = [null, 'UND mit festen Grenzwerten', 'ODER mit festen Grenzwerten', 'In zwei Richtungen übertragen'];
+// [Generator, Zufallsstartwert, Gruppe] – neue Aufgaben nur hinten anhängen: der Fortschritt hängt an der Nummer
+const STD = [
+  ['fahrer', 11, 1], ['ofen', 12, 1], ['bonus', 13, 1], ['gutschein', 14, 1],
+  ['rabatt', 21, 2], ['pause', 22, 2], ['lieferung', 23, 2], ['zuschlag', 24, 2],
+  ['jugendschutz', 31, 3], ['filialen', 32, 3]
+];
+</script>
+<script src="uebertragen.js"></script>
+</body>
+</html>

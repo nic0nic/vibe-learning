@@ -40,8 +40,10 @@ vibe-learning/
 │   │   │   ├── index.html             Übersicht des Bereichs
 │   │   │   ├── funktionen.html        SUMME, MITTELWERT, MIN, MAX, ANZAHL, ANZAHL2
 │   │   │   ├── wenn.html
-│   │   │   ├── und-oder.html
-│   │   │   └── bezuege.html           relative und absolute Zellbezüge ($)
+│   │   │   ├── und-oder.html          Moduswahl verlinkt auf und-oder-bezuege.html („Übungen $“, „Endlos $“)
+│   │   │   ├── und-oder-bezuege.html  WENN mit UND/ODER übertragen, $ setzen (Domi-No’s); Aufgaben in der Datei
+│   │   │   ├── bezuege.html           relative und absolute Zellbezüge ($)
+│   │   │   └── basis.js, bausteine.js, tabelle.js, uebertragen.js (+ .css)   Technik, Aufbau jeweils oben in der Datei
 │   │   ├── python/
 │   │   │   ├── index.html             Übersicht des Bereichs
 │   │   │   ├── editor.html            Python-Editor mit Terminal (läuft im Browser)

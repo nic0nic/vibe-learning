@@ -9,7 +9,7 @@ Ziel: Das Projekt bleibt auf Dauer klein, damit Änderungen und neue Seiten weni
    | `pb_public/` | Plattform, jede Seite | `katalog.js`, `nav.js`, `sync.js`, `seite.css` |
    | `pb_public/lib/` | ohne Fachbezug, in jedem Fach denkbar: Aufgabenformen, Zahlen- und Datumsformat, Ziehen und Ablegen, fremde Bibliotheken für mehrere Fächer | `aufgaben.js` + `aufgaben.css` (Multiple Choice, Zahlen, Lückentext, Zuordnen, Freitext, Lern-Chat, Buchungssatz, Tabelle ausfüllen, Erarbeitung aus Schritten), `seite.js` (Seiten aus Aufgaben-JSON, auch auf dem Server) |
    | `<Fach>/` | gilt für alle Bereiche eines Fachs | `BWR/bwr.css` (Grundlayout) |
-   | `<Fach>/<bereich>/` | nur dieser Bereich (eigene Bedienung, Fachlogik) | Excel: `IT/excel/basis.js` + `bausteine.js` oder `tabelle.js`; Python: `IT/python/lib/pykurs.js`; HTML: `IT/html/lib/htmlwerk.js` + `htmlkurs.js` |
+   | `<Fach>/<bereich>/` | nur dieser Bereich (eigene Bedienung, Fachlogik) | Excel: `IT/excel/basis.js` + `bausteine.js` oder `tabelle.js` (+ `uebertragen.js`); Python: `IT/python/lib/pykurs.js`; HTML: `IT/html/lib/htmlwerk.js` + `htmlkurs.js` |
 
    Faustregel: Würde eine Lehrkraft eines anderen Fachs den Baustein mit eigenen Inhalten nutzen (Multiple Choice, Lückentext), gehört er nach `lib/`. Hängt er an der Bedienung oder Fachlogik eines Bereichs (Excel-Formeln und Tabellenblatt, SQL-Editor, Bilanzbild), bleibt er im Bereich. Eine Bibliothek bindet nur Bibliotheken derselben oder einer allgemeineren Ebene ein. Altlast: Die Datenbank-Seiten binden noch `IT/excel/basis.js` und Python-Teile ein (Fehlerliste Nr. 18).
 2. **Eine Seite enthält nur ihr Eigenes.** Aufgaben und Level stehen möglichst als Daten in der Seite, nicht als Code.

@@ -16,6 +16,7 @@ BIBLIOTHEKEN = [
     ("IT/excel/basis.js", "Excel: Grundlage aller Excel-Übungen (dazu basis.css)"),
     ("IT/excel/bausteine.js", "Excel: Formeln aus Bausteinen (wie WENN, UND/ODER; dazu bausteine.css)"),
     ("IT/excel/tabelle.js", "Excel: Tabellen-Übungen mit Rechenkern (wie Funktionen, Bezüge; dazu tabelle.css)"),
+    ("IT/excel/uebertragen.js", "Excel: Formeln übertragen und $ setzen (wie Bezüge, UND/ODER mit $; dazu uebertragen.css)"),
     ("IT/python/lib/pykurs.js", "Geführte Python-Übungen"),
     ("IT/html/lib/htmlkurs.js", "Geführte HTML- und CSS-Übungen"),
     ("IT/html/lib/htmlwerk.js", "HTML: Editor mit Vorschau, Regelprüfung und Tests (Grundlage von htmlkurs.js und editor.html)"),

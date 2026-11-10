@@ -58,6 +58,7 @@ window.KATALOG = {
             {id: 'fn',   stufen: 5, datei: 'funktionen.html', titel: 'SUMME, MIN, MAX …', text: 'SUMME, MITTELWERT, MIN, MAX, ANZAHL und ANZAHL2 – mit Erklärung, Übungen und Endlos-Modus.'},
             {id: 'wenn', stufen: 9, datei: 'wenn.html',       titel: 'WENN-Funktion',     text: 'Die WENN-Funktion üben – von Bausteinen bis zur eigenen Formel.'},
             {id: 'uo',   stufen: 9, datei: 'und-oder.html',   titel: 'UND / ODER',        text: 'Bedingungen verknüpfen – mit Erarbeitung, Übungen und Endlos-Modus.'},
+            {id: 'uobz', stufen: 6, datei: 'und-oder-bezuege.html', titel: 'UND / ODER mit $', text: 'WENN mit UND/ODER auf ganze Spalten übertragen: Grenzwerte mit $ festhalten – Zellen in der Tabelle auswählen wie in Excel.'},
             {id: 'bz',   stufen: 6, datei: 'bezuege.html',    titel: 'Zellbezüge $',      text: 'Relative und absolute Bezüge: Formeln übertragen und $-Zeichen richtig setzen.'}
           ]
         },
@@ -980,7 +981,9 @@ body.dragging,body.dragging *{cursor:grabbing!important}
 .card.solved .wthint{display:none}
 .hdr-left{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
 .modes{display:inline-flex;background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:3px}
-.modes button{border:0;background:none;color:var(--muted);font:600 14px system-ui,sans-serif;padding:7px 14px;border-radius:7px;cursor:pointer}
+.modes button,.modes a{border:0;background:none;color:var(--muted);font:600 14px system-ui,sans-serif;padding:7px 14px;border-radius:7px;cursor:pointer}
+.modes a{text-decoration:none;display:inline-block}
+.modes a:hover{color:var(--text)}
 .modes button.on{background:var(--panel);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.18)}
 .btn:disabled{opacity:.45;cursor:not-allowed;filter:none}
 .dock{position:fixed;left:22px;bottom:22px;z-index:30}
@@ -1040,7 +1043,8 @@ main{max-width:1020px;margin:0 auto;padding:18px 16px}
 .pools{display:grid;gap:12px;margin:4px 0 10px}
 
 </style>
-<style>
+<style>/* uebertragen.css */
+/* uebertragen.css – zu uebertragen.js: übertragene Zellen, Bausteine der Stufen 2 bis 4, Hilfe-Tabelle */
 .xl td.fill{background:color-mix(in srgb,var(--then) 6%,var(--cell));outline:1px dashed color-mix(in srgb,var(--then) 70%,transparent);outline-offset:-4px}
 .xl td.good{background:color-mix(in srgb,var(--then) 22%,var(--cell));text-align:right;cursor:pointer}
 .xl td.bad{background:color-mix(in srgb,var(--else) 18%,var(--cell));outline:2px solid var(--else);outline-offset:-3px;text-align:right;cursor:pointer}
@@ -1054,6 +1058,7 @@ main{max-width:1020px;margin:0 auto;padding:18px 16px}
 .dl{border-collapse:collapse;font-size:15px;margin:6px 0}
 .dl td,.dl th{border:1px solid var(--border);padding:3px 10px;text-align:left}
 .dl td:first-child{font:700 15px var(--mono)}
+
 </style>
 </head>
 <body>
@@ -2016,6 +2021,9 @@ window.addEventListener('resize', () => acUpdate());
  *   caret, setCaret, focusInp, applyPT, cellAt, endPT, gridEl, trackCaret   Bezüge mit der Maus einfügen
  *   Verdrahtet: #ovBtn, #prevBtn, #resetBtn, Eingabe in .pin → syncInput, Maus-Ende im #grid
  *
+ * Vergleiche und WENN/UND/ODER: logikAn() einmal aufrufen (vor dem ersten Rechnen). Dann gibt es = <> < > <= >=
+ *   (Ergebnis WAHR/FALSCH, Texte ohne Groß-/Kleinschreibung) und die Funktionen WENN, UND, ODER.
+ *
  * Braucht ../../lib/aufgaben.js (Multiple Choice: Aufgaben.mc), vor basis.js einbinden.
  *
  * Die Seite liefert
@@ -2040,6 +2048,15 @@ const ALIAS = {SUM:'SUMME', AVERAGE:'MITTELWERT', COUNT:'ANZAHL', COUNTA:'ANZAHL
   DURCHSCHNITT:'MITTELWERT', MITTEL:'MITTELWERT', MITTELWERTE:'MITTELWERT', SUMMEN:'SUMME', SUM2:'SUMME', SUMM:'SUMME', SUME:'SUMME',
   ANZAL:'ANZAHL', ANZAHL1:'ANZAHL', ANZAL2:'ANZAHL2', ZÄHLEN:'ANZAHL', ANZAHLZWEI:'ANZAHL2'};
 const ENGLISH = ['SUM', 'AVERAGE', 'COUNT', 'COUNTA'];
+let LOGIK = false;
+function logikAn(){
+  if (LOGIK) return; LOGIK = true;
+  FUNCS.push('WENN', 'UND', 'ODER');
+  Object.assign(FDESC, {WENN:'liefert je nach Bedingung den Dann- oder den Sonst-Wert', UND:'ist WAHR, wenn alle Bedingungen erfüllt sind', ODER:'ist WAHR, wenn mindestens eine Bedingung erfüllt ist'});
+  Object.assign(ALIAS, {IF:'WENN', AND:'UND', OR:'ODER', WEN:'WENN', WENNN:'WENN', UN:'UND', ODR:'ODER'});
+  ENGLISH.push('IF', 'AND', 'OR');
+}
+const fnListe = () => FUNCS.slice(0, -1).join(', ') + ' oder ' + FUNCS[FUNCS.length - 1];
 
 
 /* ---- Zellbezüge ---- */
@@ -2089,10 +2106,17 @@ function tokenize(src){
       if (FUNCS.includes(up)) throw new FErr(`Nach ${up} muss eine Klammer folgen: ${up}(…)`);
       if (/^\$?[A-Za-z]{1,3}\$?\d+\$?[A-Za-z]{1,3}\$?\d+$/.test(w)) throw new FErr(`Zwischen den Zellen in „${w}“ fehlt etwas. Für einen Bereich schreibst du einen Doppelpunkt, z. B. B4:B8.`);
       if (ALIAS[up]) throw new FErr(`Meinst du ${ALIAS[up]}? Nach dem Funktionsnamen folgt eine Klammer: ${ALIAS[up]}(…)`);
+      if (LOGIK && /^[A-Za-zÄÖÜäöüß]+$/.test(w)) throw new FErr(`„${w}“ ist weder ein Zellbezug (wie B4) noch eine Funktion. Ist das ein Text? Texte stehen in Anführungszeichen: "${w}"`);
       throw new FErr(`„${w}“ ist weder ein Zellbezug (wie B4) noch eine Funktion.`);
     }
     if ('+-*/^();:'.includes(c)){ t.push({type:'op', v:c}); i++; continue; }
     if (c === ',') throw new FErr('Im deutschen Excel trennt man die Teile einer Funktion mit einem Semikolon ; – und einen Bereich „von … bis“ schreibt man mit Doppelpunkt, z. B. B4:B8.');
+    if (LOGIK && (c === '<' || c === '>' || c === '=')){
+      const zwei = src.slice(i, i + 2);
+      if (zwei === '=<' || zwei === '=>') throw new FErr(`Schreibe ${zwei[1]}= statt ${zwei}: Das Gleichheitszeichen steht hinten.`);
+      const v = ['<=', '>=', '<>'].includes(zwei) ? zwei : c;
+      t.push({type:'op', v}); i += v.length; continue;
+    }
     if (c === '=') throw new FErr('Das = steht nur einmal ganz am Anfang der Formel.');
     if (c === '<' || c === '>') throw new FErr('Vergleiche mit < oder > brauchst du hier nicht.');
     if (c === '€' || c === '%') throw new FErr(`Das Zeichen ${c} gehört nicht in die Formel. Schreibe nur die Zahl bzw. den Zellbezug.`);
@@ -2111,6 +2135,9 @@ function parseFormula(raw){
   if (!toks.length) throw new FErr('Nach dem = fehlt noch die Formel.');
   const peek = () => toks[p], next = () => toks[p++];
   const isOp = (t, v) => t && t.type === 'op' && t.v === v;
+  const CMP = ['=', '<>', '<', '>', '<=', '>='];
+  function cmp(){ let a = expr(); const t = peek(); if (t && t.type === 'op' && CMP.includes(t.v)){ next(); a = {k:'cmp', o:t.v, a:noRange(a), b:noRange(expr())};
+    const u = peek(); if (u && u.type === 'op' && CMP.includes(u.v)) throw new FErr('Ein Vergleich hat nur ein Vergleichszeichen. Mehrere Bedingungen verknüpfst du mit UND(…) oder ODER(…).'); } return a; }
   function expr(){ let a = term(); while (isOp(peek(), '+') || isOp(peek(), '-')){ const o = next().v; a = {k:'bin', o, a:noRange(a), b:noRange(term())}; } return a; }
   function term(){ let a = factor(); while (isOp(peek(), '*') || isOp(peek(), '/')){ const o = next().v; a = {k:'bin', o, a:noRange(a), b:noRange(factor())}; } return a; }
   function factor(){ if (isOp(peek(), '-') || isOp(peek(), '+')){ const o = next().v; return {k:'neg', o, a:noRange(factor())}; } return power(); }
@@ -2134,13 +2161,13 @@ function parseFormula(raw){
         if (ENGLISH.includes(name)) throw new FErr(`Im deutschen Excel heißt die Funktion ${ALIAS[name]} statt ${name}.`);
         if (ALIAS[name]) throw new FErr(`Die Funktion heißt ${ALIAS[name]}, nicht ${name}.`);
         if (CELLRE.test(name)) throw new FErr(`Nach der Zelle ${name} darf keine Klammer folgen. Fehlt ein Rechenzeichen?`);
-        throw new FErr(`Die Funktion ${name} gibt es hier nicht. Du brauchst SUMME, MITTELWERT, MIN, MAX, ANZAHL oder ANZAHL2.`);
+        throw new FErr(`Die Funktion ${name} gibt es hier nicht. Du brauchst ${fnListe()}.`);
       }
       if (isOp(peek(), ')')){ next(); throw new FErr(`In die Klammer von ${name} gehört ein Bereich, z. B. ${name}(B4:B8).`); }
       const args = [];
       for (;;){
         if (isOp(peek(), ';') || isOp(peek(), ')')) throw new FErr(`In ${name}(…) fehlt zwischen den Semikolons etwas.`);
-        args.push(expr());
+        args.push(cmp());
         const u = next();
         if (!u) throw new FErr(`Es fehlt die schließende Klammer ) von ${name}.`);
         if (isOp(u, ';')) continue;
@@ -2148,19 +2175,22 @@ function parseFormula(raw){
         if (isOp(u, ':')) throw new FErr('Vor und nach dem Doppelpunkt muss je eine Zelle stehen, z. B. B4:B8.');
         throw new FErr(`In ${name}(…) fehlt ein ; oder ein Rechenzeichen zwischen zwei Teilen.`);
       }
+      if (name === 'WENN' && (args.length < 2 || args.length > 3)) throw new FErr(`WENN hat drei Teile: WENN(Bedingung; Dann-Wert; Sonst-Wert) – deine Formel hat ${args.length}.`);
+      if (name === 'WENN' && args[0].k !== 'cmp' && !(args[0].k === 'call' && ['UND', 'ODER'].includes(args[0].name)) && args[0].k !== 'ref') throw new FErr('Der erste Teil von WENN ist eine Bedingung, z. B. B5>=18 oder UND(…).');
       return {k:'call', name, args};
     }
     if (isOp(t, '(')){
-      const e = expr(), u = next();
+      const e = cmp(), u = next();
       if (!isOp(u, ')')) throw new FErr('Es fehlt eine schließende Klammer ).');
       return {k:'par', a:noRange(e)};
     }
     if (isOp(t, ')')) throw new FErr('Hier steht eine Klammer ) zu viel oder an der falschen Stelle.');
     if (isOp(t, ';')) throw new FErr('Das Semikolon ; trennt nur die Teile innerhalb einer Funktion, z. B. SUMME(B4:B8;D4:D8).');
     if (isOp(t, ':')) throw new FErr('Vor dem Doppelpunkt muss eine Zelle stehen, z. B. B4:B8.');
+    if (t.type === 'op' && /[<>=]/.test(t.v)) throw new FErr(`Vor ${t.v} fehlt etwas: Ein Vergleich braucht links und rechts einen Wert, z. B. B5>=18.`);
     throw new FErr(`Das Zeichen ${t.v} steht an der falschen Stelle.`);
   }
-  const ast = expr();
+  const ast = cmp();
   if (p < toks.length){
     const t = toks[p];
     if (isOp(t, ')')) throw new FErr('Hier steht eine Klammer ) zu viel.');
@@ -2177,7 +2207,7 @@ function refsOf(n, out = []){
   if (n.k === 'ref') out.push({a:n.v, b:n.v});
   else if (n.k === 'range') out.push({a:n.a, b:n.b});
   else if (n.k === 'call') n.args.forEach(x => refsOf(x, out));
-  else if (n.k === 'bin'){ refsOf(n.a, out); refsOf(n.b, out); }
+  else if (n.k === 'bin' || n.k === 'cmp'){ refsOf(n.a, out); refsOf(n.b, out); }
   else if (n.k === 'neg' || n.k === 'par') refsOf(n.a, out);
   return out;
 }
@@ -2185,7 +2215,7 @@ const cellsOfRefs = refs => new Set(refs.flatMap(r => rangeCells(r.a, r.b)));
 function fnsOf(n, out = new Set()){
   if (!n) return out;
   if (n.k === 'call'){ out.add(n.name); n.args.forEach(x => fnsOf(x, out)); }
-  else if (n.k === 'bin'){ fnsOf(n.a, out); fnsOf(n.b, out); }
+  else if (n.k === 'bin' || n.k === 'cmp'){ fnsOf(n.a, out); fnsOf(n.b, out); }
   else if (n.k === 'neg' || n.k === 'par') fnsOf(n.a, out);
   return out;
 }
@@ -2193,7 +2223,7 @@ function numsOf(n, out = []){
   if (!n) return out;
   if (n.k === 'num') out.push(n.v);
   else if (n.k === 'call') n.args.forEach(x => numsOf(x, out));
-  else if (n.k === 'bin'){ numsOf(n.a, out); numsOf(n.b, out); }
+  else if (n.k === 'bin' || n.k === 'cmp'){ numsOf(n.a, out); numsOf(n.b, out); }
   else if (n.k === 'neg' || n.k === 'par') numsOf(n.a, out);
   return out;
 }
@@ -2213,8 +2243,23 @@ const E = v => ({t:'err', v});
 function toNum(v){
   if (v.t === 'num' || v.t === 'err') return v;
   if (v.t === 'empty') return {t:'num', v:0};
+  if (v.t === 'bool') return {t:'num', v:v.v ? 1 : 0};
   return E('#WERT!');
 }
+// Vergleich wie in Excel: Zahl < Text < WAHR/FALSCH, Texte ohne Groß-/Kleinschreibung, leere Zelle = 0 bzw. ""
+function vergleiche(o, a, b){
+  if (a.t === 'err') return a; if (b.t === 'err') return b;
+  if (a.t === 'empty') a = b.t === 'str' ? {t:'str', v:''} : b.t === 'bool' ? {t:'bool', v:false} : {t:'num', v:0};
+  if (b.t === 'empty') b = a.t === 'str' ? {t:'str', v:''} : a.t === 'bool' ? {t:'bool', v:false} : {t:'num', v:0};
+  const rang = {num:0, str:1, bool:2};
+  let d;
+  if (a.t !== b.t) d = rang[a.t] - rang[b.t];
+  else if (a.t === 'str') d = a.v.toLowerCase().localeCompare(b.v.toLowerCase(), 'de');
+  else d = (+a.v) - (+b.v);
+  const w = {'=':d === 0, '<>':d !== 0, '<':d < 0, '>':d > 0, '<=':d <= 0, '>=':d >= 0}[o];
+  return {t:'bool', v:w};
+}
+function wahr(v){ if (v.t === 'bool') return v.v; if (v.t === 'num') return v.v !== 0; if (v.t === 'empty') return false; return null; }
 function evalAst(n, sh){
   switch (n.k){
     case 'num': return {t:'num', v:n.v};
@@ -2231,11 +2276,27 @@ function evalAst(n, sh){
       if (n.o === '/') return b.v === 0 ? E('#DIV/0!') : {t:'num', v:a.v / b.v};
       return {t:'num', v:Math.pow(a.v, b.v)};
     }
+    case 'cmp': return vergleiche(n.o, evalAst(n.a, sh), evalAst(n.b, sh));
     case 'call': return callFn(n, sh);
   }
   return E('#WERT!');
 }
 function callFn(n, sh){
+  if (n.name === 'WENN'){
+    const b = evalAst(n.args[0], sh); if (b.t === 'err') return b;
+    const w = wahr(b); if (w === null) return E('#WERT!');
+    const x = w ? n.args[1] : n.args[2];
+    if (!x) return {t:'bool', v:false};
+    const v = evalAst(x, sh); return v.t === 'empty' ? {t:'num', v:0} : v;
+  }
+  if (n.name === 'UND' || n.name === 'ODER'){
+    const ws = [];
+    for (const a of n.args){
+      const v = evalAst(a, sh); if (v.t === 'err') return v;
+      const w = wahr(v); if (w === null) return E('#WERT!'); ws.push(w);
+    }
+    return {t:'bool', v:n.name === 'UND' ? ws.every(Boolean) : ws.some(Boolean)};
+  }
   const vals = [];
   for (const a of n.args){
     if (a.k === 'range') rangeCells(a.a, a.b).forEach(c => vals.push({x:sh.val(c), ref:true}));
@@ -2287,6 +2348,7 @@ function fmtNum(x, dp){ if (Math.abs(x) >= 1e11) return x.toExponential(2).repla
 function fmtVal(v, f){
   if (v.t === 'num') return f === 'eur' ? fmtNum(v.v, 2) + ' €' : f === 'usd' ? fmtNum(v.v, 2) + ' $' : f === 'pct' ? fmtNum(v.v * 100) + ' %' : fmtNum(v.v);
   if (v.t === 'empty') return '';
+  if (v.t === 'bool') return v.v ? 'WAHR' : 'FALSCH';
   if (v.t === 'err') return v.v === 'Zirkelbezug' ? '0' : v.v;
   return v.v;
 }
@@ -2411,67 +2473,22 @@ $('#prevBtn').addEventListener('click', () => { if (mode === 'lernen') gotoStep(
 
 /* Funktionsnamen mit Ziffern (ANZAHL2), Wörter nach Rechenzeichen */
 AC.digits = true;
-AC.prev = /[=(;+\-*/^\s]/;
+AC.prev = /[=(;+\-*/^<>\s]/;
 
 </script>
 
 <!-- ===================== Übertragen, Aufgaben, Erklärung ===================== -->
 <script id="tasks">
-/* ---- Formel übertragen wie in Excel: relative Teile wandern, $-Teile bleiben ---- */
-const REFRE = () => /(^|[^A-Za-z0-9_$ÄÖÜäöüß.])(\$?)([A-Za-z]{1,3})(\$?)(\d{1,5})(?![A-Za-z0-9_(])/g;
-function outsideStrings(s, fn){
-  let out = '', chunk = '', inStr = false;
-  for (const ch of normQuotes(s)){
-    if (ch === '"'){ if (!inStr){ out += fn(chunk); chunk = ''; } out += ch; inStr = !inStr; continue; }
-    if (inStr) out += ch; else chunk += ch;
-  }
-  return out + fn(chunk);
-}
-function shiftFormula(s, dc, dr){
-  return outsideStrings(s, part => part.replace(REFRE(), (m, pre, d1, col, d2, row) => {
-    const c = colN(col) + (d1 ? 0 : dc), r = +row + (d2 ? 0 : dr);
-    if (c < 0 || r < 1) return pre + '#BEZUG!';
-    return pre + d1 + colL(c) + d2 + r;
-  }));
-}
-// alle Zellbezüge (auch Bereichsgrenzen) mit ihren $-Zeichen
-function refTokens(s){
-  const out = [];
-  outsideStrings(s, part => { const re = REFRE(); let m;
-    while ((m = re.exec(part))){ out.push({raw:(m[2] + m[3] + m[4] + m[5]).toUpperCase(), c:colN(m[3]), r:+m[5], fc:!!m[2], fr:!!m[4]}); re.lastIndex = m.index + m[0].length; }
-    return part; });
-  return out;
-}
-const strip$ = s => s.replace(/\$/g, '').replace(/\s+/g, '').toUpperCase();
-function offset(T, f){ const a = addr(T.src), b = addr(f); return {dc:b.c - a.c, dr:b.r - a.r}; }
-function runCopy(text, T, cells){
-  const c = Object.assign({}, cells), forms = {};
-  T.fill.forEach(f => { const o = offset(T, f); forms[f] = shiftFormula(text, o.dc, o.dr); c[f] = forms[f]; });
-  const sh = new Sheet(c), vals = {};
-  T.fill.forEach(f => { vals[f] = sh.val(f); });
-  return {vals, forms};
-}
-
-/* ---- Zufallszahlen ---- */
-const rd = (r, a, b, dp) => +(a + r() * (b - a)).toFixed(dp);
-const pickN = (r, arr, n) => shuffle(arr, r).slice(0, n);
+/* Zellbezüge: Aufgaben, Erklärung und Einstellungen; die Technik steckt in uebertragen.js (Aufbau dort oben) */
+const KEY = 'bz-';
+const OV_INTRO = '<p>Was passiert mit den Zellbezügen, wenn man eine Formel auf andere Zellen überträgt – und wann braucht man das $-Zeichen? Jedes Thema erklärt das an einem Beispiel, stellt dir ein paar Fragen – und dann schreibst du selbst Formeln. Am besten gehst du die Themen der Reihe nach durch.</p>';
+const SYM4 = ['=', '+', '-', '*', '/', '(', ')', ':', ';', 'SUMME(', 'MITTELWERT('];
+const AC_FN = [
+  {n:'MITTELWERT', v:'Zahl', d:'Berechnet den Durchschnitt (das arithmetische Mittel) der Argumente.'},
+  {n:'SUMME',      v:'Zahl', d:'Addiert alle Zahlen.'}
+];
 const NAMES = ['Mia', 'Ben', 'Lea', 'Tim', 'Emma', 'Noah', 'Lina', 'Paul', 'Zoe', 'Finn', 'Ella', 'Luca', 'Hanna', 'Jonas', 'Aylin', 'Elias'];
 const ART = {Kopfhörer:'den', Handyhülle:'die', Ladekabel:'das', Maus:'die', Tastatur:'die', 'USB-Stick':'den', Lautsprecher:'den'};
-const cols = (from, n) => [...Array(n)].map((_, i) => colL(colN(from) + i));
-// gleiche Tabelle mit anderen Zahlen – damit abgeschriebene Zahlen auffallen
-function perturb(cells, r){
-  const out = {};
-  for (const [k, v] of Object.entries(cells)){
-    if (typeof v !== 'number'){ out[k] = v; continue; }
-    let w;
-    if (Number.isInteger(v)) w = v <= 0 ? v + ri(r, -6, 6) || 1 : Math.max(1, Math.round(v * (0.5 + r() * 1.2)));
-    else if (v > 0 && v < 1) w = rd(r, 0.02, 0.45, 2);
-    else w = +(v * (0.5 + r() * 1.2)).toFixed(2);
-    if (w === v) w = v + 1;
-    out[k] = w;
-  }
-  return out;
-}
 
 /* ---- Aufgaben-Generatoren: gleiche Struktur, Zahlen je nach Zufallsstartwert ---- */
 const GENS = {
@@ -2617,42 +2634,6 @@ const GENS = {
   }}
 };
 
-// Formel in Bausteine zerlegen: Funktion mit Klammer, Zellbezug, Zahl oder einzelnes Zeichen
-function piecesOf(ref){
-  const out = []; let i = 0;
-  while (i < ref.length){
-    const rest = ref.slice(i); let m;
-    if ((m = rest.match(/^[A-ZÄÖÜ]{2,}\d*\(/))) out.push({lit:m[0]});
-    else if ((m = rest.match(/^\$?[A-Z]{1,3}\$?\d{1,5}/))) out.push({cell:true, raw:m[0]});
-    else if ((m = rest.match(/^\d+(,\d+)?/))) out.push({lit:m[0]});
-    else { m = [rest[0]]; out.push({lit:m[0]}); }
-    i += m[0].length;
-  }
-  return out;
-}
-function makeTask(gid, seed, lv){
-  const G = GENS[gid], s0 = seed == null ? 4711 : seed, o = G.make(rng(s0));
-  const [src, end] = o.fill, fill = rangeCells(src, end), a = addr(src), b = addr(end);
-  const dir = a.c === b.c ? `nach unten bis ${B(end)}` : a.r === b.r ? `nach rechts bis ${B(end)}` : `in den ganzen Bereich ${B(src + ':' + end)}`;
-  const how = {
-    2:' Die Rechenzeichen sind schon vorgegeben: Klicke in ein Zell-Feld, dann auf die passende Zelle in der Tabelle, und setze – wo nötig – $-Zeichen.',
-    3:' Ziehe die Bausteine in der richtigen Reihenfolge in die Formelzeile. In die Zell-Felder setzt du die passenden Zellen – wo nötig mit $.',
-    4:' Baue die Formel aus den Zeichen-Bausteinen. Für jede Zelle ziehst du einen Baustein „Zelle“ in die Formel und wählst dann die Zelle aus – wo nötig mit $.'};
-  let text = lv === 1
-    ? `In ${B(src)} steht schon eine Formel, die ${o.what}. Sie rechnet in ${src} richtig. Setze die $-Zeichen so, dass sie sich ${dir} übertragen lässt. Wo kein $ nötig ist, lässt du es weg.`
-    : `Schreibe in ${B(src)} eine Formel, die ${o.what}. Die Formel soll sich ${dir} übertragen lassen.` + (how[lv] || '');
-  if (o.tip && lv <= 4) text += `<br><i>Tipp:</i> ${o.tip}`;
-  const fmt = Object.assign({}, o.fmt || {});
-  if (o.ffmt) fill.forEach(f => { fmt[f] = o.ffmt; });
-  const vr = rng(s0 ^ 0x5bd1e995), variants = [];
-  for (let i = 0; i < 8; i++) variants.push(perturb(o.cells, vr));
-  const top = Math.min(...Object.keys(o.cells).map(k => addr(k).r));
-  return {gid, seed:s0, lv, title:G.title, intro:o.intro, cells:o.cells, fmt, src, end, fill, ref:o.ref, text, variants, top,
-    dcMax:b.c - a.c, drMax:b.r - a.r, pre:lv === 1 ? o.ref.replace(/\$/g, '') : '',
-    pieces:piecesOf(o.ref), nums:piecesOf(o.ref).filter(p => /^\d/.test(p.lit || '')).map(p => p.lit)};
-}
-
-const LEVELS = {1:{name:'$-Zeichen setzen'}, 2:{name:'Zellen auswählen und $ setzen'}, 3:{name:'Rechnung aus Bausteinen'}, 4:{name:'Zeichen als Bausteine'}, 5:{name:'Freie Eingabe mit Hinweisen'}, 6:{name:'Freie Eingabe ohne Hinweise'}};
 const GROUPS = [null, 'Mitwandern oder ganz festhalten ($B$2)', 'Nur Spalte oder nur Zeile festhalten ($A5, B$4)', 'Mehrere $ in einer Formel'];
 // [Generator, Zufallsstartwert, Gruppe]
 const STD = [
@@ -2663,7 +2644,7 @@ const STD = [
   ['abweichung', 35, 3]
 ];
 
-const HELP_BZ = `<details class="help"><summary>Hilfe: Was bewirkt das $?</summary>
+const HILFE = `<details class="help"><summary>Hilfe: Was bewirkt das $?</summary>
 <table class="dl"><tr><th>Bezug</th><th>beim Übertragen nach rechts</th><th>beim Übertragen nach unten</th></tr>
 <tr><td>B5</td><td>Spalte wandert mit</td><td>Zeile wandert mit</td></tr>
 <tr><td>$B$5</td><td>bleibt B</td><td>bleibt 5</td></tr>
@@ -2731,17 +2712,153 @@ const TOPICS = [
     {type:'task', title:'Nur die Zeile festhalten', task:['ausflug', 25, 5], final:true, html:'<p>Jetzt schreibst du die ganze Formel selbst. Hier hat jede Klasse ihr eigenes Gesamt – welcher Teil des Bezugs muss also fest bleiben?</p>'}
   ]}
 ];
-const STEP_TOTAL = TOPICS.reduce((s, t) => s + t.steps.length, 0);
 </script>
+<script>/* uebertragen.js */
+/* uebertragen.js – Formeln übertragen und $-Zeichen setzen, wie in Excel (Seiten: bezuege, und-oder-bezuege)
+ * Laden nach basis.js, tabelle.js und dem Skript der Seite; dazu basis.css + tabelle.css.
+ * Markup: wie in bezuege.html (#taskcard, #sheetcard mit #fbar/#pools/#grid/#chips, #workcard, #actions, #fb, #dock).
+ *
+ * Stufen (fest, LEVELS): 1 $-Zeichen setzen · 2 Zellen auswählen und $ setzen · 3 Rechnung aus Bausteinen ·
+ *   4 Zeichen als Bausteine · 5 freie Eingabe mit Hinweisen · 6 freie Eingabe ohne Hinweise.
+ * Modi: pfad (Übungen aus STD), endlos (Zufall aus GENS), lernen (nur wenn TOPICS nicht leer).
+ *   Ein Modus lässt sich über die Adresse wählen: seite.html#pfad bzw. #endlos.
+ * Geprüft wird, ob die Formel nach dem Übertragen in allen Zellen dasselbe ergibt wie die Musterlösung,
+ *   auch mit 8 veränderten Zahlentabellen (abgeschriebene Zahlen fallen auf). Hinweise nennen falsche $-Zeichen.
+ *
+ * Die Seite liefert (vor dieser Datei)
+ *   KEY = 'bz-'                      Speicherschlüssel
+ *   GENS = {id: {title, make(r)}}    Aufgaben-Generator; make(r) mit Zufall r() liefert
+ *     {intro, cells: {A4:'Name', B5:12, C5:'=…'}, fmt: {B2:'eur'|'usd'|'pct'}, ffmt (Format der Ergebnisse),
+ *      fill: ['D5', 'D9'] (Formel in D5, übertragen bis D9), ref: '=B5*$B$2' (Musterlösung),
+ *      what: '… berechnet' (ergänzt „Schreibe in D5 eine Formel, die …“), tip (optional, bis Stufe 4)}
+ *   STD = [[gid, seed, gruppe]]      Übungen; GROUPS = [null, 'Gruppenname', …]
+ *   TOPICS = [{id, name, desc, steps}] Erklärung (oder []), OV_INTRO (Text der Übersicht)
+ *   HILFE    HTML, das bis Stufe 5 unter der Aufgabe steht (z. B. <details> zum $)
+ *   SYM4     Zeichen-Bausteine auf Stufe 4, z. B. ['=', '+', '(', ')', 'SUMME(']; Zahlen und Texte der Lösung kommen dazu
+ *   AC_FN    Funktionen für die Autovervollständigung (siehe basis.js)
+ * Hilfen für Generatoren: rd(r, a, b, Stellen), pickN(r, liste, n), cols('B', 5) → ['B', … 'F']
+ */
 
-<!-- ===================== Oberfläche ===================== -->
-<script>
-const KEY = 'bz-';
+/* ---- Formel übertragen wie in Excel: relative Teile wandern, $-Teile bleiben ---- */
+const REFRE = () => /(^|[^A-Za-z0-9_$ÄÖÜäöüß.])(\$?)([A-Za-z]{1,3})(\$?)(\d{1,5})(?![A-Za-z0-9_(])/g;
+function outsideStrings(s, fn){
+  let out = '', chunk = '', inStr = false;
+  for (const ch of normQuotes(s)){
+    if (ch === '"'){ if (!inStr){ out += fn(chunk); chunk = ''; } out += ch; inStr = !inStr; continue; }
+    if (inStr) out += ch; else chunk += ch;
+  }
+  return out + fn(chunk);
+}
+function shiftFormula(s, dc, dr){
+  return outsideStrings(s, part => part.replace(REFRE(), (m, pre, d1, col, d2, row) => {
+    const c = colN(col) + (d1 ? 0 : dc), r = +row + (d2 ? 0 : dr);
+    if (c < 0 || r < 1) return pre + '#BEZUG!';
+    return pre + d1 + colL(c) + d2 + r;
+  }));
+}
+// alle Zellbezüge (auch Bereichsgrenzen) mit ihren $-Zeichen
+function refTokens(s){
+  const out = [];
+  outsideStrings(s, part => { const re = REFRE(); let m;
+    while ((m = re.exec(part))){ out.push({raw:(m[2] + m[3] + m[4] + m[5]).toUpperCase(), c:colN(m[3]), r:+m[5], fc:!!m[2], fr:!!m[4]}); re.lastIndex = m.index + m[0].length; }
+    return part; });
+  return out;
+}
+const strip$ = s => s.replace(/\$/g, '').replace(/\s+/g, '').toUpperCase();
+function offset(T, f){ const a = addr(T.src), b = addr(f); return {dc:b.c - a.c, dr:b.r - a.r}; }
+function runCopy(text, T, cells){
+  const c = Object.assign({}, cells), forms = {};
+  T.fill.forEach(f => { const o = offset(T, f); forms[f] = shiftFormula(text, o.dc, o.dr); c[f] = forms[f]; });
+  const sh = new Sheet(c), vals = {};
+  T.fill.forEach(f => { vals[f] = sh.val(f); });
+  return {vals, forms};
+}
+
+/* ---- Zufallszahlen ---- */
+const rd = (r, a, b, dp) => +(a + r() * (b - a)).toFixed(dp);
+const pickN = (r, arr, n) => shuffle(arr, r).slice(0, n);
+const cols = (from, n) => [...Array(n)].map((_, i) => colL(colN(from) + i));
+// gleiche Tabelle mit anderen Zahlen – damit abgeschriebene Zahlen auffallen
+function perturb(cells, r){
+  const out = {};
+  for (const [k, v] of Object.entries(cells)){
+    if (typeof v !== 'number'){ out[k] = v; continue; }
+    let w;
+    if (Number.isInteger(v)) w = v <= 0 ? v + ri(r, -6, 6) || 1 : Math.max(1, Math.round(v * (0.5 + r() * 1.2)));
+    else if (v > 0 && v < 1) w = rd(r, 0.02, 0.45, 2);
+    else w = +(v * (0.5 + r() * 1.2)).toFixed(2);
+    if (w === v) w = v + 1;
+    out[k] = w;
+  }
+  return out;
+}
+
+// Formel in Bausteine zerlegen: Funktion mit Klammer, Zellbezug, Zahl oder einzelnes Zeichen
+function piecesOf(ref){
+  const out = []; let i = 0;
+  while (i < ref.length){
+    const rest = ref.slice(i); let m;
+    if ((m = rest.match(/^[A-ZÄÖÜ]{2,}\d*\(/))) out.push({lit:m[0]});
+    else if ((m = rest.match(/^\$?[A-Z]{1,3}\$?\d{1,5}/))) out.push({cell:true, raw:m[0]});
+    else if ((m = rest.match(/^\d+(,\d+)?/))) out.push({lit:m[0]});
+    else if ((m = rest.match(/^"[^"]*"/))) out.push({lit:m[0]});
+    else if ((m = rest.match(/^(<=|>=|<>)/))) out.push({lit:m[0]});
+    else { m = [rest[0]]; out.push({lit:m[0]}); }
+    i += m[0].length;
+  }
+  return out;
+}
+// Jeder einzelne falsche $-Bezug (ein Bezug in einem anderen der vier Zustände) soll schon in der gezeigten Tabelle
+// ein anderes Ergebnis liefern – sonst würfelt makeTask die Zahlen neu (höchstens 40-mal, sonst bleibt der erste Wurf).
+function jederFehlerSichtbar(o){
+  const T = {src:o.fill[0], fill:rangeCells(o.fill[0], o.fill[1])}, want = runCopy(o.ref, T, o.cells);
+  const re = REFRE(), teile = []; let m;
+  while ((m = re.exec(o.ref))){ teile.push({st:m.index + m[1].length, en:m.index + m[0].length, col:m[3], row:m[5], d1:m[2], d2:m[4]}); re.lastIndex = m.index + m[0].length; }
+  for (const t of teile) for (const [d1, d2] of [['', ''], ['$', '$'], ['$', ''], ['', '$']]){
+    if (d1 === t.d1 && d2 === t.d2) continue;
+    const falsch = o.ref.slice(0, t.st) + d1 + t.col + d2 + t.row + o.ref.slice(t.en);
+    const mine = runCopy(falsch, T, o.cells);
+    if (T.fill.every(f => strip$(mine.forms[f]) === strip$(want.forms[f]))) continue;   // bewirkt in dieser Richtung nichts
+    if (T.fill.every(f => same(mine.vals[f], want.vals[f]))) return false;
+  }
+  return true;
+}
+function makeTask(gid, seed, lv){
+  const G = GENS[gid], s0 = seed == null ? 4711 : seed, r0 = rng(s0);
+  const o0 = G.make(r0);
+  let o = o0, k = 0;
+  while (k++ < 40 && !jederFehlerSichtbar(o)) o = G.make(r0);
+  if (!jederFehlerSichtbar(o)) o = o0;   // kein Wurf passt (z. B. Bereich wächst in leere Zellen): beim ersten bleiben
+  const [src, end] = o.fill, fill = rangeCells(src, end), a = addr(src), b = addr(end);
+  const dir = a.c === b.c ? `nach unten bis ${B(end)}` : a.r === b.r ? `nach rechts bis ${B(end)}` : `in den ganzen Bereich ${B(src + ':' + end)}`;
+  const how = {
+    2:' Die Rechenzeichen sind schon vorgegeben: Klicke in ein Zell-Feld, dann auf die passende Zelle in der Tabelle, und setze – wo nötig – $-Zeichen.',
+    3:' Ziehe die Bausteine in der richtigen Reihenfolge in die Formelzeile. In die Zell-Felder setzt du die passenden Zellen – wo nötig mit $.',
+    4:' Baue die Formel aus den Zeichen-Bausteinen. Für jede Zelle ziehst du einen Baustein „Zelle“ in die Formel und wählst dann die Zelle aus – wo nötig mit $.'};
+  let text = lv === 1
+    ? `In ${B(src)} steht schon eine Formel, die ${o.what}. Sie rechnet in ${src} richtig. Setze die $-Zeichen so, dass sie sich ${dir} übertragen lässt. Wo kein $ nötig ist, lässt du es weg.`
+    : `Schreibe in ${B(src)} eine Formel, die ${o.what}. Die Formel soll sich ${dir} übertragen lassen.` + (how[lv] || '');
+  if (o.tip && lv <= 4) text += `<br><i>Tipp:</i> ${o.tip}`;
+  const fmt = Object.assign({}, o.fmt || {});
+  if (o.ffmt) fill.forEach(f => { fmt[f] = o.ffmt; });
+  const vr = rng(s0 ^ 0x5bd1e995), variants = [];
+  for (let i = 0; i < 8; i++) variants.push(perturb(o.cells, vr));
+  const top = Math.min(...Object.keys(o.cells).map(k => addr(k).r));
+  return {gid, seed:s0, lv, title:G.title, intro:o.intro, cells:o.cells, fmt, src, end, fill, ref:o.ref, text, variants, top,
+    dcMax:b.c - a.c, drMax:b.r - a.r, pre:lv === 1 ? o.ref.replace(/\$/g, '') : '',
+    pieces:piecesOf(o.ref), nums:piecesOf(o.ref).filter(p => /^[\d"]/.test(p.lit || '')).map(p => p.lit)};
+}
+
+const STEP_TOTAL = TOPICS.reduce((s, t) => s + t.steps.length, 0);
+
+const LEVELS = {1:{name:'$-Zeichen setzen'}, 2:{name:'Zellen auswählen und $ setzen'}, 3:{name:'Rechnung aus Bausteinen'}, 4:{name:'Zeichen als Bausteine'}, 5:{name:'Freie Eingabe mit Hinweisen'}, 6:{name:'Freie Eingabe ohne Hinweise'}};
 const NLV = 6;
 const IA = 'autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"';
 const isBlk = () => !!CUR && CUR.lv >= 2 && CUR.lv <= 4;
 
-let mode = ['pfad', 'endlos', 'lernen'].includes(load('mode')) ? load('mode') : 'lernen';
+const MODI = TOPICS.length ? ['pfad', 'endlos', 'lernen'] : ['pfad', 'endlos'];
+let mode = MODI.includes(location.hash.slice(1)) ? location.hash.slice(1) : MODI.includes(load('mode')) ? load('mode') : MODI[MODI.length - 1];
+if (location.hash) history.replaceState(null, '', location.pathname + location.search);
 let level = clamp(parseInt(load('level')) || 1, 1, NLV);
 let pfadIdx = clamp(parseInt(load('idx')) || 0, 0, STD.length - 1);
 let solved = {}; try { const x = JSON.parse(load('solved') || '{}'); solved = x && !Array.isArray(x) ? x : {}; } catch (e) {}
@@ -2810,13 +2927,13 @@ function render(){
     $('#lvlname').textContent = `${tp.name} · ${st.title}`;
     $('#taskmeta').textContent = `Schritt ${prog().idx + 1} von ${tp.steps.length}`;
     let h = st.html;
-    if (CUR) h += `<div class="assign"><div class="intro">${esc(CUR.intro)}</div><b>Aufgabe:</b> ${CUR.text}</div>${HELP_BZ}`;
+    if (CUR) h += `<div class="assign"><div class="intro">${esc(CUR.intro)}</div><b>Aufgabe:</b> ${CUR.text}</div>${HILFE}`;
     if (st.final) h += finalButtons();
     $('#tasktext').innerHTML = h;
   } else {
     $('#lvlname').textContent = `Stufe ${level}: ${LEVELS[level].name}`;
     $('#taskmeta').textContent = mode === 'pfad' ? `Übungen · Aufgabe ${pfadIdx + 1} von ${STD.length}` : `Endlos · ${CUR.title}`;
-    $('#tasktext').innerHTML = `<div class="intro"><b>${esc(CUR.title)}:</b> ${esc(CUR.intro)}</div><p>${CUR.text}</p>${CUR.lv < 6 ? HELP_BZ : ''}`;
+    $('#tasktext').innerHTML = `<div class="intro"><b>${esc(CUR.title)}:</b> ${esc(CUR.intro)}</div><p>${CUR.text}</p>${CUR.lv < 6 ? HILFE : ''}`;
   }
   show('#sheetcard', !!(CUR || LSHEET));
   show('#workcard', !!(st && st.type === 'choice'));
@@ -2830,7 +2947,6 @@ function finalButtons(){
   return `<p style="margin-top:12px">${nx ? `<button class="btn primary" data-topic-go="${nx.id}">Weiter mit „${esc(nx.name)}“</button> ` : ''}<button class="btn${nx ? '' : ' primary'}" data-ov="1">Zur Übersicht</button> <button class="btn" data-mode-go="pfad">Zu den Übungen</button></p>`;
 }
 
-const OV_INTRO = '<p>Was passiert mit den Zellbezügen, wenn man eine Formel auf andere Zellen überträgt – und wann braucht man das $-Zeichen? Jedes Thema erklärt das an einem Beispiel, stellt dir ein paar Fragen – und dann schreibst du selbst Formeln. Am besten gehst du die Themen der Reihe nach durch.</p>';
 
 /* ---------- Tabelle & Bearbeitungsleiste ---------- */
 function curSheet(){ return CUR ? {cells:CUR.cells, fmt:CUR.fmt, top:CUR.top} : LSHEET; }
@@ -2909,8 +3025,7 @@ function renderFbar(){
 }
 
 /* ---------- Bausteine (Stufe 2 bis 4) ---------- */
-const SYM4 = ['=', '+', '-', '*', '/', '(', ')', ':', ';', 'SUMME(', 'MITTELWERT('];
-const blockKind = lit => /^[A-ZÄÖÜ]{2,}/.test(lit) ? 'fn' : /^\d/.test(lit) ? 'val' : 'sym';
+const blockKind = lit => /^[A-ZÄÖÜ]{2,}/.test(lit) ? 'fn' : /^[\d"]/.test(lit) ? 'val' : 'sym';
 const cellInput = i => `<input class="gapin pin cg" data-ci="${i}" ${IA} placeholder="Zelle" value="${esc(S.row[i].v)}" aria-label="Zelle">`;
 function rowBlock(x, i){
   return x.t === 'cell'
@@ -2977,7 +3092,7 @@ function f4(inp){
 /* ---------- Zellen mit der Maus einfügen (wie in Excel) ---------- */
 function insertionPoint(inp){
   const v = inp.value, [s, e] = caret(inp), before = v.slice(0, s);
-  const okBefore = pc => /[=(;+\-*/^:]/.test(pc);
+  const okBefore = pc => /[=(;+\-*/^:<>]/.test(pc);
   const m = before.match(/\$?[A-Za-z]{1,3}\$?\d{1,5}(?:\s*:\s*\$?[A-Za-z]{1,3}\$?\d{1,5})?$/);
   if (m){
     const st = s - m[0].length, pre = v.slice(0, st).replace(/\s+$/, '');
@@ -3121,10 +3236,6 @@ function clearMarks(){
 }
 
 /* ---------- Autovervollständigung (basis.js): Funktionen dieser Seite ---------- */
-const AC_FN = [
-  {n:'MITTELWERT', v:'Zahl', d:'Berechnet den Durchschnitt (das arithmetische Mittel) der Argumente.'},
-  {n:'SUMME',      v:'Zahl', d:'Addiert alle Zahlen.'}
-];
 AC.word = before => { const m = before.match(/[A-Za-zÄÖÜäöüß]+$/); return m && m[0].length >= 2 && before.trimStart().startsWith('=') ? m[0] : null; };
 
 document.addEventListener('focusin', e => { if (e.target.matches && e.target.matches('.cg')) S.gi = +e.target.dataset.ci; });
@@ -3141,6 +3252,7 @@ document.addEventListener('keydown', e => {
 });
 if (mode === 'endlos') newEndless();
 loadTask();
+
 </script>
 </body>
 </html>

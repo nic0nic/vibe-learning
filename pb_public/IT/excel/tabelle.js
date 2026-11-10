@@ -13,6 +13,9 @@
  *   caret, setCaret, focusInp, applyPT, cellAt, endPT, gridEl, trackCaret   Bezüge mit der Maus einfügen
  *   Verdrahtet: #ovBtn, #prevBtn, #resetBtn, Eingabe in .pin → syncInput, Maus-Ende im #grid
  *
+ * Vergleiche und WENN/UND/ODER: logikAn() einmal aufrufen (vor dem ersten Rechnen). Dann gibt es = <> < > <= >=
+ *   (Ergebnis WAHR/FALSCH, Texte ohne Groß-/Kleinschreibung) und die Funktionen WENN, UND, ODER.
+ *
  * Braucht ../../lib/aufgaben.js (Multiple Choice: Aufgaben.mc), vor basis.js einbinden.
  *
  * Die Seite liefert
@@ -37,6 +40,15 @@ const ALIAS = {SUM:'SUMME', AVERAGE:'MITTELWERT', COUNT:'ANZAHL', COUNTA:'ANZAHL
   DURCHSCHNITT:'MITTELWERT', MITTEL:'MITTELWERT', MITTELWERTE:'MITTELWERT', SUMMEN:'SUMME', SUM2:'SUMME', SUMM:'SUMME', SUME:'SUMME',
   ANZAL:'ANZAHL', ANZAHL1:'ANZAHL', ANZAL2:'ANZAHL2', ZÄHLEN:'ANZAHL', ANZAHLZWEI:'ANZAHL2'};
 const ENGLISH = ['SUM', 'AVERAGE', 'COUNT', 'COUNTA'];
+let LOGIK = false;
+function logikAn(){
+  if (LOGIK) return; LOGIK = true;
+  FUNCS.push('WENN', 'UND', 'ODER');
+  Object.assign(FDESC, {WENN:'liefert je nach Bedingung den Dann- oder den Sonst-Wert', UND:'ist WAHR, wenn alle Bedingungen erfüllt sind', ODER:'ist WAHR, wenn mindestens eine Bedingung erfüllt ist'});
+  Object.assign(ALIAS, {IF:'WENN', AND:'UND', OR:'ODER', WEN:'WENN', WENNN:'WENN', UN:'UND', ODR:'ODER'});
+  ENGLISH.push('IF', 'AND', 'OR');
+}
+const fnListe = () => FUNCS.slice(0, -1).join(', ') + ' oder ' + FUNCS[FUNCS.length - 1];
 
 
 /* ---- Zellbezüge ---- */
@@ -86,10 +98,17 @@ function tokenize(src){
       if (FUNCS.includes(up)) throw new FErr(`Nach ${up} muss eine Klammer folgen: ${up}(…)`);
       if (/^\$?[A-Za-z]{1,3}\$?\d+\$?[A-Za-z]{1,3}\$?\d+$/.test(w)) throw new FErr(`Zwischen den Zellen in „${w}“ fehlt etwas. Für einen Bereich schreibst du einen Doppelpunkt, z. B. B4:B8.`);
       if (ALIAS[up]) throw new FErr(`Meinst du ${ALIAS[up]}? Nach dem Funktionsnamen folgt eine Klammer: ${ALIAS[up]}(…)`);
+      if (LOGIK && /^[A-Za-zÄÖÜäöüß]+$/.test(w)) throw new FErr(`„${w}“ ist weder ein Zellbezug (wie B4) noch eine Funktion. Ist das ein Text? Texte stehen in Anführungszeichen: "${w}"`);
       throw new FErr(`„${w}“ ist weder ein Zellbezug (wie B4) noch eine Funktion.`);
     }
     if ('+-*/^();:'.includes(c)){ t.push({type:'op', v:c}); i++; continue; }
     if (c === ',') throw new FErr('Im deutschen Excel trennt man die Teile einer Funktion mit einem Semikolon ; – und einen Bereich „von … bis“ schreibt man mit Doppelpunkt, z. B. B4:B8.');
+    if (LOGIK && (c === '<' || c === '>' || c === '=')){
+      const zwei = src.slice(i, i + 2);
+      if (zwei === '=<' || zwei === '=>') throw new FErr(`Schreibe ${zwei[1]}= statt ${zwei}: Das Gleichheitszeichen steht hinten.`);
+      const v = ['<=', '>=', '<>'].includes(zwei) ? zwei : c;
+      t.push({type:'op', v}); i += v.length; continue;
+    }
     if (c === '=') throw new FErr('Das = steht nur einmal ganz am Anfang der Formel.');
     if (c === '<' || c === '>') throw new FErr('Vergleiche mit < oder > brauchst du hier nicht.');
     if (c === '€' || c === '%') throw new FErr(`Das Zeichen ${c} gehört nicht in die Formel. Schreibe nur die Zahl bzw. den Zellbezug.`);
@@ -108,6 +127,9 @@ function parseFormula(raw){
   if (!toks.length) throw new FErr('Nach dem = fehlt noch die Formel.');
   const peek = () => toks[p], next = () => toks[p++];
   const isOp = (t, v) => t && t.type === 'op' && t.v === v;
+  const CMP = ['=', '<>', '<', '>', '<=', '>='];
+  function cmp(){ let a = expr(); const t = peek(); if (t && t.type === 'op' && CMP.includes(t.v)){ next(); a = {k:'cmp', o:t.v, a:noRange(a), b:noRange(expr())};
+    const u = peek(); if (u && u.type === 'op' && CMP.includes(u.v)) throw new FErr('Ein Vergleich hat nur ein Vergleichszeichen. Mehrere Bedingungen verknüpfst du mit UND(…) oder ODER(…).'); } return a; }
   function expr(){ let a = term(); while (isOp(peek(), '+') || isOp(peek(), '-')){ const o = next().v; a = {k:'bin', o, a:noRange(a), b:noRange(term())}; } return a; }
   function term(){ let a = factor(); while (isOp(peek(), '*') || isOp(peek(), '/')){ const o = next().v; a = {k:'bin', o, a:noRange(a), b:noRange(factor())}; } return a; }
   function factor(){ if (isOp(peek(), '-') || isOp(peek(), '+')){ const o = next().v; return {k:'neg', o, a:noRange(factor())}; } return power(); }
@@ -131,13 +153,13 @@ function parseFormula(raw){
         if (ENGLISH.includes(name)) throw new FErr(`Im deutschen Excel heißt die Funktion ${ALIAS[name]} statt ${name}.`);
         if (ALIAS[name]) throw new FErr(`Die Funktion heißt ${ALIAS[name]}, nicht ${name}.`);
         if (CELLRE.test(name)) throw new FErr(`Nach der Zelle ${name} darf keine Klammer folgen. Fehlt ein Rechenzeichen?`);
-        throw new FErr(`Die Funktion ${name} gibt es hier nicht. Du brauchst SUMME, MITTELWERT, MIN, MAX, ANZAHL oder ANZAHL2.`);
+        throw new FErr(`Die Funktion ${name} gibt es hier nicht. Du brauchst ${fnListe()}.`);
       }
       if (isOp(peek(), ')')){ next(); throw new FErr(`In die Klammer von ${name} gehört ein Bereich, z. B. ${name}(B4:B8).`); }
       const args = [];
       for (;;){
         if (isOp(peek(), ';') || isOp(peek(), ')')) throw new FErr(`In ${name}(…) fehlt zwischen den Semikolons etwas.`);
-        args.push(expr());
+        args.push(cmp());
         const u = next();
         if (!u) throw new FErr(`Es fehlt die schließende Klammer ) von ${name}.`);
         if (isOp(u, ';')) continue;
@@ -145,19 +167,22 @@ function parseFormula(raw){
         if (isOp(u, ':')) throw new FErr('Vor und nach dem Doppelpunkt muss je eine Zelle stehen, z. B. B4:B8.');
         throw new FErr(`In ${name}(…) fehlt ein ; oder ein Rechenzeichen zwischen zwei Teilen.`);
       }
+      if (name === 'WENN' && (args.length < 2 || args.length > 3)) throw new FErr(`WENN hat drei Teile: WENN(Bedingung; Dann-Wert; Sonst-Wert) – deine Formel hat ${args.length}.`);
+      if (name === 'WENN' && args[0].k !== 'cmp' && !(args[0].k === 'call' && ['UND', 'ODER'].includes(args[0].name)) && args[0].k !== 'ref') throw new FErr('Der erste Teil von WENN ist eine Bedingung, z. B. B5>=18 oder UND(…).');
       return {k:'call', name, args};
     }
     if (isOp(t, '(')){
-      const e = expr(), u = next();
+      const e = cmp(), u = next();
       if (!isOp(u, ')')) throw new FErr('Es fehlt eine schließende Klammer ).');
       return {k:'par', a:noRange(e)};
     }
     if (isOp(t, ')')) throw new FErr('Hier steht eine Klammer ) zu viel oder an der falschen Stelle.');
     if (isOp(t, ';')) throw new FErr('Das Semikolon ; trennt nur die Teile innerhalb einer Funktion, z. B. SUMME(B4:B8;D4:D8).');
     if (isOp(t, ':')) throw new FErr('Vor dem Doppelpunkt muss eine Zelle stehen, z. B. B4:B8.');
+    if (t.type === 'op' && /[<>=]/.test(t.v)) throw new FErr(`Vor ${t.v} fehlt etwas: Ein Vergleich braucht links und rechts einen Wert, z. B. B5>=18.`);
     throw new FErr(`Das Zeichen ${t.v} steht an der falschen Stelle.`);
   }
-  const ast = expr();
+  const ast = cmp();
   if (p < toks.length){
     const t = toks[p];
     if (isOp(t, ')')) throw new FErr('Hier steht eine Klammer ) zu viel.');
@@ -174,7 +199,7 @@ function refsOf(n, out = []){
   if (n.k === 'ref') out.push({a:n.v, b:n.v});
   else if (n.k === 'range') out.push({a:n.a, b:n.b});
   else if (n.k === 'call') n.args.forEach(x => refsOf(x, out));
-  else if (n.k === 'bin'){ refsOf(n.a, out); refsOf(n.b, out); }
+  else if (n.k === 'bin' || n.k === 'cmp'){ refsOf(n.a, out); refsOf(n.b, out); }
   else if (n.k === 'neg' || n.k === 'par') refsOf(n.a, out);
   return out;
 }
@@ -182,7 +207,7 @@ const cellsOfRefs = refs => new Set(refs.flatMap(r => rangeCells(r.a, r.b)));
 function fnsOf(n, out = new Set()){
   if (!n) return out;
   if (n.k === 'call'){ out.add(n.name); n.args.forEach(x => fnsOf(x, out)); }
-  else if (n.k === 'bin'){ fnsOf(n.a, out); fnsOf(n.b, out); }
+  else if (n.k === 'bin' || n.k === 'cmp'){ fnsOf(n.a, out); fnsOf(n.b, out); }
   else if (n.k === 'neg' || n.k === 'par') fnsOf(n.a, out);
   return out;
 }
@@ -190,7 +215,7 @@ function numsOf(n, out = []){
   if (!n) return out;
   if (n.k === 'num') out.push(n.v);
   else if (n.k === 'call') n.args.forEach(x => numsOf(x, out));
-  else if (n.k === 'bin'){ numsOf(n.a, out); numsOf(n.b, out); }
+  else if (n.k === 'bin' || n.k === 'cmp'){ numsOf(n.a, out); numsOf(n.b, out); }
   else if (n.k === 'neg' || n.k === 'par') numsOf(n.a, out);
   return out;
 }
@@ -210,8 +235,23 @@ const E = v => ({t:'err', v});
 function toNum(v){
   if (v.t === 'num' || v.t === 'err') return v;
   if (v.t === 'empty') return {t:'num', v:0};
+  if (v.t === 'bool') return {t:'num', v:v.v ? 1 : 0};
   return E('#WERT!');
 }
+// Vergleich wie in Excel: Zahl < Text < WAHR/FALSCH, Texte ohne Groß-/Kleinschreibung, leere Zelle = 0 bzw. ""
+function vergleiche(o, a, b){
+  if (a.t === 'err') return a; if (b.t === 'err') return b;
+  if (a.t === 'empty') a = b.t === 'str' ? {t:'str', v:''} : b.t === 'bool' ? {t:'bool', v:false} : {t:'num', v:0};
+  if (b.t === 'empty') b = a.t === 'str' ? {t:'str', v:''} : a.t === 'bool' ? {t:'bool', v:false} : {t:'num', v:0};
+  const rang = {num:0, str:1, bool:2};
+  let d;
+  if (a.t !== b.t) d = rang[a.t] - rang[b.t];
+  else if (a.t === 'str') d = a.v.toLowerCase().localeCompare(b.v.toLowerCase(), 'de');
+  else d = (+a.v) - (+b.v);
+  const w = {'=':d === 0, '<>':d !== 0, '<':d < 0, '>':d > 0, '<=':d <= 0, '>=':d >= 0}[o];
+  return {t:'bool', v:w};
+}
+function wahr(v){ if (v.t === 'bool') return v.v; if (v.t === 'num') return v.v !== 0; if (v.t === 'empty') return false; return null; }
 function evalAst(n, sh){
   switch (n.k){
     case 'num': return {t:'num', v:n.v};
@@ -228,11 +268,27 @@ function evalAst(n, sh){
       if (n.o === '/') return b.v === 0 ? E('#DIV/0!') : {t:'num', v:a.v / b.v};
       return {t:'num', v:Math.pow(a.v, b.v)};
     }
+    case 'cmp': return vergleiche(n.o, evalAst(n.a, sh), evalAst(n.b, sh));
     case 'call': return callFn(n, sh);
   }
   return E('#WERT!');
 }
 function callFn(n, sh){
+  if (n.name === 'WENN'){
+    const b = evalAst(n.args[0], sh); if (b.t === 'err') return b;
+    const w = wahr(b); if (w === null) return E('#WERT!');
+    const x = w ? n.args[1] : n.args[2];
+    if (!x) return {t:'bool', v:false};
+    const v = evalAst(x, sh); return v.t === 'empty' ? {t:'num', v:0} : v;
+  }
+  if (n.name === 'UND' || n.name === 'ODER'){
+    const ws = [];
+    for (const a of n.args){
+      const v = evalAst(a, sh); if (v.t === 'err') return v;
+      const w = wahr(v); if (w === null) return E('#WERT!'); ws.push(w);
+    }
+    return {t:'bool', v:n.name === 'UND' ? ws.every(Boolean) : ws.some(Boolean)};
+  }
   const vals = [];
   for (const a of n.args){
     if (a.k === 'range') rangeCells(a.a, a.b).forEach(c => vals.push({x:sh.val(c), ref:true}));
@@ -284,6 +340,7 @@ function fmtNum(x, dp){ if (Math.abs(x) >= 1e11) return x.toExponential(2).repla
 function fmtVal(v, f){
   if (v.t === 'num') return f === 'eur' ? fmtNum(v.v, 2) + ' €' : f === 'usd' ? fmtNum(v.v, 2) + ' $' : f === 'pct' ? fmtNum(v.v * 100) + ' %' : fmtNum(v.v);
   if (v.t === 'empty') return '';
+  if (v.t === 'bool') return v.v ? 'WAHR' : 'FALSCH';
   if (v.t === 'err') return v.v === 'Zirkelbezug' ? '0' : v.v;
   return v.v;
 }
@@ -408,4 +465,4 @@ $('#prevBtn').addEventListener('click', () => { if (mode === 'lernen') gotoStep(
 
 /* Funktionsnamen mit Ziffern (ANZAHL2), Wörter nach Rechenzeichen */
 AC.digits = true;
-AC.prev = /[=(;+\-*/^\s]/;
+AC.prev = /[=(;+\-*/^<>\s]/;

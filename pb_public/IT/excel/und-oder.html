@@ -76,7 +76,7 @@ details.help p,details.help ul{margin:8px 0}
   <div class="hdr-left">
     <div class="brand"><span>UND</span>/<span>ODER</span></div>
     <div class="modes" role="group" aria-label="Modus">
-      <button data-mode="lernen">Erarbeitung</button><button data-mode="pfad">Übungen</button><button data-mode="endlos">Endlos</button>
+      <button data-mode="lernen">Erarbeitung</button><button data-mode="pfad">Übungen</button><button data-mode="endlos">Endlos</button><a href="und-oder-bezuege.html#pfad">Übungen $</a><a href="und-oder-bezuege.html#endlos">Endlos $</a>
     </div>
   </div>
   <div class="hdr-right">
@@ -829,6 +829,7 @@ function logSolved(erstmals){
     aufgabe: mode === 'pfad' ? String(pfadIdx + 1) : CUR.scen, titel: CUR.scen, gesamt: mode === 'pfad' ? STD.length : 0, erstmals});
 }
 let mode = ['endlos', 'lernen'].includes(load('mode')) ? load('mode') : 'lernen';
+if (['lernen', 'pfad', 'endlos'].includes(location.hash.slice(1))){ mode = location.hash.slice(1); history.replaceState(null, '', location.pathname + location.search); }   // von und-oder-bezuege.html
 let level = Math.min(9, Math.max(1, parseInt(load('level')) || 1));
 let pfadIdx = Math.min(STD.length - 1, Math.max(0, parseInt(load('idx')) || 0));
 let solved = {}; try { solved = JSON.parse(load('solved') || '{}') || {}; } catch (e) {}
