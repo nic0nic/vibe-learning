@@ -24,7 +24,7 @@ document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: da
   <div class="hdr-left">
     <div class="brand"><span>=</span>WENN<span>()</span></div>
     <div class="modes" role="group" aria-label="Modus">
-      <button data-mode="pfad">Übungen</button><button data-mode="endlos">Endlos</button>
+      <button data-mode="pfad">Übungen</button><button data-mode="endlos">Endlos</button><a href="wenn-bezuege.html#pfad">Übungen $</a><a href="wenn-bezuege.html#endlos">Endlos $</a>
     </div>
   </div>
   <div class="hdr-right">
@@ -545,6 +545,7 @@ function logSolved(erstmals){
     gesamt: mode === 'pfad' ? STD.length : 0, erstmals});
 }
 let mode = load('mode') === 'endlos' ? 'endlos' : 'pfad';
+if (['pfad', 'endlos'].includes(location.hash.slice(1))){ mode = location.hash.slice(1); history.replaceState(null, '', location.pathname + location.search); }   // von wenn-bezuege.html
 let level = Math.min(9, Math.max(1, parseInt(load('level')) || 1));
 let pfadIdx = Math.min(STD.length - 1, Math.max(0, parseInt(load('idx')) || 0));
 let solved = {}; try { solved = JSON.parse(load('solved') || '{}') || {}; } catch (e) {}

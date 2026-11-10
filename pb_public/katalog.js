@@ -49,6 +49,7 @@ window.KATALOG = {
           tools: [
             {id: 'fn',   stufen: 5, datei: 'funktionen.html', titel: 'SUMME, MIN, MAX …', text: 'SUMME, MITTELWERT, MIN, MAX, ANZAHL und ANZAHL2 – mit Erklärung, Übungen und Endlos-Modus.'},
             {id: 'wenn', stufen: 9, datei: 'wenn.html',       titel: 'WENN-Funktion',     text: 'Die WENN-Funktion üben – von Bausteinen bis zur eigenen Formel.'},
+            {id: 'wbz', stufen: 6, datei: 'wenn-bezuege.html', titel: 'WENN mit $', text: 'WENN-Formeln auf ganze Spalten übertragen: Grenzwerte mit $ festhalten – Zellen in der Tabelle auswählen wie in Excel.'},
             {id: 'uo',   stufen: 9, datei: 'und-oder.html',   titel: 'UND / ODER',        text: 'Bedingungen verknüpfen – mit Erarbeitung, Übungen und Endlos-Modus.'},
             {id: 'uobz', stufen: 6, datei: 'und-oder-bezuege.html', titel: 'UND / ODER mit $', text: 'WENN mit UND/ODER auf ganze Spalten übertragen: Grenzwerte mit $ festhalten – Zellen in der Tabelle auswählen wie in Excel.'},
             {id: 'bz',   stufen: 6, datei: 'bezuege.html',    titel: 'Zellbezüge $',      text: 'Relative und absolute Bezüge: Formeln übertragen und $-Zeichen richtig setzen.'}

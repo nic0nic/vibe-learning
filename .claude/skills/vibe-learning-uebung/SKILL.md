@@ -328,10 +328,10 @@ Die Seite liefert
   render, resetS, loadStep, newEndless, setLevel, clearMarks, syncInput(inp, keepSel), logSolved
 ```
 
-### IT/excel/uebertragen.js – Excel: Formeln übertragen und $ setzen (wie Bezüge, UND/ODER mit $; dazu uebertragen.css)
+### IT/excel/uebertragen.js – Excel: Formeln übertragen und $ setzen (wie Bezüge, WENN mit $, UND/ODER mit $; dazu uebertragen.css)
 
 ```text
-uebertragen.js – Formeln übertragen und $-Zeichen setzen, wie in Excel (Seiten: bezuege, und-oder-bezuege)
+uebertragen.js – Formeln übertragen und $-Zeichen setzen, wie in Excel (Seiten: bezuege, wenn-bezuege, und-oder-bezuege)
 Laden nach basis.js, tabelle.js und dem Skript der Seite; dazu basis.css + tabelle.css.
 Markup: wie in bezuege.html (#taskcard, #sheetcard mit #fbar/#pools/#grid/#chips, #workcard, #actions, #fb, #dock).
 

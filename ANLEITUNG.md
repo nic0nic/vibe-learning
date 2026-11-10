@@ -39,7 +39,8 @@ vibe-learning/
 │   │   ├── excel/                 ein Ordner pro Bereich
 │   │   │   ├── index.html             Übersicht des Bereichs
 │   │   │   ├── funktionen.html        SUMME, MITTELWERT, MIN, MAX, ANZAHL, ANZAHL2
-│   │   │   ├── wenn.html
+│   │   │   ├── wenn.html              Moduswahl verlinkt auf wenn-bezuege.html („Übungen $“, „Endlos $“)
+│   │   │   ├── wenn-bezuege.html      WENN-Formeln übertragen, $ setzen; Aufgaben in der Datei
 │   │   │   ├── und-oder.html          Moduswahl verlinkt auf und-oder-bezuege.html („Übungen $“, „Endlos $“)
 │   │   │   ├── und-oder-bezuege.html  WENN mit UND/ODER übertragen, $ setzen (Domi-No’s); Aufgaben in der Datei
 │   │   │   ├── bezuege.html           relative und absolute Zellbezüge ($)

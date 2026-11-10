@@ -57,6 +57,7 @@ window.KATALOG = {
           tools: [
             {id: 'fn',   stufen: 5, datei: 'funktionen.html', titel: 'SUMME, MIN, MAX …', text: 'SUMME, MITTELWERT, MIN, MAX, ANZAHL und ANZAHL2 – mit Erklärung, Übungen und Endlos-Modus.'},
             {id: 'wenn', stufen: 9, datei: 'wenn.html',       titel: 'WENN-Funktion',     text: 'Die WENN-Funktion üben – von Bausteinen bis zur eigenen Formel.'},
+            {id: 'wbz', stufen: 6, datei: 'wenn-bezuege.html', titel: 'WENN mit $', text: 'WENN-Formeln auf ganze Spalten übertragen: Grenzwerte mit $ festhalten – Zellen in der Tabelle auswählen wie in Excel.'},
             {id: 'uo',   stufen: 9, datei: 'und-oder.html',   titel: 'UND / ODER',        text: 'Bedingungen verknüpfen – mit Erarbeitung, Übungen und Endlos-Modus.'},
             {id: 'uobz', stufen: 6, datei: 'und-oder-bezuege.html', titel: 'UND / ODER mit $', text: 'WENN mit UND/ODER auf ganze Spalten übertragen: Grenzwerte mit $ festhalten – Zellen in der Tabelle auswählen wie in Excel.'},
             {id: 'bz',   stufen: 6, datei: 'bezuege.html',    titel: 'Zellbezüge $',      text: 'Relative und absolute Bezüge: Formeln übertragen und $-Zeichen richtig setzen.'}
@@ -1047,7 +1048,7 @@ main{max-width:980px;margin:0 auto;padding:18px 16px}
   <div class="hdr-left">
     <div class="brand"><span>=</span>WENN<span>()</span></div>
     <div class="modes" role="group" aria-label="Modus">
-      <button data-mode="pfad">Übungen</button><button data-mode="endlos">Endlos</button>
+      <button data-mode="pfad">Übungen</button><button data-mode="endlos">Endlos</button><a href="wenn-bezuege.html#pfad">Übungen $</a><a href="wenn-bezuege.html#endlos">Endlos $</a>
     </div>
   </div>
   <div class="hdr-right">
@@ -1980,6 +1981,7 @@ function logSolved(erstmals){
     gesamt: mode === 'pfad' ? STD.length : 0, erstmals});
 }
 let mode = load('mode') === 'endlos' ? 'endlos' : 'pfad';
+if (['pfad', 'endlos'].includes(location.hash.slice(1))){ mode = location.hash.slice(1); history.replaceState(null, '', location.pathname + location.search); }   // von wenn-bezuege.html
 let level = Math.min(9, Math.max(1, parseInt(load('level')) || 1));
 let pfadIdx = Math.min(STD.length - 1, Math.max(0, parseInt(load('idx')) || 0));
 let solved = {}; try { solved = JSON.parse(load('solved') || '{}') || {}; } catch (e) {}

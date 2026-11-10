@@ -14,6 +14,10 @@ Gesammelt im Thread „Aufbau der Seite“. Umgesetzt wird erst, wenn die Lehrkr
 
 ### Version vom 10.11.
 
+49. **Excel: WENN mit $** (gewünscht 10.11.)
+    Wie Nr. 48 für WENN: neue Seite `IT/excel/wenn-bezuege.html` mit „Übungen $“ (10 Aufgaben) und „Endlos $“, Technik `uebertragen.js`. Gruppen: Grenzwert festhalten (Kino, Klassenarbeit, Achterbahn, Lager, Freibad), Beträge aus festen Zellen (Versand, Rabatt, Überstunden), in zwei Richtungen (Prüfungen je Fach `B$4`, Filmabend `$B6>=C$4`). Moduswahl von wenn.html und der neuen Seite verlinkt beide („Übungen | Endlos | Übungen $ | Endlos $“). Eigener Katalogeintrag `wbz`.
+    Getestet in Chromium: 400 Zufallsaufgaben (Musterlösung richtig, jeder $-Fehler fällt sofort auf, Ergebnisse gemischt), alle Übungen auf allen 6 Stufen, Endlos, Rückmeldung ohne $, Verlinkung mit wenn.html. Nicht in Firefox.
+
 48. **Excel: UND / ODER mit $** (gewünscht 10.11.)
     Neue Seite `IT/excel/und-oder-bezuege.html` mit „Übungen $“ (10 Aufgaben) und „Endlos $“: WENN mit UND/ODER auf eine Spalte bzw. einen Bereich übertragen, Grenzwerte mit $ festhalten (Pizza-Kette Domi-No’s wie in der Erarbeitung). Bedienung wie bei Zellbezüge/SUMME: Zellen und Bereiche in der Tabelle anklicken bzw. ziehen, F4 für $, Stufen 1–6 ($ setzen … freie Eingabe ohne Hinweise). Die Moduswahl von und-oder.html und der neuen Seite verlinkt beide („Erarbeitung | Übungen | Endlos | Übungen $ | Endlos $“).
     - Technik von bezuege.html nach `uebertragen.js`/`uebertragen.css` ausgelagert (beide Seiten nutzen sie). Neu: Aufgaben werden neu gewürfelt, bis jeder einzelne falsche $-Bezug schon in der gezeigten Tabelle auffällt; die Aufgaben der Zellbezüge-Seite bleiben dabei unverändert (geprüft).

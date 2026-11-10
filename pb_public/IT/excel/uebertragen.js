@@ -1,4 +1,4 @@
-/* uebertragen.js – Formeln übertragen und $-Zeichen setzen, wie in Excel (Seiten: bezuege, und-oder-bezuege)
+/* uebertragen.js – Formeln übertragen und $-Zeichen setzen, wie in Excel (Seiten: bezuege, wenn-bezuege, und-oder-bezuege)
  * Laden nach basis.js, tabelle.js und dem Skript der Seite; dazu basis.css + tabelle.css.
  * Markup: wie in bezuege.html (#taskcard, #sheetcard mit #fbar/#pools/#grid/#chips, #workcard, #actions, #fb, #dock).
  *
