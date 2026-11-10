@@ -12,6 +12,11 @@ Gesammelt im Thread „Aufbau der Seite“. Umgesetzt wird erst, wenn die Lehrkr
 
 ## Erledigt
 
+### Version vom 10.11.
+
+47. **Python: Fehlersuche** (gewünscht 10.11.)
+    Neue Seite `IT/python/fehlersuche.html` nach dem Vorbild der HTML-Fehlersuche: Endlosmodus, das Skript baut in 15 richtige Programme (Eingabe/Ausgabe, Rechnen, if/elif/else, and) je einen von 22 Fehlerarten ein, rund 340 verschiedene Aufgaben. Schalter Syntax | Laufzeit | Logik | Gemischt; zu jedem Programm steht, was es tun soll (nötig für Logikfehler). Erst Zeile anklicken, dann verbessern; geprüft wird mit Skulpt über Testeingaben (gleiche Ausgabe wie das richtige Programm). „Ausführen“ zeigt Ausgabe bzw. Python-Fehlermeldung, zählt vor dem Anklicken als Hilfe (Serie beginnt neu). Getestet in Chromium (alle Kombinationen, Ablauf je Fehlerart), nicht in Firefox.
+
 ### Version vom 09.11.
 
 46. **HTML-Editor: Grenze ziehen, Vorschau ausblenden** (gewünscht 09.11.)

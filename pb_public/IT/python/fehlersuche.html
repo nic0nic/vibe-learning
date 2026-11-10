@@ -1,0 +1,525 @@
+<!doctype html>
+<html lang="de" data-trainer="pyfehler">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fehlersuche Python – vibe learning</title>
+<!--
+  Fehlersuche zu Python im Endlosmodus: In ein richtiges Programm (BEISPIELE) baut das Skript genau einen
+  Fehler ein (FEHLER). Erst die Zeile anklicken, dann die Zeile verbessern.
+  Geprüft wird mit Skulpt: Jedes Beispiel läuft mit seinen Testeingaben (tests). Eine Verbesserung zählt,
+  wenn das Programm danach bei allen Tests fehlerfrei läuft und dasselbe ausgibt wie das richtige Programm.
+  Fehlerarten: syntax (Python startet nicht), laufzeit (Absturz beim Ausführen), logik (falsche Ausgabe).
+  Das Skript prüft beim Erzeugen, ob der eingebaute Fehler wirklich zu seiner Art passt, und verwirft
+  alles andere. Neue Beispiele oder Fehlerarten: unten in BEISPIELE bzw. FEHLER ergänzen.
+-->
+<script src="../../katalog.js"></script>
+<script src="../../nav.js"></script>
+<script src="../../sync.js"></script>
+<script>
+(function(){var t=null;try{t=localStorage.getItem('wenn-theme');}catch(e){}
+document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');})();
+</script>
+<link rel="stylesheet" href="lib/codemirror.css">
+<script src="lib/codemirror.min.js"></script>
+<script src="lib/skulpt.min.js"></script>
+<script src="lib/skulpt-stdlib.js"></script>
+<style>
+:root{--bg:#e5e9f0;--panel:#f6f8fb;--panel2:#eceff4;--text:#2e3440;--muted:#5b6578;--border:#cdd3de;
+  --accent:#8a5f84;--accent-bg:#dcc6d8;--err:#a8434d;--ok:#5e8a45;--ok-bg:#dfe9d6;--err-bg:#f1d9db;
+  --term-bg:#eceff4;--term-in:#5e81ac;
+  --ed-bg:#f6f8fb;--gutter:#e5e9f0;--gutter-text:#7b88a1;--sel:#d8dee9;
+  --kw:#8a5f84;--str:#5e8a45;--num:#b0631f;--com:#7b88a1;--def:#4f73a3;--builtin:#3b7f8c;--op:#4c566a;
+  --mono:ui-monospace,"Cascadia Mono","SF Mono",Consolas,"Liberation Mono",monospace}
+[data-theme=dark]{--bg:#2e3440;--panel:#3b4252;--panel2:#434c5e;--text:#eceff4;--muted:#a9b3c4;--border:#4c566a;
+  --accent:#b48ead;--accent-bg:#b48ead;--err:#d4848b;--ok:#a3be8c;--ok-bg:#3e4a45;--err-bg:#4a3c45;
+  --term-bg:#242933;--term-in:#88c0d0;
+  --ed-bg:#2e3440;--gutter:#2a2f3a;--gutter-text:#616e88;--sel:#434c5e;
+  --kw:#b48ead;--str:#a3be8c;--num:#d08770;--com:#7b88a1;--def:#88c0d0;--builtin:#8fbcbb;--op:#81a1c1}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+code{font-family:var(--mono);background:var(--panel2);padding:1px 5px;border-radius:5px;font-size:.92em}
+.btn{font:600 15px system-ui,sans-serif;background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:7px 14px;cursor:pointer}
+.btn:hover{border-color:var(--accent)}
+.btn:disabled{opacity:.45;cursor:default;border-color:var(--border)}
+.btn.prim{background:var(--accent);border-color:var(--accent);color:#fff}
+[data-theme=dark] .btn.prim{color:#2e3440}
+.iconbtn{background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:10px;width:38px;height:38px;display:grid;place-items:center;cursor:pointer}
+.iconbtn svg{width:20px;height:20px}
+.schalter{display:inline-flex;flex-wrap:wrap;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--panel2)}
+.schalter button{font:600 15px system-ui,sans-serif;border:0;background:transparent;color:var(--text);padding:7px 14px;cursor:pointer}
+.schalter button+button{border-left:1px solid var(--border)}
+.schalter button.an{background:var(--accent-bg);color:#2e3440}
+.f-wrap{width:min(900px,100%);margin:0 auto;padding:12px 16px 24px}
+.f-bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:14px}
+.f-brand{font:800 20px var(--mono);letter-spacing:-.5px;margin-right:6px}
+.f-brand span{color:var(--accent)}
+.f-bar .sp{flex:1}
+.f-zahl{font-size:14px;color:var(--muted);font-weight:600}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin-bottom:12px}
+.card p{margin:0 0 8px} .card p:last-child{margin-bottom:0}
+.f-zweck{border-left:4px solid var(--accent);background:var(--panel2);border-radius:0 9px 9px 0;padding:8px 12px;margin:0 0 12px}
+.f-datei{font:700 12px var(--mono);color:var(--muted);margin-bottom:6px}
+.f-code{border:1px solid var(--border);border-radius:9px;overflow:hidden;background:var(--ed-bg)}
+.f-zeile{display:flex;width:100%;text-align:left;border:0;background:transparent;color:var(--text);font:15px/1.6 var(--mono);padding:0;cursor:pointer}
+.f-zeile .nr{flex:none;width:38px;text-align:right;padding-right:8px;color:var(--gutter-text);background:var(--gutter);border-right:1px solid var(--border);user-select:none}
+.f-zeile .tx{padding:0 10px;white-space:pre-wrap;word-break:break-word}
+.f-zeile:hover:not(:disabled) .tx,.f-zeile:focus-visible .tx{background:var(--sel)}
+.f-zeile:disabled{cursor:default}
+.f-zeile.falsch .tx{text-decoration:line-through;text-decoration-color:var(--err);opacity:.55}
+.f-zeile.falsch .nr{color:var(--err)}
+.f-zeile.treffer{background:var(--err-bg)}
+.f-zeile.geloest{background:var(--ok-bg)}
+.cm-s-default .cm-keyword{color:var(--kw);font-weight:600} .cm-s-default .cm-string{color:var(--str)} .cm-s-default .cm-number{color:var(--num)}
+.cm-s-default .cm-comment{color:var(--com);font-style:italic} .cm-s-default .cm-def{color:var(--def);font-weight:600}
+.cm-s-default .cm-builtin{color:var(--builtin)} .cm-s-default .cm-operator{color:var(--op)} .cm-s-default .cm-variable-2{color:var(--def)}
+.cm-s-default .cm-meta,.cm-s-default .cm-atom{color:var(--num)} .cm-s-default .cm-property,.cm-s-default .cm-variable{color:var(--text)}
+/* Rot für „Fehler“ würde die Zeile verraten */
+.f-code .cm-error{color:var(--text)}
+.f-ein{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.f-ein input{flex:1;min-width:240px;font:15px/1.5 var(--mono);padding:7px 10px;border-radius:10px;border:1px solid var(--border);background:var(--ed-bg);color:var(--text);white-space:pre}
+.f-ein input:focus{outline:2px solid var(--accent);outline-offset:1px}
+.f-meld{border-radius:10px;padding:8px 12px;margin-top:10px}
+.f-meld.ok{background:var(--ok-bg)} .f-meld.no{background:var(--err-bg)} .f-meld.tipp{background:var(--panel2)}
+.f-term{margin:10px 0 0;padding:10px 14px;border-radius:10px;background:var(--term-bg);font:14px/1.45 var(--mono);white-space:pre-wrap;word-break:break-word}
+.f-term .sys{color:var(--muted);font-style:italic} .f-term .inp{color:var(--term-in)} .f-term .err{color:var(--err)}
+.f-knopf{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+</style>
+</head>
+<body>
+<noscript><p>Bitte JavaScript aktivieren.</p></noscript>
+<div class="f-wrap">
+  <div class="f-bar">
+    <div class="f-brand"><span>&gt;&gt;&gt;</span> Fehlersuche</div>
+    <div class="schalter" id="art" role="group" aria-label="Fehlerart wählen"><button type="button" data-a="syntax" title="Python startet das Programm gar nicht">Syntax</button><button type="button" data-a="laufzeit" title="Das Programm bricht beim Ausführen ab">Laufzeit</button><button type="button" data-a="logik" title="Das Programm läuft, gibt aber Falsches aus">Logik</button><button type="button" data-a="gemischt">Gemischt</button></div>
+    <span class="sp"></span>
+    <span class="f-zahl" id="zahl"></span>
+    <button class="iconbtn" id="themeBtn" aria-label="Hell/Dunkel umschalten"></button>
+  </div>
+  <div class="card" id="aufgabe"><p>Aufgabe wird erzeugt …</p></div>
+</div>
+<script>
+(function () {
+  'use strict';
+  const P = 'pyfehler-';
+  const $ = s => document.querySelector(s);
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+
+  /* ---------- Richtige Programme ---------- */
+  // zweck: was das Programm tun soll (nötig für Logikfehler), tests: Eingaben für input() je Testlauf
+  const BEISPIELE = [
+    {zweck: 'Das Programm fragt nach deinem Namen und begrüßt dich.', tests: [['Lena']], code:
+`name = input("Wie heißt du? ")
+print("Hallo " + name + "!")
+print("Schön, dass du da bist.")`},
+    {zweck: 'Das Programm berechnet die Fläche eines Rechtecks aus Länge und Breite.', tests: [['4', '3'], ['10', '2']], code:
+`laenge = int(input("Länge in m: "))
+breite = int(input("Breite in m: "))
+flaeche = laenge * breite
+print("Fläche:", flaeche, "m²")`},
+    {zweck: 'Eine Pizza wird geteilt: Das Programm berechnet, wie viel jede Person zahlt.', tests: [['12', '4'], ['9.5', '2']], code:
+`preis = float(input("Preis der Pizza: "))
+personen = int(input("Wie viele Personen? "))
+anteil = preis / personen
+print("Jeder zahlt", round(anteil, 2), "Euro.")`},
+    {zweck: 'Das Programm berechnet den Durchschnitt aus drei Noten.', tests: [['1', '2', '4'], ['3', '3', '2']], code:
+`note1 = int(input("Note 1: "))
+note2 = int(input("Note 2: "))
+note3 = int(input("Note 3: "))
+schnitt = (note1 + note2 + note3) / 3
+print("Durchschnitt:", round(schnitt, 1))`},
+    {zweck: 'Das Programm gibt aus, ob eine Zahl positiv ist (größer als 0).', tests: [['5'], ['0'], ['-3']], code:
+`zahl = int(input("Zahl: "))
+if zahl > 0:
+    print("positiv")
+else:
+    print("nicht positiv")`},
+    {zweck: 'Der Film ist ab 12 Jahren. Das Programm sagt, ob du ihn sehen darfst.', tests: [['12'], ['11'], ['15']], code:
+`alter = int(input("Wie alt bist du? "))
+if alter >= 12:
+    print("Du darfst den Film sehen.")
+else:
+    print("Der Film ist erst ab 12.")`},
+    {zweck: 'Unter 0 Grad friert es, unter 20 Grad ist es kühl, ab 20 Grad warm.', tests: [['-5'], ['0'], ['10'], ['20'], ['25']], code:
+`temperatur = int(input("Temperatur: "))
+if temperatur < 0:
+    print("Es friert.")
+elif temperatur < 20:
+    print("Es ist kühl.")
+else:
+    print("Es ist warm.")`},
+    {zweck: 'Das Programm gibt aus, ob eine Zahl gerade oder ungerade ist.', tests: [['4'], ['7'], ['0']], code:
+`zahl = int(input("Zahl: "))
+if zahl % 2 == 0:
+    print("gerade")
+else:
+    print("ungerade")`},
+    {zweck: 'Nur mit dem Passwort geheim123 kommt man hinein.', tests: [['geheim123'], ['hallo']], code:
+`passwort = input("Passwort: ")
+if passwort == "geheim123":
+    print("Willkommen!")
+else:
+    print("Falsches Passwort.")`},
+    {zweck: 'Das Programm vergleicht zwei Zahlen und nennt die größere.', tests: [['3', '8'], ['9', '2'], ['5', '5']], code:
+`a = int(input("Erste Zahl: "))
+b = int(input("Zweite Zahl: "))
+if a > b:
+    print(a, "ist größer.")
+elif b > a:
+    print(b, "ist größer.")
+else:
+    print("Beide sind gleich.")`},
+    {zweck: 'Schwimmbad: Kinder unter 6 zahlen nichts, bis einschließlich 17 Jahre 3 Euro, Erwachsene 5 Euro.', tests: [['4'], ['6'], ['17'], ['18'], ['40']], code:
+`alter = int(input("Alter: "))
+if alter < 6:
+    preis = 0
+elif alter <= 17:
+    preis = 3
+else:
+    preis = 5
+print("Eintritt:", preis, "Euro")`},
+    {zweck: 'Ab 100 Euro Einkauf gibt es 10 Euro Rabatt.', tests: [['120'], ['100'], ['50']], code:
+`betrag = float(input("Einkaufsbetrag: "))
+if betrag >= 100:
+    betrag = betrag - 10
+print("Zu zahlen:", betrag, "Euro")`},
+    {zweck: 'Bei Rot bleibt man stehen, bei Gelb heißt es Achtung, sonst darf man gehen.', tests: [['rot'], ['gelb'], ['grün']], code:
+`farbe = input("Farbe der Ampel: ")
+if farbe == "rot":
+    print("Stehen bleiben!")
+elif farbe == "gelb":
+    print("Achtung!")
+else:
+    print("Gehen.")`},
+    {zweck: 'Teenager sind 13 bis 19 Jahre alt. Das Programm sagt, ob du einer bist.', tests: [['12'], ['13'], ['15'], ['19'], ['20']], code:
+`alter = int(input("Alter: "))
+if alter >= 13 and alter <= 19:
+    print("Du bist ein Teenager.")
+else:
+    print("Du bist kein Teenager.")`},
+    {zweck: 'Das Programm rechnet Stunden und Minuten in Minuten um.', tests: [['2', '15'], ['0', '45']], code:
+`stunden = int(input("Stunden: "))
+minuten = int(input("Minuten: "))
+gesamt = stunden * 60 + minuten
+print("Das sind", gesamt, "Minuten.")`}
+  ];
+
+  /* ---------- Fehlerarten ---------- */
+  // mach(zeile, nr, alleZeilen) → veränderte Zeile oder null, wenn die Fehlerart hier nicht passt.
+  // tipp: Hinweis vor der Lösung, regel: Erklärung danach.
+  const z = a => a[Math.floor(Math.random() * a.length)];
+  const treffer = (s, re) => { const t = []; let m; re.lastIndex = 0; while ((m = re.exec(s))) t.push(m); return t; };
+  const ersetze = (s, m, neu) => s.slice(0, m.index) + neu + s.slice(m.index + m[0].length);
+  const ohneTexte = s => s.replace(/"[^"]*"/g, m => ' '.repeat(m.length));   // gleiche Länge, Stellen bleiben gültig
+  const ein = s => (/^ */.exec(s))[0].length;
+  const variablen = zeilen => [...new Set(zeilen.map(t => (/^\s*([a-z_]\w*) = /.exec(t) || [])[1]).filter(Boolean))];
+  const FEHLER = [
+    /* Syntax: Python startet das Programm gar nicht */
+    {art: 'syntax', tipp: 'Sieh dir die Zeilen mit if, elif und else genau an.', regel: 'Nach if, elif und else steht ein Doppelpunkt.',
+      mach: s => /^\s*(if|elif|else)\b.*:\s*$/.test(s) ? s.replace(/:\s*$/, '') : null},
+    {art: 'syntax', tipp: 'Zähle die Klammern.', regel: 'Jede geöffnete Klammer wird wieder geschlossen.',
+      mach: s => /\)\s*$/.test(s) ? s.replace(/\)\s*$/, '') : null},
+    {art: 'syntax', tipp: 'Wo beginnt und endet jeder Text?', regel: 'Ein Text steht vorne und hinten in Anführungszeichen.',
+      mach: s => { const t = treffer(s, /"[^"]*"/g); if (!t.length) return null; const m = z(t); return ersetze(s, m, m[0].slice(0, -1)); }},
+    {art: 'syntax', tipp: 'Achte auf die Einrückung.', regel: 'Was zu if, elif oder else gehört, wird eingerückt (4 Leerzeichen).',
+      mach: (s, i, a) => i > 0 && /:\s*$/.test(a[i - 1]) && ein(s) > ein(a[i - 1]) ? s.replace(/^ +/, ' '.repeat(ein(a[i - 1]))) : null},
+    {art: 'syntax', tipp: 'Achte auf die Einrückung.', regel: 'Eine Zeile wird nur eingerückt, wenn sie zu if, elif oder else gehört.',
+      mach: (s, i, a) => i > 0 && ein(s) === 0 && ein(a[i - 1]) === 0 && !/:\s*$/.test(a[i - 1]) ? '    ' + s : null},
+    {art: 'syntax', tipp: 'Sieh dir die Vergleiche genau an.', regel: 'Vergleichen heißt == (zwei Gleichheitszeichen). Ein = weist einer Variablen einen Wert zu.',
+      mach: s => /^\s*(if|elif)\b.*==/.test(s) ? s.replace('==', '=') : null},
+    {art: 'syntax', tipp: 'Wie heißt „sonst wenn“ in Python?', regel: 'In Python heißt es elif, nicht else if.',
+      mach: s => /^\s*elif\b/.test(s) ? s.replace('elif', 'else if') : null},
+    {art: 'syntax', tipp: 'Sieh dir die Vergleichszeichen genau an.', regel: 'Bei >= und <= steht das Gleichheitszeichen hinten.',
+      mach: s => /[<>]=/.test(s) ? s.replace(/([<>])=/, '=$1') : null},
+    {art: 'syntax', tipp: 'Python achtet auf Groß- und Kleinschreibung.', regel: 'Schlüsselwörter wie if, elif und else schreibt man klein.',
+      mach: s => { const m = /^(\s*)(if|elif|else)\b/.exec(s); return m ? m[1] + m[2][0].toUpperCase() + s.slice(m[1].length + 1) : null; }},
+    {art: 'syntax', tipp: 'Sieh dir an, wie die Werte in print() getrennt sind.', regel: 'Mehrere Werte in print() werden mit Komma getrennt.',
+      mach: s => { if (!/^\s*print\(/.test(s)) return null; const t = treffer(s, /", |, "/g); if (!t.length) return null; const m = z(t); return ersetze(s, m, m[0].replace(',', '')); }},
+
+    /* Laufzeit: Das Programm bricht beim Ausführen ab */
+    {art: 'laufzeit', tipp: 'Sind alle Befehle richtig geschrieben?', regel: 'Python kennt nur Befehle, die genau so geschrieben sind: print, input, int, float, round – alles klein.',
+      mach: s => { const t = treffer(s, /\b(print|input|int|float|round)\(/g); if (!t.length) return null; const m = z(t);
+        return ersetze(s, m, z({print: ['Print(', 'pritn(', 'prnit('], input: ['Input(', 'imput(', 'inpt('], int: ['Int(', 'integer('], float: ['Float(', 'flaot('], round: ['Round(', 'runde(']}[m[1]])); }},
+    {art: 'laufzeit', tipp: 'Vergleiche die Namen der Variablen in allen Zeilen.', regel: 'Eine Variable muss überall genau gleich heißen, auch in Groß- und Kleinschreibung.',
+      mach: (s, i, a) => { const kern = ohneTexte(s), t = [];
+        variablen(a).filter(n => n.length > 1).forEach(n => treffer(kern, new RegExp('\\b' + n + '\\b', 'g'))
+          .forEach(m => { if (kern.slice(0, m.index).trim() || !/^ = /.test(kern.slice(m.index + n.length))) t.push(m); }));   // nur dort, wo die Variable benutzt wird
+        if (!t.length) return null; const m = z(t), n = m[0];
+        return ersetze(s, m, z([n[0].toUpperCase() + n.slice(1), n.slice(0, -1), n + 'n'])); }},
+    {art: 'laufzeit', tipp: 'Was liefert input() – Text oder Zahl?', regel: 'input() liefert immer Text. Zum Rechnen und Vergleichen wandelt man mit int() oder float() in eine Zahl um.',
+      mach: s => { const m = /\b(int|float)\((input\([^)]*\))\)/.exec(s); return m ? s.replace(m[0], m[2]) : null; }},
+    {art: 'laufzeit', tipp: 'Woran erkennt Python einen Text?', regel: 'Texte stehen in Anführungszeichen. Ohne sie hält Python das Wort für eine Variable.',
+      mach: s => { const t = treffer(s, /"([a-zäöü]+)"/gi); if (!t.length) return null; const m = z(t); return ersetze(s, m, m[1]); }},
+    {art: 'laufzeit', tipp: 'Kann man Text und Zahl mit + verbinden?', regel: 'Text und Zahl lassen sich nicht mit + verbinden. In print() trennt man sie mit Komma.',
+      mach: (s, i, a) => { if (!/^\s*print\(/.test(s)) return null;
+        const zahlen = a.map(t => (/^\s*(\w+) = (int|float|round|\w+ [*/+-]|\(|\d)/.exec(t) || [])[1]).filter(Boolean);
+        const t = treffer(s, /"([^"]*)", (\w+)\b(?!\()|(\w+), "([^"]*)"/g).filter(m => zahlen.includes(m[2] || m[3])); if (!t.length) return null;
+        const m = z(t); return ersetze(s, m, m[2] ? `"${m[1]} " + ${m[2]}` : `${m[3]} + " ${m[4]}"`); }},
+
+    /* Logik: Das Programm läuft, gibt aber Falsches aus */
+    {art: 'logik', tipp: 'Was passiert genau an der Grenze? Probiere den Grenzwert im Kopf aus.', regel: '>= heißt „größer oder gleich“, > heißt „größer“: Bei >= gehört die Grenze dazu.',
+      mach: s => { if (!/^\s*(if|elif)\b/.test(s)) return null; const t = treffer(s, /[<>]=?/g); if (!t.length) return null; const m = z(t);
+        return ersetze(s, m, m[0].length === 2 ? m[0][0] : m[0] + '='); }},
+    {art: 'logik', tipp: 'Lies die Bedingungen laut: Stimmt die Richtung?', regel: '> heißt „größer als“, < heißt „kleiner als“.',
+      mach: s => { if (!/^\s*(if|elif)\b/.test(s)) return null; const t = treffer(s, /[<>]/g); if (!t.length) return null; const m = z(t);
+        return ersetze(s, m, m[0] === '<' ? '>' : '<'); }},
+    {art: 'logik', tipp: 'Rechne eine Zeile mit einer Beispielzahl im Kopf nach.', regel: 'Die Rechenzeichen in Python: + plus, - minus, * mal, / geteilt.',
+      mach: s => { if (/^\s*print|input/.test(s)) return null; const t = treffer(s, / [-+*/] /g); if (!t.length) return null; const m = z(t);
+        return ersetze(s, m, ' ' + z(['+', '-', '*', '/'].filter(x => x !== m[0].trim())) + ' '); }},
+    {art: 'logik', tipp: 'Was rechnet Python zuerst?', regel: 'Punkt vor Strich gilt auch in Python. Was zuerst gerechnet werden soll, kommt in Klammern.',
+      mach: s => { const m = /\(([^()]*[+-][^()]*)\) ([*/])/.exec(s); return m ? s.replace(m[0], m[1] + ' ' + m[2]) : null; }},
+    {art: 'logik', tipp: 'Vergleiche die Texte Zeichen für Zeichen.', regel: 'Python unterscheidet bei Texten Groß- und Kleinschreibung: "rot" ist nicht "Rot".',
+      mach: s => { const m = /== "([a-z])/.exec(s); return m ? s.replace(m[0], '== "' + m[1].toUpperCase()) : null; }},
+    {art: 'logik', tipp: 'Müssen beide Bedingungen gelten oder reicht eine?', regel: 'Bei and müssen beide Bedingungen wahr sein, bei or reicht eine.',
+      mach: s => / and /.test(s) ? s.replace(' and ', ' or ') : / or /.test(s) ? s.replace(' or ', ' and ') : null},
+    {art: 'logik', tipp: 'Was ergibt % 2 bei einer geraden Zahl?', regel: '% liefert den Rest der Division. Bei geraden Zahlen ist der Rest 0.',
+      mach: s => /% 2 == 0/.test(s) ? s.replace('% 2 == 0', z(['% 2 == 1', '/ 2 == 0'])) : null}
+  ];
+  const STUFE = {syntax: 1, laufzeit: 2, logik: 3};
+  const NAME = {syntax: 'Syntaxfehler', laufzeit: 'Laufzeitfehler', logik: 'Logikfehler'};
+
+  /* ---------- Python ausführen (Skulpt) ---------- */
+  const ZUVIEL = {zuviel: true}, ZEIT = {zeit: true};
+  function builtinRead(f){
+    if (Sk.builtinFiles === undefined || Sk.builtinFiles.files[f] === undefined) throw "File not found: '" + f + "'";
+    return Sk.builtinFiles.files[f];
+  }
+  let kette = Promise.resolve();
+  // führt code mit den Eingaben aus → Promise {ausgabe, protokoll, err, name, zeile}; Läufe nacheinander, Skulpt ist global
+  function lauf(code, eingaben){
+    const job = () => new Promise(fertig => {
+      let ausgabe = '', protokoll = [], n = 0;
+      const t0 = performance.now();
+      Sk.configure({
+        __future__: Sk.python3, read: builtinRead,
+        output: s => { ausgabe += s; protokoll.push({t: s}); },
+        inputfun: prompt => {
+          if (n >= eingaben.length) return Promise.reject(ZUVIEL);
+          const x = String(eingaben[n++]); protokoll.push({t: (prompt || ''), p: true}, {t: x + '\n', inp: true}); return x;
+        },
+        inputfunTakesPrompt: true, yieldLimit: 100, killableWhile: true, killableFor: true, execLimit: null
+      });
+      Sk.misceval.asyncToPromise(() => Sk.importMainWithBody('<stdin>', false, code, true),
+        {'*': () => { if (performance.now() - t0 > 2000) throw ZEIT; }})
+        .then(() => fertig({ausgabe, protokoll, err: null}),
+          e => {
+            if (e instanceof Sk.builtin.ExternalError && e.nativeError && typeof e.nativeError === 'object') e = e.nativeError;
+            const py = e instanceof Sk.builtin.BaseException;
+            fertig({ausgabe, protokoll, err: e, name: py ? e.tp$name : '', text: py ? e.toString() : (e === ZEIT ? 'Das Programm wurde nicht fertig.' : e === ZUVIEL ? 'Das Programm fragt öfter nach einer Eingabe als erwartet.' : String(e)),
+              zeile: py && e.traceback && e.traceback.length ? e.traceback[0].lineno : 0});
+          });
+    });
+    const p = kette.then(job);
+    kette = p.catch(() => {});
+    return p;
+  }
+  const norm = s => String(s).split('\n').map(x => x.replace(/\s+$/, '')).join('\n').replace(/\n+$/, '');
+  const SYNTAX = ['SyntaxError', 'IndentationError', 'TabError'];
+  const soll = new Map();   // Beispiel → Ausgaben des richtigen Programms
+  async function richtigeAusgaben(bsp){
+    if (!soll.has(bsp)){
+      const r = [];
+      for (const e of bsp.tests){ const x = await lauf(bsp.code, e); if (x.err) throw new Error('Beispiel fehlerhaft: ' + x.text); r.push(norm(x.ausgabe)); }
+      soll.set(bsp, r);
+    }
+    return soll.get(bsp);
+  }
+  // Wie verhält sich code? → {art: null|'syntax'|'laufzeit'|'logik', lauf, test}
+  async function untersuche(bsp, code){
+    const s = await richtigeAusgaben(bsp);
+    for (let i = 0; i < bsp.tests.length; i++){
+      const r = await lauf(code, bsp.tests[i]);
+      if (r.err) return {art: SYNTAX.includes(r.name) ? 'syntax' : 'laufzeit', lauf: r, test: i};
+      if (norm(r.ausgabe) !== s[i]) return {art: 'logik', lauf: r, test: i, soll: s[i]};
+    }
+    return {art: null};
+  }
+
+  /* ---------- Aufgabe erzeugen ---------- */
+  let letzte = [];
+  async function erzeuge(art){
+    const fehler = art === 'gemischt' ? FEHLER : FEHLER.filter(f => f.art === art);
+    for (let versuch = 0; versuch < 200; versuch++){
+      const bsp = z(BEISPIELE), f = z(fehler);
+      const zeilen = bsp.code.split('\n');
+      const moeglich = zeilen.map((t, i) => ({i, neu: f.mach(t, i, zeilen)})).filter(x => x.neu != null && x.neu !== zeilen[x.i] && x.neu.trim());
+      if (!moeglich.length) continue;
+      const m = z(moeglich);
+      const schluessel = BEISPIELE.indexOf(bsp) + '/' + FEHLER.indexOf(f) + '/' + m.i;
+      if (letzte.includes(schluessel) && versuch < 150) continue;
+      const kaputt = zeilen.slice(); kaputt[m.i] = m.neu;
+      const u = await untersuche(bsp, kaputt.join('\n'));
+      if (u.art !== f.art) continue;          // der Fehler muss sich so zeigen, wie seine Art es verspricht
+      letzte.push(schluessel); if (letzte.length > 12) letzte.shift();
+      return {bsp, f, zeilen: kaputt, zeile: m.i, richtig: zeilen[m.i]};
+    }
+    return null;
+  }
+
+  /* ---------- Stand ---------- */
+  const ls = {
+    get(k){ try { return localStorage.getItem(P + k); } catch (e) { return null; } },
+    set(k, v){ try { localStorage.setItem(P + k, v); } catch (e) {} if (window.TrainerSync) TrainerSync.changed(); }
+  };
+  let stand = {geloest: 0, serie: 0, beste: 0};
+  try { stand = Object.assign(stand, JSON.parse(ls.get('stand') || '{}')); } catch (e) {}
+  let art = ['syntax', 'laufzeit', 'logik', 'gemischt'].includes(ls.get('art')) ? ls.get('art') : 'gemischt';
+  let A = null, schritt = 1, falsch = [], fehlklicks = 0, tippOffen = false, meldung = null, sauber = true, term = null, beschaeftigt = false;
+
+  function zeigeZahl(){ $('#zahl').textContent = `${stand.geloest} gefunden · Serie ${stand.serie}` + (stand.beste > 1 ? ` (beste ${stand.beste})` : ''); }
+
+  /* ---------- Anzeige ---------- */
+  function terminal(r, eingaben){
+    let h = `<span class="sys">&gt;&gt;&gt; Programm läuft${eingaben.length ? ' mit Eingabe ' + eingaben.map(x => '„' + esc(x) + '“').join(', ') : ''}</span>\n`;
+    h += r.protokoll.map(x => x.inp ? `<span class="inp">${esc(x.t)}</span>` : esc(x.t)).join('');
+    if (r.err) h += (h.endsWith('\n') ? '' : '\n') + `<span class="err">${esc(r.text)}</span>`;
+    else h += (h.endsWith('\n') ? '' : '\n') + '<span class="sys">&gt;&gt;&gt; fertig</span>';
+    return h;
+  }
+  function zeichne(){
+    document.querySelectorAll('#art button').forEach(b => b.classList.toggle('an', b.dataset.a === art));
+    zeigeZahl();
+    if (!A){ $('#aufgabe').innerHTML = '<p>Es konnte keine Aufgabe erzeugt werden.</p>'; return; }
+    const fest = schritt > 1;
+    $('#aufgabe').innerHTML = `
+      <p>${schritt === 1 ? '<b>In genau einer Zeile steckt ein Fehler.</b> Klicke die Zeile an.' : schritt === 2 ? `<b>Richtig, der Fehler steckt in Zeile ${A.zeile + 1}.</b> Verbessere die Zeile.` : `<b>Gelöst!</b> Das war ein ${NAME[A.f.art]}.`}</p>
+      <p class="f-zweck">${esc(A.bsp.zweck)}</p>
+      <div class="f-datei">programm.py</div>
+      <div class="f-code cm-s-default" id="code"></div>
+      ${schritt === 2 ? `<div class="f-ein"><input id="ein" aria-label="Zeile ${A.zeile + 1} verbessern" spellcheck="false" autocomplete="off" autocapitalize="off"><button class="btn prim" id="okBtn">Prüfen</button></div>` : ''}
+      ${meldung ? `<div class="f-meld ${meldung.art}">${meldung.html}</div>` : ''}
+      ${tippOffen && schritt < 3 ? `<div class="f-meld tipp"><b>Tipp:</b> ${esc(A.f.tipp)}</div>` : ''}
+      ${term ? `<pre class="f-term">${term}</pre>` : ''}
+      <div class="f-knopf">
+        ${schritt < 3 ? `<button class="btn" id="laufBtn" title="${schritt === 1 ? 'Zählt als Hilfe: Die Serie beginnt dann neu.' : 'Das Programm mit deiner Verbesserung ausführen'}">▶ Ausführen</button>` : ''}
+        ${schritt < 3 && !tippOffen ? '<button class="btn" id="tippBtn">Tipp</button>' : ''}
+        ${schritt < 3 ? '<button class="btn" id="loesBtn">Lösung zeigen</button>' : '<button class="btn prim" id="weiterBtn">Nächste Aufgabe →</button>'}
+      </div>`;
+    const code = $('#code');
+    A.zeilen.forEach((t, i) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'f-zeile' + (falsch.includes(i) ? ' falsch' : '') + (fest && i === A.zeile ? (schritt === 3 ? ' geloest' : ' treffer') : '');
+      b.disabled = fest || falsch.includes(i);
+      b.setAttribute('aria-label', 'Zeile ' + (i + 1));
+      const nr = Object.assign(document.createElement('span'), {className: 'nr', textContent: i + 1});
+      const tx = document.createElement('span'); tx.className = 'tx';
+      CodeMirror.runMode(schritt === 3 && i === A.zeile ? A.gezeigt : t || ' ', {name: 'python', version: 3}, tx);
+      b.append(nr, tx);
+      b.addEventListener('click', () => klick(i));
+      code.appendChild(b);
+    });
+    if ($('#laufBtn')) $('#laufBtn').onclick = ausfuehren;
+    if ($('#tippBtn')) $('#tippBtn').onclick = () => { tippOffen = true; sauber = false; zeichne(); };
+    if ($('#loesBtn')) $('#loesBtn').onclick = aufloesen;
+    if ($('#weiterBtn')){ $('#weiterBtn').onclick = neu; $('#weiterBtn').focus(); }
+    const eing = $('#ein');
+    if (eing){
+      eing.value = A.eingabe != null ? A.eingabe : A.zeilen[A.zeile];
+      eing.focus();
+      eing.addEventListener('keydown', e => { if (e.key === 'Enter'){ e.preventDefault(); verbessere(); } });
+      $('#okBtn').onclick = verbessere;
+    }
+  }
+  function klick(i){
+    if (schritt !== 1) return;
+    if (i === A.zeile){ schritt = 2; meldung = null; }
+    else {
+      falsch.push(i); fehlklicks++; sauber = false;
+      meldung = {art: 'no', html: `Zeile ${i + 1} ist in Ordnung. Sieh noch einmal genau hin.`};
+      if (fehlklicks >= 2) tippOffen = true;
+    }
+    zeichne();
+  }
+  function aktuellerCode(){
+    const neu = A.zeilen.slice();
+    if (schritt === 2 && $('#ein')){ A.eingabe = $('#ein').value; neu[A.zeile] = A.eingabe; }
+    return neu.join('\n');
+  }
+  // Ausführen mit dem Test, bei dem sich der Fehler zeigt (sonst mit dem ersten)
+  async function ausfuehren(){
+    if (beschaeftigt) return;
+    beschaeftigt = true;
+    if (schritt === 1) sauber = false;
+    const code = aktuellerCode();
+    const u = await untersuche(A.bsp, code);
+    const eingaben = A.bsp.tests[u.art ? u.test : 0];
+    const r = u.lauf || await lauf(code, eingaben);
+    term = terminal(r, eingaben);
+    beschaeftigt = false;
+    zeichne();
+  }
+  async function verbessere(){
+    if (beschaeftigt) return;
+    const v = $('#ein').value;
+    A.eingabe = v;
+    if (!v.trim()){ meldung = {art: 'no', html: 'Die Zeile ist leer. Verbessere sie, statt sie zu löschen.'}; sauber = false; return zeichne(); }
+    beschaeftigt = true;
+    const neu = A.zeilen.slice(); neu[A.zeile] = v;
+    const u = await untersuche(A.bsp, neu.join('\n'));
+    beschaeftigt = false;
+    if (!u.art) return geschafft(v);
+    sauber = false;
+    const e = A.bsp.tests[u.test];
+    const bei = e.length ? ` (bei Eingabe ${e.map(x => '„' + esc(x) + '“').join(', ')})` : '';
+    if (u.art === 'logik'){
+      const ist = norm(u.lauf.ausgabe).split('\n').pop(), soll = u.soll.split('\n').pop();
+      meldung = {art: 'no', html: `Das Programm läuft, gibt aber noch Falsches aus${bei}: <code>${esc(ist)}</code> statt <code>${esc(soll)}</code>.`};
+    } else meldung = {art: 'no', html: `Noch nicht richtig${u.art === 'laufzeit' ? bei : ''}: <code>${esc(u.lauf.text)}</code>${u.lauf.zeile && u.lauf.zeile !== A.zeile + 1 ? ` – Python meldet Zeile ${u.lauf.zeile}.` : ''}`};
+    term = null;
+    zeichne();
+  }
+  function geschafft(v){
+    schritt = 3; A.gezeigt = v; term = null;
+    stand.geloest++;
+    stand.serie = sauber ? stand.serie + 1 : 0;
+    stand.beste = Math.max(stand.beste, stand.serie);
+    ls.set('stand', JSON.stringify(stand));
+    const stufe = STUFE[A.f.art];
+    if (window.TrainerSync) TrainerSync.event({modus: 'endlos', stufe, aufgabe: 's' + stufe, titel: NAME[A.f.art], gesamt: 0, erstmals: true});
+    meldung = {art: 'ok', html: `<b>✓ Richtig.</b> ${esc(A.f.regel)}`};
+    zeichne();
+  }
+  function aufloesen(){
+    schritt = 3; A.gezeigt = A.richtig; term = null;
+    stand.serie = 0; ls.set('stand', JSON.stringify(stand));
+    meldung = {art: 'tipp', html: `<b>Lösung:</b> Der Fehler war in Zeile ${A.zeile + 1}. Falsch stand dort <code>${esc(A.zeilen[A.zeile].trim())}</code>. ${esc(A.f.regel)}`};
+    zeichne();
+  }
+  async function neu(){
+    if (beschaeftigt) return;
+    beschaeftigt = true;
+    A = await erzeuge(art);
+    schritt = 1; falsch = []; fehlklicks = 0; tippOffen = false; meldung = null; sauber = true; term = null;
+    beschaeftigt = false;
+    zeichne();
+  }
+  $('#art').addEventListener('click', e => {
+    const b = e.target.closest('button');
+    if (!b || b.dataset.a === art || beschaeftigt) return;
+    art = b.dataset.a; ls.set('art', art); neu();
+  });
+
+  /* ---------- Hell/Dunkel ---------- */
+  function zeichneThema(){
+    const dark = document.documentElement.dataset.theme === 'dark';
+    $('#themeBtn').innerHTML = dark
+      ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>'
+      : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>';
+  }
+  $('#themeBtn').addEventListener('click', () => {
+    const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+    document.documentElement.dataset.theme = t;
+    try { localStorage.setItem('wenn-theme', t); } catch (e) {}
+    zeichneThema();
+  });
+  zeichneThema();
+  document.querySelectorAll('#art button').forEach(b => b.classList.toggle('an', b.dataset.a === art));
+  zeigeZahl();
+  neu();
+
+  window.FEHLER_API = {erzeuge, neu, aufgabe: () => A, klick, BEISPIELE, FEHLER, untersuche, lauf};   // für Tests von außen
+})();
+</script>
+</body>
+</html>

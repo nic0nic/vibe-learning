@@ -46,6 +46,8 @@ vibe-learning/
 │   │   │   ├── index.html             Übersicht des Bereichs
 │   │   │   ├── editor.html            Python-Editor mit Terminal (läuft im Browser)
 │   │   │   ├── bedingungen.html       geführte Übung if/elif/else; Aufgaben und Tests stehen in der Datei
+│   │   │   ├── fehlersuche.html       Syntax-, Laufzeit- und Logikfehler finden und verbessern (Endlosmodus,
+│   │   │   │                          erzeugt Aufgaben aus Programmen und Fehlerarten in der Datei)
 │   │   │   └── lib/                   Skulpt (Python), CodeMirror (Editor) und pykurs.js (Technik der
 │   │   │                              geführten Übungen, Aufbau einer Aufgabe dort oben beschrieben)
 │   │   ├── html/                  Webseiten mit HTML und CSS
