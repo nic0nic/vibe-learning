@@ -12,6 +12,15 @@ Gesammelt im Thread „Aufbau der Seite“. Umgesetzt wird erst, wenn die Lehrkr
 
 ## Erledigt
 
+### Version vom 11.11.
+
+50. **Datenbanken: Erarbeitung UND / ODER für Access** (gewünscht 11.11.)
+    `datenight.html` hat jetzt den Modus „Erarbeitung | Übungen | Endlos“ (Erarbeitung nur in der Ansicht Access). 15 Schritte nach dem Merkblatt „Kriterien bei Abfragen“ der Lehrkraft: Wiederholung Kriterien (Text/Zahl) → ein Kriterium im Entwurf → UND (Herr Dienstag: ab 2000 und unter 120 Minuten; Filme auswählen, Tabelle ja/nein, Entwurf) → ODER (Frau Montag: eigene Bewertung ≥ 9 oder IMDb ≥ 8,5) → allgemeine Wahrheitstabelle UND/ODER mit Merkkasten → Kontrollfrage zwei Entwürfe (dieselbe Zeile / verschiedene Zeilen) → UND oder ODER zuordnen (Falle „Miniserien und Fernsehserien“) → Kriterien selbst eintippen (UND; ODER mit demselben Feld) → Abschluss mit Ausblick.
+    Bewusst weggelassen (Advanced im Merkblatt): Und/Oder in einer Zelle, ein Feld zweimal im Entwurf; nur als Satz im Ausblick, geübt wird es in Woche 2/3 der Übungen.
+    - `abfragen.js`: Modus „lernen“ über `erarbeitung` (auch je Ansicht); Schritte als Info, Baustein aus `lib/aufgaben.js` oder Access-Abfrage mit fester Kriterien-Stufe. Stand unter `sqluo-access-lernen`, Meldung modus 'erarbeitung'. Ohne Erarbeitung (abfragen.html, filmdatenbank.html) unverändert.
+    - Neuer Aufgabentyp `wahrheit` in `lib/aufgaben.js` (ja/nein-Tabelle zum Anklicken), Prüfung in `lib/seite.js`, Skill `vibe-learning-seite-erstellen` (typen.md, pruefe.py) ergänzt. Noch nicht im Baukasten von vorlage.html (`vorlage-typen.js`) und nicht in Excel `und-oder.html` (dort weiter eigener `truth`-Schritt).
+    Getestet in Chromium: alle 15 Schritte mit Musterlösung und je einem Fehlversuch, Fortschritt nach Neuladen, Wechsel Access ↔ Blöcke/SQL und Übungen/Endlos, dunkles Thema, Handybreite; abfragen.html und filmdatenbank.html ohne Fehler. Nicht in Firefox, nicht mit PocketBase.
+
 ### Version vom 10.11.
 
 49. **Excel: WENN mit $** (gewünscht 10.11.)

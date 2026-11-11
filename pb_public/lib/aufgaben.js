@@ -24,6 +24,10 @@
  *                zeilen:[['1', 40000, {l:2000}, …], …] – Text bzw. Zahl = vorgegeben (Zahlen mit 2 Nachkommastellen),
  *                {l: Lösung} = Eingabefeld; hinweise:{Spaltenindex: 'Zinsen = Restschuld · 5 %'}, tol (Std. 0,005),
  *                einheit (z. B. '€', erscheint im Spaltenkopf). Falsche Felder werden rot, Hinweise je Spalte.
+ *   wahrheit     Tabelle mit ja/nein zum Anklicken (z. B. Wahrheitstabelle UND/ODER): spalten:['Titel', 'jahr >= 2000', …]
+ *                (HTML erlaubt), zeilen:[['Oben', true, false, {l:false}], …] – true/false = vorgegeben (ja/nein),
+ *                Text bzw. Zahl = vorgegeben, {l:true|false} = Feld zum Anklicken (leer → ja → nein → ja …);
+ *                werte:['ja', 'nein'] (Beschriftung für true/false), hinweise:{Spaltenindex: 'Text bei Fehler'}.
  *   freitext     felder:['1. Sicherheit', '2. Sicherheit'] (Beschriftungen, je ein Eingabefeld),
  *                antworten:[['Grundschuld'], ['Zession', 'Abtretung von Forderungen'], …] (je Eintrag Schreibweisen);
  *                ein Feld ist richtig, wenn ein Begriff darin vorkommt (Groß/klein, ä/ae egal), jedes Feld braucht
@@ -205,6 +209,34 @@ const TYPEN = {
       }
       for (let i = 0; i < n; i++) z.ok[i] = String(z.wahl[i]) === '0';
       return nummern(n).every(i => z.ok[i]) ? {ok:true, t:'✓ ' + (a.ok || 'Alles richtig!')} : {ok:false, t:'Noch nicht alles richtig. Die rot markierten Lücken stimmen nicht.'};
+    }
+  },
+  wahrheit:{
+    zustand:() => ({ein:{}, ok:{}}),
+    html(a, z){
+      const W = a.werte || ['ja', 'nein'], wort = b => b ? W[0] : W[1];
+      const kopf = a.spalten.map(s => `<th>${s}</th>`).join('');
+      const zeilen = a.zeilen.map((r, i) => '<tr>' + r.map((c, j) => {
+        if (typeof c === 'boolean') return `<td class="af-wv ${c ? 'af-ja' : 'af-nein'}">${esc(wort(c))}</td>`;
+        if (!c || typeof c !== 'object') return `<td${j === 0 ? ' class="af-wname"' : ''}>${esc(c == null ? '' : c)}</td>`;
+        const k = i + '-' + j, v = z.ein[k], s = z.ok[k];
+        return `<td class="af-wfeld"><button type="button" class="af-wb${v == null ? '' : v ? ' af-ja' : ' af-nein'}${s === true ? ' richtig' : s === false ? ' falsch' : ''}" data-w="${k}"${s === true ? ' disabled' : ''} aria-label="${esc(String(a.spalten[j]).replace(/<[^>]+>/g, '') + ', Zeile ' + (i + 1))}: ${v == null ? 'leer' : esc(wort(v))}">${v == null ? '?' : esc(wort(v))}</button></td>`;
+      }).join('') + '</tr>').join('');
+      const falsch = Object.keys(z.ok).filter(k => z.ok[k] === false).map(k => +k.split('-')[1]);
+      const hin = [...new Set(falsch)].filter(j => a.hinweise && a.hinweise[j]).map(j => `<div class="af-hinweis">${a.hinweise[j]}</div>`).join('');
+      return `<div class="af-tabelle af-wahrheit"><table><thead><tr>${kopf}</tr></thead><tbody>${zeilen}</tbody></table></div>`
+        + `<div class="af-hinweis">Klicke auf die Felder mit <b>?</b>: ${esc(W[0])} oder ${esc(W[1])}.</div>${hin}`;
+    },
+    pruefen(a, z){
+      let alle = 0, richtig = 0, leer = 0;
+      a.zeilen.forEach((r, i) => r.forEach((c, j) => {
+        if (!c || typeof c !== 'object') return;
+        const k = i + '-' + j; alle++;
+        if (z.ein[k] == null){ leer++; delete z.ok[k]; return; }
+        z.ok[k] = z.ein[k] === c.l; if (z.ok[k]) richtig++;
+      }));
+      if (richtig === alle) return {ok:true, t:'✓ ' + (a.ok || 'Alles richtig ausgefüllt!')};
+      return {ok:false, t:`${richtig} von ${alle} Feldern richtig.${leer ? ` ${leer} ${leer === 1 ? 'Feld ist' : 'Felder sind'} noch leer.` : ''}${richtig < alle - leer ? ' Die rot markierten Felder stimmen nicht.' : ''}`};
     }
   },
   zuordnen:{
@@ -397,6 +429,14 @@ document.addEventListener('click', e => {
     if (t.closest('.af-senden')){ const i = ctx.el.querySelector('.af-chattext'); ctx.el.dataset.fokus = '1'; return chatAntwort(ctx, i ? i.value : ''); }
     if (t.closest('.af-neu')){ clearTimeout(z.timer); Object.assign(z, TYPEN.chat.zustand(), {geloest:z.geloest, ctx}); return chatWeiter(z, a); }
     if (z.tippt && z.weiter && t.closest('.af-verlauf')){ clearTimeout(z.timer); return z.weiter(); }
+    return;
+  }
+  const w = t.closest('[data-w]');
+  if (w && a.typ === 'wahrheit'){
+    if (z.geloest || z.ok[w.dataset.w]) return;
+    const v = z.ein[w.dataset.w];
+    z.ein[w.dataset.w] = v == null ? true : !v; delete z.ok[w.dataset.w]; z.fb = null;
+    ctx.zeichne(); const neu = ctx.el.querySelector(`[data-w="${w.dataset.w}"]`); if (neu) neu.focus();
     return;
   }
   const o = t.closest('[data-opt]');

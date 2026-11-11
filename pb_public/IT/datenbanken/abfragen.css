@@ -146,3 +146,21 @@ body.dragging .acell{border-color:var(--slot-border);background:var(--slot)}
 .kal td button.solved{background:var(--then);color:var(--on-color);border-color:transparent}
 .kal td button.cur{outline:3px solid var(--accent);outline-offset:1px}
 .modes + .modes{margin-left:8px}
+
+/* Erarbeitung (Modus „lernen“) */
+.tasktext p{margin:0 0 8px}
+.tasktext .schon{font-size:14px;color:var(--then)}
+.tasktext .auftrag{margin-top:12px;padding:10px 14px;border-left:4px solid var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--panel));border-radius:8px}
+.tasktext .merke{margin:10px 0;padding:10px 14px;border:2px solid var(--accent);border-radius:10px;background:var(--panel2)}
+.tasktext .merke>b:first-child{display:block;font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:4px}
+.tasktext .merke ul{margin:4px 0;padding-left:22px}
+.wort-und{color:var(--und);font-weight:700}
+.wort-oder{color:var(--oder);font-weight:700}
+.tasktext .ds{width:auto;margin:6px 0;font-size:15px}
+.minis{display:flex;flex-wrap:wrap;gap:14px;margin:8px 0}
+.mini{flex:0 1 auto}
+.mini .mtitel{font-weight:700;margin-bottom:4px}
+.mini .agridw{width:auto}
+.mini .agrid{width:auto}
+.mini .agrid td{min-width:110px;height:30px;padding:3px 8px}
+.mini .agrid tr.krit td{height:32px}

@@ -27,6 +27,14 @@
  *   endlos:  [(r, Z) => Aufgabe]   r = Zufall, Z = {pick1, ri, liste(sql) → erste Spalte aller Zeilen}
  *            Ergebnis mit 1 bis 80 Zeilen wird genommen, sonst neu gewürfelt.
  *   intro:   HTML über der Abfrage, nur ohne aufgaben
+ *   erarbeitung: [schritt, …]   (auch je Ansicht: ansichten.access.erarbeitung) → Modus „Erarbeitung“
+ *            (Knopf data-mode="lernen", wird ohne Erarbeitung ausgeblendet). schritt = {titel, html, …}:
+ *              nur html                       Info-Schritt (gilt beim Anzeigen als erledigt), final:true = Abschluss;
+ *                                             Knöpfe mit data-mode-go="pfad|endlos" wechseln den Modus
+ *              aufgabe:{typ, …}               Baustein aus lib/aufgaben.js (Seite bindet ../../lib/aufgaben.js/.css ein)
+ *              access:{frage, felder, where, sort, tipp, auch}, krit:'bloecke'|'falsch'|'text'
+ *                                             Abfrage im Access-Entwurf, geprüft wie eine Übung
+ *            Stand unter id(-ansicht)-lernen {idx, done}; gelöste Schritte melden modus 'erarbeitung'.
  * }
  * Ohne aufgaben: freie Abfragen (wie filmdatenbank.html). Kein Prüfen, keine Modi, kein Dock;
  * die Knöpfe #checkBtn, #nextBtn, #skipBtn, #prevBtn braucht basis.js trotzdem (hidden).
@@ -52,11 +60,16 @@ const istText = n => { const f = FELD[n]; return f && f.art !== 'Zahl' && f.art 
 /* ---------- Zustand ---------- */
 let db = null, CUR = null, S = null, ed = null, endScen = -1, endSeed = 0;
 const ANS = K.ansichten ? Object.keys(K.ansichten) : null;
-let ansicht = null;
+let ansicht = null, lernIdx = 0, lernDone = new Set(), LST = null;
+const ER = () => (ANS ? K.ansichten[ansicht].erarbeitung : K.erarbeitung) || null;
+const stufe = () => mode === 'lernen' && LST ? LST : LEVELS[level];
 if (ANS){ try { ansicht = localStorage.getItem(K.id + '-ansicht'); } catch (e) {} if (!ANS.includes(ansicht)) ansicht = ANS[0]; }
 function ladeStand(){
   if (ANS){ KEY = K.id + '-' + ansicht + '-'; LEVELS = K.ansichten[ansicht].stufen; }
-  mode = load('mode') === 'endlos' ? 'endlos' : 'pfad';
+  const m = load('mode');
+  mode = m === 'endlos' || m === 'pfad' ? m : ER() ? 'lernen' : 'pfad';
+  lernIdx = 0; lernDone = new Set();
+  if (ER()){ try { const st = JSON.parse(load('lernen') || '{}'); lernIdx = Math.min(ER().length - 1, Math.max(0, st.idx || 0)); lernDone = new Set(st.done || []); } catch (e) {} }
   level = Math.min(LEVELS.length - 1, Math.max(1, parseInt(load('level')) || 1));
   pfadIdx = Math.min(Math.max(0, STD.length - 1), Math.max(0, parseInt(load('idx')) || 0));
   try { solved = JSON.parse(load('solved') || '{}') || {}; } catch (e) { solved = {}; }
@@ -68,6 +81,12 @@ function setAnsicht(a){
   ansicht = a; try { localStorage.setItem(K.id + '-ansicht', a); } catch (e) {}
   if (window.TrainerSync) TrainerSync.changed();
   ladeStand();
+  starte();
+}
+// Aufgabe passend zum Modus wählen und zeichnen
+function starte(){
+  if (mode === 'lernen'){ zeigeSchritt(); return; }
+  LST = null;
   if (mode === 'endlos') newEndless(); else CUR = STD[pfadIdx];
   setup();
 }
@@ -337,7 +356,7 @@ const ERKL = {
 };
 function erklaerungen(cm){
   (cm.state.erkl || []).forEach(b => b.clear()); cm.state.erkl = [];
-  const L = LEVELS[level];
+  const L = stufe();
   if (L.vorlage === 'erklaert') cm.eachLine(l => {
     const m = l.text.match(/^\s*(SELECT|FROM|WHERE|ORDER BY)\s*$/i);
     if (!m) return;
@@ -378,7 +397,7 @@ function aufgabeText(a){
 function loadTask(){ if (mode === 'pfad') CUR = STD[pfadIdx]; setup(); }
 function setup(start){
   S = {sel:[], wf:'', wop:'=', wv:'', where:'', sf:'', sdir:'ASC', fb:null, success:false, erg:null, ergInfo:'', start, kn:{}, wurzel:null};
-  if (LEVELS[level].ui === 'access') S.acc = neuAccess(LEVELS[level]);
+  if (stufe().ui === 'access') S.acc = neuAccess(stufe());
   render();
 }
 // freie Abfragen: bisherige Abfrage in den SQL-Editor mitnehmen (nur das Gerüst zählt nicht)
@@ -389,21 +408,72 @@ function mitnehmen(){
 }
 function setLevel(n){ const mit = FREI ? mitnehmen() : undefined; level = n; store('level', n); setup(mit); }
 function setMode(m){
-  if (m === mode) return;
+  if (m === mode || (m === 'lernen' && !ER())) return;
   mode = m; store('mode', m); pickerOpen = false;
-  if (m === 'endlos') newEndless(); else CUR = STD[pfadIdx];
-  setup();
+  starte(); window.scrollTo({top:0, behavior:'smooth'});
 }
 function gotoTask(i){ pfadIdx = Math.max(0, Math.min(STD.length - 1, i)); store('idx', pfadIdx); pickerOpen = false; CUR = STD[pfadIdx]; setup(); window.scrollTo({top:0, behavior:'smooth'}); }
-function canNext(){ return mode === 'pfad' ? (pfadIdx < STD.length - 1 && isSolved(pfadIdx)) : endCounted; }
+function canNext(){
+  if (mode === 'lernen') return lernIdx < ER().length - 1 && lernDone.has(lernIdx);
+  return mode === 'pfad' ? (pfadIdx < STD.length - 1 && isSolved(pfadIdx)) : endCounted; }
 function nextTask(){
   if (!canNext()) return;
-  if (mode === 'pfad') gotoTask(pfadIdx + 1);
+  if (mode === 'lernen') gotoStep(lernIdx + 1);
+  else if (mode === 'pfad') gotoTask(pfadIdx + 1);
   else { newEndless(); setup(); window.scrollTo({top:0, behavior:'smooth'}); }
 }
 function skip(){ streak = 0; newEndless(); setup(); }
 Object.assign(window, {setLevel, setMode, gotoTask, canNext, nextTask, loadTask, check, renderDock});
 window.skipTask = skip;
+
+/* ---------- Erarbeitung ---------- */
+const schritt = () => ER()[lernIdx];
+const schrittArt = st => st.access ? 'access' : st.aufgabe ? 'aufgabe' : 'info';
+function speichereLernen(){ store('lernen', JSON.stringify({idx:lernIdx, done:[...lernDone]})); }
+function ersterOffener(){ const E = ER(); for (let i = 0; i < E.length; i++) if (!lernDone.has(i)) return i; return E.length - 1; }
+const offen = i => i <= ersterOffener() || lernDone.has(i);
+function schrittGeschafft(){
+  const st = schritt(), erstmals = !lernDone.has(lernIdx);
+  lernDone.add(lernIdx); speichereLernen();
+  if (schrittArt(st) !== 'info' && window.TrainerSync)
+    TrainerSync.event({modus:'erarbeitung', stufe:0, aufgabe:String(lernIdx + 1), titel:st.titel, gesamt:ER().length, erstmals});
+}
+function zeigeSchritt(){
+  lernIdx = Math.min(ER().length - 1, Math.max(0, lernIdx)); speichereLernen();
+  const st = schritt(), art = schrittArt(st);
+  LST = {name:'Erarbeitung', ui:'access', krit:st.krit || 'bloecke'};
+  CUR = art === 'access' ? st.access : null;
+  if (art === 'info' && !lernDone.has(lernIdx)){ lernDone.add(lernIdx); speichereLernen(); }
+  setup();
+}
+function gotoStep(i){ lernIdx = i; pickerOpen = false; zeigeSchritt(); window.scrollTo({top:0, behavior:'smooth'}); }
+function lernDock(){
+  const E = ER();
+  let h = `<button class="dockbtn" id="dockBtn" aria-expanded="${pickerOpen}">📘 Schritt ${lernIdx + 1}/${E.length} <span class="sub">· ${lernDone.size} erledigt</span></button>`;
+  if (pickerOpen) h += '<div class="picker steps"><div class="ptitle">Schritte – erledigte sind grün, gesperrte noch nicht erreichbar</div>' +
+    E.map((st, i) => `<button data-step="${i}" class="stepbtn${lernDone.has(i) ? ' solved' : ''}${i === lernIdx ? ' cur' : ''}"${offen(i) ? '' : ' disabled'}>${i + 1}. ${esc(st.titel)}</button>`).join('') +
+    '<button class="stepreset" data-lernreset="1">Fortschritt zurücksetzen</button></div>';
+  return h;
+}
+function renderLernen(){
+  const st = schritt(), art = schrittArt(st), E = ER();
+  $('#lvlname').textContent = 'Erarbeitung · ' + st.titel;
+  $('#taskmeta').textContent = `Schritt ${lernIdx + 1} von ${E.length}`;
+  const schon = art !== 'info' && lernDone.has(lernIdx) ? '<p class="schon">✓ Diesen Schritt hast du schon gelöst. Du kannst ihn noch einmal bearbeiten.</p>' : '';
+  $('#tasktext').innerHTML = schon + (st.html || '') + (art === 'access' ? `<div class="auftrag">${aufgabeText(st.access)}</div>` + (st.access.tipp ? `<div class="tipp">💡 ${st.access.tipp}</div>` : '') : '');
+  $('#workcard').style.display = art === 'info' ? 'none' : '';
+  ['#runBtn', '#tabBtn'].forEach(b => { $(b).style.display = art === 'access' ? '' : 'none'; });
+  if (art === 'aufgabe'){
+    $('#worktitle').textContent = st.arbeit || 'Aufgabe';
+    const W = $('#work'); W.innerHTML = '<div></div>';
+    Aufgaben.baue(W.firstChild, st.aufgabe, {fertig:() => {
+      schrittGeschafft(); S.success = true;   // „Richtig“ meldet schon der Baustein
+      const h = [st.nachher, canNext() ? 'Weiter geht es mit „Weiter“.' : ''].filter(Boolean).join('<br>');
+      S.fb = h ? {type:'ok', html:h} : null;
+      renderFeedback(); renderNav();
+    }});
+  }
+}
 
 /* ---------- Entwurf (Stufe 1–2) → SQL ---------- */
 function wertSQL(f, v){
@@ -415,7 +485,7 @@ function wertSQL(f, v){
   return v.replace(/^(-?\d+),(\d+)$/, '$1.$2');
 }
 function entwurfSQL(){
-  const L = LEVELS[level];
+  const L = stufe();
   if (!S.sel.length) return {fehlt:'Klicke links in der Tabelle auf die Felder, die angezeigt werden sollen.'};
   let s = 'SELECT ' + S.sel.join(', ') + '\nFROM ' + TAB, off = null;
   if (L.ui === 'block' && S.wf){
@@ -432,8 +502,8 @@ function entwurfSQL(){
   return {sql:s, off};
 }
 function aktSQL(){
-  if (LEVELS[level].ui === 'access') return accessSQL();
-  if (LEVELS[level].ui !== 'sql') return entwurfSQL();
+  if (stufe().ui === 'access') return accessSQL();
+  if (stufe().ui !== 'sql') return entwurfSQL();
   let sql = ed.getValue();
   if (FREI) sql = sql.replace(/^[ \t]*(WHERE|ORDER BY)[ \t]*$/gim, '');
   return {sql, off:0};
@@ -565,7 +635,7 @@ function neuAccess(L){
   }
   return A;
 }
-function zellText(key){ const z = S.acc.zellen[key]; return LEVELS[level].krit === 'text' ? (z || '').trim() : z ? S.acc.bl[z].text : ''; }
+function zellText(key){ const z = S.acc.zellen[key]; return stufe().krit === 'text' ? (z || '').trim() : z ? S.acc.bl[z].text : ''; }
 function accessSQL(){
   const A = S.acc, cols = A.cols.map((col, i) => Object.assign({i}, col));
   for (const key of Object.keys(A.zellen)){ const ci = +key.split('_')[1]; if (zellText(key) && !cols[ci].f) return {fehlt:`In Spalte ${ci + 1} steht ein Kriterium, aber oben bei „Feld:“ ist noch kein Feld gewählt.`}; }
@@ -591,10 +661,10 @@ function accessSQL(){
 }
 function accBlock(id){
   const b = S.acc.bl[id];
-  return `<div class="block val acc" data-drag="1" data-acc="${id}">${esc(b.text)}${LEVELS[level].krit === 'bloecke' ? `<span class="bfeld">${esc(b.f)}</span>` : ''}</div>`;
+  return `<div class="block val acc" data-drag="1" data-acc="${id}">${esc(b.text)}${stufe().krit === 'bloecke' ? `<span class="bfeld">${esc(b.f)}</span>` : ''}</div>`;
 }
 function accessHTML(){
-  const A = S.acc, L = LEVELS[level], frei = new Set(Object.values(A.zellen));
+  const A = S.acc, L = stufe(), frei = new Set(Object.values(A.zellen));
   const sortOpt = v => [['', ''], ['ASC', 'Aufsteigend'], ['DESC', 'Absteigend']].map(([k, t]) => `<option value="${k}"${v === k ? ' selected' : ''}>${t}</option>`).join('');
   let h = `<div class="accwrap"><div class="tabfenster klein"><div class="tabkopf">${esc(TAB)}</div><button class="afeld" data-feld="*">*</button>` +
     T.felder.map(f => `<button class="afeld" data-feld="${esc(f.n)}" title="${esc(f.d)}">${/PRIMARY/.test(f.typ) ? '<span class="key">🔑</span>' : ''}${esc(f.n)}</button>`).join('') + '</div>' +
@@ -706,7 +776,7 @@ window.applyDrop = (d, type, idx, t) => {
 window.dragTap = d => { if (d.neu){ baumTipp(d.neu); neuZeichnen(); } };
 function neuZeichnen(){
   if (S.fb || S.success){ S.fb = null; S.success = false; renderFeedback(); }
-  if (LEVELS[level].ui === 'access') $('#accbox').innerHTML = accessHTML();
+  if (stufe().ui === 'access') $('#accbox').innerHTML = accessHTML();
   else { $('#whereinh').innerHTML = slotHTML('root', 'root'); }
   vorschau();
 }
@@ -744,7 +814,7 @@ function ausfuehren(){
   return {q, res:r.res};
 }
 function vergleiche(q, ist, soll, a){
-  const ACC = LEVELS[level].ui === 'access';
+  const ACC = stufe().ui === 'access';
   const iCols = ist.columns.map(x => x.toLowerCase()), sCols = soll.columns.map(x => x.toLowerCase());
   const fehlt = sCols.filter(x => !iCols.includes(x)), zuviel = iCols.filter((x, i) => !sCols.includes(x) || iCols.indexOf(x) !== i);
   if (fehlt.length || zuviel.length){
@@ -794,19 +864,27 @@ function vergleiche(q, ist, soll, a){
 }
 function check(){
   if (FREI){ ausfuehren(); return; }
+  if (mode === 'lernen' && schrittArt(schritt()) !== 'access') return;
   const r = ausfuehren(); if (!r) return;
   const soll = abfrage(sqlVon(CUR));
   let fehler = vergleiche(r.q, r.res, soll, CUR);
   for (const w of CUR.auch || []) if (fehler && !vergleiche(r.q, r.res, abfrage(sqlVon(Object.assign({}, CUR, {where:w}))), CUR)) fehler = null;
   if (fehler){ S.success = false; S.fb = {type:'err', html:fehler}; renderFeedback(); return; }
   S.success = true;
+  if (mode === 'lernen'){
+    schrittGeschafft();
+    let h = '<b>Richtig! 🎉</b> Deine Abfrage liefert genau die gesuchten Datensätze.' + (schritt().nachher ? '<br>' + schritt().nachher : '');
+    h += `<br>In SQL heißt deine Abfrage:<pre class="sqlv cm-s-default">${farbe(r.q.sql)}</pre>`;
+    if (canNext()) h += 'Weiter geht es mit „Weiter“.';
+    S.fb = {type:'ok', html:h}; renderFeedback(); renderNav(); return;
+  }
   const erstmals = countSolved();
   // mit Ansichten: Stufen aller Ansichten durchgezählt, damit die Auswertung sie unterscheiden kann
   const versatz = ANS ? ANS.slice(0, ANS.indexOf(ansicht)).reduce((n, a) => n + K.ansichten[a].stufen.length - 1, 0) : 0;
   if (window.TrainerSync) TrainerSync.event({modus:mode === 'pfad' ? 'uebungen' : 'endlos', stufe:versatz + level,
     aufgabe:mode === 'pfad' ? String(pfadIdx + 1) : 'endlos', titel:CUR.frage, gesamt:mode === 'pfad' ? STD.length : 0, erstmals});
   let h = '<b>Richtig! 🎉</b> Deine Abfrage liefert genau die gesuchten Datensätze.';
-  if (LEVELS[level].ui !== 'sql') h += `<br>In SQL heißt deine Abfrage:<pre class="sqlv cm-s-default">${farbe(r.q.sql)}</pre>`;
+  if (stufe().ui !== 'sql') h += `<br>In SQL heißt deine Abfrage:<pre class="sqlv cm-s-default">${farbe(r.q.sql)}</pre>`;
   if (/"[^"]*"/.test(r.q.sql.replace(/'[^']*'/g, ''))) h += `<br>Tipp: Texte schreibt man in SQL üblicherweise in einfache Anführungszeichen ${c("'…'")}.`;
   if (canNext()) h += '<br>Weiter geht es mit „Nächste Aufgabe“.';
   S.fb = {type:'ok', html:h};
@@ -818,8 +896,15 @@ function renderFeedback(){
   $('#workcard').classList.toggle('solved', !!S.success);
   $('#fb').innerHTML = S.fb ? `<div class="fb ${S.fb.type}">${S.fb.html}</div>` : '';
 }
-function renderNav(){ if (!FREI){ navPfad(); renderDock(); } }
-function renderDock(){ $('#dock').innerHTML = K.kalender && mode === 'pfad' ? kalenderHTML() : dockHTML(); }
+function renderNav(){
+  if (FREI) return;
+  if (mode === 'lernen'){
+    navLernen(lernIdx, ER().length, schrittArt(schritt()) !== 'access');
+    ['#runBtn', '#tabBtn'].forEach(b => { $(b).style.display = schrittArt(schritt()) === 'access' ? '' : 'none'; });
+  } else navPfad();
+  renderDock();
+}
+function renderDock(){ $('#dock').innerHTML = mode === 'lernen' ? lernDock() : K.kalender && mode === 'pfad' ? kalenderHTML() : dockHTML(); }
 const fmt = v => v === null ? '<span class="leer">leer</span>' : esc(v);
 function tabelleHTML(r, max){
   const n = r.values.length, zeig = r.values.slice(0, max || 500);
@@ -864,12 +949,21 @@ function vorschau(){
   $('#sqlv').innerHTML = q.sql ? farbe(q.sql) : `<span class="ph">${q.fehlt.replace(/<[^>]+>/g, '')}</span>`;
 }
 function render(){
-  const L = LEVELS[level], a = CUR;
+  const L = stufe(), a = CUR;
   renderHeader();
   document.querySelectorAll('[data-ansicht]').forEach(b => b.classList.toggle('on', b.dataset.ansicht === ansicht));
-  document.body.classList.toggle('breit', L.ui === 'access');
-  $('#lvlname').textContent = `Stufe ${level}: ${L.name}`;
-  if (FREI){ $('#taskmeta').textContent = ''; $('#tasktext').innerHTML = (K.intro || '') + felderHTML(); }
+  document.querySelectorAll('[data-mode="lernen"]').forEach(b => { b.hidden = !ER(); });
+  const lernen = mode === 'lernen' && !FREI;
+  document.body.classList.toggle('breit', L.ui === 'access' && (!lernen || schrittArt(schritt()) === 'access'));
+  $('#workcard').style.display = '';
+  ['#runBtn', '#tabBtn'].forEach(b => { $(b).style.display = ''; });
+  if (lernen){
+    renderLernen();
+    if (schrittArt(schritt()) !== 'access'){ renderFeedback(); renderErgebnis(); renderNav(); return; }
+  }
+  else $('#lvlname').textContent = `Stufe ${level}: ${L.name}`;
+  if (lernen){ /* Text steht schon (renderLernen) */ }
+  else if (FREI){ $('#taskmeta').textContent = ''; $('#tasktext').innerHTML = (K.intro || '') + felderHTML(); }
   else {
     $('#taskmeta').textContent = mode !== 'pfad' ? 'Endlos' : K.kalender ? tagName(pfadIdx) : `Übungen · Aufgabe ${pfadIdx + 1} von ${STD.length}`;
     $('#tasktext').innerHTML = aufgabeText(a) + (a.tipp && level <= 3 ? `<div class="tipp">💡 ${a.tipp}</div>` : '');
@@ -923,6 +1017,11 @@ function entwurfGeaendert(){
 document.addEventListener('click', e => {
   const an = e.target.closest('[data-ansicht]');
   if (an){ setAnsicht(an.dataset.ansicht); return; }
+  const mg = e.target.closest('[data-mode-go]');
+  if (mg){ setMode(mg.dataset.modeGo); return; }
+  const sp = e.target.closest('[data-step]');
+  if (sp && !sp.disabled){ gotoStep(+sp.dataset.step); return; }
+  if (e.target.closest('[data-lernreset]')){ if (confirm('Den Fortschritt der Erarbeitung löschen und von vorne beginnen?')){ lernDone.clear(); gotoStep(0); } return; }
   const af = e.target.closest('.afeld');
   if (af){ const col = S.acc.cols.find(x => !x.f); if (col){ col.f = af.dataset.feld; col.show = true; } else S.acc.cols.push({f:af.dataset.feld, sort:'', show:true}); neuZeichnen(); return; }
   if (e.target.closest('#addCol')){ S.acc.cols.push({f:'', sort:'', show:true}); neuZeichnen(); return; }
@@ -967,7 +1066,7 @@ document.addEventListener('keydown', e => {
 });
 $('#runBtn').addEventListener('click', () => ausfuehren());
 $('#resetBtn').addEventListener('click', () => setup());
-$('#prevBtn').addEventListener('click', () => gotoTask(pfadIdx - 1));
+$('#prevBtn').addEventListener('click', () => { if (mode === 'lernen') gotoStep(lernIdx - 1); else gotoTask(pfadIdx - 1); });
 $('#tabBtn').textContent = `Tabelle ${TAB} ansehen`;
 
 /* ---------- Start ---------- */
@@ -975,7 +1074,6 @@ K._test = {accZellen, parseWhere};   // nur für automatische Tests
 $('#tasktext').textContent = 'Datenbank wird geladen …';
 initSqlJs().then(SQL => {
   baueDB(SQL);
-  if (FREI) CUR = null; else if (mode === 'endlos') newEndless(); else CUR = STD[pfadIdx];
-  setup();
+  if (FREI){ CUR = null; setup(); } else starte();
 }).catch(e => { $('#tasktext').textContent = 'Die Datenbank konnte nicht geladen werden: ' + e.message; });
 })();

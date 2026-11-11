@@ -201,6 +201,10 @@ danach (weitere Aufgabe, erscheint erst nach richtiger Lösung, z. B. Handlungse
                zeilen:[['1', 40000, {l:2000}, …], …] – Text bzw. Zahl = vorgegeben (Zahlen mit 2 Nachkommastellen),
                {l: Lösung} = Eingabefeld; hinweise:{Spaltenindex: 'Zinsen = Restschuld · 5 %'}, tol (Std. 0,005),
                einheit (z. B. '€', erscheint im Spaltenkopf). Falsche Felder werden rot, Hinweise je Spalte.
+  wahrheit     Tabelle mit ja/nein zum Anklicken (z. B. Wahrheitstabelle UND/ODER): spalten:['Titel', 'jahr >= 2000', …]
+               (HTML erlaubt), zeilen:[['Oben', true, false, {l:false}], …] – true/false = vorgegeben (ja/nein),
+               Text bzw. Zahl = vorgegeben, {l:true|false} = Feld zum Anklicken (leer → ja → nein → ja …);
+               werte:['ja', 'nein'] (Beschriftung für true/false), hinweise:{Spaltenindex: 'Text bei Fehler'}.
   freitext     felder:['1. Sicherheit', '2. Sicherheit'] (Beschriftungen, je ein Eingabefeld),
                antworten:[['Grundschuld'], ['Zession', 'Abtretung von Forderungen'], …] (je Eintrag Schreibweisen);
                ein Feld ist richtig, wenn ein Begriff darin vorkommt (Groß/klein, ä/ae egal), jedes Feld braucht
@@ -528,6 +532,14 @@ SQLKURS = {
   endlos:  [(r, Z) => Aufgabe]   r = Zufall, Z = {pick1, ri, liste(sql) → erste Spalte aller Zeilen}
            Ergebnis mit 1 bis 80 Zeilen wird genommen, sonst neu gewürfelt.
   intro:   HTML über der Abfrage, nur ohne aufgaben
+  erarbeitung: [schritt, …]   (auch je Ansicht: ansichten.access.erarbeitung) → Modus „Erarbeitung“
+           (Knopf data-mode="lernen", wird ohne Erarbeitung ausgeblendet). schritt = {titel, html, …}:
+             nur html                       Info-Schritt (gilt beim Anzeigen als erledigt), final:true = Abschluss;
+                                            Knöpfe mit data-mode-go="pfad|endlos" wechseln den Modus
+             aufgabe:{typ, …}               Baustein aus lib/aufgaben.js (Seite bindet ../../lib/aufgaben.js/.css ein)
+             access:{frage, felder, where, sort, tipp, auch}, krit:'bloecke'|'falsch'|'text'
+                                            Abfrage im Access-Entwurf, geprüft wie eine Übung
+           Stand unter id(-ansicht)-lernen {idx, done}; gelöste Schritte melden modus 'erarbeitung'.
 }
 Ohne aufgaben: freie Abfragen (wie filmdatenbank.html). Kein Prüfen, keine Modi, kein Dock;
 die Knöpfe #checkBtn, #nextBtn, #skipBtn, #prevBtn braucht basis.js trotzdem (hidden).

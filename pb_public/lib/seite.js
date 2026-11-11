@@ -24,7 +24,7 @@
   'use strict';
   const TYPEN = {
     mc: ['options', 'correct'], zahlen: ['felder'], luecken: ['text'], zuordnen: ['felder', 'karten'],
-    freitext: ['felder', 'antworten'], chat: ['nachrichten'], buchungssatz: ['konten', 'soll', 'haben'], tabelle: ['spalten', 'zeilen']
+    freitext: ['felder', 'antworten'], chat: ['nachrichten'], buchungssatz: ['konten', 'soll', 'haben'], tabelle: ['spalten', 'zeilen'], wahrheit: ['spalten', 'zeilen']
   };
   const MAX = 150000;
   // Erlaubtliste für HTML in eingereichten Texten (alles andere wird abgelehnt, auch unvollständige Tags)
@@ -102,6 +102,15 @@
         r.forEach((c, j) => { if (c && typeof c === 'object') { if (typeof c.l !== 'number') f.push(`${wo}, Zeile ${i + 1}, Spalte ${j + 1}: Eingabefeld braucht „l“ (Lösung als Zahl)`); else felder++; } });
       });
       if (!felder) f.push(`${wo}: keine Eingabefelder ({"l": Lösung}) in der Tabelle`);
+    }
+    if (a.typ === 'wahrheit' && Array.isArray(a.spalten) && Array.isArray(a.zeilen)) {
+      let felder = 0;
+      a.zeilen.forEach((r, i) => {
+        if (!Array.isArray(r) || r.length !== a.spalten.length) return f.push(`${wo}, Zeile ${i + 1}: braucht genau ${a.spalten.length} Zellen (wie „spalten“)`);
+        r.forEach((c, j) => { if (c && typeof c === 'object') { if (typeof c.l !== 'boolean') f.push(`${wo}, Zeile ${i + 1}, Spalte ${j + 1}: Feld braucht „l“ (true oder false)`); else felder++; } });
+      });
+      if (!felder) f.push(`${wo}: keine Felder zum Anklicken ({"l": true/false}) in der Tabelle`);
+      if (a.werte != null && !(Array.isArray(a.werte) && a.werte.length === 2 && a.werte.every(istText))) f.push(`${wo}: „werte“ braucht genau zwei Wörter, z. B. ["ja", "nein"]`);
     }
     if (a.danach) pruefeAufgabe(a.danach, wo + ' → danach', f);
   }

@@ -36,6 +36,18 @@
 .af-tabelle td:first-child{text-align:center}
 .af-tabelle td.zahl{font-family:var(--mono,monospace)}
 .af-tabelle .af-zahl{width:112px}
+/* Wahrheitstabelle (ja/nein zum Anklicken) */
+.af-wahrheit td{text-align:center}
+.af-wahrheit td.af-wname{text-align:left;white-space:normal}
+.af-wahrheit th code{white-space:nowrap}
+.af-wv.af-ja{color:var(--af-ok);font-weight:600}
+.af-wv.af-nein{color:var(--af-err);font-weight:600}
+.af-wb{min-width:64px;font:600 14px system-ui,sans-serif;padding:4px 10px;border:2px dashed var(--border);border-radius:8px;background:var(--panel);color:var(--muted);cursor:pointer}
+.af-wb:hover{border-color:var(--accent)}
+.af-wb.af-ja,.af-wb.af-nein{border-style:solid;color:var(--text)}
+.af-wb:disabled{cursor:default}
+.af-wahrheit th,.af-wahrheit td{white-space:normal}
+@media (max-width:560px){.af-wahrheit th,.af-wahrheit td{padding:4px 3px;font-size:13px}.af-wb{min-width:42px;padding:4px 5px;font-size:13px}.af-wahrheit th code{white-space:normal}}
 .af-zeile{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}
 .af-t{flex:1 1 300px}
 .af-zahl{width:130px;text-align:right;font-family:var(--mono,monospace)}

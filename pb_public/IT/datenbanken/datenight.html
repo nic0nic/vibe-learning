@@ -14,6 +14,7 @@ document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: da
 <link rel="stylesheet" href="../python/lib/codemirror.css">
 <link rel="stylesheet" href="lib/show-hint.min.css">
 <link rel="stylesheet" href="../excel/basis.css">
+<link rel="stylesheet" href="../../lib/aufgaben.css">
 <link rel="stylesheet" href="abfragen.css">
 </head>
 <body>
@@ -26,7 +27,7 @@ document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: da
   <div class="hdr-left">
     <div class="brand"><span>&gt;</span>Datenight<span>;</span></div>
     <div class="modes" role="group" aria-label="Modus">
-      <button data-mode="pfad">Übungen</button><button data-mode="endlos">Endlos</button>
+      <button data-mode="lernen">Erarbeitung</button><button data-mode="pfad">Übungen</button><button data-mode="endlos">Endlos</button>
     </div>
     <div class="modes" role="group" aria-label="Ansicht">
       <button data-ansicht="access">Access</button><button data-ansicht="sql">Blöcke / SQL</button>
@@ -73,6 +74,7 @@ document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: da
 <script src="../python/lib/codemirror.min.js"></script>
 <script src="lib/show-hint.min.js"></script>
 <script src="../excel/basis.js"></script>
+<script src="../../lib/aufgaben.js"></script>
 <script>
 /* Datenight: Herr Maier datet drei Wochen lang jeden Tag dieselbe Person, die Wünsche werden immer verrückter.
    Aufgaben wie in abfragen.html; auch = gleichwertige Bedingungen (z. B. Ko-Regie, Jahrtausend ab 2000). */
@@ -173,12 +175,142 @@ const ENDLOS = [
   (r, Z) => { const [A, B, C] = atome(r, Z, 3); return kombi(r, Z, `(${A.sql} AND ${B.sql}) OR ${C.sql}`, [`${A.t} ${b('und')} ${B.t}`, b('oder aber') + ' ' + C.t], [A, B, C]); }
 ];
 
+/* Erarbeitung (nur Access): Kriterien in einer Zeile = UND, in verschiedenen Zeilen = ODER, Wahrheitstabelle.
+   Nach dem Merkblatt „Kriterien bei Abfragen“ der Lehrkraft. Weggelassen: Und/Oder in einer Zelle, Feld zweimal im Entwurf. */
+const U = '<span class="wort-und">UND</span>', O = '<span class="wort-oder">ODER</span>';
+const ja = true, nein = false, frag = l => ({l});
+// kleiner Ausschnitt der Tabelle filme (Werte aus filme.js)
+const ausschnitt = (spalten, zeilen) => `<table class="ds"><thead><tr>${spalten.map(x => `<th>${x}</th>`).join('')}</tr></thead><tbody>` +
+  zeilen.map(z => '<tr>' + z.map((v, i) => `<td${i ? ' class="z"' : ''}>${String(v).replace('.', ',')}</td>`).join('') + '</tr>').join('') + '</tbody></table>';
+// Entwurfsraster als Bild: felder, zeilen = [[Kriterium je Feld], …] (erste Zeile „Kriterien:“, dann „oder:“)
+const raster = (titel, felder, zeilen) => `<div class="mini"><div class="mtitel">${titel}</div><div class="agridw"><table class="agrid">` +
+  `<tr><th>Feld:</th>${felder.map(f => `<td>${f}</td>`).join('')}</tr><tr><th>Anzeigen:</th>${felder.map(() => '<td class="ashow">☑</td>').join('')}</tr>` +
+  zeilen.map((z, r) => `<tr class="krit"><th>${r ? 'oder:' : 'Kriterien:'}</th>${z.map(k => `<td>${k}</td>`).join('')}</tr>`).join('') + '</table></div></div>';
+const UND_FILME = [['Oben', 2009, 96], ['Inception', 2010, 148], ['Toy Story', 1995, 81], ['Titanic', 1997, 194], ['Ratatouille', 2007, 111], ['Zurück in die Zukunft', 1985, 116]];
+const ODER_FILME = [['Forrest Gump', 9, 8.8], ['Toy Story', 9, 8.3], ['Inception', 8, 8.8], ['Ice Age', 8, 7.5], ['Matrix', 7, 8.7], ['Titanic', 7, 7.9]];
+const MERKE_UND = `<div class="merke"><b>Merke: ${U}</b>Kriterien, die in <b>derselben Zeile</b> stehen, müssen <b>alle</b> erfüllt sein, damit ein Datensatz erscheint.</div>`;
+const MERKE_ODER = `<div class="merke"><b>Merke: ${O}</b>Kriterien in <b>verschiedenen Zeilen</b> („Kriterien:“ und „oder:“) sind Alternativen. Ein Datensatz erscheint, wenn er die Kriterien <b>einer</b> Zeile erfüllt.</div>`;
+const ERARBEITUNG = [
+  {titel:'Datenight', html:`<p>Herr Maier hat sich vorgenommen, drei Wochen lang jeden Tag ein Date zu haben – mit Filmabend. Alles, was er je gesehen hat (und alles, was er noch sehen will), steht in seiner Datenbank, in der Tabelle <code>filme</code>.</p>
+   <p>Seine Dates haben Wünsche, und meistens besteht ein Wunsch aus <b>mehreren</b> Kriterien. In dieser Erarbeitung lernst du, wie du Kriterien in der Access-Entwurfsansicht mit ${U} und ${O} verknüpfst.</p>
+   <p>So funktioniert die Seite: Jeder Schritt erklärt etwas oder stellt eine Aufgabe. Erst wenn sie richtig gelöst ist, geht es mit <b>Weiter</b> zum nächsten Schritt.</p>`},
+
+  {titel:'Wiederholung: Kriterien', arbeit:'Zuordnen',
+   html:`<p>Zuerst eine Wiederholung. In der Zeile „Kriterien:“ der Entwurfsansicht steht, welche Datensätze gesucht sind. Bei Text steht <code>*</code> für beliebig viele Zeichen (auch keins), bei Zahlen vergleichst du mit <code>&gt;</code>, <code>&lt;</code>, <code>&gt;=</code>, <code>&lt;=</code>, <code>=</code> und <code>&lt;&gt;</code>.</p>`,
+   aufgabe:{typ:'zuordnen', frage:'Ordne jedem Kriterium seine Bedeutung zu.',
+     felder:[['text', 'Kriterium für Text'], ['zahl', 'Kriterium für Zahlen']],
+     karten:[
+       {t:'Wie "*Mystery*" – der Text enthält irgendwo „Mystery“', z:'text'},
+       {t:'Wie "Der*" – der Text beginnt mit „Der“', z:'text'},
+       {t:'"Film" – der Text ist genau „Film“', z:'text'},
+       {t:'>=9 – mindestens 9', z:'zahl'},
+       {t:'<120 – kleiner als 120', z:'zahl'},
+       {t:'<>2000 – nicht 2000', z:'zahl'}]}},
+
+  {titel:'Ein Kriterium', krit:'bloecke',
+   html:`<p>Frau Mittwoch ist wählerisch.</p>`,
+   access:{frage:'<b>Frau Mittwoch</b> sagt: „Ich schaue nur etwas, das auf IMDb mindestens 9 Punkte hat.“', felder:['titel', 'imdb_bewertung'], where:'imdb_bewertung >= 9',
+     tipp:'Wähle oben die Felder aus und ziehe das Kriterium in die Zeile „Kriterien:“ unter das richtige Feld.'},
+   nachher:'Ein Kriterium – kein Problem. Spannend wird es, wenn mehrere Kriterien zusammenkommen.'},
+
+  {titel:'Zwei Kriterien: Herr Dienstag', arbeit:'Auswählen',
+   html:`<p><b>Herr Dienstag</b> sagt: „Ich will etwas sehen, das <b>ab dem Jahr 2000</b> erschienen ist. <b>Außerdem</b> soll es <b>kürzer als 120 Minuten</b> sein, ich muss früh raus.“</p>
+   ${ausschnitt(['titel', 'jahr', 'laufzeit'], UND_FILME)}`,
+   aufgabe:{typ:'mc', frage:'Welche dieser Filme kommen für Herrn Dienstag in Frage?', multi:true,
+     options:UND_FILME.map(f => f[0]), correct:[0, 4],
+     why:{1:'Inception ist von 2010, dauert aber 148 Minuten.', 2:'Toy Story ist kurz genug, erschien aber 1995.', 3:'Titanic erfüllt keines der beiden Kriterien.', 5:'Zurück in die Zukunft ist kurz genug, erschien aber 1985.'}},
+   nachher:'Genau! Nur die Filme, die <b>beide</b> Kriterien erfüllen, passen.'},
+
+  {titel:'Tabelle: UND', arbeit:'Tabelle ausfüllen',
+   html:`<p>Halte das Ergebnis in einer Tabelle fest. Die ersten beiden Spalten zeigen, ob ein Film das jeweilige Kriterium erfüllt.</p>`,
+   aufgabe:{typ:'wahrheit', frage:`Erscheint der Datensatz, wenn beide Kriterien mit ${U} verknüpft sind?`,
+     spalten:['titel', 'jahr', 'laufzeit', 'Kriterium 1<br><code>jahr: &gt;=2000</code>', 'Kriterium 2<br><code>laufzeit: &lt;120</code>', `${U}<br>erscheint?`],
+     zeilen:UND_FILME.map(([t, j, l]) => [t, j, l, j >= 2000, l < 120, frag(j >= 2000 && l < 120)]),
+     hinweise:{5:`Bei ${U} erscheint ein Datensatz nur, wenn <b>beide</b> Kriterien erfüllt sind.`}},
+   nachher:`Bei ${U} reicht ein einziges „nein“, und der Datensatz fällt heraus.`},
+
+  {titel:'UND im Entwurf', krit:'bloecke',
+   html:`${MERKE_UND}<p>Setze den Wunsch von Herrn Dienstag in der Entwurfsansicht um.</p>`,
+   access:{frage:'<b>Herr Dienstag</b> sagt: „Ab dem Jahr 2000 erschienen <b>und</b> kürzer als 120 Minuten.“', felder:['titel', 'jahr', 'laufzeit'], where:'jahr >= 2000 AND laufzeit < 120',
+     tipp:'Beide Kriterien gehören in <b>dieselbe</b> Zeile („Kriterien:“) – jeweils unter ihr Feld.'},
+   nachher:'In SQL wird aus „derselben Zeile“ das Wort <code>AND</code>.'},
+
+  {titel:'Zwei Kriterien: Frau Montag', arbeit:'Auswählen',
+   html:`<p><b>Frau Montag</b> sagt: „Ich traue deinem Geschmack nur halb. Zeig mir etwas, das <b>du mit mindestens 9</b> bewertet hast – <b>oder</b> etwas, das <b>auf IMDb mindestens 8,5</b> hat.“</p>
+   ${ausschnitt(['titel', 'eigene_bewertung', 'imdb_bewertung'], ODER_FILME)}`,
+   aufgabe:{typ:'mc', frage:'Welche dieser Filme kommen für Frau Montag in Frage?', multi:true,
+     options:ODER_FILME.map(f => f[0]), correct:[0, 1, 2, 4],
+     why:{3:'Ice Age hat von Herrn Maier 8 und auf IMDb 7,5 – keines von beiden reicht.', 5:'Titanic hat 7 und 7,9 – keines von beiden reicht.'}},
+   nachher:'Richtig! Hier reicht <b>ein</b> erfülltes Kriterium. Forrest Gump erfüllt sogar beide – auch das passt.'},
+
+  {titel:'Tabelle: ODER', arbeit:'Tabelle ausfüllen',
+   aufgabe:{typ:'wahrheit', frage:`Erscheint der Datensatz, wenn die Kriterien mit ${O} verknüpft sind?`,
+     spalten:['titel', 'eigene_bewertung', 'imdb_bewertung', 'Kriterium 1<br><code>eigene_bewertung: &gt;=9</code>', 'Kriterium 2<br><code>imdb_bewertung: &gt;=8,5</code>', `${O}<br>erscheint?`],
+     zeilen:ODER_FILME.map(([t, e, i]) => [t, e, String(i).replace('.', ','), e >= 9, i >= 8.5, frag(e >= 9 || i >= 8.5)]),
+     hinweise:{5:`Bei ${O} erscheint ein Datensatz, wenn <b>mindestens ein</b> Kriterium erfüllt ist – auch wenn beide erfüllt sind.`}},
+   nachher:`Bei ${O} reicht ein einziges „ja“, und der Datensatz ist dabei.`},
+
+  {titel:'ODER im Entwurf', krit:'bloecke',
+   html:`${MERKE_ODER}<p>Setze den Wunsch von Frau Montag in der Entwurfsansicht um.</p>`,
+   access:{frage:'<b>Frau Montag</b> sagt: „Von dir mindestens 9 <b>oder</b> auf IMDb mindestens 8,5.“', felder:['titel', 'eigene_bewertung', 'imdb_bewertung'], where:'eigene_bewertung >= 9 OR imdb_bewertung >= 8.5',
+     tipp:'Ein Kriterium kommt in die Zeile „Kriterien:“, das andere in die Zeile „oder:“ darunter.'},
+   nachher:'In SQL wird aus „verschiedenen Zeilen“ das Wort <code>OR</code>.'},
+
+  {titel:'Die Tabelle für UND und ODER', arbeit:'Tabelle ausfüllen',
+   html:`<p>Fasse zusammen: Für zwei Kriterien gibt es nur vier Möglichkeiten. Die Tabelle gilt für <b>alle</b> Kriterien, egal ob Jahr, Laufzeit oder Genre.</p>`,
+   aufgabe:{typ:'wahrheit', frage:'Fülle die Tabelle für UND und ODER vollständig aus.',
+     spalten:['Kriterium 1 erfüllt?', 'Kriterium 2 erfüllt?', `${U}<br>(dieselbe Zeile)<br>erscheint?`, `${O}<br>(verschiedene Zeilen)<br>erscheint?`],
+     zeilen:[[ja, ja, frag(ja), frag(ja)], [ja, nein, frag(nein), frag(ja)], [nein, ja, frag(nein), frag(ja)], [nein, nein, frag(nein), frag(nein)]],
+     hinweise:{2:`${U}: nur „ja“, wenn <b>beide</b> Kriterien erfüllt sind.`, 3:`${O}: „ja“, sobald <b>mindestens eins</b> erfüllt ist.`}},
+   nachher:`<div class="merke"><b>Merke</b><ul><li>${U}: Der Datensatz erscheint nur, wenn <b>alle</b> Kriterien erfüllt sind. In Access: alle Kriterien in <b>dieselbe Zeile</b>.</li><li>${O}: Der Datensatz erscheint, wenn <b>mindestens ein</b> Kriterium erfüllt ist. In Access: Kriterien in <b>verschiedene Zeilen</b>.</li></ul></div>`},
+
+  {titel:'Kontrollfrage: Welcher Entwurf?', arbeit:'Auswählen',
+   html:`<p>Herr Maier hat zwei Entwürfe gebaut. Der Unterschied ist klein – das Ergebnis nicht.</p>
+   <div class="minis">${raster('Entwurf A', ['art', 'jahr'], [['"Film"', '&lt;2000']])}${raster('Entwurf B', ['art', 'jahr'], [['"Film"', ''], ['', '&lt;2000']])}</div>`,
+   aufgabe:{typ:'mc', frage:'<b>Herr Samstag</b> will einen Film, der vor 2000 erschienen ist. Welcher Entwurf passt?', options:['Entwurf A', 'Entwurf B'], correct:[0],
+     why:{1:'In Entwurf B stehen die Kriterien in verschiedenen Zeilen. Dann reicht eines davon – es kämen auch neue Filme und alte Serien.'},
+     danach:{typ:'mc', frage:'Und was findet Entwurf B?', options:['Nur Filme, die vor 2000 erschienen sind', 'Alle Filme, egal aus welchem Jahr, und dazu alles, was vor 2000 erschienen ist (auch Serien)', 'Gar nichts, weil keine Zeile beide Kriterien enthält'], correct:[1],
+       why:{0:'Das wäre Entwurf A: beide Kriterien in derselben Zeile.', 2:'Eine leere Zelle bedeutet: Für dieses Feld gibt es in dieser Zeile keine Einschränkung.'}}}},
+
+  {titel:'UND oder ODER?', arbeit:'Zuordnen',
+   html:`<p>Nicht jedes „und“ in einem Satz bedeutet ${U}. Überlege immer: Muss ein einzelner Datensatz <b>alle</b> Kriterien gleichzeitig erfüllen – oder reicht <b>eins</b>?</p>`,
+   aufgabe:{typ:'zuordnen', frage:'Wie setzt du die Wünsche in Access um?',
+     felder:[['und', 'UND: alle Kriterien in dieselbe Zeile'], ['oder', 'ODER: Kriterien in verschiedene Zeilen']],
+     karten:[
+       {t:'Ein Film, der nach 2010 erschienen ist.', z:'und'},
+       {t:'Etwas, das du noch nicht gesehen hast und das kürzer als 90 Minuten ist.', z:'und'},
+       {t:'Eine Fernsehserie mit mindestens 9 Punkten auf IMDb.', z:'und'},
+       {t:'Etwas von Stanley Kubrick oder von Ridley Scott.', z:'oder'},
+       {t:'Ich mag Miniserien und Fernsehserien – Hauptsache eine Serie!', z:'oder'},
+       {t:'Entweder sehr alt (vor 1960) oder sehr lang (über 180 Minuten).', z:'oder'}]},
+   nachher:'Achtung bei „Miniserien und Fernsehserien“: Ein Eintrag kann nicht gleichzeitig beides sein. Gemeint ist: Miniserie <b>oder</b> Fernsehserie.'},
+
+  {titel:'Selbst eintippen: UND', krit:'text',
+   html:`<p>Jetzt ohne Bausteine: Tippe die Kriterien selbst in die Zellen. Texte schreibst du in Anführungszeichen, z. B. <code>"Film"</code>.</p>`,
+   access:{frage:'<b>Herr Samstag</b> sagt: „Heute eine <b>Fernsehserie</b>, aber nur eine mit <b>mindestens 9</b> Punkten auf IMDb.“', felder:['titel', 'imdb_bewertung'], where:"art = 'Fernsehserie' AND imdb_bewertung >= 9",
+     tipp:'Das Feld <code>art</code> brauchst du nur für das Kriterium – nimm bei „Anzeigen:“ den Haken weg.'}},
+
+  {titel:'Selbst eintippen: ODER', krit:'text',
+   html:`<p>Diesmal haben beide Kriterien <b>dasselbe Feld</b>. Das Feld steht nur einmal im Entwurf – die Kriterien stehen in derselben Spalte, aber in verschiedenen Zeilen.</p>`,
+   access:{frage:'<b>Frau Sonntag</b> sagt: „Ich will eine Serie! Eine <b>Miniserie</b> oder eine <b>Fernsehserie</b>, das ist mir egal.“', felder:['titel', 'art'], where:"art = 'Miniserie' OR art = 'Fernsehserie'",
+     tipp:'<code>"Miniserie"</code> in die Zeile „Kriterien:“, <code>"Fernsehserie"</code> darunter in die Zeile „oder:“.'}},
+
+  {titel:'Geschafft!', final:true,
+   html:`<p>Du kannst jetzt Kriterien in der Access-Entwurfsansicht verknüpfen:</p>
+   <table class="ds"><thead><tr><th>Kriterium 1</th><th>Kriterium 2</th><th>${U} – dieselbe Zeile</th><th>${O} – verschiedene Zeilen</th></tr></thead><tbody>
+   <tr><td>ja</td><td>ja</td><td>erscheint</td><td>erscheint</td></tr><tr><td>ja</td><td>nein</td><td>—</td><td>erscheint</td></tr>
+   <tr><td>nein</td><td>ja</td><td>—</td><td>erscheint</td></tr><tr><td>nein</td><td>nein</td><td>—</td><td>—</td></tr></tbody></table>
+   <p><b>Ausblick:</b> Reicht die Unterscheidung in Zeilen nicht, kann man in eine Zelle auch mehrere Kriterien schreiben, z. B. <code>&gt;=1960 Und &lt;=1969</code>. Das brauchst du in Woche 2 und 3 der Übungen.</p>
+   <p>Jetzt hat Herr Maier drei Wochen Dates vor sich – hilf ihm bei den <b>Übungen</b> oder übe im Modus <b>Endlos</b>.</p>
+   <p><button class="btn primary" data-mode-go="pfad">Zu den Übungen</button> <button class="btn" data-mode-go="endlos">Endlos üben</button></p>`}
+];
+
 window.SQLKURS = {
   id: 'sqluo',
   tabelle: DB_FILME,
   kalender: {tage:['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag']},
   ansichten: {
-    access: {name:'Access', stufen:[null,
+    access: {name:'Access', erarbeitung:ERARBEITUNG, stufen:[null,
       {name:'Kriterien einsetzen',            ui:'access', krit:'bloecke'},
       {name:'Die richtigen Kriterien finden', ui:'access', krit:'falsch'},
       {name:'Kriterien selbst eintippen',     ui:'access', krit:'text'}]},
