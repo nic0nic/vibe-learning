@@ -19,6 +19,10 @@ Gesammelt im Thread „Aufbau der Seite“. Umgesetzt wird erst, wenn die Lehrkr
     `nav.js`: Knopf rechts in der Leiste (vor Hell/Dunkel), auf jeder Seite, in Einzeldateien und ByCS-Paketen. Darf die Seite kein Vollbild (iframe ohne Erlaubnis, z. B. Moodle-Player), geht das iframe-Element im übergeordneten Fenster gleichen Ursprungs in Vollbild. Ohne Möglichkeit (iPhone) kein Knopf. Browser beenden Vollbild bei jedem Seitenwechsel, Tooltip nennt F11.
     Getestet in Chromium: Start-, Bereichs- und Übungsseiten (Excel, HTML-/Python-Kurs, BWR) ein/aus, Leiste läuft nicht über, Handybreite; nachgebauter Moodle-Player mit und ohne Vollbild-Erlaubnis. Nicht in Firefox/Safari, nicht in echtem ByCS.
 
+53. **Großansicht neben Vollbild (für ByCS auf dem iPad)** (gewünscht 12.11.)
+    `nav.js`: Läuft die Übung in einem iframe gleichen Ursprungs (Moodle-Player), gibt es einen zweiten Knopf „Großansicht“. Er legt das iframe per CSS über das ganze Fenster (fixed, z-index, Scrollen der Moodle-Seite aus); geht auch, wo Vollbild nicht klappt (iPad, Apps). Bleibt für die Sitzung an (sessionStorage `pf-gross`), Esc oder Knopf beendet und stellt den alten Stil wieder her. Auf der Webseite selbst kein Knopf (dort wirkungslos).
+    Getestet in Chromium (iPad-Größe 820×1180) im nachgebauten Moodle-Player: an, nach Neuladen weiter an, Esc, an/aus, Webseite ohne Knopf. Nicht auf echtem iPad/ByCS.
+
 ## Erledigt
 
 ### Version vom 11.11.
