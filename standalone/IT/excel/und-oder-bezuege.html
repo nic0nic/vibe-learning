@@ -1229,7 +1229,8 @@ main{max-width:1020px;margin:0 auto;padding:18px 16px}
  * danach (weitere Aufgabe, erscheint erst nach richtiger Lösung, z. B. Handlungsempfehlung).
  *   mc           options:[Texte], correct:[Indizes] (mehrere = Mehrfachauswahl, oder multi:true), why:{Index: Erklärung},
  *                after (Text nach Erfolg), mono, mischen:false (Reihenfolge behalten), sofort:false
- *                (bei genau einer richtigen Antwort wird sonst beim Antippen sofort geprüft).
+ *                (bei genau einer richtigen Antwort wird sonst beim Antippen sofort geprüft),
+ *                html:true (Antworten als HTML, z. B. Bruch; ohne html sind Antworten reiner Text, „A1<5“ bleibt lesbar).
  *                Dasselbe Format wie type:'choice' in den Excel-Erklärungen.
  *   zahlen       felder:[{t (Text), l (Lösung), e (Einheit), h (Hinweis bei Fehler), tol (Toleranz, Std. 0,005)}]
  *                Eingabe im deutschen Format (1.234,50 €), Knopftext über knopf:'…'
@@ -1335,17 +1336,18 @@ function finde(antworten, text){
 
 /* ---------- Typen: zustand(a), html(a, z), pruefen(a, z) → {ok, t} ---------- */
 const mehrfach = a => !!a.multi || a.correct.length > 1;
+const optText = (a, i) => a.html === true ? String(a.options[i]) : esc(a.options[i]);   // HTML nur mit html:true
 const mc = {
   html(a, sel, geprueft, ord){
     return `<div class="opts${a.mono ? ' mono' : ''}">` + (ord || nummern(a.options.length)).map(i => {
       let c = sel.has(i) ? ' sel' : '';
       if (geprueft && sel.has(i)) c += a.correct.includes(i) ? ' good' : ' bad';
-      return `<button class="opt${c}" type="button" data-opt="${i}">${esc(a.options[i])}</button>`;
+      return `<button class="opt${c}" type="button" data-opt="${i}">${optText(a, i)}</button>`;
     }).join('') + `</div><div class="ohint">${mehrfach(a) ? 'Mehrere Antworten möglich.' : 'Genau eine Antwort ist richtig.'}</div>`;
   },
   pruefen(a, sel){
     const falsch = [...sel].filter(i => !a.correct.includes(i)), fehlt = a.correct.filter(i => !sel.has(i));
-    const gruende = falsch.map(i => (a.why && a.why[i]) || `„${esc(a.options[i])}“ passt nicht.`);
+    const gruende = falsch.map(i => (a.why && a.why[i]) || `„${optText(a, i)}“ passt nicht.`);
     if (!falsch.length && fehlt.length) gruende.push(fehlt.length === 1 ? 'Es fehlt noch eine richtige Antwort.' : `Es fehlen noch ${fehlt.length} richtige Antworten.`);
     return {ok:!falsch.length && !fehlt.length, gruende};
   }

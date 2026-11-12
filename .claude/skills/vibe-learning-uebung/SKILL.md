@@ -189,7 +189,8 @@ Formeln mit Bruchstrich in jedem HTML-Text: <span class="bruch"><span>Zähler</s
 danach (weitere Aufgabe, erscheint erst nach richtiger Lösung, z. B. Handlungsempfehlung).
   mc           options:[Texte], correct:[Indizes] (mehrere = Mehrfachauswahl, oder multi:true), why:{Index: Erklärung},
                after (Text nach Erfolg), mono, mischen:false (Reihenfolge behalten), sofort:false
-               (bei genau einer richtigen Antwort wird sonst beim Antippen sofort geprüft).
+               (bei genau einer richtigen Antwort wird sonst beim Antippen sofort geprüft),
+               html:true (Antworten als HTML, z. B. Bruch; ohne html sind Antworten reiner Text, „A1<5“ bleibt lesbar).
                Dasselbe Format wie type:'choice' in den Excel-Erklärungen.
   zahlen       felder:[{t (Text), l (Lösung), e (Einheit), h (Hinweis bei Fehler), tol (Toleranz, Std. 0,005)}]
                Eingabe im deutschen Format (1.234,50 €), Knopftext über knopf:'…'

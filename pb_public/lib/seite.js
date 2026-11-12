@@ -69,6 +69,7 @@
     if (a.typ === 'mc' && Array.isArray(a.options) && Array.isArray(a.correct)) {
       if (a.options.length < 2) f.push(`${wo}: mindestens zwei Antworten nötig`);
       if (!a.correct.length) f.push(`${wo}: „correct“ ist leer`);
+      if (a.html != null && typeof a.html !== 'boolean') f.push(`${wo}: „html“ muss true oder false sein`);
       a.correct.forEach(i => { if (!(Number.isInteger(i) && i >= 0 && i < a.options.length)) f.push(`${wo}: „correct“ enthält ${i}, es gibt aber nur die Antworten 0 bis ${a.options.length - 1}`); });
     }
     if (a.typ === 'zahlen' && Array.isArray(a.felder)) a.felder.forEach((x, i) => { if (!x || !istText(x.t) || typeof x.l !== 'number') f.push(`${wo}, Feld ${i + 1}: braucht „t“ (Text) und „l“ (Lösung als Zahl)`); });

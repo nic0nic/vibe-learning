@@ -21,11 +21,14 @@
     form(a, H) {
       const rows = a.options.map((o, i) => {
         const r = (a.correct || []).includes(i);
+        // html:true → Antworten mit Formatierung (Bruch …), sonst reiner Text wie bisher
+        const feld = a.html ? H.rt(`options.${i}`, '', {klein: true, knoepfe: 'kurz', pflicht: true, ph: 'Antwort'}) : H.feld(`options.${i}`, '', {pflicht: true, ph: 'Antwort'});
         return H.zeile('options', i, `<div class="spalte">
-          <div class="reihe"><label class="hk" title="richtige Antwort"><input type="checkbox" data-tun="richtig" data-i="${i}"${r ? ' checked' : ''}> richtig</label>${H.feld(`options.${i}`, '', {pflicht: true, ph: 'Antwort'})}${weg('weg', {i})}</div>
+          <div class="reihe"><label class="hk" title="richtige Antwort"><input type="checkbox" data-tun="richtig" data-i="${i}"${r ? ' checked' : ''}> richtig</label>${a.html ? `<div class="spalte">${feld}</div>` : feld}${weg('weg', {i})}</div>
           ${r ? '' : H.feld(`why.${i}`, '', {ph: 'Warum falsch? (Erklärung, optional)'})}</div>`);
       }).join('');
-      return `<label class="klein">Antworten (Häkchen = richtig, ⠿ ziehen zum Sortieren)</label>${rows}${plus('plus', 'Antwort')}
+      return `<label class="hk" title="Antworten mit Fett, Kursiv oder Bruch (Formel) gestalten"><input type="checkbox" data-tun="html"${a.html ? ' checked' : ''}> Antworten mit Formatierung (z. B. Brüche)</label>
+        <label class="klein">Antworten (Häkchen = richtig, ⠿ ziehen zum Sortieren)</label>${rows}${plus('plus', 'Antwort')}
         ${H.feld('mischen', 'Reihenfolge behalten (nicht mischen)', {art: 'nein'})}
         ${(a.correct || []).length === 1 ? H.feld('sofort', 'Erst mit Knopf „Prüfen“ prüfen', {art: 'nein'}) : ''}
         ${H.feld('after', 'Zusatz nach richtiger Antwort (optional)')}`;
@@ -33,6 +36,11 @@
     tun: {
       richtig(a, d) { const i = +d.i; a.correct = a.correct || []; a.correct = a.correct.includes(i) ? a.correct.filter(x => x !== i) : [...a.correct, i].sort((x, y) => x - y); if (a.why) delete a.why[i]; },
       plus(a) { a.options.push(''); },
+      html(a, d, H) {   // Haken „Formatierung“: aus → Antworten zu reinem Text (Bruch → Zähler/Nenner)
+        if (!a.html) { a.html = true; a.options = a.options.map(o => H.esc(o == null ? '' : o)); return; }   // „A1<5“ bleibt Text
+        delete a.html;
+        a.options = a.options.map(o => H.text(String(o || '').replace(/<span class="bruch"><span>([\s\S]*?)<\/span><span>([\s\S]*?)<\/span><\/span>/g, '$1/$2')));
+      },
       weg(a, d) {
         const i = +d.i; a.options.splice(i, 1);
         a.correct = (a.correct || []).filter(x => x !== i).map(x => x > i ? x - 1 : x);

@@ -16,7 +16,7 @@
  *   form(a, H) → HTML, tun: {name(a, dataset)} (Knöpfe data-tun), verschiebe(a, liste, von, nach) (optional)})
  * Formular-Helfer H: H.feld(pfad, label, {art, ph, pflicht, neu}) mit art text|area|zahl|bool|nein|liste|zeilen|gruppen
  *   (gruppen: Zeilen mit Komma-Listen → [[…], …]; neu: Panel nach dem Verlassen neu zeichnen),
- *   H.rt(pfad, label) Texteditor mit HTML, H.lt(pfad) Lückentext (Lücken als Chips, /Lücke(richtig, falsch …)),
+ *   H.rt(pfad, label, {klein, ph, knoepfe:'kurz' (nur F, K, Bruch, ⌫), pflicht (leer = '' statt löschen)}) Texteditor mit HTML, H.lt(pfad) Lückentext (Lücken als Chips, /Lücke(richtig, falsch …)),
  *   H.zeile(liste, i, inhalt) ziehbare Zeile (Umsortieren über verschiebe bzw. Liste unter pfad liste),
  *   H.knopf(tun, text, daten), H.wert(a, pfad), H.esc, H.text(html) (nur Text), H.zahl(n) (deutsch).
  *   Werte werden direkt in der Aufgabe gesetzt; leere Felder werden entfernt (pflicht: bleiben als '' bzw. []).
@@ -49,7 +49,8 @@
     const cls = (n.getAttribute('class') || '').split(/\s+/).filter(c => /^[a-z0-9_-]+$/.test(c)).join(' ');
     if (cls) attr += ` class="${cls}"`;
     if (name === 'td' || name === 'th') ['colspan', 'rowspan'].forEach(a => { const v = n.getAttribute(a); if (/^\d+$/.test(v || '') && v !== '1') attr += ` ${a}="${v}"`; });
-    if (name === 'span' && !attr) return innen;
+    const imBruch = n.parentElement && n.parentElement.classList.contains('bruch');   // Zähler/Nenner: <span> ohne Klasse behalten
+    if (name === 'span' && !attr && !imBruch) return innen;
     if (LEER.includes(name)) return `<${name}>`;
     return `<${name}${attr}>${innen}</${name}>`;
   }
@@ -203,8 +204,8 @@
     rt(p, label, o) {
       o = o || {};
       return `${label ? `<label class="klein">${label}</label>` : ''}<div class="rt">
-        <div class="rt-leiste">${RT_KNOEPFE}</div>
-        <div class="rt-feld${o.klein ? ' klein' : ''}" contenteditable="true" data-rt="${esc(p)}" data-ph="${esc(o.ph || '')}">${sauber(wert(H.wurzel, p))}</div></div>`;
+        <div class="rt-leiste">${o.knoepfe === 'kurz' ? RT_KURZ : RT_KNOEPFE}</div>
+        <div class="rt-feld${o.klein ? ' klein' : ''}" contenteditable="true" data-rt="${esc(p)}"${o.pflicht ? ' data-pflicht="1"' : ''} data-ph="${esc(o.ph || '')}">${sauber(wert(H.wurzel, p))}</div></div>`;
     },
     lt(p) {
       const v = String(wert(H.wurzel, p) || '');
@@ -217,9 +218,11 @@
     zeile(liste, i, inhalt) { return `<div class="lz" data-ziel="zeile" data-liste="${esc(liste)}" data-i="${i}"><span class="griff" data-zieh="zeile" title="Ziehen zum Umsortieren">⠿</span>${inhalt}</div>`; },
     knopf(tun, text, d, o) { return `<button type="button" class="btn klein${o && o.weg ? ' weg' : ''}" data-tun="${tun}"${Object.entries(d || {}).map(([k, v]) => ` data-${k}="${esc(v)}"`).join('')}${o && o.titel ? ` title="${esc(o.titel)}"` : ''}>${text}</button>`; }
   };
-  const RT_KNOEPFE = [['bold', '<b>F</b>', 'Fett'], ['italic', '<i>K</i>', 'Kursiv'], ['h3', 'Ü', 'Zwischenüberschrift'], ['insertUnorderedList', '• Liste', 'Aufzählung'],
-    ['tabelle', '▦', 'Tabelle einfügen'], ['bruch', '<span class="bruch"><span>a</span><span>b</span></span>', 'Bruch (Formel)'], ['removeFormat', '⌫', 'Formatierung entfernen']]
-    .map(([c, t, ti]) => `<button type="button" class="btn klein" data-cmd="${c}" title="${ti}">${t}</button>`).join('');
+  const RT_LISTE = [['bold', '<b>F</b>', 'Fett'], ['italic', '<i>K</i>', 'Kursiv'], ['h3', 'Ü', 'Zwischenüberschrift'], ['insertUnorderedList', '• Liste', 'Aufzählung'],
+    ['tabelle', '▦', 'Tabelle einfügen'], ['bruch', '<span class="bruch"><span>a</span><span>b</span></span>', 'Bruch (Formel)'], ['removeFormat', '⌫', 'Formatierung entfernen']];
+  const rtKnoepfe = l => l.map(([c, t, ti]) => `<button type="button" class="btn klein" data-cmd="${c}" title="${ti}">${t}</button>`).join('');
+  const RT_KNOEPFE = rtKnoepfe(RT_LISTE);
+  const RT_KURZ = rtKnoepfe(RT_LISTE.filter(([c]) => ['bold', 'italic', 'bruch', 'removeFormat'].includes(c)));   // kurze Felder, z. B. MC-Antworten
   const chipHTML = raw => { const w = String(raw).split('|').map(x => x.trim()); return `<span class="lk" contenteditable="false" data-w="${esc(w.join('|'))}" title="Lücke – klicken zum Bearbeiten">${esc(w[0] || '?')}</span>`; };
   const chipHook = n => n.classList && n.classList.contains('lk') ? '[[' + String(n.dataset.w || '').replace(/[<>\[\]]/g, '') + ']]' : null;
 
@@ -333,7 +336,7 @@
     const t = e.target, k = t.dataset && t.dataset.k;
     if (k) { const r = feldWert(t); if (!r) return; merke('k:' + k + sel.s + sel.i); setzeWert(H.wurzel, k, r[0], r[1]); return geaendert(); }
     const rt = t.closest && t.closest('[data-rt]');
-    if (rt) { merke('rt:' + rt.dataset.rt + sel.s + sel.i); const v = vonEl(rt); setzeWert(H.wurzel, rt.dataset.rt, v, v === ''); return geaendert(); }
+    if (rt) { merke('rt:' + rt.dataset.rt + sel.s + sel.i); const v = vonEl(rt); setzeWert(H.wurzel, rt.dataset.rt, v, v === '' && !rt.dataset.pflicht); return geaendert(); }
     const lt = t.closest && t.closest('[data-lt]');
     if (lt) { lueckeAusBefehl(lt); ltSpeichern(lt); }
   }
@@ -512,9 +515,17 @@
     const c = b.dataset.cmd;
     if (c === 'h3') document.execCommand('formatBlock', false, 'h3');
     else if (c === 'tabelle') document.execCommand('insertHTML', false, '<table><tr><th>Spalte 1</th><th>Spalte 2</th></tr><tr><td>…</td><td>…</td></tr></table><p></p>');
-    else if (c === 'bruch') document.execCommand('insertHTML', false, '<span class="bruch"><span>Zähler</span><span>Nenner</span></span>&nbsp;');
+    else if (c === 'bruch') bruchEinfuegen(feld);
     else document.execCommand(c, false, null);
     feld.dispatchEvent(new Event('input', {bubbles: true}));
+  }
+  // Bruch per DOM einfügen: execCommand('insertHTML') fasst in Chrome die leeren inneren <span> zusammen („ZählerNenner“)
+  function bruchEinfuegen(feld) {
+    const s = getSelection(), r = s.rangeCount && feld.contains(s.anchorNode) ? s.getRangeAt(0) : null;
+    const br = document.createElement('span'), nach = document.createTextNode('\u00a0');
+    br.className = 'bruch'; br.innerHTML = '<span>Zähler</span><span>Nenner</span>';
+    if (r) { r.deleteContents(); r.insertNode(nach); r.insertNode(br); } else feld.append(br, nach);
+    const z = document.createRange(); z.selectNodeContents(br.firstChild); s.removeAllRanges(); s.addRange(z);   // Zähler gleich überschreiben
   }
   function einfuegen(e) {
     const f = e.target.closest && e.target.closest('[data-rt],[data-lt]'); if (!f) return;
