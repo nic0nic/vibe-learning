@@ -129,7 +129,17 @@ window.KATALOG = {
   ]
 };
 
-window.KATALOG.einreichungen = /* EINREICHUNGEN-ANFANG */ [] /* EINREICHUNGEN-ENDE */;
+window.KATALOG.einreichungen = /* EINREICHUNGEN-ANFANG */ [
+  {
+    "bereich": "finanzierung",
+    "tool": {
+      "id": "beispiel-93dd",
+      "datei": "beispiel-93dd.html",
+      "titel": "Beispiel: Kredite",
+      "text": "Kurze Wiederholung"
+    }
+  }
+] /* EINREICHUNGEN-ENDE */;
 
 // Gruppen (Fach bzw. Fach + Jahrgangsstufe) und alle Bereiche mit Ordner, für nav.js, sync.js und lehrer.html
 (function (K) {
