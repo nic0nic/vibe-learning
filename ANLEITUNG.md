@@ -67,7 +67,7 @@ vibe-learning/
 │   │   │   ├── index.html             Übersicht des Bereichs
 │   │   │   ├── filmdatenbank.html     freie Abfragen an die Filmdatenbank
 │   │   │   ├── abfragen.html          SQL-Abfragen in Stufen (Entwurf wie in Access bis SQL)
-│   │   │   ├── datenight.html         Kriterien mit UND/ODER (Access-Entwurf oder Blöcke/SQL)
+│   │   │   ├── und_oder_datenight.html Kriterien mit UND/ODER (Access-Entwurf oder Blöcke/SQL)
 │   │   │   ├── abfragen.js/.css       Technik der Abfrage-Übungen, Aufbau oben in abfragen.js
 │   │   │   ├── filme.js               Daten der Filmdatenbank
 │   │   │   └── lib/                   sql.js (SQLite im Browser) und Autovervollständigung (CodeMirror)
