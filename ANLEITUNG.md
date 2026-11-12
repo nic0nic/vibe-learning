@@ -14,7 +14,7 @@ vibe-learning/
 │   ├── trainer.pb.js
 │   ├── trainer_utils.js
 │   ├── tippen.pb.js           Ergebnisse des Tipptrainers pockettype
-│   ├── einreichen.pb.js       Übungen aus vorlage.html als Pull Request an GitHub schicken
+│   ├── einreichen.pb.js       Übungen aus „Übung erstellen“ als Pull Request an GitHub schicken
 │   └── weiterleitung.pb.js    alte Adressen (/excel/…) auf /IT/… weiterleiten
 ├── pb_migrations/         legt beim ersten Start automatisch die Tabellen an
 │   ├── 1760860000_trainer_init.js
@@ -29,10 +29,11 @@ vibe-learning/
 │   ├── seite.css              Aussehen der Übersichtsseiten
 │   ├── sync.js                Anmeldung und Speichern auf dem Server
 │   ├── lehrer.html            Verwaltung für Lehrkräfte und Admin
-│   ├── vorlage.html           Übung erstellen: Baukasten (Ziehen und Ablegen) oder Aufgaben-JSON, testen, herunterladen, einreichen
+│   ├── vorlage.html           nur Weiterleitung auf IT/tools/uebung-erstellen.html (alte Links)
 │   ├── vorlage-editor.js      Baukasten der Seite „Übung erstellen“ (Schritte, Karten, Ziehen, Rückgängig)
 │   ├── vorlage-typen.js       Formulare je Aufgabentyp für den Baukasten
-│   ├── lib/                   für alle Fächer: aufgaben.js/.css (Aufgabentypen), seite.js (Seiten aus Aufgaben-JSON)
+│   ├── lib/                   für alle Fächer: aufgaben.js/.css (Aufgabentypen), seite.js (Seiten aus Aufgaben-JSON),
+│   │                          zip.js (ZIP im Browser) und scorm-manifest.xml (gemeinsam mit werkzeuge/bycs-pakete.py)
 │   ├── impressum.html, datenschutz.html   rechtliche Angaben (unten auf jeder Seite verlinkt, über nav.js)
 │   ├── IT/                    ein Ordner pro Fach, darin ein Ordner pro Bereich
 │   │   ├── index.html             Übersicht des Fachs
@@ -80,6 +81,8 @@ vibe-learning/
 │   │   └── tools/                 Tools (ohne Aufgaben, nicht in der Auswertung)
 │   │       ├── struktogramm.html      Struktogramm-Editor (Ziehen und Ablegen, Export SVG/HTML/JPG)
 │   │       ├── python-struktogramm.html  Python-Code → Struktogramm, Übergabe an den Editor
+│   │       ├── uebung-erstellen.html  Übung erstellen (für alle): Baukasten oder Aufgaben-JSON, testen, herunterladen
+│   │       │                          als HTML oder für ByCS (SCORM-ZIP), Einreichen nur für angemeldete Lehrkräfte
 │   │       └── struktogramm.js/.css   Zeichnen und Export, Aufbau oben in struktogramm.js
 │   └── BWR/                   Fach mit Jahrgangsstufen
 │       ├── index.html             Auswahl der Jahrgangsstufe
@@ -468,9 +471,9 @@ sudo chown -R vibe-learning:vibe-learning /srv/vibe-learning/pb_public
 - **Neuen Bereich anlegen:** in `katalog.js` beim Fach (bzw. bei der Jahrgangsstufe) einen Eintrag bei `bereiche` ergänzen (mit `farbe`/`farbeHell` als Akzentfarbe, siehe Kommentar dort) und einen gleichnamigen Ordner mit einer `index.html` anlegen (am einfachsten `IT/python/index.html` kopieren und dort `data-bereich` auf den Ordner setzen, z. B. `BWR/9II/anlagen`, und die Pfade zum Hauptordner anpassen).
 - **Neues Fach oder neue Jahrgangsstufe:** in `katalog.js` bei `faecher` eintragen (Aufbau im Kommentar oben dort), Ordner anlegen und darin eine `index.html` mit `data-gruppe="Fach"` bzw. `data-gruppe="Fach/Stufe"` (Vorlage `IT/index.html`). Fach mit Stufen bekommt zusätzlich `Fach/index.html` mit `data-fach` (Vorlage `BWR/index.html`). Neue Fachordner in `werkzeuge/einzeldateien.py` bei `FAECHER` eintragen.
 - **Name der Plattform:** in `katalog.js` bei `name` und `untertitel`.
-- **Übungen von Lehrkräften einreichen lassen** (`vorlage.html`): Lehrkräfte erzeugen im Claude-Chat mit dem Skill `vibe-learning-seite-erstellen` (Repo github.com/nic0nic/vibe-learning-skills) ein Aufgaben-JSON oder bauen die Übung direkt im Baukasten auf `/vorlage.html` (Umschalter Editor | JSON), testen sie dort und reichen sie ein. Der Server stellt dann einen Pull Request mit der fertigen Seite und dem Eintrag in `katalog.js` (Abschnitt EINREICHUNGEN). Einrichten auf dem Server:
+- **Übungen von Lehrkräften einreichen lassen** (`IT/tools/uebung-erstellen.html`, alte Adresse `/vorlage.html` leitet weiter): Lehrkräfte erzeugen im Claude-Chat mit dem Skill `vibe-learning-seite-erstellen` (Repo github.com/nic0nic/vibe-learning-skills) ein Aufgaben-JSON oder bauen die Übung direkt im Baukasten (Umschalter Editor | JSON), testen sie dort und reichen sie ein. Den Knopf „Einreichen“ sehen nur angemeldete Lehrkräfte; herunterladen (HTML oder „Für ByCS“ als SCORM-Paket, gleiches Format wie `bycs/`) können alle, auch in der Einzeldatei. Der Server stellt dann einen Pull Request mit der fertigen Seite und dem Eintrag in `katalog.js` (Abschnitt EINREICHUNGEN). Einrichten auf dem Server:
   1. Ein eigenes GitHub-Konto für die Einreichungen anlegen (z. B. ein Bot-Konto), in `vibe-learning` unter *Settings → Collaborators* mit Schreibrechten einladen und die Einladung annehmen. In diesem Konto unter *Settings → Developer settings → Tokens (classic)* einen Token mit nur dem Scope `public_repo` anlegen (Ablauf z. B. ein Jahr). Fine-grained Tokens gehen hier nicht: Sie erreichen keine Repos, in denen das Konto nur Collaborator ist (Fehler 403 „Resource not accessible by personal access token“). Alternativ ein fine-grained Token im Konto des Repo-Besitzers (Contents und Pull requests: Read and write).
   2. Auf dem Server: `sudo nano /etc/vibe-learning.env` mit der Zeile `VIBE_GITHUB_TOKEN=ghp_…`, dann `sudo chmod 600 /etc/vibe-learning.env`.
   3. `sudo systemctl edit vibe-learning` und eintragen: `[Service]` und darunter `EnvironmentFile=/etc/vibe-learning.env`. Danach `sudo systemctl restart vibe-learning`.
-  4. Nach dem Mergen eines Pull Requests: `python3 werkzeuge/einzeldateien.py`, committen und mit `git push origin main:live` freigeben.
+  4. Nach dem Mergen eines Pull Requests: `python3 werkzeuge/einzeldateien.py` und `python3 werkzeuge/bycs-pakete.py`, committen und mit `git push origin main:live` freigeben.
   Zum Testen ohne GitHub: `VIBE_GITHUB_DRYRUN=1` setzen, dann liefert das Einreichen nur die erzeugten Dateien zurück.

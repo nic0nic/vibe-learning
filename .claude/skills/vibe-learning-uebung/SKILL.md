@@ -114,7 +114,7 @@ In der HTML-Datei eines Tools steht dieselbe id: <html lang="de" data-trainer="�
 Übersichtsseiten: Bereich <html data-bereich="IT/excel">, Fach bzw. Stufe <html data-gruppe="IT">
 bzw. data-gruppe="BWR/9II" mit <div id="pf-start">, Fach mit Stufen <html data-fach="BWR"> mit <div id="pf-fach">.
 
-Eingereichte Übungen (vorlage.html → Pull Request) stehen unten zwischen EINREICHUNGEN-ANFANG und -ENDE als
+Eingereichte Übungen (IT/tools/uebung-erstellen.html → Pull Request) stehen unten zwischen EINREICHUNGEN-ANFANG und -ENDE als
 reines JSON: [{"bereich": "<Bereich-id>", "tool": {id, datei, titel, text}}]. Der Server (pb_hooks/einreichen.pb.js)
 ergänzt dort; von Hand nur gültiges JSON eintragen. Sie werden an das Ende des Bereichs angehängt.
 
@@ -146,12 +146,12 @@ Die Seite ruft auf:
   TrainerSync.event({...})   wenn eine Aufgabe richtig gelöst wurde
 ```
 
-### lib/seite.js – Übungsseiten aus Aufgaben-JSON prüfen und bauen (vorlage.html, Einreichen)
+### lib/seite.js – Übungsseiten aus Aufgaben-JSON prüfen und bauen (Übung erstellen, Einreichen)
 
 ```text
 seite.js – Übungsseiten aus Aufgaben-JSON prüfen und bauen (Browser und PocketBase-Hooks)
 
-Wird genutzt von vorlage.html (Vorschau, Download) und pb_hooks/einreichen.pb.js (Pull Request).
+Wird genutzt von IT/tools/uebung-erstellen.html (Vorschau, Download, ByCS-Paket) und pb_hooks/einreichen.pb.js (Pull Request).
 Im Browser: <script src="lib/seite.js"></script> → window.Seite; im Hook: require(…/pb_public/lib/seite.js).
 
 Aufgaben-JSON (reine Daten, kein JavaScript; Aufgabentypen wie in lib/aufgaben.js):
@@ -170,6 +170,8 @@ API
   Seite.seiteHTML(json, opt)      → komplette HTML-Seite
       opt = {pfad: 'BWR/9II/finanzierung', toolId, einzeln: false, lib: {aufgabenJs, aufgabenCss, bwrCss}}
       einzeln: true → ohne Menü und Server, Bibliotheken eingebettet (Vorschau, Download)
+      bycs: {scormJs, stufen} (nur mit einzeln) → für ein SCORM-Paket: window.PF_BYCS und scorm.js vor den
+            Bibliotheken eingebettet, wie in werkzeuge/bycs-pakete.py (dort statt sync.js)
 ```
 
 ### lib/aufgaben.js – Aufgabenbausteine für alle Fächer: Multiple Choice, Zahlen, Lückentext, Zuordnen, Buchungssatz, Erarbeitung (dazu aufgaben.css)

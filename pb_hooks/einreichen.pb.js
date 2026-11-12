@@ -1,5 +1,5 @@
 /// <reference path="../pb_data/types.d.ts" />
-// Einreichen von Übungen aus vorlage.html: Lehrkraft schickt Aufgaben-JSON + Bereich, der Server baut die Seite
+// Einreichen von Übungen aus IT/tools/uebung-erstellen.html (früher vorlage.html): Lehrkraft schickt Aufgaben-JSON + Bereich, der Server baut die Seite
 // (pb_public/lib/seite.js), trägt sie in katalog.js (Abschnitt EINREICHUNGEN) ein und stellt über die GitHub-API
 // einen Pull Request gegen main. Lehrkräfte brauchen kein GitHub-Konto.
 //
@@ -84,9 +84,9 @@ routerAdd("POST", "/api/trainer/einreichen", (e) => {
     const typen = {};
     Seite.normalisiere(daten).schritte.forEach(s => (s.aufgaben || []).forEach(x => { typen[x.typ] = (typen[x.typ] || 0) + 1; }));
     const pr = gh("POST", "/pulls", { title: `Neue Übung: ${daten.titel}`, head: zweig, base: "main",
-      body: `Eingereicht über vl.nimals.de/vorlage.html.\n\n- **Bereich:** ${pfad}\n- **Datei:** \`${seitePfad}\`\n- **Kurztext:** ${daten.kurztext || "–"}\n`
+      body: `Eingereicht über vl.nimals.de/IT/tools/uebung-erstellen.html.\n\n- **Bereich:** ${pfad}\n- **Datei:** \`${seitePfad}\`\n- **Kurztext:** ${daten.kurztext || "–"}\n`
         + `- **Schritte:** ${Seite.normalisiere(daten).schritte.length}, Aufgaben: ${Object.keys(typen).map(k => k + " " + typen[k]).join(", ") || "keine"}\n\n`
-        + `Nach dem Mergen: \`python3 werkzeuge/einzeldateien.py\` laufen lassen und mit \`git push origin main:live\` freigeben.` });
+        + `Nach dem Mergen: \`python3 werkzeuge/einzeldateien.py\` und \`python3 werkzeuge/bycs-pakete.py\` laufen lassen und mit \`git push origin main:live\` freigeben.` });
     return e.json(200, { url: pr.html_url, pfad: seitePfad });
   } catch (err) {
     console.log("einreichen:", String(err));

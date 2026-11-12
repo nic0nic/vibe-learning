@@ -11,6 +11,8 @@ Jedes Paket enthält index.html (die Einzeldatei, alles eingebettet) und imsmani
 Anstelle von sync.js wird pb_public/scorm.js eingebettet: Es meldet Bewertung, Status und jede gelöste
 Aufgabe an Moodle und speichert den Stand dort (cmi.suspend_data). Vorne kommt
 window.PF_BYCS = {stufen: n} dazu (Stufen laut katalog.js, für die Prozentzahl).
+Dasselbe Paket baut „Übung erstellen“ (IT/tools/uebung-erstellen.html) im Browser für selbst erstellte Übungen:
+gleiches Manifest (pb_public/lib/scorm-manifest.xml), scorm.js über lib/seite.js (opt.bycs), ZIP mit lib/zip.js.
 Die Dateien in bycs/ nie von Hand ändern, sondern dieses Skript neu laufen lassen.
 """
 import html, os, pathlib, re, shutil, sys, zipfile
@@ -41,7 +43,7 @@ def stufen_aus_katalog():
 def manifest(kennung, titel, v12):
     t = html.escape(titel, quote=True)
     if not v12:
-        return MANIFEST_2004.format(kennung=kennung, t=t)
+        return MANIFEST_2004.read_text(encoding="utf-8").format(kennung=kennung, t=t)
     return f"""<?xml version="1.0" encoding="UTF-8"?>
 <manifest identifier="vibe-learning-{kennung}" version="1.0"
   xmlns="http://www.imsproject.org/xsd/imscp_rootv1p1p2"
@@ -70,34 +72,8 @@ def manifest(kennung, titel, v12):
 """
 
 
-MANIFEST_2004 = """<?xml version="1.0" encoding="UTF-8"?>
-<manifest identifier="vibe-learning-{kennung}" version="1"
-  xmlns="http://www.imsglobal.org/xsd/imscp_v1p1"
-  xmlns:adlcp="http://www.adlnet.org/xsd/adlcp_v1p3"
-  xmlns:adlseq="http://www.adlnet.org/xsd/adlseq_v1p3"
-  xmlns:adlnav="http://www.adlnet.org/xsd/adlnav_v1p3"
-  xmlns:imsss="http://www.imsglobal.org/xsd/imsss"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://www.imsglobal.org/xsd/imscp_v1p1 imscp_v1p1.xsd http://www.adlnet.org/xsd/adlcp_v1p3 adlcp_v1p3.xsd http://www.adlnet.org/xsd/adlseq_v1p3 adlseq_v1p3.xsd http://www.adlnet.org/xsd/adlnav_v1p3 adlnav_v1p3.xsd http://www.imsglobal.org/xsd/imsss imsss_v1p0.xsd">
-  <metadata>
-    <schema>ADL SCORM</schema>
-    <schemaversion>2004 4th Edition</schemaversion>
-  </metadata>
-  <organizations default="org">
-    <organization identifier="org">
-      <title>{t}</title>
-      <item identifier="item" identifierref="res" isvisible="true">
-        <title>{t}</title>
-      </item>
-    </organization>
-  </organizations>
-  <resources>
-    <resource identifier="res" type="webcontent" adlcp:scormType="sco" href="index.html">
-      <file href="index.html"/>
-    </resource>
-  </resources>
-</manifest>
-"""
+# Manifest SCORM 2004: gemeinsam mit „Übung erstellen“ (IT/tools/uebung-erstellen.html, Knopf „Für ByCS herunterladen“)
+MANIFEST_2004 = PUBLIC / "lib" / "scorm-manifest.xml"
 
 
 def paket(seite, stufen):

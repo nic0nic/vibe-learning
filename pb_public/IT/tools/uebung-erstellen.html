@@ -1,0 +1,440 @@
+<!doctype html>
+<html lang="de" data-trainer="uebung-erstellen">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Übung erstellen – vibe learning</title>
+<!--
+  Übung erstellen (alle unter IT › Tools; früher /vorlage.html, dort jetzt eine Weiterleitung):
+  Aufgaben-JSON (Format: lib/seite.js) im Baukasten (Editor-Modus, vorlage-editor.js + vorlage-typen.js)
+  zusammenziehen oder als JSON einfügen (z. B. vom claude.ai-Skill „vibe-learning-seite-erstellen“), zwischen beiden
+  Modi wechseln, prüfen, im abgeschotteten iframe testen, als Datei oder für ByCS (SCORM-ZIP wie werkzeuge/bycs-pakete.py: scorm.js,
+  lib/scorm-manifest.xml, lib/zip.js) herunterladen oder als angemeldete Lehrkraft einreichen
+  (POST /api/trainer/einreichen → Pull Request, pb_hooks/einreichen.pb.js; Knopf nur für Lehrkräfte sichtbar).
+  Die Bibliotheken für die erzeugten Seiten stehen als <script type="application/json" data-einbetten> unten: online leer
+  (dann fetch), in standalone/ und bycs/ füllt werkzeuge/einzeldateien.py sie (als JSON-Text), damit alles ohne Server läuft.
+  Die Vorschau läuft mit sandbox="allow-scripts" ohne same-origin: eingefügtes HTML kommt nicht an Anmeldedaten.
+  Entwurf im Browser: vorlage-entwurf (localStorage) = {json, bereich, modus, id}; id = feste Kennung fürs ByCS-Paket.
+-->
+<script>
+(function(){var t=null;try{t=localStorage.getItem('wenn-theme');}catch(e){}
+document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');})();
+</script>
+<link rel="stylesheet" href="../../seite.css">
+<link rel="stylesheet" href="../../lib/aufgaben.css">
+<script src="../../katalog.js"></script>
+<script src="../../nav.js"></script>
+<script src="../../sync.js"></script>
+<script src="../../lib/seite.js"></script>
+<script src="../../lib/zip.js"></script>
+<script src="../../vorlage-editor.js"></script>
+<script src="../../vorlage-typen.js"></script>
+<style>
+:root{--marke:#c05a1c}
+[data-theme=dark]{--marke:#ebcb8b}
+.vl{width:min(1600px,100%);margin:0 auto;padding:16px 16px 40px}
+.kopfzeile{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+.kopfzeile h1{font-size:22px;margin:0 8px 0 0}
+.kopfzeile .feld{flex:1 1 200px;min-width:0}
+.kopfzeile #kurztext{flex:2 1 260px}
+.spacer{flex:1}
+.seg{display:inline-flex;flex-wrap:wrap;border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.seg .btn{border:0;border-radius:0}
+.seg .btn+.btn{border-left:1px solid var(--border)}
+.btn{font:600 14px system-ui,sans-serif;background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:7px 12px;cursor:pointer}
+.btn.haupt,.btn.on{background:var(--accent);border-color:var(--accent);color:#fff}
+[data-theme=dark] .btn.haupt,[data-theme=dark] .btn.on{color:#2e3440}
+.btn:disabled{opacity:.45;cursor:default}
+.btn.klein{font-size:13px;padding:3px 8px;border-radius:7px}
+.btn.weg{color:var(--err)}
+.btn.x{flex:none;padding:3px 7px}
+.btn.plus{margin:4px 0 6px}
+.feld{font:14px system-ui,sans-serif;background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 8px;width:100%;min-width:0}
+textarea.feld{resize:vertical;font:13px/1.4 system-ui,sans-serif}
+.feld.ungueltig{border-color:var(--err);outline:2px solid color-mix(in srgb,var(--err) 40%,transparent)}
+.feld.zahl{text-align:right}
+label.klein{display:block;font-size:12.5px;color:var(--muted);margin:10px 0 3px}
+.hk{display:inline-flex;align-items:center;gap:5px;font-size:13.5px;margin:6px 10px 2px 0;white-space:nowrap;cursor:pointer}
+.hinweis{font-size:13px;color:var(--muted);margin:6px 0}
+.hinweis.warn{color:var(--err);font-weight:600}
+.meldung{border-radius:8px;padding:8px 12px;font-size:14px;margin-top:10px}
+.meldung.ok{background:color-mix(in srgb,#a3be8c 30%,var(--panel))}
+.meldung.fehler{background:color-mix(in srgb,#bf616a 22%,var(--panel))}
+.meldung ul{margin:4px 0 0;padding-left:18px}
+.meldung a{color:inherit}
+.muted{color:var(--muted)}
+details{margin-top:12px;border-top:1px solid var(--border);padding-top:6px}
+summary{cursor:pointer;font-weight:600;font-size:14px}
+code{font:12.5px var(--mono);background:var(--panel2);border-radius:4px;padding:0 4px}
+
+/* Arbeitsbereich wie beim Struktogramm-Editor */
+.arbeit{display:grid;grid-template-columns:200px minmax(0,1fr) minmax(340px,430px);gap:12px;align-items:start}
+@media (max-width:1100px){.arbeit{grid-template-columns:minmax(0,1fr)}.leiste{position:static!important;flex-direction:row!important;flex-wrap:wrap}.leiste .teil{flex:1 1 160px}.leiste-trenn{flex-basis:100%}.panel{position:static!important;max-height:none!important}}
+.leiste{display:flex;flex-direction:column;gap:6px;position:sticky;top:12px}
+.leiste-trenn{font:700 11px system-ui,sans-serif;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:8px 2px 0}
+.teil{display:flex;align-items:center;gap:9px;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:7px 10px;cursor:grab;font:600 14px system-ui,sans-serif;color:var(--text);text-align:left;touch-action:none;user-select:none}
+.teil:hover{border-color:var(--accent)}
+.sym{flex:none;width:22px;text-align:center}
+.mitte{background:var(--panel);border:1px solid var(--border);border-radius:12px;min-height:60vh;overflow:hidden}
+.reiterleiste{display:flex;flex-wrap:wrap;gap:4px;padding:8px 8px 0;background:var(--panel2);border-bottom:1px solid var(--border)}
+.reiter{font:600 14px system-ui,sans-serif;background:var(--panel2);color:var(--text);border:1px solid var(--border);border-bottom:0;border-radius:9px 9px 0 0;padding:6px 12px;cursor:grab;touch-action:none;user-select:none;margin-bottom:-1px}
+.reiter.on{background:var(--panel);border-bottom:1px solid var(--panel)}
+.reiter.plus{cursor:pointer;color:var(--muted)}
+.reiter.hatfehler{box-shadow:inset 0 -3px 0 var(--err)}
+.schrittflaeche{padding:14px}
+.skopf{border:2px solid transparent;border-radius:10px;padding:8px 10px;cursor:pointer;margin-bottom:10px;background:var(--panel2)}
+.skopf.gewaehlt,.akarte.gewaehlt{border-color:var(--marke)}
+.sk-titel{font-weight:700;font-size:17px}
+.sk-nr{font:600 12px var(--mono);color:var(--muted);margin-right:6px}
+.sk-html{max-height:180px;overflow:auto;font-size:14px;margin-top:6px}
+.sk-html h2{font-size:16px;margin:4px 0}
+.sk-erinnerung,.sk-leer{font-size:13px;color:var(--muted);margin-top:4px}
+.aliste{display:flex;flex-direction:column;gap:8px}
+.akarte{background:var(--panel);border:2px solid var(--border);border-left:6px solid var(--accent);border-radius:10px;padding:8px 10px;cursor:grab;touch-action:none;user-select:none;position:relative}
+.akarte:hover{border-color:color-mix(in srgb,var(--accent) 60%,var(--border))}
+.akarte.gewaehlt{border-left-color:var(--marke)}
+.akarte.hatfehler{border-left-color:var(--err)}
+.akdanach{margin-top:8px;margin-left:14px;border-left-style:dashed}
+.ak-kopf{display:flex;gap:6px;align-items:center;font-size:14px}
+.ak-nr{font:600 12px var(--mono);color:var(--muted)}
+.ak-f{margin-left:auto;color:var(--err);font-weight:700;font-size:13px}
+.ak-frage{font-size:14px;margin:3px 0 0 28px}
+.ak-kurz{font-size:12.5px;color:var(--muted);margin:2px 0 0 28px}
+.danach-zone{display:none;margin:8px 0 0 14px;border:2px dashed var(--border);border-radius:9px;padding:6px 10px;font-size:12.5px;color:var(--muted)}
+.danach-zone.zeigen,.bk-zieht .danach-zone{display:block}
+.ende,.leer-start{border:2px dashed var(--border);border-radius:10px;padding:14px;text-align:center;color:var(--muted);font-size:14px}
+.leer-start{margin:30px 10px;padding:40px 14px}
+.z-in{border-color:var(--marke)!important;background:color-mix(in srgb,var(--marke) 12%,var(--panel))!important}
+.z-vor{box-shadow:0 -4px 0 var(--marke)!important}
+.z-nach{box-shadow:0 4px 0 var(--marke)!important}
+.reiter.z-vor{box-shadow:-4px 0 0 var(--marke)!important}
+.reiter.z-nach{box-shadow:4px 0 0 var(--marke)!important}
+.geist{position:fixed;z-index:100;pointer-events:none;background:var(--marke);color:#fff;padding:5px 10px;border-radius:8px;font:600 13px system-ui,sans-serif;box-shadow:0 6px 16px rgba(0,0,0,.25);transform:translate(10px,10px);max-width:300px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+[data-theme=dark] .geist{color:#2e3440}
+.geist.nein{opacity:.5}
+.bk-zieht,.bk-zieht *{cursor:grabbing!important}
+#fehler{margin-top:10px}
+
+/* Eigenschaften */
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:12px 14px;position:sticky;top:12px;max-height:calc(100vh - 24px);overflow:auto}
+.panel h3{margin:0 0 8px;font:800 16px var(--mono)}
+.panel .zeile,.reihe{display:flex;gap:6px;align-items:center}
+.reihe.wrap{flex-wrap:wrap}
+.panel>.zeile{flex-wrap:wrap;margin-bottom:6px}
+.spalte{display:flex;flex-direction:column;gap:4px;flex:1;min-width:0}
+.lz{display:flex;gap:6px;align-items:flex-start;padding:6px 0;border-bottom:1px dashed var(--border)}
+.griff{cursor:grab;touch-action:none;user-select:none;color:var(--muted);padding:6px 2px;font-size:16px;line-height:1}
+.rt{border:1px solid var(--border);border-radius:8px;background:var(--panel2)}
+.rt-leiste{display:flex;flex-wrap:wrap;gap:3px;padding:4px;border-bottom:1px solid var(--border)}
+.rt-leiste .btn{padding:1px 7px;font-size:12.5px}
+.rt-leiste .bruch{font-size:9px}
+.rt-feld{min-height:70px;padding:8px 10px;font-size:14px;line-height:1.5;outline:none;background:var(--panel)}
+.rt-feld.klein{min-height:38px}
+.rt-feld:focus{box-shadow:inset 0 0 0 2px var(--accent)}
+.rt-feld h2,.rt-feld h3{font-size:15px;margin:4px 0}
+.rt-feld table{border-collapse:collapse}.rt-feld td,.rt-feld th{border:1px solid var(--border);padding:2px 6px;min-width:40px}
+.rt-feld.lt{line-height:2.1;min-height:110px}
+.lk{display:inline-block;background:color-mix(in srgb,var(--accent) 22%,var(--panel));border:1px solid var(--accent);border-radius:6px;padding:0 7px;line-height:1.6;font-weight:600;cursor:grab;touch-action:none;user-select:none}
+.lk::after{content:" ▾";font-size:10px;opacity:.6}
+.lk.on{outline:2px solid var(--marke)}
+.lk.quelle{opacity:.35}
+.lk-box{border:1px solid var(--marke);border-radius:8px;padding:8px 10px;margin-top:8px;background:var(--panel2)}
+.zspalten{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}
+.zspalte{border:2px solid var(--border);border-radius:10px;padding:6px;background:var(--panel2);display:flex;flex-direction:column;gap:5px}
+.zspalte.ohne{margin-top:8px;border-style:dashed}
+.zkopf .feld{font-weight:700}
+.zkarte{display:flex;gap:4px;align-items:center;background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:7px;padding:2px 4px}
+.zkarte .feld{border:0;background:transparent;padding:4px}
+.tabed{overflow-x:auto}
+.tz{display:grid;gap:4px;align-items:center;flex:1;min-width:0}
+.tz.kopf .feld{font-weight:700}
+.tabed .lz{padding:3px 0;min-width:max-content}
+.tzelle{display:flex;gap:2px;align-items:center}
+.tzelle .feld{padding:4px 5px;font-size:13px;flex:1;width:0}
+.tzelle.eingabe .feld{background:color-mix(in srgb,var(--accent) 16%,var(--panel));border-style:dashed;border-color:var(--accent)}
+.btn.art{padding:2px 5px;font:600 12px var(--mono);flex:none}
+
+/* JSON-Modus und Dialoge */
+.jsonbereich{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;align-items:start}
+@media (max-width:1000px){.jsonbereich{grid-template-columns:minmax(0,1fr)}}
+.kasten{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px 16px}
+.kasten h2{font-size:16px;margin:0 0 8px}
+#json{width:100%;min-height:62vh;resize:vertical;font:13px/1.45 var(--mono);background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px}
+.knoepfe{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.schritte-liste{color:var(--muted);margin:0;padding-left:20px;font-size:14px}
+dialog{border:1px solid var(--border);border-radius:14px;background:var(--panel);color:var(--text);padding:0;max-width:calc(100vw - 32px)}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+.dlg-kopf{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--border)}
+.dlg-kopf h2{font-size:16px;margin:0;flex:1}
+.dlg-inhalt{padding:12px 16px 16px}
+#vorschauDlg{width:min(1100px,100%);height:calc(100vh - 32px)}
+#vorschauDlg[open]{display:flex;flex-direction:column}
+#vorschauDlg iframe{flex:1;width:100%;border:0;background:var(--bg)}
+#abgebenDlg{width:min(560px,100%)}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="vl">
+  <div class="kopfzeile">
+    <h1>Übung erstellen</h1>
+    <input class="feld" id="titel" maxlength="120" placeholder="Titel der Übung (im Menü)" aria-label="Titel der Übung">
+    <input class="feld" id="kurztext" maxlength="300" placeholder="Kurztext (auf der Übersichtsseite)" aria-label="Kurztext">
+  </div>
+  <div class="kopfzeile">
+    <div class="seg" role="group" aria-label="Ansicht"><button class="btn on" type="button" data-modus="editor">Editor</button><button class="btn" type="button" data-modus="json">JSON</button></div>
+    <button class="btn" id="rueck" type="button" title="Rückgängig (Strg+Z)">↶</button>
+    <button class="btn" id="vor" type="button" title="Wiederholen (Strg+Y)">↷</button>
+    <button class="btn" id="neu" type="button">Neu</button>
+    <button class="btn" id="oeffnen" type="button" title="Gespeicherte Übung (.json) öffnen">Öffnen</button>
+    <button class="btn" id="speichern" type="button" title="Als .json speichern, um später weiterzuarbeiten">Speichern</button>
+    <input type="file" id="datei" accept=".json,application/json" hidden>
+    <span class="spacer"></span>
+    <button class="btn" id="vorschau" type="button">▶ Vorschau</button>
+    <button class="btn haupt" id="abgeben" type="button">Herunterladen / Einreichen</button>
+  </div>
+
+  <div id="modusEditor" class="arbeit">
+    <div class="leiste" id="leiste" aria-label="Bausteine"></div>
+    <div>
+      <div class="mitte" id="mitte"></div>
+      <div id="fehler"></div>
+    </div>
+    <div class="panel" id="panel"></div>
+  </div>
+
+  <div id="modusJson" class="jsonbereich" hidden>
+    <div class="kasten">
+      <h2>Aufgaben-JSON</h2>
+      <textarea id="json" spellcheck="false" placeholder='{"titel": "…", "schritte": [ … ]}' aria-label="Aufgaben-JSON"></textarea>
+      <div id="meldung"></div>
+    </div>
+    <div class="kasten">
+      <h2>So geht’s</h2>
+      <ol class="schritte-liste">
+        <li>Im Claude-Chat mit dem Skill <b>vibe-learning-seite-erstellen</b> Aufgaben erzeugen lassen und den JSON-Block hier einfügen.</li>
+        <li><b>Im Editor öffnen</b> und dort weiterbearbeiten.</li>
+        <li>Zum Sichern des Standes das JSON wieder <b>kopieren</b> (oder oben „Speichern“).</li>
+      </ol>
+      <div class="knoepfe"><button class="btn haupt" type="button" id="zumEditor">Im Editor öffnen</button><button class="btn" type="button" id="kopieren">Kopieren</button><button class="btn" type="button" id="beispiel">Beispiel laden</button></div>
+    </div>
+  </div>
+
+  <dialog id="vorschauDlg" aria-label="Vorschau">
+    <div class="dlg-kopf"><h2>Vorschau – so sehen es die Schüler</h2><button class="btn" type="button" data-zu>Schließen</button></div>
+  </dialog>
+  <dialog id="abgebenDlg" aria-label="Herunterladen oder einreichen">
+    <div class="dlg-kopf"><h2>Herunterladen oder einreichen</h2><button class="btn" type="button" data-zu>Schließen</button></div>
+    <div class="dlg-inhalt">
+      <label class="klein" for="bereich">Fach, Jahrgangsstufe und Bereich</label><select class="feld" id="bereich"></select>
+      <div class="knoepfe"><button class="btn" type="button" id="download" title="Eine HTML-Datei, läuft per Doppelklick im Browser">Als Datei herunterladen</button><button class="btn" type="button" id="bycs" title="SCORM-Paket für die ByCS-Lernplattform (Aktivität „Lernpaket“): Fortschritt und Ergebnisse landen in Moodle">Für ByCS herunterladen (.zip)</button><button class="btn haupt" type="button" id="einreichen" hidden>Einreichen</button></div>
+      <p class="hinweis" id="einreichHinweis"></p>
+      <div id="ergebnis"></div>
+    </div>
+  </dialog>
+</div>
+<!-- Bibliotheken für die erzeugten Seiten (online leer → fetch; in Einzeldatei/ByCS-Paket eingebettet) -->
+<script type="application/json" data-einbetten="../../lib/aufgaben.js"></script>
+<script type="application/json" data-einbetten="../../lib/aufgaben.css"></script>
+<script type="application/json" data-einbetten="../../BWR/bwr.css"></script>
+<script type="application/json" data-einbetten="../../scorm.js"></script>
+<script type="application/json" data-einbetten="../../lib/scorm-manifest.xml"></script>
+<script>
+'use strict';
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;'}[c]));
+const BEISPIEL = {titel:'Beispiel: Kredite', kurztext:'Kurze Wiederholung', schritte:[
+  {kurz:'Erklärung', titel:'Was ist ein Kredit?', html:'<h2>Kredit</h2><p>Ein Kredit ist die <b>zeitweilige Überlassung von Geld</b> gegen <b>Zinsen</b>.</p>'},
+  {kurz:'1', titel:'Kreditfähigkeit', aufgaben:[{typ:'mc', frage:'Was bedeutet Kreditfähigkeit?', options:['rechtliche Fähigkeit, einen Kreditvertrag abzuschließen', 'Fähigkeit, den Kredit zurückzuzahlen'], correct:[0], why:{1:'Das ist die Kreditwürdigkeit.'}}]},
+  {kurz:'2', titel:'Lückentext', aufgaben:[{typ:'luecken', frage:'Vervollständige.', text:'Zinsen und Tilgung zusammen heißen [[Schuldendienst|Disagio|Skonto]].'},
+    {typ:'luecken', ziehen:true, frage:'Ziehe die Wörter in die Lücken.', text:'Die Bank prüft die [[Kreditwürdigkeit]] und verlangt [[Sicherheiten|Skonto]].', extra:['Rabatt']}]}]};
+
+// Bereiche aus dem Katalog
+const BEREICHE = [];
+KATALOG.gruppen.forEach(g => g.bereiche.forEach(b => BEREICHE.push({id:b.id, pfad:b.pfad, name:g.titel + ' › ' + b.titel})));
+$('#bereich').innerHTML = '<option value="">– bitte wählen –</option>' + BEREICHE.map(b => `<option value="${esc(b.id)}">${esc(b.name)}</option>`).join('');
+const bereich = () => BEREICHE.find(b => b.id === $('#bereich').value);
+
+/* ---------- Entwurf im Browser ---------- */
+let entwurf = {};
+try { entwurf = JSON.parse(localStorage.getItem('vorlage-entwurf') || '{}') || {}; } catch (e) {}
+const merken = () => { try { localStorage.setItem('vorlage-entwurf', JSON.stringify(entwurf)); } catch (e) {} };
+if (entwurf.bereich) $('#bereich').value = entwurf.bereich;
+$('#bereich').addEventListener('change', () => { entwurf.bereich = $('#bereich').value; merken(); });
+
+/* ---------- Editor ---------- */
+let modus = 'editor';
+function kopfFelder(d){ $('#titel').value = d.titel || ''; $('#kurztext').value = d.kurztext || ''; }
+function knoepfe(){ $('#rueck').disabled = modus !== 'editor' || !Baukasten.kannRueck(); $('#vor').disabled = modus !== 'editor' || !Baukasten.kannVor(); }
+Baukasten.start({leiste:$('#leiste'), mitte:$('#mitte'), panel:$('#panel'), fehler:$('#fehler'),
+  geaendert(d){ if (modus !== 'editor') return; entwurf.json = JSON.stringify(d, null, 2); merken(); knoepfe(); }});
+['titel', 'kurztext'].forEach(k => $('#' + k).addEventListener('input', () => {
+  if (modus === 'editor') return Baukasten.kopf(k, $('#' + k).value.trim());
+  const d = jsonLesen(true); if (!d) return;   // im JSON-Modus direkt ins JSON schreiben
+  if ($('#' + k).value.trim()) d[k] = $('#' + k).value.trim(); else if (k === 'kurztext') delete d[k]; else d[k] = '';
+  $('#json').value = JSON.stringify(d, null, 2); entwurf.json = $('#json').value; merken();
+}));
+$('#rueck').addEventListener('click', () => { Baukasten.rueck(); kopfFelder(Baukasten.daten()); knoepfe(); });
+$('#vor').addEventListener('click', () => { Baukasten.vor(); kopfFelder(Baukasten.daten()); knoepfe(); });
+document.addEventListener('keydown', e => { if (modus === 'editor' && (e.ctrlKey || e.metaKey) && /^[zy]$/i.test(e.key)) setTimeout(() => { kopfFelder(Baukasten.daten()); knoepfe(); }, 0); });
+
+/* ---------- JSON-Modus ---------- */
+const meldung = (ok, html) => { $('#meldung').innerHTML = html ? `<div class="meldung ${ok ? 'ok' : 'fehler'}">${html}</div>` : ''; };
+function jsonLesen(still){
+  let d;
+  try { d = JSON.parse($('#json').value); }
+  catch (err){ if (!still) meldung(false, '<b>Das ist kein gültiges JSON.</b> ' + esc(err.message) + '<br>Tipp: den Block aus dem Chat vollständig kopieren, mit { am Anfang und } am Ende.'); return null; }
+  if (!d || typeof d !== 'object' || Array.isArray(d) || !(Array.isArray(d.schritte) || Array.isArray(d.aufgaben))){
+    if (!still) meldung(false, 'Das ist kein Aufgaben-JSON: Es braucht <code>"titel"</code> und eine Liste <code>"schritte"</code> (oder <code>"aufgaben"</code>).'); return null;
+  }
+  return d;
+}
+function zeige(m){
+  modus = m; entwurf.modus = m;
+  $('#modusEditor').hidden = m !== 'editor'; $('#modusJson').hidden = m !== 'json';
+  document.querySelectorAll('[data-modus]').forEach(b => b.classList.toggle('on', b.dataset.modus === m));
+  knoepfe();
+}
+function setzeModus(m){
+  if (m === modus) return;
+  if (m === 'editor'){
+    const d = jsonLesen(); if (!d) return;
+    zeige(m); Baukasten.setze(d); kopfFelder(Baukasten.daten());
+  } else {
+    $('#json').value = JSON.stringify(Baukasten.daten(), null, 2); zeige(m);
+  }
+  meldung(true, ''); entwurf.json = m === 'json' ? $('#json').value : JSON.stringify(Baukasten.daten(), null, 2); merken();
+}
+document.querySelectorAll('[data-modus]').forEach(b => b.addEventListener('click', () => setzeModus(b.dataset.modus)));
+$('#zumEditor').addEventListener('click', () => setzeModus('editor'));
+$('#json').addEventListener('input', () => { entwurf.json = $('#json').value; merken(); const d = jsonLesen(true); if (d) kopfFelder(d); });
+$('#kopieren').addEventListener('click', async () => {
+  try { await navigator.clipboard.writeText($('#json').value); meldung(true, '✓ Kopiert. Füge das JSON z. B. in eine Notiz ein, um später weiterzuarbeiten.'); }
+  catch (e){ $('#json').select(); meldung(false, 'Kopieren hat nicht geklappt – das JSON ist jetzt markiert, kopiere es mit Strg+C.'); }
+});
+$('#beispiel').addEventListener('click', () => { $('#json').value = JSON.stringify(BEISPIEL, null, 2); kopfFelder(BEISPIEL); entwurf.json = $('#json').value; merken(); meldung(true, 'Beispiel geladen.'); });
+
+/* ---------- Neu, Öffnen, Speichern ---------- */
+function laden(d){
+  if (modus === 'editor'){ Baukasten.setze(d); kopfFelder(Baukasten.daten()); }
+  else { $('#json').value = JSON.stringify(d, null, 2); kopfFelder(d); entwurf.json = $('#json').value; merken(); }
+  knoepfe();
+}
+const aktuell = () => modus === 'editor' ? Baukasten.daten() : jsonLesen();
+$('#neu').addEventListener('click', () => { if (confirm('Neue, leere Übung anfangen? Der jetzige Stand geht verloren (vorher „Speichern“).')) laden({titel:'', schritte:[]}); });
+$('#speichern').addEventListener('click', () => {
+  const d = aktuell(); if (!d) return;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(d, null, 2)], {type:'application/json'}));
+  a.download = Seite.toolId(d.titel || 'uebung', 'x').replace(/-x$/, '') + '.json';
+  a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+});
+$('#oeffnen').addEventListener('click', () => $('#datei').click());
+$('#datei').addEventListener('change', async () => {
+  const f = $('#datei').files[0]; $('#datei').value = ''; if (!f) return;
+  try { const d = JSON.parse(await f.text()); if (!d || !(Array.isArray(d.schritte) || Array.isArray(d.aufgaben))) throw new Error('kein Aufgaben-JSON'); laden(d); }
+  catch (e){ alert('Die Datei lässt sich nicht öffnen: ' + e.message); }
+});
+
+/* ---------- Prüfen, Vorschau, Download, Einreichen ---------- */
+let LIB = null;
+async function lib(){
+  if (LIB) return LIB;
+  const t = p => {
+    const el = document.querySelector(`script[data-einbetten="${p}"]`);
+    if (el && el.textContent.trim()) return JSON.parse(el.textContent);
+    return fetch(p).then(r => { if (!r.ok) throw new Error(p); return r.text(); });
+  };
+  const [aufgabenJs, aufgabenCss, bwrCss, scormJs, manifest] = await Promise.all(['../../lib/aufgaben.js', '../../lib/aufgaben.css', '../../BWR/bwr.css', '../../scorm.js', '../../lib/scorm-manifest.xml'].map(t));
+  return (LIB = {aufgabenJs, aufgabenCss, bwrCss, scormJs, manifest});
+}
+// Aufgaben-JSON mit Prüfung; null bei Fehlern (Hinweis in wo, im JSON-Modus als Meldung, im Editor unter der Mitte)
+function daten(wo){
+  const d = aktuell(); if (!d) return null;
+  if (!d.kurztext) delete d.kurztext;
+  const f = Seite.pruefe(d);
+  if (f.length){
+    const t = `<b>Bitte noch korrigieren:</b><ul>${f.slice(0, 15).map(x => `<li>${esc(x)}</li>`).join('')}</ul>${f.length > 15 ? `… und ${f.length - 15} weitere` : ''}`;
+    if (wo) wo.innerHTML = `<div class="meldung fehler">${t}</div>`; else if (modus === 'json') meldung(false, t); else $('#fehler').scrollIntoView({behavior:'smooth', block:'center'});
+    return null;
+  }
+  return d;
+}
+async function seite(d){ return Seite.seiteHTML(d, {pfad:(bereich() || {}).pfad || '', toolId:'vorschau', einzeln:true, lib:await lib()}); }
+$('#fehler').addEventListener('click', e => { const a = e.target.closest('[data-fehler]'); if (a && /^„(titel|kurztext)“|^(Titel|Kurztext):/.test(a.textContent)){ e.preventDefault(); $(/kurztext/i.test(a.textContent) ? '#kurztext' : '#titel').focus(); } });
+document.querySelectorAll('[data-zu]').forEach(b => b.addEventListener('click', () => b.closest('dialog').close()));
+$('#vorschau').addEventListener('click', async () => {
+  const d = daten(); if (!d) return;
+  let html;
+  try { html = await seite(d); } catch (e){ alert('Die Vorschau braucht die Seite über einen Server (z. B. python3 -m http.server).'); return; }
+  const dlg = $('#vorschauDlg'), alt = dlg.querySelector('iframe'); if (alt) alt.remove();
+  const f = document.createElement('iframe');
+  f.setAttribute('sandbox', 'allow-scripts'); f.title = 'Vorschau der Übung'; f.srcdoc = html;
+  dlg.appendChild(f); dlg.showModal();
+});
+$('#abgeben').addEventListener('click', () => { $('#ergebnis').innerHTML = ''; hinweis(); $('#abgebenDlg').showModal(); });
+function speichereDatei(blob, name){
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+const dateiname = d => Seite.toolId(d.titel, 'x').replace(/-x$/, '');
+const libFehler = () => { $('#ergebnis').innerHTML = '<div class="meldung fehler">Die Bibliotheken fehlen: Seite über den Server öffnen (z. B. python3 -m http.server) oder die Einzeldatei aus standalone/ verwenden.</div>'; };
+$('#download').addEventListener('click', async () => {
+  const d = daten($('#ergebnis')); if (!d) return;
+  let html; try { html = await seite(d); } catch (e){ return libFehler(); }
+  speichereDatei(new Blob([html], {type:'text/html'}), dateiname(d) + '.html');
+  $('#ergebnis').innerHTML = '';
+});
+// ByCS: dasselbe Paket wie werkzeuge/bycs-pakete.py (index.html mit scorm.js statt sync.js + imsmanifest.xml, SCORM 2004)
+$('#bycs').addEventListener('click', async () => {
+  const d = daten($('#ergebnis')); if (!d) return;
+  let L; try { L = await lib(); } catch (e){ return libFehler(); }
+  // feste Kennung je Entwurf: scorm.js ordnet Stand und Moodle-Daten über data-trainer zu
+  const basis = dateiname(d);
+  if (!entwurf.id || !entwurf.id.startsWith(basis + '-')){ entwurf.id = Seite.toolId(d.titel); merken(); }
+  const html = Seite.seiteHTML(d, {pfad:(bereich() || {}).pfad || '', toolId:entwurf.id, einzeln:true, lib:L, bycs:{scormJs:L.scormJs, stufen:0}});
+  const manifest = L.manifest.replace(/\{kennung\}/g, entwurf.id).replace(/\{t\}/g, esc(d.titel).replace(/'/g, '&#x27;'));
+  speichereDatei(await Zip.erstelle([['imsmanifest.xml', manifest], ['index.html', html]]), basis + '.zip');
+  $('#ergebnis').innerHTML = '<div class="meldung ok">✓ ByCS-Paket erstellt. In ByCS im Kurs „Aktivität anlegen → Lernpaket“ wählen und die ZIP-Datei hochladen.</div>';
+});
+
+const lehrer = () => window.TrainerSync && TrainerSync.lehrer;
+function hinweis(){
+  const L = lehrer();   // Einreichen (Pull Request) nur für angemeldete Lehrkräfte sichtbar
+  $('#einreichHinweis').innerHTML = L ? `Angemeldet als ${esc(L.name)}. Beim Einreichen entsteht ein Vorschlag (Pull Request) auf GitHub; nach der Freigabe erscheint die Übung im Menü. Dein Name wird dabei nicht übertragen.` : '';
+  $('#einreichHinweis').hidden = !L; $('#einreichen').hidden = !L; $('#einreichen').disabled = !L;
+}
+hinweis(); setTimeout(hinweis, 800);
+$('#einreichen').addEventListener('click', async () => {
+  const L = lehrer(); if (!L) return hinweis();
+  if (!bereich()){ $('#ergebnis').innerHTML = '<div class="meldung fehler">Bitte zuerst einen Bereich wählen.</div>'; return; }
+  const d = daten($('#ergebnis')); if (!d) return;
+  if (!confirm(`„${d.titel}“ für ${bereich().name} einreichen?`)) return;
+  $('#einreichen').disabled = true; $('#ergebnis').innerHTML = '<div class="meldung ok">Wird eingereicht …</div>';
+  try {
+    const r = await fetch('../../api/trainer/einreichen', {method:'POST', headers:{'Content-Type':'application/json', ...(L.rolle === 'admin' ? {Authorization:L.token} : {'X-Lehrer-Token':L.token})},
+      body:JSON.stringify({json:JSON.stringify(d), bereich:bereich().id, pfad:bereich().pfad, titel:d.titel, kurztext:d.kurztext || ''})});
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(esc(j.message || 'Fehler ' + r.status) + (j.fehler ? '<ul>' + j.fehler.map(x => `<li>${esc(x)}</li>`).join('') + '</ul>' : '') + (j.detail && L.rolle === 'admin' ? `<br><small>Für den Admin: ${esc(j.detail)}</small>` : ''));
+    $('#ergebnis').innerHTML = j.url ? `<div class="meldung ok">✓ Eingereicht! Der Vorschlag liegt jetzt zur Freigabe bereit: <a href="${esc(j.url)}" target="_blank" rel="noopener">Pull Request ansehen</a></div>`
+      : `<div class="meldung ok">✓ Testlauf: Die Seite würde unter <code>${esc(j.pfad)}</code> angelegt.</div>`;
+  } catch (err){ $('#ergebnis').innerHTML = `<div class="meldung fehler">${err.message}</div>`; }
+  $('#einreichen').disabled = false;
+});
+
+/* ---------- Start: Entwurf laden (alter Entwurf hatte Titel/Kurztext in eigenen Feldern) ---------- */
+(function(){
+  let d = null;
+  try { d = entwurf.json ? JSON.parse(entwurf.json) : null; } catch (e){}
+  if (d && entwurf.titel){ d.titel = entwurf.titel; if (entwurf.kurztext) d.kurztext = entwurf.kurztext; entwurf.json = JSON.stringify(d, null, 2); }
+  delete entwurf.titel; delete entwurf.kurztext;
+  const ok = d && typeof d === 'object' && (Array.isArray(d.schritte) || Array.isArray(d.aufgaben));
+  if (ok && entwurf.modus !== 'json'){ Baukasten.setze(d); kopfFelder(Baukasten.daten()); zeige('editor'); }
+  else if (entwurf.json){ $('#json').value = entwurf.json; zeige('json'); if (ok) kopfFelder(d); }
+  else zeige('editor');
+  merken();
+})();
+</script>
+</body>
+</html>

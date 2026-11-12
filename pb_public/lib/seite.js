@@ -1,6 +1,6 @@
 /* seite.js – Übungsseiten aus Aufgaben-JSON prüfen und bauen (Browser und PocketBase-Hooks)
  *
- * Wird genutzt von vorlage.html (Vorschau, Download) und pb_hooks/einreichen.pb.js (Pull Request).
+ * Wird genutzt von IT/tools/uebung-erstellen.html (Vorschau, Download, ByCS-Paket) und pb_hooks/einreichen.pb.js (Pull Request).
  * Im Browser: <script src="lib/seite.js"></script> → window.Seite; im Hook: require(…/pb_public/lib/seite.js).
  *
  * Aufgaben-JSON (reine Daten, kein JavaScript; Aufgabentypen wie in lib/aufgaben.js):
@@ -19,6 +19,8 @@
  *   Seite.seiteHTML(json, opt)      → komplette HTML-Seite
  *       opt = {pfad: 'BWR/9II/finanzierung', toolId, einzeln: false, lib: {aufgabenJs, aufgabenCss, bwrCss}}
  *       einzeln: true → ohne Menü und Server, Bibliotheken eingebettet (Vorschau, Download)
+ *       bycs: {scormJs, stufen} (nur mit einzeln) → für ein SCORM-Paket: window.PF_BYCS und scorm.js vor den
+ *             Bibliotheken eingebettet, wie in werkzeuge/bycs-pakete.py (dort statt sync.js)
  */
 (function () {
   'use strict';
@@ -163,8 +165,10 @@
     const bwr = /^BWR\//.test(pfad), lib = opt.lib || {};
     const daten = JSON.stringify({titel: n.titel, kurztext: n.kurztext, schritte: n.schritte}, null, 1).replace(/<\//g, '<\\/');
     const titel = esc(n.titel);
+    const bycs = opt.einzeln && opt.bycs
+      ? ` window.PF_BYCS = {stufen: ${Math.max(0, parseInt(opt.bycs.stufen, 10) || 0)}};</script>\n<script>${String(opt.bycs.scormJs || '').replace(/<\/script/g, '<\\/script')}</script>\n<script>` : '';
     const kopf = opt.einzeln
-      ? `<script>window.PF_EINZELDATEI = true;${THEME}</script>\n<style>${BASIS_CSS}${bwr && lib.bwrCss ? lib.bwrCss : ''}</style>\n<style>${lib.aufgabenCss || ''}</style>\n<script>${String(lib.aufgabenJs || '').replace(/<\/script/g, '<\\/script')}</script>`
+      ? `<script>window.PF_EINZELDATEI = true;${bycs}${THEME}</script>\n<style>${BASIS_CSS}${bwr && lib.bwrCss ? lib.bwrCss : ''}</style>\n<style>${lib.aufgabenCss || ''}</style>\n<script>${String(lib.aufgabenJs || '').replace(/<\/script/g, '<\\/script')}</script>`
       : `<script src="${hoch}katalog.js"></script>\n<script src="${hoch}nav.js"></script>\n<script src="${hoch}sync.js"></script>\n<script>\n${THEME}\n</script>\n`
         + (bwr ? `<link rel="stylesheet" href="${hoch}BWR/bwr.css">` : `<style>${BASIS_CSS}</style>`)
         + `\n<link rel="stylesheet" href="${hoch}lib/aufgaben.css">\n<script src="${hoch}lib/aufgaben.js"></script>`;
@@ -175,7 +179,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${titel} – vibe learning</title>
 <!--
-  Erzeugt mit lib/seite.js aus Aufgaben-JSON (vorlage.html${opt.einzeln ? '' : ', eingereicht'}).
+  Erzeugt mit lib/seite.js aus Aufgaben-JSON (Übung erstellen${opt.einzeln ? (opt.bycs ? ', ByCS-Paket' : '') : ', eingereicht'}).
   Inhalt bearbeiten: nur DATEN unten ändern (Format: Kopfkommentar von lib/seite.js, Aufgabentypen: lib/aufgaben.js).
   Gespeichert: ${esc(id)}-stand = {schritt, erledigt}.
 -->

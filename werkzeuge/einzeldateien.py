@@ -8,11 +8,14 @@ Alle HTML-Seiten in den Fachordnern außer index.html (Übersichten), Weiterleit
 IT/tippen/ (pockettype läuft nur mit Server) und Seiten mit <html … data-einzeldatei="nein">.
 
 Eingebettet wird jede lokale Datei aus <script src="…"> und <link rel="stylesheet" href="…">.
+Dateien, die eine Seite nur als Text braucht (z. B. Übung erstellen: Bibliotheken für die erzeugten Seiten),
+stehen dort als <script type="application/json" data-einbetten="…"></script> und werden als JSON-Text
+eingefüllt (in der Seite: JSON.parse(el.textContent)).
 Vorne kommt window.PF_EINZELDATEI = true dazu: nav.js zeigt dann kein Menü,
 sync.js keine Anmeldung, der Fortschritt bleibt im Browser.
 Die Dateien in standalone/ nie von Hand ändern, sondern dieses Skript neu laufen lassen.
 """
-import os, pathlib, re, shutil, sys
+import json, os, pathlib, re, shutil, sys
 
 WURZEL = pathlib.Path(__file__).resolve().parent.parent
 PUBLIC = WURZEL / "pb_public"
@@ -22,7 +25,8 @@ OHNE = ("IT/tippen",)                    # Ordner ohne Einzeldateien
 
 # Ein Durchgang für beide, damit Text in schon eingebetteten Dateien (z. B. Beispiele
 # in Kommentaren) nicht noch einmal ersetzt wird.
-EINBINDEN = re.compile(r'<script\s+src="([^"]+)"\s*>\s*</script>|<link\s+rel="stylesheet"\s+href="([^"]+)"\s*/?>')
+EINBINDEN = re.compile(r'<script\s+src="([^"]+)"\s*>\s*</script>|<link\s+rel="stylesheet"\s+href="([^"]+)"\s*/?>'
+                       r'|<script\s+type="application/json"\s+data-einbetten="([^"]+)"\s*>\s*</script>')
 
 
 def lokal(seite, url):
@@ -38,10 +42,13 @@ def einbetten(seite):
     html = seite.read_text(encoding="utf-8")
 
     def ersetzen(m):
-        url = m.group(1) or m.group(2)
+        url = m.group(1) or m.group(2) or m.group(3)
         code = lokal(seite, url)
         if code is None:
             return m.group(0)
+        if m.group(3):                                # als Text: JSON, jedes "<" als \u003c (kein </script, kein <!--)
+            text = json.dumps(code, ensure_ascii=False).replace("<", "\\u003c")
+            return f'<script type="application/json" data-einbetten="{url}">{text}</script>'
         if m.group(1):
             return f"<script>/* {url} */\n" + code.replace("</script", "<\\/script") + "\n</script>"
         return f"<style>/* {url} */\n" + code.replace("</style", "<\\/style") + "\n</style>"

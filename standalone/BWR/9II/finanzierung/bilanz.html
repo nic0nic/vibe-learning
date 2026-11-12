@@ -50,7 +50,7 @@
  * Übersichtsseiten: Bereich <html data-bereich="IT/excel">, Fach bzw. Stufe <html data-gruppe="IT">
  * bzw. data-gruppe="BWR/9II" mit <div id="pf-start">, Fach mit Stufen <html data-fach="BWR"> mit <div id="pf-fach">.
  *
- * Eingereichte Übungen (vorlage.html → Pull Request) stehen unten zwischen EINREICHUNGEN-ANFANG und -ENDE als
+ * Eingereichte Übungen (IT/tools/uebung-erstellen.html → Pull Request) stehen unten zwischen EINREICHUNGEN-ANFANG und -ENDE als
  * reines JSON: [{"bereich": "<Bereich-id>", "tool": {id, datei, titel, text}}]. Der Server (pb_hooks/einreichen.pb.js)
  * ergänzt dort; von Hand nur gültiges JSON eintragen. Sie werden an das Ende des Bereichs angehängt.
  *
@@ -112,7 +112,8 @@ window.KATALOG = {
         {id: 'tools', titel: 'Tools', farbe: '#b4bdcc', farbeHell: '#4c566a', auswertung: false, text: 'Werkzeuge für den Unterricht, ohne Aufgaben.',
           tools: [
             {id: 'strukto', gruppe: 'Struktogramm', datei: 'struktogramm.html', titel: 'Struktogramm-Editor', text: 'Struktogramme mit der Maus zusammensetzen und als SVG, HTML oder JPG exportieren.'},
-            {id: 'pystrukto', gruppe: 'Struktogramm', datei: 'python-struktogramm.html', titel: 'Python → Struktogramm', text: 'Python-Code eingeben, das Struktogramm entsteht sofort daneben – zum Export oder zum Weiterbearbeiten im Editor.'}
+            {id: 'pystrukto', gruppe: 'Struktogramm', datei: 'python-struktogramm.html', titel: 'Python → Struktogramm', text: 'Python-Code eingeben, das Struktogramm entsteht sofort daneben – zum Export oder zum Weiterbearbeiten im Editor.'},
+            {id: 'uebung-erstellen', gruppe: 'Übungen', datei: 'uebung-erstellen.html', titel: 'Übung erstellen', text: 'Eigene Übungen im Baukasten zusammenstellen, testen und als Datei oder als Lernpaket für ByCS herunterladen.'}
           ]
         }
       ]
