@@ -20,7 +20,7 @@ Mit PocketBase melden sich Schüler mit Zugangscode an, und Lehrkräfte sehen de
 - `standalone/` erzeugte Einzeldateien (nie von Hand ändern)
 - `bycs/` erzeugte SCORM-Pakete für die ByCS-Lernplattform (nie von Hand ändern)
 - `werkzeuge/` Skripte zum Erzeugen von `standalone/`, `bycs/` und dem Claude-Code-Skill
-- `notizen/` offene Änderungen und Hintergrund, `material/` Unterrichtsmaterial
+- `notizen/` offene Änderungen und Hintergrund
 - Regeln für neuen Code: [PRINZIPIEN.md](PRINZIPIEN.md)
 
 ## Lizenz

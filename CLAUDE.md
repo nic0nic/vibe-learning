@@ -11,7 +11,7 @@ Ausnahme: **pockettype** (Tipptrainer, eigenes Repo github.com/nic0nic/pockettyp
 - Offene Änderungen stehen in [notizen/fehlerliste.md](notizen/fehlerliste.md). Umgesetzt wird nur, was die Lehrkraft ausdrücklich freigibt. Erledigtes dort nach „Erledigt“ verschieben, neue Wünsche mit Datum eintragen.
 - Neuer Aufgabentyp in `lib/aufgaben.js`: auch `lib/seite.js` (TYPEN, Prüfung) und den Skill `vibe-learning-seite-erstellen` im Repo github.com/nic0nic/vibe-learning-skills anpassen.
 - Ändert sich, was gespeichert wird (pb_migrations/, sync.js, Speicher im Browser, externe Dienste), `pb_public/datenschutz.html` mitpflegen.
-- Hintergrund zu Unterrichtsmaterial: `notizen/`, Dateien in `material/`.
+- Hintergrund zu Unterrichtsmaterial: `notizen/`.
 
 ## Nach jeder Änderung
 
