@@ -1,6 +1,6 @@
 /* vibe learning – geführte HTML- und CSS-Übungen mit Vorschau und automatischer Prüfung
  *
- * Eine Übungsseite (z. B. aufbau.html) legt window.HTMLKURS an und bindet danach ein:
+ * Eine Übungsseite (z. B. 01-aufbau-webseite.html) legt window.HTMLKURS an und bindet danach ein:
  * ../python/lib/codemirror.min.js (+ .css), lib/codemirror-html.js, lib/mediathek.js,
  * lib/htmlwerk.js und diese Datei.
  *

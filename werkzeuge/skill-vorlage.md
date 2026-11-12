@@ -56,7 +56,7 @@ Farbvariablen (aus seite.css):
 
 ## Aufgaben aus Daten (lib/aufgaben.js)
 
-Standardaufgaben nicht neu programmieren, sondern als Daten an `Aufgaben.baue` bzw. `Aufgaben.sequenz` geben (Typen und Felder: Kopfkommentar unten). Eigener Code nur für Besonderes (Grafiken, Simulationen) als `html`/`nach` eines Schritts. Beispiel einer Erarbeitungsseite (Vorbilder: `BWR/9II/finanzierung/kurzfristige-kredite.html`, Lern-Chat allein: `BWR/7II/aufwand-ertrag/verkauf-uefe.html`):
+Standardaufgaben nicht neu programmieren, sondern als Daten an `Aufgaben.baue` bzw. `Aufgaben.sequenz` geben (Typen und Felder: Kopfkommentar unten). Eigener Code nur für Besonderes (Grafiken, Simulationen) als `html`/`nach` eines Schritts. Beispiel einer Erarbeitungsseite (Vorbilder: `BWR/9II/finanzierung/kurzfristige-kredite.html`, Lern-Chat allein: `BWR/7II/aufwand-ertrag/lernchat-verkauf-eigener-erzeugnisse.html`):
 
 ```js
 Aufgaben.sequenz({el:'#app', key:'TOOL-ID', schritte:[

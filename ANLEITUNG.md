@@ -38,7 +38,7 @@ vibe-learning/
 │   │   ├── index.html             Übersicht des Fachs
 │   │   ├── excel/                 ein Ordner pro Bereich
 │   │   │   ├── index.html             Übersicht des Bereichs
-│   │   │   ├── funktionen.html        SUMME, MITTELWERT, MIN, MAX, ANZAHL, ANZAHL2
+│   │   │   ├── funktionen_1_6.html    SUMME, MITTELWERT, MIN, MAX, ANZAHL, ANZAHL2
 │   │   │   ├── wenn.html              Moduswahl verlinkt auf wenn-bezuege.html („Übungen $“, „Endlos $“)
 │   │   │   ├── wenn-bezuege.html      WENN-Formeln übertragen, $ setzen; Aufgaben in der Datei
 │   │   │   ├── und-oder.html          Moduswahl verlinkt auf und-oder-bezuege.html („Übungen $“, „Endlos $“)
@@ -56,7 +56,7 @@ vibe-learning/
 │   │   ├── html/                  Webseiten mit HTML und CSS
 │   │   │   ├── index.html             Übersicht des Bereichs
 │   │   │   ├── editor.html            freier HTML-Editor: Schalter HTML/CSS, Vorschau, Download als eine Datei
-│   │   │   ├── aufbau.html …          Kurs in sechs Seiten (Aufbau, Text, Links und Bilder, CSS-Grundlagen,
+│   │   │   ├── 01-aufbau-webseite.html … Kurs in sechs Seiten (Aufbau, Text, Links und Bilder, CSS-Grundlagen,
 │   │   │   │                          Klassen und Abstände, Design und Projekt); Aufgaben und Tests in der Datei
 │   │   │   ├── fehlersuche.html       Fehler in HTML und CSS finden und verbessern (Endlosmodus, erzeugt
 │   │   │   │                          Aufgaben aus Beispielen und Fehlerarten in der Datei)
@@ -86,7 +86,7 @@ vibe-learning/
 │       ├── bwr.css                Grundlayout aller BWR-Seiten
 │       ├── 7II/                   Jahrgangsstufe 7 (Wahlpflichtfächergruppe II)
 │       │   ├── index.html             Übersicht der Stufe
-│       │   └── aufwand-ertrag/        Aufwendungen und Erträge; verkauf-uefe.html = Lern-Chat Verkauf (BK an UEFE, UST)
+│       │   └── aufwand-ertrag/        Aufwendungen und Erträge; lernchat-verkauf-eigener-erzeugnisse.html = Lern-Chat Verkauf (BK an UEFE, UST)
 │       └── 9II/                   Jahrgangsstufe 9 (Wahlpflichtfächergruppe II)
 │           ├── index.html             Übersicht der Stufe
 │           ├── finanzierung/

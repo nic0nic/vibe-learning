@@ -1,13 +1,13 @@
 <!doctype html>
-<html lang="de" data-trainer="htmlcss">
+<html lang="de" data-trainer="htmlaufbau">
 <head>
 <script>window.PF_EINZELDATEI = true;</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>CSS-Grundlagen – vibe learning</title>
+<title>Aufbau einer Webseite – vibe learning</title>
 <!--
-  HTML-Kurs, Seite 4: Stilvorlagen mit CSS – Regel aus Selektor, Attribut und Attributwert; Farbe, Schrift, Ausrichtung.
-  Durchgehendes Beispiel des Kurses: die Webseite der Rockband „Mouse Rat“ (Ausgangsstand in lib/mouserat.js).
+  HTML-Kurs, Seite 1: Tags, Elemente, Attribute, Grundgerüst und Verschachtelung.
+  Durchgehendes Beispiel des Kurses: die Webseite der Rockband „Mouse Rat“.
   Aufgaben stehen unten in HTMLKURS, die Technik steckt in lib/htmlkurs.js (Aufbau dort oben beschrieben).
 -->
 <script>/* ../../katalog.js */
@@ -60,7 +60,7 @@ window.KATALOG = {
           id: 'excel', titel: 'Excel', farbe: '#a3be8c', farbeHell: '#5e8a45',
           text: 'Tabellenkalkulation: Funktionen, Bedingungen und Verknüpfungen.',
           tools: [
-            {id: 'fn',   stufen: 5, datei: 'funktionen.html', titel: 'SUMME, MIN, MAX …', text: 'SUMME, MITTELWERT, MIN, MAX, ANZAHL und ANZAHL2 – mit Erklärung, Übungen und Endlos-Modus.'},
+            {id: 'fn',   stufen: 5, datei: 'funktionen_1_6.html', titel: 'SUMME, MIN, MAX …', text: 'SUMME, MITTELWERT, MIN, MAX, ANZAHL und ANZAHL2 – mit Erklärung, Übungen und Endlos-Modus.'},
             {id: 'wenn', stufen: 9, datei: 'wenn.html',       titel: 'WENN-Funktion',     text: 'Die WENN-Funktion üben – von Bausteinen bis zur eigenen Formel.'},
             {id: 'wbz', stufen: 6, datei: 'wenn-bezuege.html', titel: 'WENN mit $', text: 'WENN-Formeln auf ganze Spalten übertragen: Grenzwerte mit $ festhalten – Zellen in der Tabelle auswählen wie in Excel.'},
             {id: 'uo',   stufen: 9, datei: 'und-oder.html',   titel: 'UND / ODER',        text: 'Bedingungen verknüpfen – mit Erarbeitung, Übungen und Endlos-Modus.'},
@@ -78,12 +78,12 @@ window.KATALOG = {
         {id: 'html', titel: 'HTML', farbe: '#e8a5c0', farbeHell: '#ad4c7a', text: 'Webseiten gestalten mit HTML und CSS.',
           tools: [
             {id: 'htmled', datei: 'editor.html', titel: 'HTML-Editor', text: 'HTML und CSS schreiben und sofort die Vorschau sehen – mit Regelprüfung, Handy-Ansicht und Download der fertigen Seite.'},
-            {id: 'htmlaufbau', gruppe: 'Kurs', stufen: 3, datei: 'aufbau.html', titel: '1 Aufbau einer Webseite', text: 'Tags, Elemente, Attribute und das Grundgerüst: 6 Aufgaben an der Webseite der Band Mouse Rat.'},
-            {id: 'htmltext', gruppe: 'Kurs', stufen: 3, datei: 'text.html', titel: '2 Text strukturieren', text: 'Überschriften, Absätze, Zeilenumbruch, Aufzählung und nummerierte Liste.'},
-            {id: 'htmllinks', gruppe: 'Kurs', stufen: 3, datei: 'links-bilder.html', titel: '3 Links und Bilder', text: 'Hyperlinks, Sprungmarken und Bilder mit Alternativtext.'},
-            {id: 'htmlcss', gruppe: 'Kurs', stufen: 3, datei: 'css-grundlagen.html', titel: '4 CSS-Grundlagen', text: 'Stilvorlagen: Regeln aus Selektor, Attribut und Attributwert – Farbe, Schrift, Ausrichtung.'},
-            {id: 'htmlklassen', gruppe: 'Kurs', stufen: 3, datei: 'klassen-abstaende.html', titel: '5 Klassen und Abstände', text: 'Klassenselektor, Rahmen, Innen- und Außenabstand (Boxmodell).'},
-            {id: 'htmldesign', gruppe: 'Kurs', stufen: 3, datei: 'design-projekt.html', titel: '6 Design und Projekt', text: 'Gute Gestaltung: Inhalt, Bedienbarkeit, Barrierefreiheit, verschiedene Geräte – dann die eigene Seite entwerfen und herunterladen.'},
+            {id: 'htmlaufbau', gruppe: 'Kurs', stufen: 3, datei: '01-aufbau-webseite.html', titel: '1 Aufbau einer Webseite', text: 'Tags, Elemente, Attribute und das Grundgerüst: 6 Aufgaben an der Webseite der Band Mouse Rat.'},
+            {id: 'htmltext', gruppe: 'Kurs', stufen: 3, datei: '02-text-strukturieren.html', titel: '2 Text strukturieren', text: 'Überschriften, Absätze, Zeilenumbruch, Aufzählung und nummerierte Liste.'},
+            {id: 'htmllinks', gruppe: 'Kurs', stufen: 3, datei: '03-links-bilder.html', titel: '3 Links und Bilder', text: 'Hyperlinks, Sprungmarken und Bilder mit Alternativtext.'},
+            {id: 'htmlcss', gruppe: 'Kurs', stufen: 3, datei: '04-css-grundlagen.html', titel: '4 CSS-Grundlagen', text: 'Stilvorlagen: Regeln aus Selektor, Attribut und Attributwert – Farbe, Schrift, Ausrichtung.'},
+            {id: 'htmlklassen', gruppe: 'Kurs', stufen: 3, datei: '05-klassen-abstaende.html', titel: '5 Klassen und Abstände', text: 'Klassenselektor, Rahmen, Innen- und Außenabstand (Boxmodell).'},
+            {id: 'htmldesign', gruppe: 'Kurs', stufen: 3, datei: '06-design-projekt.html', titel: '6 Design und Projekt', text: 'Gute Gestaltung: Inhalt, Bedienbarkeit, Barrierefreiheit, verschiedene Geräte – dann die eigene Seite entwerfen und herunterladen.'},
             {id: 'htmlfehler', datei: 'fehlersuche.html', titel: 'Fehlersuche', text: 'Fehler in HTML und CSS finden und verbessern: In einer Zeile steckt ein Fehler – endlos neue Aufgaben.'}
           ]
         },
@@ -116,7 +116,7 @@ window.KATALOG = {
           bereiche: [
             {id: 'aufwand-ertrag', titel: 'Aufwendungen und Erträge', farbe: '#88c0d0', farbeHell: '#3b7f8c', text: 'Aufwands- und Ertragskonten: Einkauf und Verkauf buchen.',
               tools: [
-                {id: 'chat-uefe', datei: 'verkauf-uefe.html', titel: 'Lern-Chat: Verkauf eigener Erzeugnisse', text: 'Im Chat Schritt für Schritt den Buchungssatz für einen Verkauf erarbeiten: BK an UEFE, UST.'}
+                {id: 'chat-uefe', datei: 'lernchat-verkauf-eigener-erzeugnisse.html', titel: 'Lern-Chat: Verkauf eigener Erzeugnisse', text: 'Im Chat Schritt für Schritt den Buchungssatz für einen Verkauf erarbeiten: BK an UEFE, UST.'}
               ]}
           ]
         },
@@ -2063,314 +2063,218 @@ code{font-family:var(--mono);background:var(--panel2);padding:1px 5px;border-rad
 })();
 
 </script>
-<script>/* lib/mouserat.js */
-/* vibe learning – HTML-Kurs: die Seite der Band „Mouse Rat“, wie sie nach den HTML-Kapiteln aussieht
- *
- * Ausgangsstand für die Kursseiten zu CSS und Design (nach htmlwerk.js einbinden, vor der Aufgabenliste):
- *   MOUSERAT.html   ganze Seite; %CSS% steht für die Einbindung von style.css (ersetzt htmlkurs.js)
- *   MOUSERAT.css    Stilvorlage nach dem Kapitel „CSS-Grundlagen“
- * Varianten für einzelne Aufgaben bildet die Kursseite mit .replace(…).
- */
-window.MOUSERAT = {
-  html: `<!DOCTYPE html>
-<html lang="de">
-  <head>
-    <meta charset="utf-8">
-    <title>Mouse Rat</title>
-    %CSS%
-  </head>
-  <body>
-    <img src="bilder/logo.svg" alt="Logo von Mouse Rat" width="120">
-    <h1>Mouse Rat</h1>
-    <p>Die beste Rockband aus Pawnee.</p>
-    <p><a href="#band">Die Band</a> <a href="#konzerte">Konzerte</a> <a href="#musik">Musik</a></p>
-
-    <h2 id="band">Die Band</h2>
-    <img src="bilder/band.svg" alt="Die vier Musiker von Mouse Rat auf der Bühne" width="400">
-    <p>Wir spielen Rock, wie er sein muss: <strong>laut und mit Gefühl</strong>.</p>
-    <ul>
-      <li>Andy: Gesang und Gitarre</li>
-      <li>Burly: Gitarre</li>
-      <li>Chang: Bass</li>
-      <li>Rivers: Schlagzeug</li>
-    </ul>
-
-    <h2 id="konzerte">Konzerte</h2>
-    <p>Nächstes Konzert: Samstag, 20 Uhr, Schlangenloch-Lounge</p>
-
-    <h2 id="musik">Musik</h2>
-    <img src="bilder/album.svg" alt="Cover von „Das Hammer-Album“" width="200">
-    <ol>
-      <li>5000 Kerzen im Wind</li>
-      <li>Die Grube</li>
-      <li>Fang deinen Traum</li>
-    </ol>
-    <p>Booking: <a href="mailto:band@mouserat.example">band@mouserat.example</a></p>
-  </body>
-</html>
-`,
-  css: `body {
-  background-color: #1d1f2b;
-  color: white;
-  font-family: Arial, sans-serif;
-}
-
-h1, h2 {
-  color: #f2c94c;
-}
-
-h1 {
-  font-size: 48px;
-  text-align: center;
-}
-
-a {
-  color: #f2c94c;
-}
-`
-};
-
-</script>
 </head>
 <body>
 <noscript><p>Bitte JavaScript aktivieren.</p></noscript>
 <script>
-const MR = window.MOUSERAT.html;
-const BODY = `body {
-  background-color: #1d1f2b;
-  color: white;
-}
-`;
-const SCHRIFT = `body {
-  background-color: #1d1f2b;
-  color: white;
-  font-family: Arial, sans-serif;
-}
-
-h1 {
-  color: red;
-  font-size: 48px;
-}
+// Grundgerüst mit beliebigem Inhalt im body
+const SEITE = body => `<!DOCTYPE html>
+<html>
+  <head>
+    <title>Mouse Rat</title>
+  </head>
+  <body>
+${body}
+  </body>
+</html>
 `;
 
 window.HTMLKURS = {
-  id: 'htmlcss',
-  titel: 'CSS-Grundlagen',
-  logo: 'CSS',
-  css: true, bilder: true, datei: 'css',
+  id: 'htmlaufbau',
+  titel: 'Aufbau einer Webseite',
+  logo: 'Aufbau',
   aufgaben: [
     {
-      titel: 'Die erste Regel', stufe: 1,
+      titel: 'Tags und Elemente', stufe: 1,
       wissen: `
-<p>HTML legt fest, <b>was</b> auf der Seite steht: Überschriften, Absätze, Listen. Wie das <b>aussieht</b>, bestimmt eine zweite Sprache: <b>CSS</b>. Sie steht in einer eigenen Datei, der Stilvorlage {{style.css}}.</p>
-<p>Über dem Code gibt es jetzt einen Schalter zwischen <b>HTML</b> und <b>CSS</b>. In der HTML-Datei bindet diese Zeile im {{head}} die Stilvorlage ein. Sie ist fest und lässt sich nicht löschen:</p>
+<p>Die Rockband <b>Mouse Rat</b> aus Pawnee braucht eine Webseite. In diesem Kurs baust du sie Schritt für Schritt.</p>
+<p>Eine Webseite wird in der Sprache <b>HTML</b> geschrieben. HTML zeichnet Text aus: Es sagt dem Browser, <i>was</i> ein Text ist, zum Beispiel eine Überschrift oder ein Absatz. Dafür gibt es <b>Tags</b> in spitzen Klammern.</p>
+~~~html
+<h1>Willkommen</h1>
+<p>Das ist ein Absatz.</p>
+~~~
+<table class="k-tab">
+  <tr><th>Teil</th><th>Beispiel</th></tr>
+  <tr><td>öffnendes Tag</td><td>{{<h1>}}</td></tr>
+  <tr><td>Inhalt</td><td>Willkommen</td></tr>
+  <tr><td>schließendes Tag (mit Schrägstrich)</td><td>{{</h1>}}</td></tr>
+</table>
+<p>Alles zusammen heißt <b>Element</b>. {{h1}} ist die wichtigste Überschrift, {{p}} ein Absatz (englisch <i>paragraph</i>).</p>`,
+      auftrag: `
+<p>Schreibe in den {{body}} (zwischen {{<body>}} und {{</body>}}):</p>
+<ul>
+  <li>die Überschrift {{h1}} mit dem Text <b>Mouse Rat</b></li>
+  <li>darunter einen Absatz {{p}} mit dem Text <b>Die beste Rockband aus Pawnee.</b></li>
+</ul>
+<p>Unten in der Vorschau siehst du sofort, wie der Browser deine Seite zeigt.</p>`,
+      start: SEITE('    '),
+      tipps: ['Die Überschrift lautet {{<h1>Mouse Rat</h1>}}.', 'Der Absatz: {{<p>Die beste Rockband aus Pawnee.</p>}}'],
+      tests: [
+        {sel: 'body h1', enthaelt: 'Mouse Rat', text: 'Überschrift <code>h1</code> mit dem Text „Mouse Rat“'},
+        {sel: 'body p', enthaelt: 'beste Rockband aus Pawnee', text: 'Absatz <code>p</code> mit dem Text „Die beste Rockband aus Pawnee.“'}
+      ]
+    },
+    {
+      titel: 'Jedes Tag wird geschlossen', stufe: 1,
+      wissen: `
+<p><b>Regel:</b> Zu jedem öffnenden Tag gehört ein schließendes Tag mit demselben Namen und einem Schrägstrich.</p>
 ~~~html nur
-%CSS%
+<p>Richtig: Der Absatz wird geschlossen.</p>
+<p>Falsch: Hier fehlt das Ende.
 ~~~
-<p>Eine Stilvorlage besteht aus <b>Regeln</b>:</p>
-~~~html
-<h2>Konzerte</h2>
-<p>Samstag, 20 Uhr</p>
-~~~css
-h2 {
-  color: blue;
-}
+<p>Browser sind gutmütig und zeigen fehlerhafte Seiten oft trotzdem an. Verlassen kann man sich darauf nicht: Jeder Browser rät anders. Deshalb gibt es gemeinsame Regeln, die das <b>W3C</b> (World Wide Web Consortium) festlegt.</p>
+<p>Der Editor prüft diese Regeln, während du schreibst. Fehler stehen unter dem Code, die Zeile ist rot markiert. Ein Klick auf den Hinweis springt zur Zeile.</p>`,
+      auftrag: `
+<p>Andy hat angefangen, die Seite zu schreiben. Dabei sind ihm <b>drei Fehler</b> passiert.</p>
+<p>Lies die Hinweise unter dem Code und verbessere alle Fehler. Die Texte sollen gleich bleiben.</p>`,
+      start: SEITE(`    <h1>Mouse Rat</h2>
+    <p>Die beste Rockband aus Pawnee.
+    <p>Wir spielen Rock, wie er sein muss: laut und mit Gefühl.</p>
+    <p>Unser nächstes Konzert findest du bald hier.</p`),
+      tipps: ['Eine Überschrift, die mit {{<h1>}} beginnt, endet mit {{</h1>}}.', 'Der erste Absatz hat kein {{</p>}}. Beim letzten Absatz fehlt die spitze Klammer {{>}} am Ende.'],
+      tests: [
+        {sel: 'body h1', enthaelt: 'Mouse Rat', text: 'Überschrift <code>h1</code> „Mouse Rat“'},
+        {sel: 'body p', anzahl: 3, text: 'genau drei Absätze'},
+        {sel: 'body p', enthaelt: 'nächstes Konzert', text: 'Der letzte Absatz ist vollständig'}
+      ]
+    },
+    {
+      titel: 'Das Grundgerüst', stufe: 2,
+      wissen: `
+<p>Jede HTML-Seite hat dasselbe <b>Grundgerüst</b>:</p>
+~~~html nur
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Titel der Seite</title>
+  </head>
+  <body>
+    Hier steht alles, was man sieht.
+  </body>
+</html>
 ~~~
 <table class="k-tab">
-  <tr><th>Teil</th><th>Beispiel</th><th>Bedeutung</th></tr>
-  <tr><td>Selektor</td><td>{{h2}}</td><td>Für welche Elemente gilt die Regel?</td></tr>
-  <tr><td>Attribut</td><td>{{color}}</td><td>Was wird eingestellt? Hier die Schriftfarbe.</td></tr>
-  <tr><td>Attributwert</td><td>{{blue}}</td><td>Auf welchen Wert?</td></tr>
+  <tr><th>Teil</th><th>Bedeutung</th></tr>
+  <tr><td>{{<!DOCTYPE html>}}</td><td>erste Zeile: „Diese Datei ist HTML.“</td></tr>
+  <tr><td>{{html}}</td><td>umschließt die ganze Seite</td></tr>
+  <tr><td>{{head}}</td><td>Kopf: Angaben <i>über</i> die Seite, nicht sichtbar</td></tr>
+  <tr><td>{{title}}</td><td>Titel, steht oben im Reiter (Tab) des Browsers</td></tr>
+  <tr><td>{{body}}</td><td>Körper: der sichtbare Inhalt</td></tr>
 </table>
-<p>Die Angaben stehen in geschweiften Klammern. Nach dem Attribut folgt ein Doppelpunkt, am Ende jeder Angabe ein Strichpunkt. Farbnamen sind englisch: {{red}}, {{blue}}, {{green}}, {{orange}}, {{white}}, {{black}} …</p>`,
+<p>Die Zeilen sind <b>eingerückt</b>. Dem Browser ist das egal, aber du siehst so sofort, was wozu gehört.</p>`,
       auftrag: `
-<p>Die Seite von Mouse Rat sieht noch aus wie ein Schulaufsatz. Das ändert sich jetzt.</p>
-<p>Schreibe in die Datei {{style.css}} eine Regel, die die Überschrift {{h1}} <b>rot</b> färbt.</p>`,
-      start: MR, startCss: '',
-      tipps: ['Der Selektor ist {{h1}}, das Attribut {{color}}, der Wert {{red}}.', 'Die ganze Regel: {{h1 { color: red; }}}'],
-      tests: [
-        {regel: 'h1', attribut: 'color', text: 'Regel mit dem Selektor <code>h1</code> und dem Attribut <code>color</code>'},
-        {stil: 'h1', attribut: 'color', wert: 'red', text: 'Die Überschrift <code>h1</code> ist rot'}
-      ]
-    },
-    {
-      titel: 'Hintergrund und Schriftfarbe', stufe: 1,
-      wissen: `
-<p>Eine Regel kann <b>mehrere Angaben</b> enthalten, jede in einer eigenen Zeile.</p>
-~~~html
-<p>Heute Abend: Mouse Rat live!</p>
-~~~css
-p {
-  background-color: black;
-  color: #ffd700;
-}
-~~~
-<table class="k-tab">
-  <tr><th>Attribut</th><th>Bedeutung</th></tr>
-  <tr><td>{{color}}</td><td>Schriftfarbe</td></tr>
-  <tr><td>{{background-color}}</td><td>Hintergrundfarbe</td></tr>
-</table>
-<p>Mit Namen kommt man nicht weit. Jede beliebige Farbe schreibst du als <b>Farbcode</b>: ein {{#}} und sechs Zeichen, je zwei für den Anteil Rot, Grün und Blau. {{#000000}} ist Schwarz, {{#ffffff}} Weiß, {{#ff0000}} reines Rot.</p>
-<p>Der Selektor {{body}} trifft die ganze Seite. Was du dort einstellst, <b>erben</b> die Elemente darin, zum Beispiel die Schriftfarbe.</p>`,
-      auftrag: `
-<p>Eine Rockband braucht eine dunkle Seite. Ergänze eine Regel für {{body}}:</p>
+<p>Vom Grundgerüst steht nur der Anfang da. Ergänze:</p>
 <ul>
-  <li>Hintergrundfarbe: {{#1d1f2b}} (fast schwarz)</li>
-  <li>Schriftfarbe: {{white}}</li>
+  <li>im {{head}} den Titel <b>Mouse Rat</b></li>
+  <li>den {{body}} mit der Überschrift {{h1}} <b>Mouse Rat</b> und einem Absatz deiner Wahl</li>
 </ul>`,
-      start: MR, startCss: 'h1 {\n  color: red;\n}\n',
-      tipps: ['Beginne mit {{body {}} und schließe mit {{}}}. Dazwischen stehen zwei Zeilen.', '{{background-color: #1d1f2b;}} und {{color: white;}}'],
-      tests: [
-        {regel: 'body', text: 'Regel mit dem Selektor <code>body</code>'},
-        {stil: 'body', attribut: 'background-color', wert: '#1d1f2b', text: 'Hintergrundfarbe der Seite: <code>#1d1f2b</code>'},
-        {stil: 'body', attribut: 'color', wert: 'white', text: 'Schriftfarbe der Seite: weiß'},
-        {stil: 'p', attribut: 'color', wert: 'white', text: 'Die Absätze haben die Schriftfarbe geerbt'}
-      ]
-    },
-    {
-      titel: 'Schrift', stufe: 2,
-      wissen: `
-<p>Auch die Schrift stellst du mit CSS ein.</p>
-~~~html
-<h2>Konzerte</h2>
-<p>Samstag, 20 Uhr</p>
-~~~css
-h2 {
-  font-family: Georgia, serif;
-  font-size: 30px;
-}
-~~~
-<table class="k-tab">
-  <tr><th>Attribut</th><th>Bedeutung</th><th>Beispielwert</th></tr>
-  <tr><td>{{font-family}}</td><td>Schriftart</td><td>{{Arial, sans-serif}}</td></tr>
-  <tr><td>{{font-size}}</td><td>Schriftgröße</td><td>{{20px}}</td></tr>
-</table>
-<ul>
-  <li>Bei {{font-family}} nennst du mehrere Schriften mit Komma. Fehlt die erste auf einem Gerät, nimmt der Browser die nächste. Am Ende steht immer eine allgemeine Angabe: {{sans-serif}} (ohne Füßchen) oder {{serif}} (mit Füßchen).</li>
-  <li>Größen brauchen eine <b>Einheit</b>. {{px}} steht für Pixel und folgt ohne Leerzeichen auf die Zahl.</li>
-</ul>`,
-      auftrag: `
-<p>Gib der Seite eine moderne Schrift:</p>
-<ul>
-  <li>ganze Seite ({{body}}): Schriftart {{Arial, sans-serif}}</li>
-  <li>Überschrift {{h1}}: Schriftgröße {{48px}}</li>
-</ul>
-<p>Ergänze dafür die Regeln, die es schon gibt.</p>`,
-      start: MR, startCss: 'h1 {\n  color: red;\n}\n\n' + BODY,
-      tipps: ['In die Regel für {{body}} kommt eine dritte Zeile: {{font-family: Arial, sans-serif;}}', 'In die Regel für {{h1}}: {{font-size: 48px;}}'],
-      tests: [
-        {stil: 'body', attribut: 'font-family', wert: 'Arial, sans-serif', text: 'Schriftart der Seite: <code>Arial, sans-serif</code>'},
-        {stil: 'h1', attribut: 'font-size', wert: '48px', text: 'Schriftgröße von <code>h1</code>: 48 Pixel'},
-        {stil: 'body', attribut: 'background-color', wert: '#1d1f2b', text: 'Der dunkle Hintergrund ist geblieben'}
-      ]
-    },
-    {
-      titel: 'Mehrere Selektoren, Ausrichtung', stufe: 2,
-      wissen: `
-<p>Sollen verschiedene Elemente gleich aussehen, schreibst du die Selektoren mit <b>Komma</b> vor eine gemeinsame Regel. So musst du eine Farbe später nur an einer Stelle ändern.</p>
-~~~html
-<h2>Konzerte</h2>
-<h3>Im Sommer</h3>
-<p>Erntefest Pawnee</p>
-~~~css
-h2, h3 {
-  color: darkorange;
-}
+      start: `<!DOCTYPE html>
+<html>
+  <head>
 
-h2 {
-  text-align: center;
-}
-~~~
-<p>{{text-align}} richtet Text aus: {{left}} (links), {{center}} (mittig) oder {{right}} (rechts).</p>
-<p>Für ein Element dürfen mehrere Regeln gelten. Der Browser fasst sie zusammen: {{h2}} ist hier orange <b>und</b> mittig.</p>`,
-      auftrag: `
-<p>Die Farbe der Band ist Gelb. Ändere die Stilvorlage:</p>
-<ul>
-  <li>{{h1}} und {{h2}} bekommen in <b>einer gemeinsamen Regel</b> die Schriftfarbe {{#f2c94c}}.</li>
-  <li>{{h1}} steht mittig. Die Angabe {{color: red;}} bei {{h1}} brauchst du nicht mehr.</li>
-</ul>`,
-      start: MR, startCss: SCHRIFT,
-      tipps: ['Die gemeinsame Regel beginnt mit {{h1, h2 {}}.', 'In die Regel für {{h1}} kommt {{text-align: center;}}. Lösche dort die Zeile mit {{color: red;}}.'],
-      tests: [
-        {css: /(^|\})\s*h[12]\s*,\s*h[12]\s*\{/, text: 'gemeinsame Regel für <code>h1, h2</code>'},
-        {stil: 'h1', attribut: 'color', wert: '#f2c94c', text: '<code>h1</code> ist gelb (<code>#f2c94c</code>)'},
-        {stil: 'h2', attribut: 'color', wert: '#f2c94c', text: 'alle <code>h2</code> sind gelb'},
-        {stil: 'h1', attribut: 'text-align', wert: 'center', text: '<code>h1</code> steht mittig'},
-        {stil: 'h2', attribut: 'text-align', ungleich: 'center', text: '<code>h2</code> bleibt linksbündig'}
-      ]
-    },
-    {
-      titel: 'Fehler in der Stilvorlage', stufe: 2,
-      wissen: `
-<p>Auch für CSS legt das W3C die Regeln fest. Anders als bei HTML rät der Browser hier nicht: Eine Angabe, die er nicht versteht, <b>lässt er einfach weg</b>. Die Seite sieht dann anders aus als geplant, ohne Fehlermeldung.</p>
-<p>Die häufigsten Fehler:</p>
-<ul>
-  <li>Strichpunkt am Ende einer Angabe vergessen</li>
-  <li>Doppelpunkt zwischen Attribut und Wert vergessen</li>
-  <li>schließende Klammer {{}}} vergessen</li>
-  <li>Einheit vergessen: {{48}} statt {{48px}}</li>
-  <li>deutsche statt englische Wörter</li>
-</ul>
-<p>Der Editor zeigt solche Fehler unter dem Code an, genau wie bei HTML.</p>`,
-      auftrag: `
-<p>Chang hat an der Stilvorlage weitergeschrieben, und jetzt ist die Seite kaputt.</p>
-<p>Finde alle <b>fünf Fehler</b> in {{style.css}} und verbessere sie. Nach jedem behobenen Fehler zeigt der Editor den nächsten.</p>`,
-      start: MR,
-      startCss: `body {
-  background-color: #1d1f2b
-  color: weiß;
-  font-family: Arial, sans-serif;
-}
+  </head>
 
-h1, h2 {
-  color: #f2c94c;
-
-h1 {
-  font-size: 48;
-  text-align center;
-}
+</html>
 `,
-      tipps: ['Zeile 2 endet ohne Strichpunkt. Weiß heißt auf Englisch {{white}}.', 'Die Regel für {{h1, h2}} wird nie geschlossen. Bei {{font-size}} fehlt die Einheit, bei {{text-align}} der Doppelpunkt.'],
+      tipps: ['Der Titel: {{<title>Mouse Rat</title>}} zwischen {{<head>}} und {{</head>}}.', 'Der {{body}} beginnt nach {{</head>}} und endet vor {{</html>}}.'],
       tests: [
-        {stil: 'body', attribut: 'background-color', wert: '#1d1f2b', text: 'dunkler Hintergrund'},
-        {stil: 'body', attribut: 'color', wert: 'white', text: 'weiße Schrift'},
-        {stil: 'h2', attribut: 'color', wert: '#f2c94c', text: 'gelbe Überschriften'},
-        {stil: 'h1', attribut: 'font-size', wert: '48px', text: '<code>h1</code> ist 48 Pixel groß'},
-        {stil: 'h1', attribut: 'text-align', wert: 'center', text: '<code>h1</code> steht mittig'}
+        {sel: 'head title', enthaelt: 'Mouse Rat', text: 'Titel „Mouse Rat“ im <code>head</code>'},
+        {sel: 'body h1', enthaelt: 'Mouse Rat', text: 'Überschrift <code>h1</code> „Mouse Rat“ im <code>body</code>'},
+        {test: doc => [...doc.querySelectorAll('body p')].some(p => p.textContent.trim().length >= 5), text: 'ein Absatz <code>p</code> mit eigenem Text'}
       ]
     },
     {
-      titel: 'Links und Text gestalten', stufe: 3,
+      titel: 'Elemente verschachteln', stufe: 2,
       wissen: `
-<p>Jedes HTML-Element lässt sich gestalten, auch Links und Absätze. Drei weitere Attribute:</p>
-<table class="k-tab">
-  <tr><th>Attribut</th><th>Bedeutung</th><th>Beispielwerte</th></tr>
-  <tr><td>{{font-weight}}</td><td>Schriftstärke</td><td>{{bold}} (fett), {{normal}}</td></tr>
-  <tr><td>{{text-decoration}}</td><td>Linie am Text</td><td>{{underline}} (unterstrichen), {{none}} (keine)</td></tr>
-  <tr><td>{{line-height}}</td><td>Zeilenabstand als Vielfaches der Schriftgröße</td><td>{{1.5}}</td></tr>
-</table>
+<p>Elemente können <b>ineinander</b> stehen. Mit {{strong}} hebst du etwas Wichtiges hervor, mit {{em}} betonst du ein Wort.</p>
 ~~~html
-<p>Karten gibt es <a href="#karten">an der Abendkasse</a>.</p>
-~~~css
-a {
-  color: darkorange;
-  font-weight: bold;
-}
+<p>Der Eintritt ist <strong>frei</strong>, aber komm <em>pünktlich</em>.</p>
 ~~~
-<p>Blaue Links auf dunklem Grund sind schwer zu lesen. Genug <b>Kontrast</b> zwischen Schrift und Hintergrund gehört zu einer gut bedienbaren Seite.</p>`,
+<p><b>Regel:</b> Was zuletzt geöffnet wurde, wird zuerst geschlossen. Wie bei Schachteln: Die innere Schachtel muss zu sein, bevor du die äußere schließt.</p>
+~~~html nur
+<p>Richtig: <strong>erst innen schließen,</strong> dann außen.</p>
+<p>Falsch: <strong>außen vor innen geschlossen.</p></strong>
+~~~`,
       auftrag: `
-<p>Schreibe zwei neue Regeln:</p>
+<p>Zwei Dinge sind zu tun:</p>
 <ul>
-  <li>Links ({{a}}): Schriftfarbe {{#f2c94c}}, fett</li>
-  <li>Absätze ({{p}}): Zeilenabstand {{1.5}}</li>
+  <li>Im ersten Absatz ist die Verschachtelung falsch. Verbessere sie.</li>
+  <li>Hebe im zweiten Absatz die Wörter <b>laut und mit Gefühl</b> mit {{strong}} hervor.</li>
 </ul>`,
-      start: MR, startCss: window.MOUSERAT.css.replace(/\na \{[\s\S]*$/, ''),
-      tipps: ['Die erste Regel: Selektor {{a}}, darin {{color}} und {{font-weight}}.', '{{p { line-height: 1.5; }}} Der Wert hat keine Einheit und einen Punkt statt Komma.'],
+      start: SEITE(`    <h1>Mouse Rat</h1>
+    <p>Die <em>beste</em> Rockband aus <strong>Pawnee.</p></strong>
+    <p>Wir spielen Rock, wie er sein muss: laut und mit Gefühl.</p>`),
+      tipps: ['Im ersten Absatz muss {{</strong>}} vor {{</p>}} stehen.', 'Zweiter Absatz: {{<strong>laut und mit Gefühl</strong>}}'],
       tests: [
-        {regel: 'a', attribut: 'color', text: 'Regel für <code>a</code>'},
-        {stil: 'a', attribut: 'color', wert: '#f2c94c', text: 'Links sind gelb (<code>#f2c94c</code>)'},
-        {stil: 'a', attribut: 'font-weight', wert: 'bold', text: 'Links sind fett'},
-        {stil: 'p', attribut: 'line-height', wert: '1.5', text: 'Zeilenabstand der Absätze: 1.5'}
+        {sel: 'body p', anzahl: 2, text: 'zwei Absätze'},
+        {sel: 'p strong', enthaelt: 'Pawnee', text: '„Pawnee“ ist im ersten Absatz hervorgehoben'},
+        {sel: 'p strong', enthaelt: 'laut und mit Gefühl', text: '„laut und mit Gefühl“ ist mit <code>strong</code> hervorgehoben'}
+      ]
+    },
+    {
+      titel: 'Attribute', stufe: 2,
+      wissen: `
+<p>Ein öffnendes Tag kann <b>Attribute</b> tragen. Sie geben dem Element zusätzliche Eigenschaften.</p>
+~~~html nur
+<html lang="de">
+~~~
+<table class="k-tab">
+  <tr><th>Teil</th><th>Beispiel</th></tr>
+  <tr><td>Name des Attributs</td><td>{{lang}}</td></tr>
+  <tr><td>Gleichheitszeichen</td><td>{{=}}</td></tr>
+  <tr><td>Attributwert in Anführungszeichen</td><td>{{"de"}}</td></tr>
+</table>
+<p>{{lang="de"}} sagt: Diese Seite ist auf Deutsch. Das brauchen zum Beispiel Vorleseprogramme für blinde Menschen, damit sie die richtige Aussprache wählen.</p>
+<p>In den {{head}} gehört außerdem diese Zeile:</p>
+~~~html nur
+<meta charset="utf-8">
+~~~
+<p>Sie legt den Zeichensatz fest, damit ä, ö, ü und ß überall richtig erscheinen. {{meta}} hat <b>keinen Inhalt</b> und deshalb auch kein schließendes Tag.</p>`,
+      auftrag: `
+<p>Ergänze die Seite von Mouse Rat:</p>
+<ul>
+  <li>Gib dem Element {{html}} das Attribut {{lang}} mit dem Wert {{de}}.</li>
+  <li>Schreibe in den {{head}} die Zeile mit dem Zeichensatz {{utf-8}}.</li>
+</ul>`,
+      start: SEITE(`    <h1>Mouse Rat</h1>
+    <p>Die beste Rockband aus Pawnee.</p>
+    <p>Wir spielen Rock, wie er sein muss: <strong>laut und mit Gefühl</strong>.</p>`),
+      tipps: ['Das Attribut steht im öffnenden Tag: {{<html lang="de">}}', 'In den head: {{<meta charset="utf-8">}}'],
+      tests: [
+        {sel: 'html[lang="de"]', text: '<code>html</code> hat das Attribut <code>lang="de"</code>'},
+        {sel: 'head meta[charset="utf-8" i]', text: 'Zeichensatz <code>utf-8</code> im <code>head</code>'},
+        {sel: 'body h1', enthaelt: 'Mouse Rat', text: 'Der Inhalt der Seite ist noch da'}
+      ]
+    },
+    {
+      titel: 'Eine Seite von Anfang an', stufe: 3,
+      wissen: `
+<p>Jetzt kannst du alles, was eine einfache Seite braucht:</p>
+<ul>
+  <li>Grundgerüst: {{<!DOCTYPE html>}}, {{html}}, {{head}}, {{body}}</li>
+  <li>im Kopf: {{meta}} mit dem Zeichensatz und {{title}}</li>
+  <li>im Körper: Überschrift {{h1}}, Absätze {{p}}, Hervorhebung mit {{strong}} oder {{em}}</li>
+</ul>
+<p>Denk an die Regeln: jedes Tag schließen, richtig verschachteln, Attributwerte in Anführungszeichen.</p>`,
+      auftrag: `
+<p>Der Editor ist leer. Schreibe die Startseite von Mouse Rat ganz allein:</p>
+<ul>
+  <li>vollständiges Grundgerüst, Sprache Deutsch, Zeichensatz {{utf-8}}</li>
+  <li>Titel der Seite: <b>Mouse Rat</b></li>
+  <li>Überschrift {{h1}}: <b>Mouse Rat</b></li>
+  <li>mindestens zwei Absätze über die Band</li>
+  <li>mindestens ein hervorgehobenes Wort ({{strong}} oder {{em}})</li>
+</ul>
+<p>Ideen für den Text: Sänger Andy, vier Mitglieder, Proberaum in einer Garage, der größte Hit heißt „5000 Kerzen im Wind“.</p>`,
+      start: '',
+      tipps: ['Beginne mit {{<!DOCTYPE html>}} und schreibe zuerst das leere Grundgerüst. Fülle es danach.', 'Schau bei Aufgabe 3 nach, wie das Grundgerüst aussieht.'],
+      tests: [
+        {sel: 'html[lang="de"]', text: 'Sprache Deutsch: <code>lang="de"</code>'},
+        {sel: 'head meta[charset="utf-8" i]', text: 'Zeichensatz <code>utf-8</code>'},
+        {sel: 'head title', enthaelt: 'Mouse Rat', text: 'Titel „Mouse Rat“'},
+        {sel: 'body h1', enthaelt: 'Mouse Rat', text: 'Überschrift <code>h1</code> „Mouse Rat“'},
+        {test: doc => [...doc.querySelectorAll('body p')].filter(p => p.textContent.trim().length >= 5).length >= 2, text: 'mindestens zwei Absätze'},
+        {sel: 'body strong, body em', text: 'mindestens ein hervorgehobenes Wort'}
       ]
     }
   ]
@@ -2379,7 +2283,7 @@ a {
 <script>/* lib/htmlkurs.js */
 /* vibe learning – geführte HTML- und CSS-Übungen mit Vorschau und automatischer Prüfung
  *
- * Eine Übungsseite (z. B. aufbau.html) legt window.HTMLKURS an und bindet danach ein:
+ * Eine Übungsseite (z. B. 01-aufbau-webseite.html) legt window.HTMLKURS an und bindet danach ein:
  * ../python/lib/codemirror.min.js (+ .css), lib/codemirror-html.js, lib/mediathek.js,
  * lib/htmlwerk.js und diese Datei.
  *

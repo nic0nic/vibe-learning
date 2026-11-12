@@ -1,13 +1,13 @@
 <!doctype html>
-<html lang="de" data-trainer="htmlaufbau">
+<html lang="de" data-trainer="htmldesign">
 <head>
 <script>window.PF_EINZELDATEI = true;</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Aufbau einer Webseite – vibe learning</title>
+<title>Design und Projekt – vibe learning</title>
 <!--
-  HTML-Kurs, Seite 1: Tags, Elemente, Attribute, Grundgerüst und Verschachtelung.
-  Durchgehendes Beispiel des Kurses: die Webseite der Rockband „Mouse Rat“.
+  HTML-Kurs, Seite 6: gestalterische Ziele (Inhalt, Bedienbarkeit, Barrierefreiheit) und Anforderungen (Geräte), dann eine eigene Seite als Projekt.
+  Durchgehendes Beispiel des Kurses: die Webseite der Rockband „Mouse Rat“ (Ausgangsstand in lib/mouserat.js).
   Aufgaben stehen unten in HTMLKURS, die Technik steckt in lib/htmlkurs.js (Aufbau dort oben beschrieben).
 -->
 <script>/* ../../katalog.js */
@@ -60,7 +60,7 @@ window.KATALOG = {
           id: 'excel', titel: 'Excel', farbe: '#a3be8c', farbeHell: '#5e8a45',
           text: 'Tabellenkalkulation: Funktionen, Bedingungen und Verknüpfungen.',
           tools: [
-            {id: 'fn',   stufen: 5, datei: 'funktionen.html', titel: 'SUMME, MIN, MAX …', text: 'SUMME, MITTELWERT, MIN, MAX, ANZAHL und ANZAHL2 – mit Erklärung, Übungen und Endlos-Modus.'},
+            {id: 'fn',   stufen: 5, datei: 'funktionen_1_6.html', titel: 'SUMME, MIN, MAX …', text: 'SUMME, MITTELWERT, MIN, MAX, ANZAHL und ANZAHL2 – mit Erklärung, Übungen und Endlos-Modus.'},
             {id: 'wenn', stufen: 9, datei: 'wenn.html',       titel: 'WENN-Funktion',     text: 'Die WENN-Funktion üben – von Bausteinen bis zur eigenen Formel.'},
             {id: 'wbz', stufen: 6, datei: 'wenn-bezuege.html', titel: 'WENN mit $', text: 'WENN-Formeln auf ganze Spalten übertragen: Grenzwerte mit $ festhalten – Zellen in der Tabelle auswählen wie in Excel.'},
             {id: 'uo',   stufen: 9, datei: 'und-oder.html',   titel: 'UND / ODER',        text: 'Bedingungen verknüpfen – mit Erarbeitung, Übungen und Endlos-Modus.'},
@@ -78,12 +78,12 @@ window.KATALOG = {
         {id: 'html', titel: 'HTML', farbe: '#e8a5c0', farbeHell: '#ad4c7a', text: 'Webseiten gestalten mit HTML und CSS.',
           tools: [
             {id: 'htmled', datei: 'editor.html', titel: 'HTML-Editor', text: 'HTML und CSS schreiben und sofort die Vorschau sehen – mit Regelprüfung, Handy-Ansicht und Download der fertigen Seite.'},
-            {id: 'htmlaufbau', gruppe: 'Kurs', stufen: 3, datei: 'aufbau.html', titel: '1 Aufbau einer Webseite', text: 'Tags, Elemente, Attribute und das Grundgerüst: 6 Aufgaben an der Webseite der Band Mouse Rat.'},
-            {id: 'htmltext', gruppe: 'Kurs', stufen: 3, datei: 'text.html', titel: '2 Text strukturieren', text: 'Überschriften, Absätze, Zeilenumbruch, Aufzählung und nummerierte Liste.'},
-            {id: 'htmllinks', gruppe: 'Kurs', stufen: 3, datei: 'links-bilder.html', titel: '3 Links und Bilder', text: 'Hyperlinks, Sprungmarken und Bilder mit Alternativtext.'},
-            {id: 'htmlcss', gruppe: 'Kurs', stufen: 3, datei: 'css-grundlagen.html', titel: '4 CSS-Grundlagen', text: 'Stilvorlagen: Regeln aus Selektor, Attribut und Attributwert – Farbe, Schrift, Ausrichtung.'},
-            {id: 'htmlklassen', gruppe: 'Kurs', stufen: 3, datei: 'klassen-abstaende.html', titel: '5 Klassen und Abstände', text: 'Klassenselektor, Rahmen, Innen- und Außenabstand (Boxmodell).'},
-            {id: 'htmldesign', gruppe: 'Kurs', stufen: 3, datei: 'design-projekt.html', titel: '6 Design und Projekt', text: 'Gute Gestaltung: Inhalt, Bedienbarkeit, Barrierefreiheit, verschiedene Geräte – dann die eigene Seite entwerfen und herunterladen.'},
+            {id: 'htmlaufbau', gruppe: 'Kurs', stufen: 3, datei: '01-aufbau-webseite.html', titel: '1 Aufbau einer Webseite', text: 'Tags, Elemente, Attribute und das Grundgerüst: 6 Aufgaben an der Webseite der Band Mouse Rat.'},
+            {id: 'htmltext', gruppe: 'Kurs', stufen: 3, datei: '02-text-strukturieren.html', titel: '2 Text strukturieren', text: 'Überschriften, Absätze, Zeilenumbruch, Aufzählung und nummerierte Liste.'},
+            {id: 'htmllinks', gruppe: 'Kurs', stufen: 3, datei: '03-links-bilder.html', titel: '3 Links und Bilder', text: 'Hyperlinks, Sprungmarken und Bilder mit Alternativtext.'},
+            {id: 'htmlcss', gruppe: 'Kurs', stufen: 3, datei: '04-css-grundlagen.html', titel: '4 CSS-Grundlagen', text: 'Stilvorlagen: Regeln aus Selektor, Attribut und Attributwert – Farbe, Schrift, Ausrichtung.'},
+            {id: 'htmlklassen', gruppe: 'Kurs', stufen: 3, datei: '05-klassen-abstaende.html', titel: '5 Klassen und Abstände', text: 'Klassenselektor, Rahmen, Innen- und Außenabstand (Boxmodell).'},
+            {id: 'htmldesign', gruppe: 'Kurs', stufen: 3, datei: '06-design-projekt.html', titel: '6 Design und Projekt', text: 'Gute Gestaltung: Inhalt, Bedienbarkeit, Barrierefreiheit, verschiedene Geräte – dann die eigene Seite entwerfen und herunterladen.'},
             {id: 'htmlfehler', datei: 'fehlersuche.html', titel: 'Fehlersuche', text: 'Fehler in HTML und CSS finden und verbessern: In einer Zeile steckt ein Fehler – endlos neue Aufgaben.'}
           ]
         },
@@ -116,7 +116,7 @@ window.KATALOG = {
           bereiche: [
             {id: 'aufwand-ertrag', titel: 'Aufwendungen und Erträge', farbe: '#88c0d0', farbeHell: '#3b7f8c', text: 'Aufwands- und Ertragskonten: Einkauf und Verkauf buchen.',
               tools: [
-                {id: 'chat-uefe', datei: 'verkauf-uefe.html', titel: 'Lern-Chat: Verkauf eigener Erzeugnisse', text: 'Im Chat Schritt für Schritt den Buchungssatz für einen Verkauf erarbeiten: BK an UEFE, UST.'}
+                {id: 'chat-uefe', datei: 'lernchat-verkauf-eigener-erzeugnisse.html', titel: 'Lern-Chat: Verkauf eigener Erzeugnisse', text: 'Im Chat Schritt für Schritt den Buchungssatz für einen Verkauf erarbeiten: BK an UEFE, UST.'}
               ]}
           ]
         },
@@ -2063,218 +2063,324 @@ code{font-family:var(--mono);background:var(--panel2);padding:1px 5px;border-rad
 })();
 
 </script>
+<script>/* lib/mouserat.js */
+/* vibe learning – HTML-Kurs: die Seite der Band „Mouse Rat“, wie sie nach den HTML-Kapiteln aussieht
+ *
+ * Ausgangsstand für die Kursseiten zu CSS und Design (nach htmlwerk.js einbinden, vor der Aufgabenliste):
+ *   MOUSERAT.html   ganze Seite; %CSS% steht für die Einbindung von style.css (ersetzt htmlkurs.js)
+ *   MOUSERAT.css    Stilvorlage nach dem Kapitel „CSS-Grundlagen“
+ * Varianten für einzelne Aufgaben bildet die Kursseite mit .replace(…).
+ */
+window.MOUSERAT = {
+  html: `<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8">
+    <title>Mouse Rat</title>
+    %CSS%
+  </head>
+  <body>
+    <img src="bilder/logo.svg" alt="Logo von Mouse Rat" width="120">
+    <h1>Mouse Rat</h1>
+    <p>Die beste Rockband aus Pawnee.</p>
+    <p><a href="#band">Die Band</a> <a href="#konzerte">Konzerte</a> <a href="#musik">Musik</a></p>
+
+    <h2 id="band">Die Band</h2>
+    <img src="bilder/band.svg" alt="Die vier Musiker von Mouse Rat auf der Bühne" width="400">
+    <p>Wir spielen Rock, wie er sein muss: <strong>laut und mit Gefühl</strong>.</p>
+    <ul>
+      <li>Andy: Gesang und Gitarre</li>
+      <li>Burly: Gitarre</li>
+      <li>Chang: Bass</li>
+      <li>Rivers: Schlagzeug</li>
+    </ul>
+
+    <h2 id="konzerte">Konzerte</h2>
+    <p>Nächstes Konzert: Samstag, 20 Uhr, Schlangenloch-Lounge</p>
+
+    <h2 id="musik">Musik</h2>
+    <img src="bilder/album.svg" alt="Cover von „Das Hammer-Album“" width="200">
+    <ol>
+      <li>5000 Kerzen im Wind</li>
+      <li>Die Grube</li>
+      <li>Fang deinen Traum</li>
+    </ol>
+    <p>Booking: <a href="mailto:band@mouserat.example">band@mouserat.example</a></p>
+  </body>
+</html>
+`,
+  css: `body {
+  background-color: #1d1f2b;
+  color: white;
+  font-family: Arial, sans-serif;
+}
+
+h1, h2 {
+  color: #f2c94c;
+}
+
+h1 {
+  font-size: 48px;
+  text-align: center;
+}
+
+a {
+  color: #f2c94c;
+}
+`
+};
+
+</script>
 </head>
 <body>
 <noscript><p>Bitte JavaScript aktivieren.</p></noscript>
 <script>
-// Grundgerüst mit beliebigem Inhalt im body
-const SEITE = body => `<!DOCTYPE html>
-<html>
-  <head>
-    <title>Mouse Rat</title>
-  </head>
-  <body>
-${body}
-  </body>
-</html>
+const MR = window.MOUSERAT.html.replace('<p>Nächstes Konzert', '<p class="hinweis">Nächstes Konzert');
+const HINWEIS = b => `
+.hinweis {
+  border: 2px solid #f2c94c;
+  border-radius: 8px;
+  background-color: #2b2e3f;
+  padding: 12px;
+  ${b};
+}
+`;
+const CSS = window.MOUSERAT.css + `
+p {
+  line-height: 1.5;
+}
 `;
 
 window.HTMLKURS = {
-  id: 'htmlaufbau',
-  titel: 'Aufbau einer Webseite',
-  logo: 'Aufbau',
+  id: 'htmldesign',
+  titel: 'Design und Projekt',
+  logo: 'Design',
+  css: true, bilder: true,
   aufgaben: [
     {
-      titel: 'Tags und Elemente', stufe: 1,
+      titel: 'Inhalt, der sich finden lässt', stufe: 1,
       wissen: `
-<p>Die Rockband <b>Mouse Rat</b> aus Pawnee braucht eine Webseite. In diesem Kurs baust du sie Schritt für Schritt.</p>
-<p>Eine Webseite wird in der Sprache <b>HTML</b> geschrieben. HTML zeichnet Text aus: Es sagt dem Browser, <i>was</i> ein Text ist, zum Beispiel eine Überschrift oder ein Absatz. Dafür gibt es <b>Tags</b> in spitzen Klammern.</p>
-~~~html
-<h1>Willkommen</h1>
-<p>Das ist ein Absatz.</p>
-~~~
-<table class="k-tab">
-  <tr><th>Teil</th><th>Beispiel</th></tr>
-  <tr><td>öffnendes Tag</td><td>{{<h1>}}</td></tr>
-  <tr><td>Inhalt</td><td>Willkommen</td></tr>
-  <tr><td>schließendes Tag (mit Schrägstrich)</td><td>{{</h1>}}</td></tr>
-</table>
-<p>Alles zusammen heißt <b>Element</b>. {{h1}} ist die wichtigste Überschrift, {{p}} ein Absatz (englisch <i>paragraph</i>).</p>`,
-      auftrag: `
-<p>Schreibe in den {{body}} (zwischen {{<body>}} und {{</body>}}):</p>
+<p>Eine Webseite ist für ihre <b>Besucher</b> da. Bevor du gestaltest, frag dich: Wer kommt auf die Seite, und was will die Person wissen? Bei Mouse Rat zum Beispiel: Wann ist das nächste Konzert? Wer spielt mit?</p>
+<p>Das erste Ziel guter Gestaltung heißt deshalb <b>Inhaltsvermittlung</b>: Das Wichtige steht oben, und die Seite ist klar gegliedert.</p>
 <ul>
-  <li>die Überschrift {{h1}} mit dem Text <b>Mouse Rat</b></li>
-  <li>darunter einen Absatz {{p}} mit dem Text <b>Die beste Rockband aus Pawnee.</b></li>
+  <li>genau eine {{h1}}: Sie sagt, worum es auf der Seite geht.</li>
+  <li>{{h2}} für die Abschnitte, {{h3}} nur für Unterabschnitte. Keine Ebene wird übersprungen.</li>
+  <li>Überschriften wählt man nach der Bedeutung. Fett gedruckter Text ist keine Überschrift.</li>
 </ul>
-<p>Unten in der Vorschau siehst du sofort, wie der Browser deine Seite zeigt.</p>`,
-      start: SEITE('    '),
-      tipps: ['Die Überschrift lautet {{<h1>Mouse Rat</h1>}}.', 'Der Absatz: {{<p>Die beste Rockband aus Pawnee.</p>}}'],
-      tests: [
-        {sel: 'body h1', enthaelt: 'Mouse Rat', text: 'Überschrift <code>h1</code> mit dem Text „Mouse Rat“'},
-        {sel: 'body p', enthaelt: 'beste Rockband aus Pawnee', text: 'Absatz <code>p</code> mit dem Text „Die beste Rockband aus Pawnee.“'}
-      ]
-    },
-    {
-      titel: 'Jedes Tag wird geschlossen', stufe: 1,
-      wissen: `
-<p><b>Regel:</b> Zu jedem öffnenden Tag gehört ein schließendes Tag mit demselben Namen und einem Schrägstrich.</p>
-~~~html nur
-<p>Richtig: Der Absatz wird geschlossen.</p>
-<p>Falsch: Hier fehlt das Ende.
-~~~
-<p>Browser sind gutmütig und zeigen fehlerhafte Seiten oft trotzdem an. Verlassen kann man sich darauf nicht: Jeder Browser rät anders. Deshalb gibt es gemeinsame Regeln, die das <b>W3C</b> (World Wide Web Consortium) festlegt.</p>
-<p>Der Editor prüft diese Regeln, während du schreibst. Fehler stehen unter dem Code, die Zeile ist rot markiert. Ein Klick auf den Hinweis springt zur Zeile.</p>`,
+<p>Davon profitieren alle: Wer die Seite überfliegt, findet sich zurecht. Vorleseprogramme springen von Überschrift zu Überschrift. Suchmaschinen erkennen, worum es geht.</p>`,
       auftrag: `
-<p>Andy hat angefangen, die Seite zu schreiben. Dabei sind ihm <b>drei Fehler</b> passiert.</p>
-<p>Lies die Hinweise unter dem Code und verbessere alle Fehler. Die Texte sollen gleich bleiben.</p>`,
-      start: SEITE(`    <h1>Mouse Rat</h2>
-    <p>Die beste Rockband aus Pawnee.
-    <p>Wir spielen Rock, wie er sein muss: laut und mit Gefühl.</p>
-    <p>Unser nächstes Konzert findest du bald hier.</p`),
-      tipps: ['Eine Überschrift, die mit {{<h1>}} beginnt, endet mit {{</h1>}}.', 'Der erste Absatz hat kein {{</p>}}. Beim letzten Absatz fehlt die spitze Klammer {{>}} am Ende.'],
+<p>Rivers hat an den Überschriften gedreht, „weil es so besser aussah“. Jetzt ist die Gliederung durcheinander.</p>
+<p>Bringe sie in Ordnung:</p>
+<ul>
+  <li><b>Mouse Rat</b> ist die einzige Überschrift der ersten Ebene.</li>
+  <li><b>Die Band</b>, <b>Konzerte</b> und <b>Musik</b> sind Überschriften der zweiten Ebene. Ihre {{id}} bleibt erhalten.</li>
+</ul>`,
+      start: MR.replace('<h1>Mouse Rat</h1>', '<h2>Mouse Rat</h2>').replace('<h2 id="band">Die Band</h2>', '<h4 id="band">Die Band</h4>')
+        .replace('<h2 id="konzerte">Konzerte</h2>', '<h1 id="konzerte">Konzerte</h1>').replace('<h2 id="musik">Musik</h2>', '<p id="musik"><strong>Musik</strong></p>'),
+      startCss: CSS + HINWEIS('font-weight: bold'),
+      tipps: ['Ändere immer das öffnende <b>und</b> das schließende Tag.', '„Musik“ ist nur ein fetter Absatz. Daraus wird {{<h2 id="musik">Musik</h2>}}.'],
       tests: [
-        {sel: 'body h1', enthaelt: 'Mouse Rat', text: 'Überschrift <code>h1</code> „Mouse Rat“'},
-        {sel: 'body p', anzahl: 3, text: 'genau drei Absätze'},
-        {sel: 'body p', enthaelt: 'nächstes Konzert', text: 'Der letzte Absatz ist vollständig'}
+        {sel: 'h1', anzahl: 1, text: 'genau eine <code>h1</code>'},
+        {sel: 'h1', enthaelt: 'Mouse Rat', text: '„Mouse Rat“ ist die <code>h1</code>'},
+        {sel: 'h2#band', enthaelt: 'Die Band', text: '„Die Band“ ist eine <code>h2</code> mit der id <code>band</code>'},
+        {sel: 'h2#konzerte', enthaelt: 'Konzerte', text: '„Konzerte“ ist eine <code>h2</code> mit der id <code>konzerte</code>'},
+        {sel: 'h2#musik', enthaelt: 'Musik', text: '„Musik“ ist eine <code>h2</code> mit der id <code>musik</code>'},
+        {sel: 'h3, h4, h5, h6', keine: true, text: 'keine übersprungene Ebene'}
       ]
     },
     {
-      titel: 'Das Grundgerüst', stufe: 2,
+      titel: 'Lesbar für alle', stufe: 2, datei: 'css',
       wissen: `
-<p>Jede HTML-Seite hat dasselbe <b>Grundgerüst</b>:</p>
-~~~html nur
-<!DOCTYPE html>
-<html>
+<p>Text muss man ohne Mühe lesen können, auch mit schwachen Augen, auf einem alten Bildschirm oder draußen in der Sonne. Darauf kommt es an:</p>
+<table class="k-tab">
+  <tr><th>Punkt</th><th>Faustregel</th></tr>
+  <tr><td>Kontrast</td><td>Schrift und Hintergrund unterscheiden sich deutlich in der Helligkeit: hell auf dunkel oder dunkel auf hell.</td></tr>
+  <tr><td>Schriftgröße</td><td>Fließtext mindestens {{16px}}</td></tr>
+  <tr><td>Schriftart</td><td>für längere Texte eine schlichte Schrift, keine Zierschrift</td></tr>
+</table>
+~~~html
+<p class="schlecht">Grau auf Grau liest niemand gern.</p>
+<p class="gut">Dunkel auf Hell ist klar.</p>
+~~~css
+.schlecht { color: #999999; background-color: #bbbbbb; font-size: 11px; }
+.gut { color: #222222; background-color: #f5f5f5; font-size: 16px; }
+~~~
+<p>Die Prüfung misst den Kontrast als Zahl. Für normalen Text verlangen die Regeln zur <b>Barrierefreiheit</b> mindestens 4,5.</p>`,
+      auftrag: `
+<p>Burly fand die Seite „zu normal“ und hat die Stilvorlage umgebaut. Seitdem beschweren sich die Fans: Man kann kaum etwas lesen.</p>
+<p>Verbessere {{style.css}}:</p>
+<ul>
+  <li>Text und Überschriften heben sich deutlich vom Hintergrund ab.</li>
+  <li>Die Schriftgröße der Seite beträgt mindestens {{16px}}.</li>
+  <li>Die Schriftart ist wieder {{Arial, sans-serif}}.</li>
+</ul>`,
+      start: MR,
+      startCss: `body {
+  background-color: #1d1f2b;
+  color: #4b4e60;
+  font-family: cursive;
+  font-size: 11px;
+}
+
+h1, h2 {
+  color: #3a2f5c;
+}
+
+h1 {
+  font-size: 48px;
+  text-align: center;
+}
+
+a {
+  color: #f2c94c;
+}
+
+p {
+  line-height: 1.5;
+}
+` + HINWEIS('font-weight: bold'),
+      tipps: ['Auf dem dunklen Hintergrund braucht es helle Schrift, zum Beispiel {{white}} für den Text und {{#f2c94c}} für die Überschriften.', 'Schriftgröße und Schriftart stehen in der Regel für {{body}}.'],
+      tests: [
+        {kontrast: 'p, li', min: 4.5, text: 'Text hebt sich deutlich vom Hintergrund ab (Kontrast mindestens 4,5)'},
+        {kontrast: 'h1, h2', min: 4.5, text: 'Überschriften heben sich deutlich ab'},
+        {stil: 'p, li', attribut: 'font-size', minPx: 16, text: 'Schriftgröße mindestens 16 Pixel'},
+        {stil: 'body', attribut: 'font-family', wert: 'Arial, sans-serif', text: 'Schriftart <code>Arial, sans-serif</code>'}
+      ]
+    },
+    {
+      titel: 'Einfach zu bedienen', stufe: 2,
+      wissen: `
+<p><b>Bedienbarkeit</b> (englisch <i>Usability</i>) heißt: Besucher kommen ohne Nachdenken ans Ziel. Für Links gelten zwei Regeln.</p>
+<p><b>1. Der Linktext sagt, wohin es geht.</b> Viele Menschen überfliegen eine Seite und lesen nur die Links. Vorleseprogramme können sogar alle Links als Liste vorlesen. „Hier, hier, hier“ hilft dann niemandem.</p>
+<table class="k-tab">
+  <tr><th>schlecht</th><th>gut</th></tr>
+  <tr><td>Unsere Termine findest du {{<a …>hier</a>}}.</td><td>Sieh dir {{<a …>unsere Termine</a>}} an.</td></tr>
+</table>
+<p><b>2. Links sehen aus wie Links.</b> Sie haben eine andere Farbe als der übrige Text oder sind unterstrichen. Sonst findet sie niemand.</p>`,
+      auftrag: `
+<p>Andy hat das Menü und den Kontakt „cooler“ gemacht. Leider findet sich niemand mehr zurecht.</p>
+<ul>
+  <li><b>HTML:</b> Schreibe das Menü so um, dass jeder Linktext sein Ziel nennt: <b>Die Band</b>, <b>Konzerte</b>, <b>Musik</b>. Auch der Link ganz unten braucht einen sprechenden Text.</li>
+  <li><b>CSS:</b> Sorge dafür, dass die Links eine andere Farbe haben als der normale Text.</li>
+</ul>`,
+      start: MR.replace('<p><a href="#band">Die Band</a> <a href="#konzerte">Konzerte</a> <a href="#musik">Musik</a></p>',
+          '<p>Zur Band geht es <a href="#band">hier</a>. Konzerte: <a href="#konzerte">klick</a>. Für die Musik <a href="#musik">hier klicken</a>.</p>')
+        .replace('<a href="mailto:band@mouserat.example">band@mouserat.example</a>', 'Schreib uns <a href="mailto:band@mouserat.example">hier</a>.'),
+      startCss: CSS.replace('a {\n  color: #f2c94c;', 'a {\n  color: white;\n  text-decoration: none;') + HINWEIS('font-weight: bold'),
+      tipps: ['Das Menü kann wieder ganz kurz sein: {{<a href="#band">Die Band</a>}} und so weiter.', 'Für den Kontakt passt die E-Mail-Adresse selbst als Linktext.', 'CSS: Gib {{a}} zum Beispiel die Farbe {{#f2c94c}}.'],
+      tests: [
+        {sel: 'a[href="#band"]', enthaelt: 'Band', text: 'Der Link zu <code>#band</code> nennt die Band'},
+        {sel: 'a[href="#konzerte"]', enthaelt: 'Konzert', text: 'Der Link zu <code>#konzerte</code> nennt die Konzerte'},
+        {sel: 'a[href="#musik"]', enthaelt: 'Musik', text: 'Der Link zu <code>#musik</code> nennt die Musik'},
+        {test: doc => { const a = [...doc.querySelectorAll('a')]; return a.length >= 4 && a.every(x => x.textContent.trim().length >= 4 && !/\bhier\b|klick|^link$/i.test(x.textContent.trim())); }, text: 'kein Link heißt mehr „hier“ oder „klick“'},
+        {stil: 'a', attribut: 'color', ungleich: 'white', text: 'Links haben eine andere Farbe als der Text'},
+        {kontrast: 'a', min: 4.5, text: 'Links sind gut lesbar (Kontrast)'}
+      ]
+    },
+    {
+      titel: 'Barrierefrei', stufe: 2,
+      wissen: `
+<p><b>Barrierefreiheit</b> bedeutet: Alle Menschen können die Seite nutzen, auch wer blind ist, schlecht sieht oder keine Maus bedienen kann. In Deutschland sind viele Anbieter dazu gesetzlich verpflichtet.</p>
+<p>Blinde Menschen lassen sich Seiten von einem <b>Vorleseprogramm</b> (Screenreader) vorlesen. Es liest den HTML-Text, nicht das Aussehen. Sauberes HTML ist deshalb schon die halbe Arbeit:</p>
+<table class="k-tab">
+  <tr><th>Im HTML</th><th>Nutzen</th></tr>
+  <tr><td>{{lang="de"}} bei {{html}}</td><td>richtige Aussprache</td></tr>
+  <tr><td>Überschriften in der richtigen Ebene</td><td>von Abschnitt zu Abschnitt springen</td></tr>
+  <tr><td>sprechende Linktexte</td><td>Links ergeben auch einzeln Sinn</td></tr>
+  <tr><td>{{alt}} bei jedem Bild</td><td>Bildinhalt wird vorgelesen</td></tr>
+</table>
+<p>Ein guter Alternativtext beschreibt, <b>was zu sehen ist</b>. „Bild“ oder der Dateiname sagen nichts.</p>`,
+      auftrag: `
+<p>Die Stadt Pawnee will auf die Seite der Band verlinken, aber nur, wenn sie barrierefrei ist. Die Prüferin hat zwei Mängel gefunden:</p>
+<ul>
+  <li>Die Sprache der Seite ist nicht angegeben.</li>
+  <li>Die Alternativtexte der drei Bilder sind unbrauchbar.</li>
+</ul>
+<p>Behebe beide Mängel. Jeder Alternativtext soll aus mindestens drei Wörtern bestehen.</p>`,
+      start: MR.replace('<html lang="de">', '<html>').replace('alt="Logo von Mouse Rat"', 'alt="Bild"')
+        .replace('alt="Die vier Musiker von Mouse Rat auf der Bühne"', 'alt="band.svg"').replace('alt="Cover von „Das Hammer-Album“"', 'alt="Bild 3"'),
+      startCss: CSS + HINWEIS('font-weight: bold'),
+      tipps: ['Die Sprache steht als Attribut im Tag {{<html>}}.', 'Sieh dir jedes Bild in der Vorschau an und beschreibe es, zum Beispiel: {{alt="Vier Musiker auf einer Bühne"}}'],
+      tests: [
+        {sel: 'html[lang="de"]', text: 'Sprache der Seite: <code>lang="de"</code>'},
+        {sel: 'img', anzahl: 3, text: 'drei Bilder'},
+        {test: doc => { const b = [...doc.querySelectorAll('img')]; return b.length > 0 && b.every(i => { const a = (i.getAttribute('alt') || '').trim(); return a.split(/\s+/).length >= 3 && !/^(bild|foto|grafik)\b/i.test(a) && !/\.svg/i.test(a); }); }, text: 'Jeder Alternativtext beschreibt das Bild mit mindestens drei Wörtern'}
+      ]
+    },
+    {
+      titel: 'Für jedes Gerät', stufe: 2, datei: 'css',
+      wissen: `
+<p>Deine Besucher nutzen ganz verschiedene Geräte: Handy, Tablet, Laptop, großer Bildschirm. Dazu kommen verschiedene Browser und Auflösungen. Eine gute Seite funktioniert <b>überall</b>. Die meisten Menschen surfen heute mit dem Handy.</p>
+<p>Über der Vorschau kannst du zwischen <b>Computer</b> und <b>Handy</b> umschalten. Muss man auf dem Handy seitwärts schieben, ist etwas zu breit.</p>
+<p>Der häufigste Grund sind <b>feste Breiten</b> in Pixeln. Besser ist eine <b>Obergrenze</b>:</p>
+<table class="k-tab">
+  <tr><th>Angabe</th><th>Bedeutung</th></tr>
+  <tr><td>{{width: 600px;}}</td><td>immer 600 Pixel breit, auch wenn der Bildschirm schmaler ist</td></tr>
+  <tr><td>{{max-width: 600px;}}</td><td>höchstens 600 Pixel, auf schmalen Bildschirmen weniger</td></tr>
+  <tr><td>{{max-width: 100%;}}</td><td>nie breiter als der Platz, der da ist</td></tr>
+</table>`,
+      auftrag: `
+<p>Schalte die Vorschau auf <b>Handy</b>. Zwei Dinge ragen über den Rand hinaus.</p>
+<ul>
+  <li>Schreibe eine neue Regel für alle Bilder ({{img}}): Sie sind nie breiter als der vorhandene Platz.</li>
+  <li>Der Hinweis auf das nächste Konzert hat eine feste Breite. Mache daraus eine Obergrenze.</li>
+</ul>`,
+      start: MR, startCss: CSS + HINWEIS('width: 600px'),
+      tipps: ['{{img { max-width: 100%; }}}', 'In der Regel {{.hinweis}} wird aus {{width}} das Attribut {{max-width}}.'],
+      tests: [
+        {stil: 'img', attribut: 'max-width', wert: '100%', text: 'Bilder sind nie breiter als der Platz (<code>max-width: 100%</code>)'},
+        {regel: '.hinweis', attribut: 'max-width', text: 'Der Hinweis hat eine Obergrenze statt einer festen Breite'},
+        {passt: 375, text: 'Auf dem Handy ragt nichts über den Rand'}
+      ]
+    },
+    {
+      titel: 'Projekt: deine eigene Seite', stufe: 3, projekt: true,
+      wissen: `
+<p>Jetzt entwirfst du selbst. Profis fangen dabei nie mit dem Code an, sondern mit einem <b>Entwurf</b>.</p>
+<table class="k-tab">
+  <tr><th>Ziel</th><th>Frage an deinen Entwurf</th></tr>
+  <tr><td>Inhaltsvermittlung</td><td>Für wen ist die Seite? Was will diese Person zuerst wissen?</td></tr>
+  <tr><td>Wiedererkennung (Corporate Identity)</td><td>Welche zwei bis drei Farben, welche Schrift und welches Logo ziehen sich durch die ganze Seite?</td></tr>
+  <tr><td>Bedienbarkeit (Usability)</td><td>Findet man jeden Abschnitt mit einem Klick? Sagen die Links, wohin sie führen?</td></tr>
+  <tr><td>Barrierefreiheit</td><td>Ist alles gut lesbar? Hat jedes Bild einen Alternativtext?</td></tr>
+  <tr><td>Verschiedene Geräte</td><td>Passt die Seite auch auf ein Handy?</td></tr>
+</table>
+<p><b>Wichtig:</b> Eine Webseite kann jeder lesen. Schreibe keine echten Adressen, Telefonnummern oder vollen Namen von dir oder anderen hinein.</p>`,
+      auftrag: `
+<ol>
+  <li><b>Thema wählen:</b> ein Verein, ein Hobby, eine erfundene Band, eine Schülerfirma, dein Lieblingsessen …</li>
+  <li><b>Skizze auf Papier:</b> Zeichne die Seite als Kästchen: Was steht oben, welche Abschnitte gibt es, wo sind Bilder? Notiere Farben und Schrift.</li>
+  <li><b>Umsetzen:</b> Schreibe HTML und CSS. Die Bilder aus „Bilder“ darfst du verwenden.</li>
+  <li><b>Prüfen:</b> Der Knopf „Prüfen“ zeigt, was noch fehlt. Sieh dir die Seite auch in der Handy-Ansicht an.</li>
+  <li><b>Herunterladen:</b> Mit „Herunterladen“ speicherst du deine Seite als eine Datei. Sie öffnet sich per Doppelklick im Browser.</li>
+</ol>`,
+      start: `<!DOCTYPE html>
+<html lang="de">
   <head>
-    <title>Titel der Seite</title>
+    <meta charset="utf-8">
+    <title></title>
+    %CSS%
   </head>
   <body>
-    Hier steht alles, was man sieht.
+
   </body>
 </html>
-~~~
-<table class="k-tab">
-  <tr><th>Teil</th><th>Bedeutung</th></tr>
-  <tr><td>{{<!DOCTYPE html>}}</td><td>erste Zeile: „Diese Datei ist HTML.“</td></tr>
-  <tr><td>{{html}}</td><td>umschließt die ganze Seite</td></tr>
-  <tr><td>{{head}}</td><td>Kopf: Angaben <i>über</i> die Seite, nicht sichtbar</td></tr>
-  <tr><td>{{title}}</td><td>Titel, steht oben im Reiter (Tab) des Browsers</td></tr>
-  <tr><td>{{body}}</td><td>Körper: der sichtbare Inhalt</td></tr>
-</table>
-<p>Die Zeilen sind <b>eingerückt</b>. Dem Browser ist das egal, aber du siehst so sofort, was wozu gehört.</p>`,
-      auftrag: `
-<p>Vom Grundgerüst steht nur der Anfang da. Ergänze:</p>
-<ul>
-  <li>im {{head}} den Titel <b>Mouse Rat</b></li>
-  <li>den {{body}} mit der Überschrift {{h1}} <b>Mouse Rat</b> und einem Absatz deiner Wahl</li>
-</ul>`,
-      start: `<!DOCTYPE html>
-<html>
-  <head>
-
-  </head>
-
-</html>
 `,
-      tipps: ['Der Titel: {{<title>Mouse Rat</title>}} zwischen {{<head>}} und {{</head>}}.', 'Der {{body}} beginnt nach {{</head>}} und endet vor {{</html>}}.'],
+      startCss: 'body {\n  font-family: Arial, sans-serif;\n}\n',
+      tipps: ['Fang mit dem HTML an: erst alle Überschriften, dann die Texte. Das Aussehen kommt zum Schluss.', 'Als Vorlage kannst du dir die Seite von Mouse Rat in den Aufgaben davor ansehen.'],
       tests: [
-        {sel: 'head title', enthaelt: 'Mouse Rat', text: 'Titel „Mouse Rat“ im <code>head</code>'},
-        {sel: 'body h1', enthaelt: 'Mouse Rat', text: 'Überschrift <code>h1</code> „Mouse Rat“ im <code>body</code>'},
-        {test: doc => [...doc.querySelectorAll('body p')].some(p => p.textContent.trim().length >= 5), text: 'ein Absatz <code>p</code> mit eigenem Text'}
-      ]
-    },
-    {
-      titel: 'Elemente verschachteln', stufe: 2,
-      wissen: `
-<p>Elemente können <b>ineinander</b> stehen. Mit {{strong}} hebst du etwas Wichtiges hervor, mit {{em}} betonst du ein Wort.</p>
-~~~html
-<p>Der Eintritt ist <strong>frei</strong>, aber komm <em>pünktlich</em>.</p>
-~~~
-<p><b>Regel:</b> Was zuletzt geöffnet wurde, wird zuerst geschlossen. Wie bei Schachteln: Die innere Schachtel muss zu sein, bevor du die äußere schließt.</p>
-~~~html nur
-<p>Richtig: <strong>erst innen schließen,</strong> dann außen.</p>
-<p>Falsch: <strong>außen vor innen geschlossen.</p></strong>
-~~~`,
-      auftrag: `
-<p>Zwei Dinge sind zu tun:</p>
-<ul>
-  <li>Im ersten Absatz ist die Verschachtelung falsch. Verbessere sie.</li>
-  <li>Hebe im zweiten Absatz die Wörter <b>laut und mit Gefühl</b> mit {{strong}} hervor.</li>
-</ul>`,
-      start: SEITE(`    <h1>Mouse Rat</h1>
-    <p>Die <em>beste</em> Rockband aus <strong>Pawnee.</p></strong>
-    <p>Wir spielen Rock, wie er sein muss: laut und mit Gefühl.</p>`),
-      tipps: ['Im ersten Absatz muss {{</strong>}} vor {{</p>}} stehen.', 'Zweiter Absatz: {{<strong>laut und mit Gefühl</strong>}}'],
-      tests: [
-        {sel: 'body p', anzahl: 2, text: 'zwei Absätze'},
-        {sel: 'p strong', enthaelt: 'Pawnee', text: '„Pawnee“ ist im ersten Absatz hervorgehoben'},
-        {sel: 'p strong', enthaelt: 'laut und mit Gefühl', text: '„laut und mit Gefühl“ ist mit <code>strong</code> hervorgehoben'}
-      ]
-    },
-    {
-      titel: 'Attribute', stufe: 2,
-      wissen: `
-<p>Ein öffnendes Tag kann <b>Attribute</b> tragen. Sie geben dem Element zusätzliche Eigenschaften.</p>
-~~~html nur
-<html lang="de">
-~~~
-<table class="k-tab">
-  <tr><th>Teil</th><th>Beispiel</th></tr>
-  <tr><td>Name des Attributs</td><td>{{lang}}</td></tr>
-  <tr><td>Gleichheitszeichen</td><td>{{=}}</td></tr>
-  <tr><td>Attributwert in Anführungszeichen</td><td>{{"de"}}</td></tr>
-</table>
-<p>{{lang="de"}} sagt: Diese Seite ist auf Deutsch. Das brauchen zum Beispiel Vorleseprogramme für blinde Menschen, damit sie die richtige Aussprache wählen.</p>
-<p>In den {{head}} gehört außerdem diese Zeile:</p>
-~~~html nur
-<meta charset="utf-8">
-~~~
-<p>Sie legt den Zeichensatz fest, damit ä, ö, ü und ß überall richtig erscheinen. {{meta}} hat <b>keinen Inhalt</b> und deshalb auch kein schließendes Tag.</p>`,
-      auftrag: `
-<p>Ergänze die Seite von Mouse Rat:</p>
-<ul>
-  <li>Gib dem Element {{html}} das Attribut {{lang}} mit dem Wert {{de}}.</li>
-  <li>Schreibe in den {{head}} die Zeile mit dem Zeichensatz {{utf-8}}.</li>
-</ul>`,
-      start: SEITE(`    <h1>Mouse Rat</h1>
-    <p>Die beste Rockband aus Pawnee.</p>
-    <p>Wir spielen Rock, wie er sein muss: <strong>laut und mit Gefühl</strong>.</p>`),
-      tipps: ['Das Attribut steht im öffnenden Tag: {{<html lang="de">}}', 'In den head: {{<meta charset="utf-8">}}'],
-      tests: [
-        {sel: 'html[lang="de"]', text: '<code>html</code> hat das Attribut <code>lang="de"</code>'},
-        {sel: 'head meta[charset="utf-8" i]', text: 'Zeichensatz <code>utf-8</code> im <code>head</code>'},
-        {sel: 'body h1', enthaelt: 'Mouse Rat', text: 'Der Inhalt der Seite ist noch da'}
-      ]
-    },
-    {
-      titel: 'Eine Seite von Anfang an', stufe: 3,
-      wissen: `
-<p>Jetzt kannst du alles, was eine einfache Seite braucht:</p>
-<ul>
-  <li>Grundgerüst: {{<!DOCTYPE html>}}, {{html}}, {{head}}, {{body}}</li>
-  <li>im Kopf: {{meta}} mit dem Zeichensatz und {{title}}</li>
-  <li>im Körper: Überschrift {{h1}}, Absätze {{p}}, Hervorhebung mit {{strong}} oder {{em}}</li>
-</ul>
-<p>Denk an die Regeln: jedes Tag schließen, richtig verschachteln, Attributwerte in Anführungszeichen.</p>`,
-      auftrag: `
-<p>Der Editor ist leer. Schreibe die Startseite von Mouse Rat ganz allein:</p>
-<ul>
-  <li>vollständiges Grundgerüst, Sprache Deutsch, Zeichensatz {{utf-8}}</li>
-  <li>Titel der Seite: <b>Mouse Rat</b></li>
-  <li>Überschrift {{h1}}: <b>Mouse Rat</b></li>
-  <li>mindestens zwei Absätze über die Band</li>
-  <li>mindestens ein hervorgehobenes Wort ({{strong}} oder {{em}})</li>
-</ul>
-<p>Ideen für den Text: Sänger Andy, vier Mitglieder, Proberaum in einer Garage, der größte Hit heißt „5000 Kerzen im Wind“.</p>`,
-      start: '',
-      tipps: ['Beginne mit {{<!DOCTYPE html>}} und schreibe zuerst das leere Grundgerüst. Fülle es danach.', 'Schau bei Aufgabe 3 nach, wie das Grundgerüst aussieht.'],
-      tests: [
-        {sel: 'html[lang="de"]', text: 'Sprache Deutsch: <code>lang="de"</code>'},
-        {sel: 'head meta[charset="utf-8" i]', text: 'Zeichensatz <code>utf-8</code>'},
-        {sel: 'head title', enthaelt: 'Mouse Rat', text: 'Titel „Mouse Rat“'},
-        {sel: 'body h1', enthaelt: 'Mouse Rat', text: 'Überschrift <code>h1</code> „Mouse Rat“'},
-        {test: doc => [...doc.querySelectorAll('body p')].filter(p => p.textContent.trim().length >= 5).length >= 2, text: 'mindestens zwei Absätze'},
-        {sel: 'body strong, body em', text: 'mindestens ein hervorgehobenes Wort'}
+        {test: doc => doc.title.trim().length >= 3, text: 'Titel der Seite im <code>head</code>'},
+        {sel: 'h1', anzahl: 1, text: 'genau eine <code>h1</code>'},
+        {sel: 'h2', min: 2, text: 'mindestens zwei Abschnitte mit <code>h2</code>'},
+        {test: doc => [...doc.querySelectorAll('p')].filter(p => p.textContent.trim().length >= 20).length >= 2, text: 'mindestens zwei Absätze mit Text'},
+        {sel: 'ul > li, ol > li', min: 3, text: 'eine Liste mit mindestens drei Einträgen'},
+        {sel: 'a[href]', min: 1, text: 'mindestens ein Link'},
+        {test: doc => { const b = [...doc.querySelectorAll('img')]; return b.length > 0 && b.every(i => (i.getAttribute('alt') || '').trim().split(/\s+/).length >= 2); }, text: 'mindestens ein Bild, jedes mit beschreibendem Alternativtext'},
+        {css: /(\{[^}]*\}[^{}]*){4}/, text: 'mindestens vier CSS-Regeln'},
+        {test: doc => [...doc.querySelectorAll('[class]')].some(e => [...e.classList].some(k => [...doc.styleSheets].some(s => [...s.cssRules].some(r => r.selectorText && r.selectorText.includes('.' + k))))), text: 'mindestens eine Klasse, im HTML vergeben und im CSS gestaltet'},
+        {stil: 'body', attribut: 'background-color', ungleich: ['transparent', 'white'], text: 'eigene Hintergrundfarbe für die Seite'},
+        {kontrast: 'h1, h2, p, li, a', min: 4.5, text: 'Alle Texte sind gut lesbar (Kontrast mindestens 4,5)'},
+        {passt: 375, text: 'Die Seite passt auf ein Handy'}
       ]
     }
   ]
@@ -2283,7 +2389,7 @@ window.HTMLKURS = {
 <script>/* lib/htmlkurs.js */
 /* vibe learning – geführte HTML- und CSS-Übungen mit Vorschau und automatischer Prüfung
  *
- * Eine Übungsseite (z. B. aufbau.html) legt window.HTMLKURS an und bindet danach ein:
+ * Eine Übungsseite (z. B. 01-aufbau-webseite.html) legt window.HTMLKURS an und bindet danach ein:
  * ../python/lib/codemirror.min.js (+ .css), lib/codemirror-html.js, lib/mediathek.js,
  * lib/htmlwerk.js und diese Datei.
  *

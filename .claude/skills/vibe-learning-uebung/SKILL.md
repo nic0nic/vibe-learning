@@ -57,7 +57,7 @@ Farbvariablen (aus seite.css):
 
 ## Aufgaben aus Daten (lib/aufgaben.js)
 
-Standardaufgaben nicht neu programmieren, sondern als Daten an `Aufgaben.baue` bzw. `Aufgaben.sequenz` geben (Typen und Felder: Kopfkommentar unten). Eigener Code nur für Besonderes (Grafiken, Simulationen) als `html`/`nach` eines Schritts. Beispiel einer Erarbeitungsseite (Vorbilder: `BWR/9II/finanzierung/kurzfristige-kredite.html`, Lern-Chat allein: `BWR/7II/aufwand-ertrag/verkauf-uefe.html`):
+Standardaufgaben nicht neu programmieren, sondern als Daten an `Aufgaben.baue` bzw. `Aufgaben.sequenz` geben (Typen und Felder: Kopfkommentar unten). Eigener Code nur für Besonderes (Grafiken, Simulationen) als `html`/`nach` eines Schritts. Beispiel einer Erarbeitungsseite (Vorbilder: `BWR/9II/finanzierung/kurzfristige-kredite.html`, Lern-Chat allein: `BWR/7II/aufwand-ertrag/lernchat-verkauf-eigener-erzeugnisse.html`):
 
 ```js
 Aufgaben.sequenz({el:'#app', key:'TOOL-ID', schritte:[
@@ -397,7 +397,7 @@ Verglichen wird ohne Groß-/Kleinschreibung, Satzzeichen und doppelte Leerzeiche
 ```text
 vibe learning – geführte HTML- und CSS-Übungen mit Vorschau und automatischer Prüfung
 
-Eine Übungsseite (z. B. aufbau.html) legt window.HTMLKURS an und bindet danach ein:
+Eine Übungsseite (z. B. 01-aufbau-webseite.html) legt window.HTMLKURS an und bindet danach ein:
 ../python/lib/codemirror.min.js (+ .css), lib/codemirror-html.js, lib/mediathek.js,
 lib/htmlwerk.js und diese Datei.
 
