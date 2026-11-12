@@ -15,7 +15,7 @@ Ausnahme: **pockettype** (Tipptrainer, eigenes Repo github.com/nic0nic/pockettyp
 
 ## Nach jeder Änderung
 
-1. `python3 werkzeuge/einzeldateien.py` (erzeugt `standalone/`) und bei Änderungen an Bibliotheks-Kopfkommentaren oder der Vorlage `python3 werkzeuge/skill-bauen.py`.
+1. `python3 werkzeuge/einzeldateien.py` (erzeugt `standalone/`), `python3 werkzeuge/bycs-pakete.py` (erzeugt `bycs/`, SCORM-Pakete mit `pb_public/scorm.js` statt `sync.js`) und bei Änderungen an Bibliotheks-Kopfkommentaren oder der Vorlage `python3 werkzeuge/skill-bauen.py`.
 2. Im Browser testen: ohne Server `python3 -m http.server` in `pb_public/`, mit Anmeldung `pocketbase serve --dir ./pb_data --hooksDir ./pb_hooks --migrationsDir ./pb_migrations --publicDir ./pb_public`. Nicht getestet? Dann klar sagen.
 3. Committen mit kurzer deutscher Nachricht. `pb_data/` (Schülerdaten) nie committen.
 

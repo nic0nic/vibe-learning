@@ -10,6 +10,11 @@ Gesammelt im Thread „Aufbau der Seite“. Umgesetzt wird erst, wenn die Lehrkr
     Stand 09.11.: Auch der neue Bereich `IT/html/` bindet `../python/lib/codemirror.*` ein (dazu eigene Modi in `IT/html/lib/codemirror-html.js`).
 
 
+51. **ByCS-Lernplattform: Übungen als SCORM-Pakete mit Auswertung** (gewünscht 12.11., Branch `bycs`)
+    Neuer Ordner `bycs/` mit einer SCORM-2004-ZIP je Übung (`werkzeuge/bycs-pakete.py`, nutzt `einzeldateien.py`). `pb_public/scorm.js` ersetzt im Paket `sync.js`: Stand in `cmi.suspend_data` (ersetzt beim Öffnen den Browser-Stand), Bewertung in Prozent wie in lehrer.html gezählt, jede gelöste Aufgabe als Interaktion. Keine eigene JSON-Datei: Moodle exportiert die Interaktionen selbst als CSV/Excel. Option `--scorm12` (4096 Zeichen, mit Komprimierung und Notlösung „nur Gelöstes speichern“).
+    Getestet in Chromium mit nachgebauter SCORM-Schnittstelle (2004 und 1.2): Fremder Stand wird gelöscht, Stand kommt nach Neuladen zurück, Bewertung, Status, Interaktionen, Sitzungszeit, Komprimierung (305 Zufallstexte). Simuliert über `TrainerSync.event`, nicht durch echtes Lösen.
+    **Offen:** Test in einem echten ByCS-Kurs (Hochladen, als Schüler lösen, Bericht/Bewertung ansehen), danach nach `main`. Später möglich: Moodle-Export in lehrer.html einlesen.
+
 ## Erledigt
 
 ### Version vom 11.11.

@@ -4,6 +4,7 @@ pb_data/
 pocketbase
 pocketbase.exe
 *.zip
+!bycs/**/*.zip
 __pycache__/
 .DS_Store
 # persönliche Claude-Code-Einstellungen

@@ -97,6 +97,7 @@ vibe-learning/
 │           │   └── kurzfristige-kredite.html  Erarbeitung Kontokorrent-, Dispo- und Lieferantenkredit (Heft Kap. 7)
 │           └── unternehmensfuehrung/, anlagen/, kapitalanlage/, forderungen/
 ├── standalone/            jede Übung als Einzeldatei, gleiche Ordner wie in pb_public (IT/excel/…)
+├── bycs/                  jede Übung als SCORM-Paket (ZIP) für die ByCS-Lernplattform
 └── ANLEITUNG.md
 ```
 
@@ -388,6 +389,12 @@ PocketBase ist noch in Version 0.x. Größere Sprünge (z. B. 0.40 → 0.41) kö
 **Einmalig beim Umstieg auf die Fächer-Ordner (04.11.):** Die IT-Seiten liegen jetzt in `pb_public/IT/`. Nach dem Kopieren die alten Ordner `excel`, `python`, `datenbanken`, `tippen` und `tools` direkt in `pb_public` löschen, z. B. `sudo rm -r /srv/vibe-learning/pb_public/{excel,python,datenbanken,tippen,tools}`. Sie werden nicht mehr gebraucht: Alte Adressen leitet `pb_hooks/weiterleitung.pb.js` auf `/IT/…` weiter.
 
 **Übungen ohne Server weitergeben:** Im Ordner `standalone/` liegt jede Übung als eine einzige HTML-Datei, sortiert wie auf der Webseite, z. B. `standalone/IT/excel/wenn.html`. Sie läuft per Doppelklick, ohne Menü und ohne Anmeldung; der Fortschritt bleibt im Browser. Die Dateien werden mit `python3 werkzeuge/einzeldateien.py` erzeugt und nie von Hand geändert (siehe PRINZIPIEN.md).
+
+<a id="bycs"></a>**Übungen in der ByCS-Lernplattform (Moodle) mit Auswertung:** Im Ordner `bycs/` liegt jede Übung als SCORM-Paket, z. B. `bycs/IT/excel/wenn.zip` (gleiche Auswahl wie `standalone/`, ohne Tipptrainer). Erzeugt mit `python3 werkzeuge/bycs-pakete.py` (SCORM 2004), nie von Hand ändern.
+- *Hochladen:* im Kurs Bearbeiten einschalten → *Aktivität oder Material anlegen* → *Lernpaket* → ZIP in das Feld *Paketdatei* ziehen. Unter *Bewertung* die Methode *Höchste Bewertung* wählen, bei *Versuchsverwaltung* einen Versuch, der immer fortgesetzt wird (*Neuen Versuch erzwingen: Nein*). Die ZIP nicht entpacken.
+- *Was gespeichert wird:* Der Stand der Übung liegt im ByCS-Konto des Schülers, nicht im Browser. Am Schul-PC sieht der nächste Schüler also nicht den Stand des vorherigen.
+- *Auswertung:* Bewertung = Anteil gelöster Aufgaben (Erarbeitung und Übungen) in Prozent, bei 100 % *abgeschlossen*. Seiten nur mit Endlos-Modus (z. B. Fehlersuche) melden keine Prozentzahl. Jede gelöste Aufgabe steht als Interaktion im Bericht des Lernpakets (Modus, Stufe, Aufgabe, Titel, Zeitpunkt), herunterladbar als CSV/Excel. Stufen, in denen ein Schüler noch nichts gelöst hat, zählen mit der Aufgabenzahl der anderen Stufen, die Prozentzahl ist dort also eine Schätzung.
+- *Falls ByCS SCORM 2004 nicht annimmt:* `python3 werkzeuge/bycs-pakete.py --scorm12`. SCORM 1.2 speichert höchstens 4096 Zeichen; beim HTML-Kurs reicht das nicht für den Code, dann wird nur gespeichert, was gelöst ist, und der Code bleibt im Browser.
 
 **Umstieg vom alten Ordnernamen `excel-trainer`:** Der Ordner heißt jetzt `vibe-learning`. Bei einer Installation im Benutzerordner PocketBase beenden, `mv ~/excel-trainer ~/vibe-learning`, dann wie oben `pb_hooks`, `pb_migrations` und `pb_public` ersetzen und neu starten; `pb_data` wandert mit und bleibt erhalten. Läuft der Dienst unter `/srv/excel-trainer`, kann alles so bleiben, wie es ist: Name von Ordner, Dienst und Systembenutzer spielt für die Seite keine Rolle. In diesem Fall in den Befehlen dieser Anleitung `vibe-learning` durch `excel-trainer` ersetzen.
 
