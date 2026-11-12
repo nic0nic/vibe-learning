@@ -15,6 +15,10 @@ Gesammelt im Thread „Aufbau der Seite“. Umgesetzt wird erst, wenn die Lehrkr
     Getestet in Chromium mit nachgebauter SCORM-Schnittstelle (2004 und 1.2): Fremder Stand wird gelöscht, Stand kommt nach Neuladen zurück, Bewertung, Status, Interaktionen, Sitzungszeit, Komprimierung (305 Zufallstexte). Simuliert über `TrainerSync.event`, nicht durch echtes Lösen.
     **Offen:** Test in einem echten ByCS-Kurs (Hochladen, als Schüler lösen, Bericht/Bewertung ansehen), danach nach `main`. Später möglich: Moodle-Export in lehrer.html einlesen.
 
+52. **Vollbild-Knopf auf allen Seiten, auch in ByCS** (gewünscht 12.11., Branch `bycs`)
+    `nav.js`: Knopf rechts in der Leiste (vor Hell/Dunkel), auf jeder Seite, in Einzeldateien und ByCS-Paketen. Darf die Seite kein Vollbild (iframe ohne Erlaubnis, z. B. Moodle-Player), geht das iframe-Element im übergeordneten Fenster gleichen Ursprungs in Vollbild. Ohne Möglichkeit (iPhone) kein Knopf. Browser beenden Vollbild bei jedem Seitenwechsel, Tooltip nennt F11.
+    Getestet in Chromium: Start-, Bereichs- und Übungsseiten (Excel, HTML-/Python-Kurs, BWR) ein/aus, Leiste läuft nicht über, Handybreite; nachgebauter Moodle-Player mit und ohne Vollbild-Erlaubnis. Nicht in Firefox/Safari, nicht in echtem ByCS.
+
 ## Erledigt
 
 ### Version vom 11.11.

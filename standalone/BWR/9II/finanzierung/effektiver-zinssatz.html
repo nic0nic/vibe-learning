@@ -179,6 +179,10 @@ window.KATALOG.einreichungen = /* EINREICHUNGEN-ANFANG */ [] /* EINREICHUNGEN-EN
  * wenn der Server sie für den angemeldeten Schüler freigibt (Klasse pf-sichtbar).
  * In Einzeldateien (werkzeuge/einzeldateien.py, window.PF_EINZELDATEI) zeigt die
  * Leiste nur Name und Hell/Dunkel-Knopf, weil es keine anderen Seiten gibt.
+ * Rechts in der Leiste sitzt auf jeder Seite ein Vollbild-Knopf (auch in Einzeldateien und ByCS-Paketen).
+ * Läuft die Seite in einem iframe ohne allowfullscreen (z. B. Moodle-Player), wird das iframe-Element
+ * im übergeordneten Fenster bildschirmfüllend, solange es denselben Ursprung hat. Geht beides nicht
+ * (z. B. iPhone), fehlt der Knopf. Browser beenden Vollbild bei jedem Seitenwechsel (dauerhaft: F11).
  * Unten auf jeder Seite (außer Einzeldateien) stehen Links zu Impressum und Datenschutz (pb_public/impressum.html, datenschutz.html).
  */
 (function () {
@@ -286,6 +290,42 @@ html[data-theme=dark] .pf-item{--bc:#88c0d0}
   }
 
   const SONNE = '☀', MOND = '☾';
+
+  /* ---------- Vollbild ---------- */
+  const VOLL_AN = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg>';
+  const VOLL_AUS = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4v5H4M20 9h-5V4M15 20v-5h5M4 15h5v5"/></svg>';
+  const darfVoll = d => { try { return !!(d.fullscreenEnabled || d.webkitFullscreenEnabled); } catch (e) { return false; } };
+  const vollElement = d => { try { return d.fullscreenElement || d.webkitFullscreenElement || null; } catch (e) { return null; } };
+  // Element, das in Vollbild geht: die Seite selbst oder, im iframe ohne Erlaubnis, das iframe-Element
+  // im nächsthöheren Fenster gleichen Ursprungs, das Vollbild erlaubt
+  function vollZiel(){
+    if (darfVoll(document)) return document.documentElement;
+    let w = window;
+    try {
+      while (w.frameElement){
+        const el = w.frameElement, d = el.ownerDocument;
+        if (darfVoll(d)) return el;
+        w = d.defaultView;
+      }
+    } catch (e) {}                                   // fremder Ursprung
+    return null;
+  }
+  const VOLL = vollZiel();
+  const imVoll = () => !!VOLL && vollElement(VOLL.ownerDocument) === VOLL;
+  function vollUmschalten(){
+    const d = VOLL.ownerDocument;
+    try {
+      if (imVoll()) (d.exitFullscreen || d.webkitExitFullscreen).call(d);
+      else { const r = (VOLL.requestFullscreen || VOLL.webkitRequestFullscreen).call(VOLL); if (r && r.catch) r.catch(() => {}); }
+    } catch (e) {}
+  }
+  function vollKnopf(btn){
+    const an = imVoll();
+    btn.innerHTML = an ? VOLL_AUS : VOLL_AN;
+    btn.setAttribute('aria-label', an ? 'Vollbild beenden' : 'Vollbild');
+    btn.title = an ? 'Vollbild beenden (Esc)' : 'Vollbild – gilt für diese Seite, für alle Seiten F11';
+    btn.setAttribute('aria-pressed', an);
+  }
   function theme(){ return root.dataset.theme === 'dark' ? 'dark' : 'light'; }
 
   // Tools derselben gruppe (katalog.js) hintereinander → [{name, tools}], ohne gruppe: name ''
@@ -330,6 +370,7 @@ html[data-theme=dark] .pf-item{--bc:#88c0d0}
         </li>`).join('')}
       </ul>
       <div class="pf-right">
+        ${VOLL ? '<button class="pf-btn" id="pfVoll" type="button"></button>' : ''}
         ${document.getElementById('themeBtn') ? '' : `<button class="pf-btn" id="pfTheme" type="button" aria-label="Hell/Dunkel umschalten">${theme() === 'dark' ? SONNE : MOND}</button>`}
         ${EINZELN ? '' : '<button class="pf-btn pf-burger" type="button" aria-label="Menü">☰</button>'}
       </div>
@@ -360,6 +401,12 @@ html[data-theme=dark] .pf-item{--bc:#88c0d0}
 
     const burger = nav.querySelector('.pf-burger');
     if (burger) burger.addEventListener('click', () => nav.classList.toggle('open'));
+    const vb = nav.querySelector('#pfVoll');
+    if (vb){
+      vollKnopf(vb);
+      vb.addEventListener('click', vollUmschalten);
+      new Set([document, VOLL.ownerDocument]).forEach(d => ['fullscreenchange', 'webkitfullscreenchange'].forEach(ev => d.addEventListener(ev, () => vollKnopf(vb))));
+    }
     const tb = nav.querySelector('#pfTheme');
     if (tb) tb.addEventListener('click', () => {
       const t = theme() === 'dark' ? 'light' : 'dark';
