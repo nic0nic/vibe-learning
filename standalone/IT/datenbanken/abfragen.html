@@ -4210,7 +4210,7 @@ function training(cfg){
     try { akt = gib(); } catch (e) { karte.innerHTML = `<p class="af-fb falsch">${esc(e.message)}</p>`; return; }
     karte.innerHTML = (Z ? '<div class="tr-zeit" aria-hidden="true"><div class="tr-balken"></div></div>' : '') + `<div class="tr-frage">${akt.frage}</div>`
       + (mc ? `<div class="tr-mc">${akt.optionen.map((o, i) => `<button class="tr-opt" type="button" data-tropt="${i}"><span class="tr-taste">${i + 1}</span>${esc(o.t)}</button>`).join('')}</div>`
-        : `<form class="tr-form" autocomplete="off"><input class="feld tr-ein" ${akt.zahl ? 'inputmode="decimal" ' : ''}autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Antwort"><button class="btn haupt" type="submit">OK</button></form>`)
+        : `<div class="tr-form"><input class="feld tr-ein" ${akt.zahl ? 'inputmode="decimal" ' : ''}autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="send" aria-label="Antwort"><button class="btn haupt tr-ok" type="button">OK</button></div>`)
       + `<div class="tr-rueck"></div>` + (Z ? '' : '<button class="btn klein tr-weiss" type="button">Weiß ich nicht</button>');
     kopf();
     const ein = $('.tr-ein'); if (ein) ein.focus({preventScroll:true});
@@ -4270,12 +4270,15 @@ function training(cfg){
     if (e.target.closest('.tr-start')) return starte();
     const o = e.target.closest('[data-tropt]'); if (o && !o.disabled) return antwort(null, +o.dataset.tropt);
     if (e.target.closest('.tr-weiss')) return falsch('weiss', '');
+    if (e.target.closest('.tr-ok')) return absenden();
   });
-  root.addEventListener('submit', e => { if (!e.target.closest('.tr-form')) return; e.preventDefault(); const v = $('.tr-ein').value; if (phase === 'loesung') return weiter(); if (v.trim()) antwort(v); });
+  // kein <form>: in abgeschotteten iframes (Vorschau, Moodle) schickt der Browser Formulare nicht ab
+  function absenden(){ const e = $('.tr-ein'); if (!e) return; if (phase === 'loesung') return weiter(); if (e.value.trim()) antwort(e.value); }
   function taste(e){
     if (!lebt()){ document.removeEventListener('keydown', taste); return; }
     if (e.target.closest && e.target.closest('input,textarea,select') && !e.target.closest('.af-training')) return;
     if (phase === 'loesung' && e.key === 'Enter'){ e.preventDefault(); return weiter(); }
+    if (phase === 'laeuft' && e.key === 'Enter' && e.target.matches && e.target.matches('.tr-ein')){ e.preventDefault(); return absenden(); }
     if (mc && phase === 'laeuft' && /^[1-4]$/.test(e.key) && akt.optionen[+e.key - 1]){ const b = root.querySelector(`[data-tropt="${+e.key - 1}"]`); if (b && !b.disabled){ e.preventDefault(); antwort(null, +e.key - 1); } }
   }
   document.addEventListener('keydown', taste);

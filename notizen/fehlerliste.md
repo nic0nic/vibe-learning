@@ -27,6 +27,9 @@ Gesammelt im Thread „Aufbau der Seite“. Umgesetzt wird erst, wenn die Lehrkr
 
 ### Version vom 13.11.
 
+61. **Training: Eingabe ließ sich in der Vorschau nicht bestätigen** (gemeldet 13.11.)
+    Die Vorschau von „Übung erstellen“ läuft im iframe mit `sandbox="allow-scripts"`; dort schickt der Browser kein `<form>` ab, Enter und „OK“ taten nichts (heruntergeladen ging es). Jetzt ohne Formular: Enter im Feld und Klick auf „OK“ direkt verdrahtet – geht auch in anderen abgeschotteten Einbettungen (z. B. Moodle). Getestet in der Vorschau und als Einzeldatei.
+
 60. **Training: Aufgaben auf Zeit und/oder endlos, im Aufgaben-JSON und im Editor** (gewünscht 13.11.)
     Schritt mit `"training"` statt `"aufgaben"` (Format im Kopf von `lib/seite.js`): Antwort eintippen oder Multiple Choice; `anzahl` (Runde mit Ergebnis + Bestleistung) oder endlos (Fehler beendet die Serie, Bestleistung); `zeit` {start, schritt, min} unabhängig davon (Balken läuft ab); `versuche` (Standard aus); optional `stufen` (Flammen). Inhalt: Zahlen-Szenarien (Werte als Bereich/Schritt/Liste/Formel, Bedingung, Lösung, Runden, Einheit, typische falsche Antworten) oder Wörterbuch (Sprachen, Richtung a→b/b→a/beide, mehrere richtige Antworten mit |, Tippfehler optional).
     - Neu `lib/formel.js`: sicherer Ausdrucksparser (ohne eval) + Würfeln, genutzt von `aufgaben.js` (Aufgaben.training, auch in sequenz) und `seite.js` (Prüfung mit deutschen Meldungen, Probewürfeln der Bedingung); `seiteHTML` bindet formel.js ein.
