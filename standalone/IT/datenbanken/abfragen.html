@@ -4008,7 +4008,7 @@ const ENDLOS = [
 ];
 
 /* Erarbeitung: Teile einer Abfrage zeigen → Abfragen abändern → Bedingungen ziehen.
-   SELECT immer durch Anklicken im Tabfenster. SQL in <pre class="sqlv"> färbt abfragen.js ein. */
+   SELECT immer durch Anklicken in der Übersicht über die Felder der Tabelle. SQL in <pre class="sqlv"> färbt abfragen.js ein. */
 const sql = s => `<pre class="sqlv cm-s-default">${s}</pre>`;
 const AUSF = 'Klicke auf <b>▶ Ausführen</b> und sieh dir das Ergebnis an.';
 const NOLAN = "regie = 'Christopher Nolan'";
@@ -4017,14 +4017,14 @@ const ERARBEITUNG = [
    <p>Will er etwas wissen, stellt er der Datenbank eine Frage: eine <b>Abfrage</b>. In SQL besteht sie aus bis zu vier Teilen, immer in dieser Reihenfolge:</p>
    <table class="teile"><tr><td>SELECT</td><td>Welche <b>Spalten</b> (Felder) sollen angezeigt werden?</td></tr><tr><td>FROM</td><td>Aus welcher <b>Tabelle</b> kommen die Daten?</td></tr>
    <tr><td>WHERE</td><td>Welche <b>Datensätze</b> (Zeilen) sollen erscheinen? – eine Bedingung</td></tr><tr><td>ORDER BY</td><td>In welcher <b>Reihenfolge</b>?</td></tr></table>
-   <p>In dieser Erarbeitung siehst du zuerst fertige Abfragen, dann änderst du Abfragen ab, und am Ende baust du sie selbst: Die Felder wählst du im <b>Tabfenster</b> durch Anklicken, Bedingungen ziehst du in die WHERE-Zeile.</p>
+   <p>In dieser Erarbeitung siehst du zuerst fertige Abfragen, dann änderst du Abfragen ab, und am Ende baust du sie selbst: Die Felder wählst du in der <b>Übersicht über die Felder der Tabelle</b> durch Anklicken, Bedingungen ziehst du in die WHERE-Zeile.</p>
    <p>💡 Oben rechts kannst du die <b>Tooltipps</b> einschalten. Dann erklärt die Seite jeden Begriff und jeden Baustein, über den du mit der Maus fährst.</p>`},
 
   // 1. Abfragen zeigen
   {titel:'SELECT und FROM', ui:'block', zeigen:true, auftrag:AUSF,
    html:`<p>Die einfachste Abfrage hat nur zwei Teile:</p>${sql('SELECT titel, jahr\nFROM filme')}
    <ul><li><code>SELECT titel, jahr</code> – zeige die Felder <code>titel</code> und <code>jahr</code>,</li><li><code>FROM filme</code> – aus der Tabelle <code>filme</code>.</li></ul>
-   <p>Unten steht dieselbe Abfrage in der <b>Entwurfsansicht</b>. Links ist das <b>Tabfenster</b> mit allen Feldern der Tabelle. Die Felder für SELECT sind dort angeklickt.</p>`,
+   <p>Unten steht dieselbe Abfrage in der <b>Entwurfsansicht</b>. Links ist die <b>Übersicht über die Felder der Tabelle</b>. Die Felder für SELECT sind dort angeklickt.</p>`,
    entwurf:{felder:['titel', 'jahr']},
    nachher:'Das Ergebnis hat nur die zwei Spalten <code>titel</code> und <code>jahr</code> – aber <b>alle</b> Datensätze der Tabelle. SELECT wählt <b>Spalten</b> aus. Mit <code>*</code> statt der Feldnamen würden alle Spalten angezeigt.'},
 
@@ -4062,8 +4062,8 @@ const ERARBEITUNG = [
   {titel:'Abändern: SELECT', ui:'block', vorgabe:{felder:['titel', 'jahr'], where:NOLAN},
    html:`<p>Ab jetzt änderst du fertige Abfragen ab. Diese Abfrage zeigt Titel und Jahr aller Filme von Christopher Nolan – führe sie ruhig zuerst aus.</p>`,
    entwurf:{frage:'Herr Maier will bei den Nolan-Filmen statt des Jahres sehen, wie gut sie auf IMDb bewertet sind.', felder:['titel', 'imdb_bewertung'], where:NOLAN,
-     tipp:'Klicke im Tabfenster auf <code>jahr</code> (herausnehmen) und auf <code>imdb_bewertung</code> (aufnehmen).'},
-   nachher:'SELECT änderst du, indem du im Tabfenster Felder an- und abklickst.'},
+     tipp:'Klicke in der Übersicht über die Felder auf <code>jahr</code> (herausnehmen) und auf <code>imdb_bewertung</code> (aufnehmen).'},
+   nachher:'SELECT änderst du, indem du in der Übersicht über die Felder einzelne Felder an- und abklickst.'},
 
   {titel:'Abändern: der Wert', ui:'block', vorgabe:{felder:['titel', 'imdb_bewertung'], where:NOLAN},
    html:`<p>Herr Maier will dieselbe Liste für einen anderen Regisseur.</p>`,
@@ -4095,7 +4095,7 @@ const ERARBEITUNG = [
    <li>Vergleichszeichen: <code>=</code> gleich, <code>&lt;&gt;</code> ungleich, <code>&lt;</code> kleiner, <code>&lt;=</code> kleiner oder gleich, <code>&gt;</code> größer, <code>&gt;=</code> größer oder gleich</li>
    <li>Texte stehen in einfachen Anführungszeichen: <code>art = 'Film'</code>. Zahlen stehen ohne, Kommazahlen mit Punkt: <code>imdb_bewertung &gt;= 8.5</code></li>
    <li><code>LIKE</code> vergleicht mit einem Muster, <code>%</code> steht für beliebig viele Zeichen: <code>genres LIKE '%Horror%'</code> heißt „enthält Horror“.</li></ul></div>
-   <p>So geht es: Felder im Tabfenster anklicken, die passende Bedingung in die WHERE-Zeile ziehen (oder anklicken), bei Bedarf sortieren.</p>`},
+   <p>So geht es: Felder in der Übersicht über die Felder anklicken, die passende Bedingung in die WHERE-Zeile ziehen (oder anklicken), bei Bedarf sortieren.</p>`},
 
   {titel:'Bedingung ziehen: Text', ui:'zieh', bausteine:["art = 'Film'", "art <> 'Fernsehserie'", "titel = 'Fernsehserie'"],
    entwurf:{frage:'Welche Fernsehserien stehen in der Sammlung?', felder:['titel', 'jahr'], where:"art = 'Fernsehserie'",
@@ -4232,8 +4232,8 @@ const TT = {
   op:'<b>Vergleichszeichen</b>: <code>=</code> gleich, <code>&lt;&gt;</code> ungleich, <code>&lt;</code> kleiner, <code>&lt;=</code> kleiner oder gleich, <code>&gt;</code> größer, <code>&gt;=</code> größer oder gleich.',
   stern:'<b>*</b> – steht für <b>alle Felder</b> der Tabelle.',
   tab:`<b>${TAB}</b> – der Name der Tabelle. Sie ist hier fest vorgegeben.`,
-  tabfenster:`<b>Tabfenster</b> der Tabelle <code>${TAB}</code>: Hier stehen alle Felder. Ein Klick auf ein Feld nimmt es in <b>SELECT</b> auf, ein zweiter Klick nimmt es wieder heraus. 🔑 = Primärschlüssel.`,
-  selchips:'Die Felder, die im Ergebnis angezeigt werden – in dieser Reihenfolge. Mit × entfernst du ein Feld, oder du klickst es im Tabfenster noch einmal an.',
+  tabfenster:`<b>Übersicht über die Felder der Tabelle</b> <code>${TAB}</code>: Hier stehen alle Felder. Ein Klick auf ein Feld nimmt es in <b>SELECT</b> auf, ein zweiter Klick nimmt es wieder heraus. 🔑 = Primärschlüssel.`,
+  selchips:'Die Felder, die im Ergebnis angezeigt werden – in dieser Reihenfolge. Mit × entfernst du ein Feld, oder du klickst es in der Übersicht über die Felder noch einmal an.',
   wb:'<b>Bedingungs-Baustein</b>: Feld, Vergleichszeichen und Wert. Nur Datensätze, für die die Bedingung stimmt, kommen ins Ergebnis.',
   wf:'Das <b>Feld</b>, das in der Bedingung geprüft wird. „keine Bedingung“ = alle Datensätze.',
   wop:'Das <b>Vergleichszeichen</b>: <code>=</code> gleich, <code>&lt;&gt;</code> ungleich, <code>&lt;</code> / <code>&gt;</code> kleiner / größer, <code>&lt;=</code> / <code>&gt;=</code> mit Gleich, <code>LIKE</code> Muster mit <code>%</code>, <code>IS NULL</code> leer.',
@@ -4253,7 +4253,7 @@ const TT = {
   resetBtn:'<b>Zurücksetzen</b>: Die Abfrage beginnt wieder von vorne.',
   tabBtn:`Zeigt die ganze Tabelle <code>${TAB}</code> an (oder blendet sie wieder aus).`,
   lernen:'<b>Erarbeitung</b>: Schritt für Schritt lernen, wie eine Abfrage aufgebaut ist.',
-  pfad:'<b>Übungen</b>: feste Aufgaben in Stufen (Flammen), von Bausteinen bis zum eigenen SQL.',
+  pfad:'<b>Übungen</b>: feste Aufgaben mit einstellbarer Schwierigkeit.',
   endlos:'<b>Endlos</b>: immer neue Zufallsaufgaben – wie lang wird deine Serie?',
   flames:'<b>Stufen</b>: je höher, desto weniger Hilfe – von Bausteinen bis SQL ohne Gerüst.'
 };
