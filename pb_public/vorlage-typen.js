@@ -3,7 +3,7 @@
  * Je Typ aus lib/aufgaben.js: name, symbol, neu() (Beispielaufgabe), kurz(a) (Zusammenfassung auf der Karte),
  * form(a, H) (Formular rechts, Helfer H: Kopfkommentar von vorlage-editor.js), tun (Knöpfe), verschiebe (optional).
  * Neuer Aufgabentyp in lib/aufgaben.js → hier ein Formular ergänzen (sonst: nur im JSON-Modus bearbeitbar).
- * varianten: weitere Bausteine desselben Typs in der Leiste (z. B. Buchungssatz mit Beträgen zum Ziehen, Jgst. 7).
+ * Optionen eines Typs als Schalter oben im Formular (class schalter), nicht als eigene Bausteine – die Leiste bleibt kurz.
  */
 (function () {
   'use strict';
@@ -179,10 +179,6 @@
   B.typ('buchungssatz', {
     name: 'Buchungssatz', symbol: '⚖',
     neu: bsNeu,
-    varianten: [
-      {name: 'Buchungssatz: Beträge ziehen', symbol: '⚖', neu: () => Object.assign(bsNeu(), {betraege: [['Nettowert', 10000], ['Vorsteuer', 1900], ['Rechnungsbetrag', 11900], ['Bruttoskonto', 238]]})},
-      {name: 'Buchungssatz Jgst. 7', symbol: '⚖', neu: () => ({typ: 'buchungssatz', jgst: 7, frage: 'Bilde den Buchungssatz.', konten: ['AWR', 'BK', 'UEFE', 'UST', 'VE', 'VORST'], soll: [['AWR', 2000], ['VORST', 380]], haben: [['VE', 2380]], steuer: ['VORST']})}
-    ],
     titel: a => 'Buchungssatz' + (a.jgst === 7 ? ' Jgst. 7' : '') + (a.betraege ? ' (Beträge ziehen)' : ''),
     kurz: a => (a.soll || []).map(x => x[0]).join(', ') + ' an ' + (a.haben || []).map(x => x[0]).join(', ') + (a.betraege ? ` · ${a.betraege.length} Beträge zum Ziehen` : ''),
     form(a, H) {
@@ -192,10 +188,13 @@
       const sum = s => r2((a[s] || []).reduce((t, x) => t + (Number(x[1]) || 0), 0));
       const gleich = sum('soll') === sum('haben');
       const v = H.vorher, rechnung = v && v.typ === 'zahlen' && Array.isArray(v.felder);
-      const betraege = !a.betraege ? '' : (a.betraege.map((x, i) => H.zeile('betraege', i, `<div class="reihe">${H.feld(`betraege.${i}.0`, '', {pflicht: true, ph: 'Bezeichnung, z. B. Rechnungsbetrag'})}${H.feld(`betraege.${i}.1`, '', {art: 'zahl', pflicht: true, ph: 'Betrag'})}${weg('betragweg', {i})}</div>`)).join('')
+      const betraege = !a.betraege ? '' : '<label class="klein">Beträge zum Ziehen</label>' + (a.betraege.map((x, i) => H.zeile('betraege', i, `<div class="reihe">${H.feld(`betraege.${i}.0`, '', {pflicht: true, ph: 'Bezeichnung, z. B. Rechnungsbetrag'})}${H.feld(`betraege.${i}.1`, '', {art: 'zahl', pflicht: true, ph: 'Betrag'})}${weg('betragweg', {i})}</div>`)).join('')
         + `<div class="reihe wrap">${plus('betragplus', 'Betrag')}${H.knopf('betragloesung', 'Beträge der Lösung dazu')}${rechnung ? H.knopf('betragvorher', 'Ergebnisse der Rechnung davor dazu', {}, {titel: 'Felder der Rechenaufgabe davor mit Bezeichnung und Lösung'}) : ''}</div>
         <p class="hinweis">Die Schüler ziehen die Beträge auf die Betragsfelder (oder tippen erst Betrag, dann Feld). Beträge, die nicht gebraucht werden, sind Ablenker${rechnung ? '' : '. In einer kombinierten Aufgabe nach einer Rechenaufgabe (Zahlen) lassen sich deren Ergebnisse übernehmen'}.</p>`);
-      return `<label class="hk"><input type="checkbox" data-tun="jgst7"${a.jgst === 7 ? ' checked' : ''}> Jgst. 7: Konten nur mit Kürzel (ohne Nummer)</label>
+      return `<div class="schalterleiste">
+        <label class="schalter" title="7. Jahrgangsstufe: Konten nur mit Kürzel, ohne Kontonummer (z. B. BK)"><input type="checkbox" data-tun="jgst7"${a.jgst === 7 ? ' checked' : ''}><span></span> Jgst. 7</label>
+        <label class="schalter" title="Die Schüler ziehen vorgegebene Beträge auf die Betragsfelder, statt sie einzutippen"><input type="checkbox" data-tun="bzieh"${a.betraege ? ' checked' : ''}><span></span> Beträge ziehen</label></div>
+        ${betraege}
         ${H.feld('konten', a.jgst === 7 ? 'Konten zur Auswahl (eine Zeile pro Konto, nur Kürzel)' : 'Konten zur Auswahl (eine Zeile pro Konto, Nummer und Kürzel)', {art: 'zeilen', pflicht: true, zeilen: 5, neu: true})}
         <p class="hinweis">Die Schüler suchen das Konto per Nummer oder Kürzel (z. B. „ve“ → ${a.jgst === 7 ? 'VE' : '4400 VE'}). Ablenker einfach mit in die Liste schreiben.</p>
         <label class="klein">Soll</label>${seite('soll')}<label class="klein">an Haben</label>${seite('haben')}
@@ -203,10 +202,17 @@
         <label class="klein">Steuerkonten (für den Hinweis „Steuer fehlt“)</label>
         <div class="reihe wrap">${a.konten.map(k => `<label class="hk"><input type="checkbox" data-tun="steuer" data-k2="${H.esc(k)}"${(a.steuer || []).includes(k) ? ' checked' : ''}> ${H.esc(k)}</label>`).join('')}</div>
         ${H.rt('nebenrechnung', 'Nebenrechnung (erscheint nach der Lösung, optional)', {klein: true})}
-        <label class="hk"><input type="checkbox" data-tun="bzieh"${a.betraege ? ' checked' : ''}> Beträge zum Ziehen vorgeben (statt eintippen)</label>${betraege}`;
+`;
     },
     tun: {
-      jgst7(a) { if (a.jgst === 7) delete a.jgst; else a.jgst = 7; },
+      jgst7(a) {
+        if (a.jgst === 7) { delete a.jgst; return; }
+        a.jgst = 7;
+        const k = x => String(x).replace(/^\d+\s+/, '');
+        a.konten = [...new Set((a.konten || []).map(k))];
+        ['soll', 'haben'].forEach(s => (a[s] || []).forEach(x => { x[0] = k(x[0]); }));
+        if (a.steuer) a.steuer = a.steuer.map(k);
+      },
       bzieh(a, d, H) { if (a.betraege) delete a.betraege; else { a.betraege = []; const v = H.vorher; if (v && v.typ === 'zahlen' && Array.isArray(v.felder)) dazu(a, v.felder.map(f => [H.text(f.t || ''), f.l])); else dazu(a, ausLoesung(a)); } },
       betragplus(a) { (a.betraege = a.betraege || []).push(['', 0]); },
       betragweg(a, d) { a.betraege.splice(+d.i, 1); },

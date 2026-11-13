@@ -14,7 +14,7 @@
  *
  * Typ registrieren (vorlage-typen.js): Baukasten.typ('mc', {name, symbol, neu() → Aufgabe, kurz(a) → Text,
  *   form(a, H) → HTML, tun: {name(a, dataset, H)} (Knöpfe data-tun), verschiebe(a, liste, von, nach) (optional),
- *   varianten: [{name, symbol, neu()}] (eigene Bausteine in der Leiste, gleicher typ), titel(a) → Name auf Karte/Panel,
+ *   titel(a) → Name auf Karte/Panel (z. B. mit eingeschalteten Optionen),
  *   frageLabel (statt „Aufgabenstellung“), okLabel})
  * Kombinierte Aufgabe (typ kombi, teile:[…]): Block wie „falls“ in Scratch, Teile untereinander, unten beliebig
  *   erweiterbar. Auswahl sel = {s, i, tiefe}: tiefe 0 = Aufgabe im Schritt, tiefe k = Teil k der Kombi.
@@ -146,8 +146,8 @@
     if (E.leiste.childElementCount) return;
     E.leiste.innerHTML = `<button class="teil" type="button" data-baustein="schritt" title="Ziehen oder anklicken"><span class="sym">📄</span><span>Schritt / Erklärung</span></button>`
       + '<div class="leiste-trenn">Aufgaben</div>'
-      + Object.keys(TYPEN).sort((x, y) => (x === 'kombi') - (y === 'kombi')).map(k => (k === 'kombi' ? '<div class="leiste-trenn">Kombinieren</div>' : '') + [[k, TYPEN[k]], ...(TYPEN[k].varianten || []).map((v, j) => [k + ':' + j, v])]
-        .map(([b, T]) => `<button class="teil${b.includes(':') ? ' variante' : ''}${k === 'kombi' ? ' kombi' : ''}" type="button" data-baustein="${b}" title="Ziehen oder anklicken"><span class="sym">${T.symbol}</span><span>${esc(T.name)}</span></button>`).join('')).join('')
+      + Object.keys(TYPEN).sort((x, y) => (x === 'kombi') - (y === 'kombi')).map(k => (k === 'kombi' ? '<div class="leiste-trenn">Kombinieren</div>' : '')
+        + `<button class="teil" type="button" data-baustein="${k}" title="Ziehen oder anklicken"><span class="sym">${TYPEN[k].symbol}</span><span>${esc(TYPEN[k].name)}</span></button>`).join('')
       + '<p class="hinweis">Bausteine in die Mitte ziehen oder anklicken (kommt hinter die markierte Aufgabe; ist eine kombinierte Aufgabe markiert, wird es ihr nächster Teil).</p>';
   }
 
@@ -278,8 +278,8 @@
   function panelFehler() { const a = aufgabe(), el = E.panel && E.panel.querySelector('.panel-fehler'); if (a && el) el.innerHTML = fehlerHTML(aufgabeFehler(a)); }
 
   /* ---------- Einfügen, Verschieben, Löschen ---------- */
-  function neueAufgabe(b) { const [t, v] = String(b).split(':'); return v != null ? TYPEN[t].varianten[+v].neu() : TYPEN[t].neu(); }
-  const istKombi = b => String(b).split(':')[0] === 'kombi';
+  function neueAufgabe(b) { return TYPEN[b].neu(); }
+  const istKombi = b => b === 'kombi';
   function neuerSchritt(erklaerung) { return erklaerung ? {titel: 'Neuer Schritt', html: '<p>Erklärtext</p>', aufgaben: []} : {titel: 'Neuer Schritt', aufgaben: []}; }
   function klickBaustein(b) {
     aendern(() => {

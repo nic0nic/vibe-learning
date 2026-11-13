@@ -106,8 +106,15 @@ code{font:12.5px var(--mono);background:var(--panel2);border-radius:4px;padding:
 .teil-lbl{font:700 11.5px system-ui,sans-serif;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-top:2px}
 .akteil{cursor:grab}
 .teil-zone{border:2px dashed var(--border);border-radius:9px;padding:8px 10px;font-size:12.5px;color:var(--muted);text-align:center}
-.leiste .teil.variante{margin-left:14px;font-size:13px;padding:5px 9px}
-.leiste .teil.variante .sym{opacity:.6}
+/* Schalter für Optionen eines Aufgabentyps (z. B. Buchungssatz: Jgst. 7, Beträge ziehen) */
+.schalterleiste{display:flex;flex-wrap:wrap;gap:6px 18px;margin:4px 0 10px;padding:8px 10px;background:var(--panel2);border-radius:10px}
+.schalter{display:inline-flex;align-items:center;gap:8px;font:600 13.5px system-ui,sans-serif;cursor:pointer;user-select:none}
+.schalter input{position:absolute;opacity:0;width:1px;height:1px}
+.schalter span{position:relative;width:34px;height:20px;border-radius:999px;background:var(--border);transition:background .15s;flex:none}
+.schalter span::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--panel);transition:left .15s}
+.schalter input:checked+span{background:var(--accent)}
+.schalter input:checked+span::after{left:16px}
+.schalter input:focus-visible+span{outline:2px solid var(--marke);outline-offset:2px}
 .ak-kopf{display:flex;gap:6px;align-items:center;font-size:14px}
 .ak-nr{font:600 12px var(--mono);color:var(--muted)}
 .ak-f{margin-left:auto;color:var(--err);font-weight:700;font-size:13px}

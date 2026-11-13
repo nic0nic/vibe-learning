@@ -1225,7 +1225,11 @@ html[data-theme=dark] .pf-item{--bc:#88c0d0}
       if (summe(a.soll) !== summe(a.haben)) f.push(`${wo}: Soll (${summe(a.soll)}) und Haben (${summe(a.haben)}) sind nicht gleich groß`);
       if (a.jgst != null && a.jgst !== 7) f.push(`${wo}: „jgst“ ist nur für die 7. Jahrgangsstufe nötig: "jgst": 7 (sonst weglassen)`);
       if (a.jgst === 7) a.konten.forEach(k => { if (/\d/.test(k)) f.push(`${wo}: In Jgst. 7 Konten nur mit Kürzel, ohne Nummer: „${k}“`); });
-      if (a.betraege !== undefined && (!Array.isArray(a.betraege) || a.betraege.some(x => !Array.isArray(x) || !istText(x[0]) || typeof x[1] !== 'number'))) f.push(`${wo}: „betraege“ braucht Einträge [Text, Betrag als Zahl]`);
+      if (a.betraege !== undefined && !Array.isArray(a.betraege)) f.push(`${wo}: Die Beträge zum Ziehen müssen eine Liste sein ([["Rechnungsbetrag", 11900], …]).`);
+      else if (a.betraege) a.betraege.forEach((x, i) => {
+        if (!Array.isArray(x) || typeof x[1] !== 'number') f.push(`${wo}, Betrag zum Ziehen ${i + 1}: Der Betrag fehlt oder ist keine Zahl.`);
+        else if (!istText(x[0])) f.push(`${wo}, Betrag zum Ziehen ${i + 1} (${String(x[1]).replace('.', ',')} €): Die Bezeichnung fehlt, z. B. „Rechnungsbetrag“.`);
+      });
     }
     if (a.typ === 'tabelle' && Array.isArray(a.spalten) && Array.isArray(a.zeilen)) {
       let felder = 0;
@@ -1423,7 +1427,7 @@ Aufgaben.sequenz({el:'#app', key:${JSON.stringify(id)}, schritte:DATEN.schritte}
  *
  * Typ registrieren (vorlage-typen.js): Baukasten.typ('mc', {name, symbol, neu() → Aufgabe, kurz(a) → Text,
  *   form(a, H) → HTML, tun: {name(a, dataset, H)} (Knöpfe data-tun), verschiebe(a, liste, von, nach) (optional),
- *   varianten: [{name, symbol, neu()}] (eigene Bausteine in der Leiste, gleicher typ), titel(a) → Name auf Karte/Panel,
+ *   titel(a) → Name auf Karte/Panel (z. B. mit eingeschalteten Optionen),
  *   frageLabel (statt „Aufgabenstellung“), okLabel})
  * Kombinierte Aufgabe (typ kombi, teile:[…]): Block wie „falls“ in Scratch, Teile untereinander, unten beliebig
  *   erweiterbar. Auswahl sel = {s, i, tiefe}: tiefe 0 = Aufgabe im Schritt, tiefe k = Teil k der Kombi.
@@ -1555,8 +1559,8 @@ Aufgaben.sequenz({el:'#app', key:${JSON.stringify(id)}, schritte:DATEN.schritte}
     if (E.leiste.childElementCount) return;
     E.leiste.innerHTML = `<button class="teil" type="button" data-baustein="schritt" title="Ziehen oder anklicken"><span class="sym">📄</span><span>Schritt / Erklärung</span></button>`
       + '<div class="leiste-trenn">Aufgaben</div>'
-      + Object.keys(TYPEN).sort((x, y) => (x === 'kombi') - (y === 'kombi')).map(k => (k === 'kombi' ? '<div class="leiste-trenn">Kombinieren</div>' : '') + [[k, TYPEN[k]], ...(TYPEN[k].varianten || []).map((v, j) => [k + ':' + j, v])]
-        .map(([b, T]) => `<button class="teil${b.includes(':') ? ' variante' : ''}${k === 'kombi' ? ' kombi' : ''}" type="button" data-baustein="${b}" title="Ziehen oder anklicken"><span class="sym">${T.symbol}</span><span>${esc(T.name)}</span></button>`).join('')).join('')
+      + Object.keys(TYPEN).sort((x, y) => (x === 'kombi') - (y === 'kombi')).map(k => (k === 'kombi' ? '<div class="leiste-trenn">Kombinieren</div>' : '')
+        + `<button class="teil" type="button" data-baustein="${k}" title="Ziehen oder anklicken"><span class="sym">${TYPEN[k].symbol}</span><span>${esc(TYPEN[k].name)}</span></button>`).join('')
       + '<p class="hinweis">Bausteine in die Mitte ziehen oder anklicken (kommt hinter die markierte Aufgabe; ist eine kombinierte Aufgabe markiert, wird es ihr nächster Teil).</p>';
   }
 
@@ -1687,8 +1691,8 @@ Aufgaben.sequenz({el:'#app', key:${JSON.stringify(id)}, schritte:DATEN.schritte}
   function panelFehler() { const a = aufgabe(), el = E.panel && E.panel.querySelector('.panel-fehler'); if (a && el) el.innerHTML = fehlerHTML(aufgabeFehler(a)); }
 
   /* ---------- Einfügen, Verschieben, Löschen ---------- */
-  function neueAufgabe(b) { const [t, v] = String(b).split(':'); return v != null ? TYPEN[t].varianten[+v].neu() : TYPEN[t].neu(); }
-  const istKombi = b => String(b).split(':')[0] === 'kombi';
+  function neueAufgabe(b) { return TYPEN[b].neu(); }
+  const istKombi = b => b === 'kombi';
   function neuerSchritt(erklaerung) { return erklaerung ? {titel: 'Neuer Schritt', html: '<p>Erklärtext</p>', aufgaben: []} : {titel: 'Neuer Schritt', aufgaben: []}; }
   function klickBaustein(b) {
     aendern(() => {
@@ -2035,7 +2039,7 @@ Aufgaben.sequenz({el:'#app', key:${JSON.stringify(id)}, schritte:DATEN.schritte}
  * Je Typ aus lib/aufgaben.js: name, symbol, neu() (Beispielaufgabe), kurz(a) (Zusammenfassung auf der Karte),
  * form(a, H) (Formular rechts, Helfer H: Kopfkommentar von vorlage-editor.js), tun (Knöpfe), verschiebe (optional).
  * Neuer Aufgabentyp in lib/aufgaben.js → hier ein Formular ergänzen (sonst: nur im JSON-Modus bearbeitbar).
- * varianten: weitere Bausteine desselben Typs in der Leiste (z. B. Buchungssatz mit Beträgen zum Ziehen, Jgst. 7).
+ * Optionen eines Typs als Schalter oben im Formular (class schalter), nicht als eigene Bausteine – die Leiste bleibt kurz.
  */
 (function () {
   'use strict';
@@ -2211,10 +2215,6 @@ Aufgaben.sequenz({el:'#app', key:${JSON.stringify(id)}, schritte:DATEN.schritte}
   B.typ('buchungssatz', {
     name: 'Buchungssatz', symbol: '⚖',
     neu: bsNeu,
-    varianten: [
-      {name: 'Buchungssatz: Beträge ziehen', symbol: '⚖', neu: () => Object.assign(bsNeu(), {betraege: [['Nettowert', 10000], ['Vorsteuer', 1900], ['Rechnungsbetrag', 11900], ['Bruttoskonto', 238]]})},
-      {name: 'Buchungssatz Jgst. 7', symbol: '⚖', neu: () => ({typ: 'buchungssatz', jgst: 7, frage: 'Bilde den Buchungssatz.', konten: ['AWR', 'BK', 'UEFE', 'UST', 'VE', 'VORST'], soll: [['AWR', 2000], ['VORST', 380]], haben: [['VE', 2380]], steuer: ['VORST']})}
-    ],
     titel: a => 'Buchungssatz' + (a.jgst === 7 ? ' Jgst. 7' : '') + (a.betraege ? ' (Beträge ziehen)' : ''),
     kurz: a => (a.soll || []).map(x => x[0]).join(', ') + ' an ' + (a.haben || []).map(x => x[0]).join(', ') + (a.betraege ? ` · ${a.betraege.length} Beträge zum Ziehen` : ''),
     form(a, H) {
@@ -2224,10 +2224,13 @@ Aufgaben.sequenz({el:'#app', key:${JSON.stringify(id)}, schritte:DATEN.schritte}
       const sum = s => r2((a[s] || []).reduce((t, x) => t + (Number(x[1]) || 0), 0));
       const gleich = sum('soll') === sum('haben');
       const v = H.vorher, rechnung = v && v.typ === 'zahlen' && Array.isArray(v.felder);
-      const betraege = !a.betraege ? '' : (a.betraege.map((x, i) => H.zeile('betraege', i, `<div class="reihe">${H.feld(`betraege.${i}.0`, '', {pflicht: true, ph: 'Bezeichnung, z. B. Rechnungsbetrag'})}${H.feld(`betraege.${i}.1`, '', {art: 'zahl', pflicht: true, ph: 'Betrag'})}${weg('betragweg', {i})}</div>`)).join('')
+      const betraege = !a.betraege ? '' : '<label class="klein">Beträge zum Ziehen</label>' + (a.betraege.map((x, i) => H.zeile('betraege', i, `<div class="reihe">${H.feld(`betraege.${i}.0`, '', {pflicht: true, ph: 'Bezeichnung, z. B. Rechnungsbetrag'})}${H.feld(`betraege.${i}.1`, '', {art: 'zahl', pflicht: true, ph: 'Betrag'})}${weg('betragweg', {i})}</div>`)).join('')
         + `<div class="reihe wrap">${plus('betragplus', 'Betrag')}${H.knopf('betragloesung', 'Beträge der Lösung dazu')}${rechnung ? H.knopf('betragvorher', 'Ergebnisse der Rechnung davor dazu', {}, {titel: 'Felder der Rechenaufgabe davor mit Bezeichnung und Lösung'}) : ''}</div>
         <p class="hinweis">Die Schüler ziehen die Beträge auf die Betragsfelder (oder tippen erst Betrag, dann Feld). Beträge, die nicht gebraucht werden, sind Ablenker${rechnung ? '' : '. In einer kombinierten Aufgabe nach einer Rechenaufgabe (Zahlen) lassen sich deren Ergebnisse übernehmen'}.</p>`);
-      return `<label class="hk"><input type="checkbox" data-tun="jgst7"${a.jgst === 7 ? ' checked' : ''}> Jgst. 7: Konten nur mit Kürzel (ohne Nummer)</label>
+      return `<div class="schalterleiste">
+        <label class="schalter" title="7. Jahrgangsstufe: Konten nur mit Kürzel, ohne Kontonummer (z. B. BK)"><input type="checkbox" data-tun="jgst7"${a.jgst === 7 ? ' checked' : ''}><span></span> Jgst. 7</label>
+        <label class="schalter" title="Die Schüler ziehen vorgegebene Beträge auf die Betragsfelder, statt sie einzutippen"><input type="checkbox" data-tun="bzieh"${a.betraege ? ' checked' : ''}><span></span> Beträge ziehen</label></div>
+        ${betraege}
         ${H.feld('konten', a.jgst === 7 ? 'Konten zur Auswahl (eine Zeile pro Konto, nur Kürzel)' : 'Konten zur Auswahl (eine Zeile pro Konto, Nummer und Kürzel)', {art: 'zeilen', pflicht: true, zeilen: 5, neu: true})}
         <p class="hinweis">Die Schüler suchen das Konto per Nummer oder Kürzel (z. B. „ve“ → ${a.jgst === 7 ? 'VE' : '4400 VE'}). Ablenker einfach mit in die Liste schreiben.</p>
         <label class="klein">Soll</label>${seite('soll')}<label class="klein">an Haben</label>${seite('haben')}
@@ -2235,10 +2238,17 @@ Aufgaben.sequenz({el:'#app', key:${JSON.stringify(id)}, schritte:DATEN.schritte}
         <label class="klein">Steuerkonten (für den Hinweis „Steuer fehlt“)</label>
         <div class="reihe wrap">${a.konten.map(k => `<label class="hk"><input type="checkbox" data-tun="steuer" data-k2="${H.esc(k)}"${(a.steuer || []).includes(k) ? ' checked' : ''}> ${H.esc(k)}</label>`).join('')}</div>
         ${H.rt('nebenrechnung', 'Nebenrechnung (erscheint nach der Lösung, optional)', {klein: true})}
-        <label class="hk"><input type="checkbox" data-tun="bzieh"${a.betraege ? ' checked' : ''}> Beträge zum Ziehen vorgeben (statt eintippen)</label>${betraege}`;
+`;
     },
     tun: {
-      jgst7(a) { if (a.jgst === 7) delete a.jgst; else a.jgst = 7; },
+      jgst7(a) {
+        if (a.jgst === 7) { delete a.jgst; return; }
+        a.jgst = 7;
+        const k = x => String(x).replace(/^\d+\s+/, '');
+        a.konten = [...new Set((a.konten || []).map(k))];
+        ['soll', 'haben'].forEach(s => (a[s] || []).forEach(x => { x[0] = k(x[0]); }));
+        if (a.steuer) a.steuer = a.steuer.map(k);
+      },
       bzieh(a, d, H) { if (a.betraege) delete a.betraege; else { a.betraege = []; const v = H.vorher; if (v && v.typ === 'zahlen' && Array.isArray(v.felder)) dazu(a, v.felder.map(f => [H.text(f.t || ''), f.l])); else dazu(a, ausLoesung(a)); } },
       betragplus(a) { (a.betraege = a.betraege || []).push(['', 0]); },
       betragweg(a, d) { a.betraege.splice(+d.i, 1); },
@@ -2386,8 +2396,15 @@ code{font:12.5px var(--mono);background:var(--panel2);border-radius:4px;padding:
 .teil-lbl{font:700 11.5px system-ui,sans-serif;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-top:2px}
 .akteil{cursor:grab}
 .teil-zone{border:2px dashed var(--border);border-radius:9px;padding:8px 10px;font-size:12.5px;color:var(--muted);text-align:center}
-.leiste .teil.variante{margin-left:14px;font-size:13px;padding:5px 9px}
-.leiste .teil.variante .sym{opacity:.6}
+/* Schalter für Optionen eines Aufgabentyps (z. B. Buchungssatz: Jgst. 7, Beträge ziehen) */
+.schalterleiste{display:flex;flex-wrap:wrap;gap:6px 18px;margin:4px 0 10px;padding:8px 10px;background:var(--panel2);border-radius:10px}
+.schalter{display:inline-flex;align-items:center;gap:8px;font:600 13.5px system-ui,sans-serif;cursor:pointer;user-select:none}
+.schalter input{position:absolute;opacity:0;width:1px;height:1px}
+.schalter span{position:relative;width:34px;height:20px;border-radius:999px;background:var(--border);transition:background .15s;flex:none}
+.schalter span::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--panel);transition:left .15s}
+.schalter input:checked+span{background:var(--accent)}
+.schalter input:checked+span::after{left:16px}
+.schalter input:focus-visible+span{outline:2px solid var(--marke);outline-offset:2px}
 .ak-kopf{display:flex;gap:6px;align-items:center;font-size:14px}
 .ak-nr{font:600 12px var(--mono);color:var(--muted)}
 .ak-f{margin-left:auto;color:var(--err);font-weight:700;font-size:13px}

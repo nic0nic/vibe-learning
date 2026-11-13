@@ -119,7 +119,11 @@
       if (summe(a.soll) !== summe(a.haben)) f.push(`${wo}: Soll (${summe(a.soll)}) und Haben (${summe(a.haben)}) sind nicht gleich groß`);
       if (a.jgst != null && a.jgst !== 7) f.push(`${wo}: „jgst“ ist nur für die 7. Jahrgangsstufe nötig: "jgst": 7 (sonst weglassen)`);
       if (a.jgst === 7) a.konten.forEach(k => { if (/\d/.test(k)) f.push(`${wo}: In Jgst. 7 Konten nur mit Kürzel, ohne Nummer: „${k}“`); });
-      if (a.betraege !== undefined && (!Array.isArray(a.betraege) || a.betraege.some(x => !Array.isArray(x) || !istText(x[0]) || typeof x[1] !== 'number'))) f.push(`${wo}: „betraege“ braucht Einträge [Text, Betrag als Zahl]`);
+      if (a.betraege !== undefined && !Array.isArray(a.betraege)) f.push(`${wo}: Die Beträge zum Ziehen müssen eine Liste sein ([["Rechnungsbetrag", 11900], …]).`);
+      else if (a.betraege) a.betraege.forEach((x, i) => {
+        if (!Array.isArray(x) || typeof x[1] !== 'number') f.push(`${wo}, Betrag zum Ziehen ${i + 1}: Der Betrag fehlt oder ist keine Zahl.`);
+        else if (!istText(x[0])) f.push(`${wo}, Betrag zum Ziehen ${i + 1} (${String(x[1]).replace('.', ',')} €): Die Bezeichnung fehlt, z. B. „Rechnungsbetrag“.`);
+      });
     }
     if (a.typ === 'tabelle' && Array.isArray(a.spalten) && Array.isArray(a.zeilen)) {
       let felder = 0;
