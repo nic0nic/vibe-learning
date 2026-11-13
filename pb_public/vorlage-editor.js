@@ -138,7 +138,7 @@
 
   /* ---------- Zeichnen ---------- */
   function alles() { pruefen(); leiste(); mitte(); panel(); fehlerAnzeige(); melden(); }
-  function geaendert() { pruefen(); mitte(); fehlerAnzeige(); melden(); }
+  function geaendert() { pruefen(); mitte(); fehlerAnzeige(); panelFehler(); melden(); }
   let mTimer = null;
   function melden() { clearTimeout(mTimer); mTimer = setTimeout(() => cfg.geaendert && cfg.geaendert(daten()), 150); }
 
@@ -257,12 +257,12 @@
       return;
     }
     const T = TYPEN[a.typ]; H.wurzel = a; H.vorher = sel.tiefe > 1 ? kette(sel.s, sel.i, sel.tiefe - 1) : null;
-    const fl = sel.tiefe ? teilFehler(sel.s, sel.i, sel.tiefe) : fehlerVon(sel.s, sel.i).filter(x => a.typ !== 'kombi' || !/Teil \d/.test(x));
+    const fl = aufgabeFehler(a);
     let form = '';
     try { form = T ? T.form(a, H) : `<p class="hinweis">Diesen Typ kennt der Editor nicht. Bearbeite ihn im JSON-Modus.</p>`; } catch (e) { form = `<p class="meldung fehler">Formular nicht möglich: ${esc(e.message)}. Bitte im JSON-Modus prüfen.</p>`; }
     E.panel.innerHTML = `<h3>${T ? T.symbol + ' ' + esc(typName(a)) : esc(a.typ)}${sel.tiefe ? ` <small>(Teil ${sel.tiefe} der kombinierten Aufgabe)</small>` : ''}</h3>
       <div class="zeile">${H.knopf('a-hoch', '↑', {}, {titel: sel.tiefe ? 'Teil nach oben' : 'nach oben'}) + H.knopf('a-runter', '↓', {}, {titel: sel.tiefe ? 'Teil nach unten' : 'nach unten'})}${H.knopf('a-kopie', 'Duplizieren')}${sel.tiefe ? H.knopf('a-raus', 'Aus der Kombi lösen', {}, {titel: 'als eigene Aufgabe hinter die kombinierte Aufgabe'}) : ''}${H.knopf('a-weg', 'Löschen', {}, {weg: true})}</div>
-      ${fehlerHTML(fl)}
+      <div class="panel-fehler">${fehlerHTML(fl)}</div>
       ${T && T.ohneFrage ? '' : H.rt('frage', T && T.frageLabel || 'Aufgabenstellung', {klein: true})}
       ${form}
       <details${a.nr || a.erinnerung || a.material || a.ok ? ' open' : ''}><summary>Weitere Angaben</summary>
@@ -271,7 +271,11 @@
         ${H.rt('erinnerung', 'Erinnerung (über der Aufgabe)', {klein: true})}${H.feld('erinnerungZu', 'Erinnerung startet zugeklappt', {art: 'bool'})}
         ${H.rt('material', 'Material (über der Aufgabe)', {klein: true})}</details>`;
   }
-  const fehlerHTML = f => f.length ? `<div class="meldung fehler"><ul>${f.map(x => `<li>${esc(x.replace(/^Schritt \d+(, Aufgabe \d+)?(, Teil \d+)?:?\s*/, ''))}</li>`).join('')}</ul></div>` : '';
+  // Fehler der markierten Aufgabe (bei einer Kombi ohne die ihrer Teile); Ort „Schritt 1, Aufgabe 2, Teil 1“ wird abgeschnitten
+  const aufgabeFehler = a => sel.tiefe ? teilFehler(sel.s, sel.i, sel.tiefe) : fehlerVon(sel.s, sel.i).filter(x => a.typ !== 'kombi' || !/Teil \d/.test(x));
+  const fehlerHTML = f => f.length ? `<div class="meldung fehler"><ul>${f.map(x => `<li>${esc(x.replace(/^Schritt \d+(, Aufgabe \d+)?(, Teil \d+)?(:\s*|,\s*)?/, ''))}</li>`).join('')}</ul></div>` : '';
+  // nach jeder Eingabe: Fehlerkasten im Panel neu, ohne das Formular (und den Fokus) anzutasten
+  function panelFehler() { const a = aufgabe(), el = E.panel && E.panel.querySelector('.panel-fehler'); if (a && el) el.innerHTML = fehlerHTML(aufgabeFehler(a)); }
 
   /* ---------- Einfügen, Verschieben, Löschen ---------- */
   function neueAufgabe(b) { const [t, v] = String(b).split(':'); return v != null ? TYPEN[t].varianten[+v].neu() : TYPEN[t].neu(); }

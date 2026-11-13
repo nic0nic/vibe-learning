@@ -27,6 +27,9 @@ Gesammelt im Thread „Aufbau der Seite“. Umgesetzt wird erst, wenn die Lehrkr
 
 ### Version vom 13.11.
 
+57. **Editor: Fehler bei neuer Zuordnen-Karte blieb stehen** (gemeldet 13.11.)
+    Der Fehlerkasten im Formular wurde nur beim Neuzeichnen des Panels erneuert – nach dem Eintippen stand der behobene Fehler weiter da. Jetzt wird er nach jeder Eingabe aktualisiert (ohne Fokusverlust). Ortsangabe sauber abgeschnitten (vorher „, Karte 5: …“). Meldungen verständlich: „Karte 3 im Feld „Feld 3“: Die Karte hat noch keinen Text.“ bzw. „Karte „…“: Die Karte gehört zu keinem Feld.“ (auch in `pruefe.py`).
+
 56. **Aufgabentypen: Kombinierte Aufgabe, Buchungssatz mit Beträgen zum Ziehen, Buchungssatz Jgst. 7** (gewünscht 13.11.)
     - Neuer Typ `kombi` (`teile:[…]`, beliebig viele, keine Kombi in der Kombi) ersetzt `danach`. Alle Seiten mit `danach` umgestellt (darlehensarten, kurzfristige-kredite, effektiver-zinssatz, zinsrechnung, und_oder_datenight). Alte JSONs mit `danach` wandelt `Seite.normalisiere`/`Seite.ohneDanach` um (Einreichen, Editor, Vorschau); `pruefe.py` des Skills meldet `danach` als veraltet.
     - Editor: Kombi als Block wie „falls“ in Scratch (Kopf, Teile im Bauch, unten Zone „＋ Teil n“); „＋ Teil 2 anhängen“ an jeder Aufgabe macht daraus eine Kombi; Baustein anklicken bei markierter Kombi = nächster Teil; Teile ↑/↓, „Aus der Kombi lösen“, „Auflösen“. Leiste: Varianten „Buchungssatz: Beträge ziehen“ und „Buchungssatz Jgst. 7“ (gleicher Typ, Optionen im Formular: Haken Jgst. 7, Beträge zum Ziehen mit „Beträge der Lösung dazu“ / „Ergebnisse der Rechnung davor dazu“).

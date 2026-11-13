@@ -99,7 +99,11 @@
     if (a.typ === 'zuordnen' && Array.isArray(a.felder) && Array.isArray(a.karten)) {
       const ids = a.felder.map(x => Array.isArray(x) ? x[0] : null);
       if (ids.length < 2) f.push(`${wo}: mindestens zwei Felder nötig`);
-      a.karten.forEach((k, i) => { if (!k || !istText(k.t) || !ids.includes(k.z)) f.push(`${wo}, Karte ${i + 1}: braucht „t“ und ein „z“ aus ${ids.join(', ')}`); });
+      a.karten.forEach((k, i) => {
+        const feld = k && a.felder.find(x => Array.isArray(x) && x[0] === k.z), name = feld ? ` im Feld „${feld[1] || feld[0]}“` : '';
+        if (!k || !istText(k.t)) f.push(`${wo}, Karte ${i + 1}${name}: Die Karte hat noch keinen Text („t“).`);
+        else if (!feld) f.push(`${wo}, Karte „${k.t}“: Die Karte gehört zu keinem Feld (im JSON „z“: eine der Feld-Kennungen ${ids.join(', ')}).`);
+      });
     }
     if (a.typ === 'freitext' && Array.isArray(a.felder) && Array.isArray(a.antworten) && a.antworten.length < a.felder.length)
       f.push(`${wo}: weniger mögliche Antworten (${a.antworten.length}) als Felder (${a.felder.length})`);

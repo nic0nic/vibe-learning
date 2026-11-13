@@ -1205,7 +1205,11 @@ html[data-theme=dark] .pf-item{--bc:#88c0d0}
     if (a.typ === 'zuordnen' && Array.isArray(a.felder) && Array.isArray(a.karten)) {
       const ids = a.felder.map(x => Array.isArray(x) ? x[0] : null);
       if (ids.length < 2) f.push(`${wo}: mindestens zwei Felder nötig`);
-      a.karten.forEach((k, i) => { if (!k || !istText(k.t) || !ids.includes(k.z)) f.push(`${wo}, Karte ${i + 1}: braucht „t“ und ein „z“ aus ${ids.join(', ')}`); });
+      a.karten.forEach((k, i) => {
+        const feld = k && a.felder.find(x => Array.isArray(x) && x[0] === k.z), name = feld ? ` im Feld „${feld[1] || feld[0]}“` : '';
+        if (!k || !istText(k.t)) f.push(`${wo}, Karte ${i + 1}${name}: Die Karte hat noch keinen Text („t“).`);
+        else if (!feld) f.push(`${wo}, Karte „${k.t}“: Die Karte gehört zu keinem Feld (im JSON „z“: eine der Feld-Kennungen ${ids.join(', ')}).`);
+      });
     }
     if (a.typ === 'freitext' && Array.isArray(a.felder) && Array.isArray(a.antworten) && a.antworten.length < a.felder.length)
       f.push(`${wo}: weniger mögliche Antworten (${a.antworten.length}) als Felder (${a.felder.length})`);
@@ -1543,7 +1547,7 @@ Aufgaben.sequenz({el:'#app', key:${JSON.stringify(id)}, schritte:DATEN.schritte}
 
   /* ---------- Zeichnen ---------- */
   function alles() { pruefen(); leiste(); mitte(); panel(); fehlerAnzeige(); melden(); }
-  function geaendert() { pruefen(); mitte(); fehlerAnzeige(); melden(); }
+  function geaendert() { pruefen(); mitte(); fehlerAnzeige(); panelFehler(); melden(); }
   let mTimer = null;
   function melden() { clearTimeout(mTimer); mTimer = setTimeout(() => cfg.geaendert && cfg.geaendert(daten()), 150); }
 
@@ -1662,12 +1666,12 @@ Aufgaben.sequenz({el:'#app', key:${JSON.stringify(id)}, schritte:DATEN.schritte}
       return;
     }
     const T = TYPEN[a.typ]; H.wurzel = a; H.vorher = sel.tiefe > 1 ? kette(sel.s, sel.i, sel.tiefe - 1) : null;
-    const fl = sel.tiefe ? teilFehler(sel.s, sel.i, sel.tiefe) : fehlerVon(sel.s, sel.i).filter(x => a.typ !== 'kombi' || !/Teil \d/.test(x));
+    const fl = aufgabeFehler(a);
     let form = '';
     try { form = T ? T.form(a, H) : `<p class="hinweis">Diesen Typ kennt der Editor nicht. Bearbeite ihn im JSON-Modus.</p>`; } catch (e) { form = `<p class="meldung fehler">Formular nicht möglich: ${esc(e.message)}. Bitte im JSON-Modus prüfen.</p>`; }
     E.panel.innerHTML = `<h3>${T ? T.symbol + ' ' + esc(typName(a)) : esc(a.typ)}${sel.tiefe ? ` <small>(Teil ${sel.tiefe} der kombinierten Aufgabe)</small>` : ''}</h3>
       <div class="zeile">${H.knopf('a-hoch', '↑', {}, {titel: sel.tiefe ? 'Teil nach oben' : 'nach oben'}) + H.knopf('a-runter', '↓', {}, {titel: sel.tiefe ? 'Teil nach unten' : 'nach unten'})}${H.knopf('a-kopie', 'Duplizieren')}${sel.tiefe ? H.knopf('a-raus', 'Aus der Kombi lösen', {}, {titel: 'als eigene Aufgabe hinter die kombinierte Aufgabe'}) : ''}${H.knopf('a-weg', 'Löschen', {}, {weg: true})}</div>
-      ${fehlerHTML(fl)}
+      <div class="panel-fehler">${fehlerHTML(fl)}</div>
       ${T && T.ohneFrage ? '' : H.rt('frage', T && T.frageLabel || 'Aufgabenstellung', {klein: true})}
       ${form}
       <details${a.nr || a.erinnerung || a.material || a.ok ? ' open' : ''}><summary>Weitere Angaben</summary>
@@ -1676,7 +1680,11 @@ Aufgaben.sequenz({el:'#app', key:${JSON.stringify(id)}, schritte:DATEN.schritte}
         ${H.rt('erinnerung', 'Erinnerung (über der Aufgabe)', {klein: true})}${H.feld('erinnerungZu', 'Erinnerung startet zugeklappt', {art: 'bool'})}
         ${H.rt('material', 'Material (über der Aufgabe)', {klein: true})}</details>`;
   }
-  const fehlerHTML = f => f.length ? `<div class="meldung fehler"><ul>${f.map(x => `<li>${esc(x.replace(/^Schritt \d+(, Aufgabe \d+)?(, Teil \d+)?:?\s*/, ''))}</li>`).join('')}</ul></div>` : '';
+  // Fehler der markierten Aufgabe (bei einer Kombi ohne die ihrer Teile); Ort „Schritt 1, Aufgabe 2, Teil 1“ wird abgeschnitten
+  const aufgabeFehler = a => sel.tiefe ? teilFehler(sel.s, sel.i, sel.tiefe) : fehlerVon(sel.s, sel.i).filter(x => a.typ !== 'kombi' || !/Teil \d/.test(x));
+  const fehlerHTML = f => f.length ? `<div class="meldung fehler"><ul>${f.map(x => `<li>${esc(x.replace(/^Schritt \d+(, Aufgabe \d+)?(, Teil \d+)?(:\s*|,\s*)?/, ''))}</li>`).join('')}</ul></div>` : '';
+  // nach jeder Eingabe: Fehlerkasten im Panel neu, ohne das Formular (und den Fokus) anzutasten
+  function panelFehler() { const a = aufgabe(), el = E.panel && E.panel.querySelector('.panel-fehler'); if (a && el) el.innerHTML = fehlerHTML(aufgabeFehler(a)); }
 
   /* ---------- Einfügen, Verschieben, Löschen ---------- */
   function neueAufgabe(b) { const [t, v] = String(b).split(':'); return v != null ? TYPEN[t].varianten[+v].neu() : TYPEN[t].neu(); }
