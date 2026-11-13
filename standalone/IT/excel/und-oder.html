@@ -1310,6 +1310,14 @@ details.help p,details.help ul{margin:8px 0}
  *       stufe = {name, neu() → Aufgabe (beliebiger Typ, frisch erzeugt; h/ok für Rechenweg nutzen)}
  *       Meldet TrainerSync.event (modus 'endlos', stufe 1…n). Gespeichert: <key>-endlos {stufe, rekord:{stufe: n}}.
  *       Rückgabe {neu() (neue Aufgabe), stufe(n) (Stufe wechseln)}. Vorbild: BWR/9II/finanzierung/zinsrechnung.html
+ *   Aufgaben.training({el, key, training, titel, fertig})  Aufgaben auf Zeit und/oder endlos (Schritt mit "training" im
+ *       Aufgaben-JSON, Format im Kopf von lib/seite.js). Zahlen-Szenarien brauchen lib/formel.js (window.Formel).
+ *       Feste Runde (anzahl) → Ergebnis + Bestleistung; ohne anzahl endlos: ein Fehler beendet die Serie.
+ *       zeit {start, schritt, min}: Balken läuft ab, Zeit je Aufgabe = max(min, start + richtige · schritt).
+ *       versuche:true → falsche Eingabe darf korrigiert werden (sonst sofort Fehler, Lösung kurz sichtbar).
+ *       Gespeichert: <key>-training {stufe, best:{stufe: n}}. Meldet je Runde/Serie TrainerSync.event (modus 'endlos'),
+ *       fertig() nach der ersten Runde (bzw. ab training.ziel richtigen) oder einer Serie ab 10 (bzw. ziel).
+ *       In Aufgaben.sequenz: schritt.training statt schritt.aufgaben.
  *   Aufgaben.mc.html(a, auswahl:Set, geprueft, reihenfolge?) / Aufgaben.mc.pruefen(a, auswahl) → {ok, gruende}
  *       für Seiten mit eigenem Ablauf (Excel-Erklärungen: tabelle.js, und-oder.html)
  *   Aufgaben.finde(antworten, text) → {i (Eintrag), wort, fast} oder null   (Freitext-Abgleich, auch einzeln nutzbar)
@@ -1894,7 +1902,7 @@ function sequenz(cfg){
   let stand = {}; try { stand = JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) {}
   if (!stand.erledigt) stand.erledigt = {};
   const speichern = () => { try { localStorage.setItem(KEY, JSON.stringify(stand)); } catch (e) {} if (window.TrainerSync) TrainerSync.changed(); };
-  const istAufgabe = s => !!(s.aufgaben && s.aufgaben.length), anzahl = S.filter(istAufgabe).length;
+  const istAufgabe = s => !!(s.aufgaben && s.aufgaben.length) || !!s.training, anzahl = S.filter(istAufgabe).length;
   let akt = Math.min(Math.max(stand.schritt || 0, 0), S.length - 1);
   root.innerHTML = '<div class="af-kopf"><nav class="af-schritte" aria-label="Schritte"></nav><span class="af-zaehler"></span></div><main class="karte af-inhalt" aria-live="polite"></main>';
   const nav = root.querySelector('.af-schritte'), inhalt = root.querySelector('.af-inhalt'), zaehler = root.querySelector('.af-zaehler');
@@ -1916,9 +1924,11 @@ function sequenz(cfg){
       + erinnerungHTML(s)
       + (s.material ? `<div class="material">${s.material}</div>` : '')
       + (s.aufgaben || []).map(() => '<div class="af-aufgabe"></div>').join('')
+      + (s.training ? '<div class="af-training"></div>' : '')
       + `<div class="af-unten"><button class="btn" type="button" data-weiter="-1"${akt ? '' : ' disabled'}>◀ Zurück</button><button class="btn haupt" type="button" data-weiter="1"${akt < S.length - 1 ? '' : ' disabled'}>Weiter ▶</button></div>`;
     const plaetze = inhalt.querySelectorAll(':scope > .af-aufgabe');
     (s.aufgaben || []).forEach((a, i) => baue(plaetze[i], a, {fertig:() => { if (s.aufgaben.every(x => geloest(x))) erledigt(s); }}));
+    if (s.training) training({el:inhalt.querySelector('.af-training'), key:cfg.key + '-' + s.id, training:s.training, titel:s.titel || s.kurz, fertig:() => erledigt(s)});
     if (s.nach) s.nach(inhalt);
     if (oben) window.scrollTo(0, 0);
   }
@@ -1976,7 +1986,169 @@ function endlos(cfg){
   return {neu, stufe:setze};
 }
 
-window.Aufgaben = {baue, sequenz, endlos, mc, mehrfach, finde, zahl, eur, mischen, esc, bsText, TYPEN};
+/* ---------- Training: Aufgaben auf Zeit und/oder endlos ---------- */
+const trStufen = T => Array.isArray(T.stufen) && T.stufen.length ? T.stufen : [{name:'', szenarien:T.szenarien, woerterbuch:T.woerterbuch}];
+const alternativen = s => String(s == null ? '' : s).split('|').map(x => x.trim()).filter(Boolean);
+// Ablenker für Zahlen: eigene falsche Formeln zuerst, dann typische Fehler (±1, ±2, ±10, Ziffern vertauscht)
+function zahlAblenker(l, falsch, runden){
+  const d = Number.isInteger(l) ? 1 : runden ? Math.pow(10, -Math.max(0, runden - 1)) : 0.1;
+  const r = x => Math.round(x * 1e9) / 1e9;
+  const tausch = Number.isInteger(l) && Math.abs(l) >= 10 ? +String(Math.abs(l)).split('').reverse().join('') * Math.sign(l) : null;
+  const kand = [...falsch, ...mischen([l + d, l - d, l + 2 * d, l - 2 * d, l + 10 * d, l - 10 * d, tausch].filter(x => x != null))].map(r);
+  const aus = [];
+  kand.forEach(x => { if (Math.abs(x - l) > 1e-9 && (l < 0 || x >= 0) && !aus.some(y => Math.abs(y - x) < 1e-9) && aus.length < 3) aus.push(x); });
+  return aus;
+}
+// Aufgabengeber einer Stufe → () => {frage (HTML), loesung (Text), optionen (MC: [{t, ok}]), pruefe(text) → 'ok' | 'fast' | 'falsch', zahl}
+function trGeber(st, T){
+  const mc = T.antwort === 'mc';
+  if (Array.isArray(st.szenarien) && st.szenarien.length){
+    if (!window.Formel) throw new Error('aufgaben.js: Training mit Szenarien braucht lib/formel.js');
+    return () => {
+      const sz = st.szenarien[Math.floor(Math.random() * st.szenarien.length)], w = Formel.wuerfle(sz);
+      const txt = x => Formel.zahlText(x) + (sz.einheit ? ' ' + sz.einheit : '');
+      const tol = sz.runden != null ? 0.5 * Math.pow(10, -sz.runden) + 1e-9 : 1e-6;
+      return {frage:w.frage, loesung:txt(w.loesung), zahl:true,
+        optionen:mc ? mischen([{t:txt(w.loesung), ok:true}, ...zahlAblenker(w.loesung, w.falsch, sz.runden).map(x => ({t:txt(x), ok:false}))]) : null,
+        pruefe:s => { const z = zahl(String(s).replace(/−/g, '-')); return !isNaN(z) && Math.abs(z - w.loesung) <= tol ? 'ok' : 'falsch'; }};
+    };
+  }
+  const W = st.woerterbuch || {}, E = (W.eintraege || []).filter(x => Array.isArray(x) && alternativen(x[0]).length && alternativen(x[1]).length);
+  const sp = Array.isArray(W.sprachen) ? W.sprachen : [];
+  let stapel = [], zuletzt = -1;
+  return () => {
+    if (!stapel.length){ stapel = mischen(E.map((_, i) => i)); if (stapel.length > 1 && stapel[stapel.length - 1] === zuletzt) stapel.unshift(stapel.pop()); }
+    const i = zuletzt = stapel.pop(), rueck = W.richtung === 'b-a' || (W.richtung === 'beide' && Math.random() < 0.5);
+    const von = alternativen(E[i][rueck ? 1 : 0]), nach = alternativen(E[i][rueck ? 0 : 1]);
+    const kopf = sp[0] || sp[1] ? `<span class="tr-sprache">${esc(sp[rueck ? 1 : 0] || '')} → ${esc(sp[rueck ? 0 : 1] || '')}</span>` : '';
+    let optionen = null;
+    if (mc){
+      const andere = [];
+      mischen(E.filter((_, j) => j !== i)).forEach(x => { const t = alternativen(x[rueck ? 0 : 1])[0]; if (!nach.some(n => norm(n) === norm(t)) && !andere.some(a => norm(a) === norm(t))) andere.push(t); });
+      optionen = mischen([{t:nach[0], ok:true}, ...andere.slice(0, 3).map(t => ({t, ok:false}))]);
+    }
+    return {frage:kopf + `<span class="tr-wort">${esc(von.join(' / '))}</span>`, loesung:nach.join(' / '), optionen,
+      pruefe(s){
+        const t = norm(s); if (!t) return 'falsch';
+        if (nach.some(n => norm(n) === t)) return 'ok';
+        const nah = nach.some(n => { const v = norm(n).replace(/ /g, ''); return abstand(t.replace(/ /g, ''), v) <= Math.max(1, Math.floor(v.length * 0.2)); });
+        return nah ? (W.tippfehler ? 'ok' : 'fast') : 'falsch';
+      }};
+  };
+}
+function training(cfg){
+  const root = typeof cfg.el === 'string' ? document.querySelector(cfg.el) : cfg.el, T = cfg.training || {}, ST = trStufen(T), KEY = cfg.key + '-training';
+  let stand = {}; try { stand = JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) {}
+  if (!stand.best) stand.best = {};
+  const speichern = () => { try { localStorage.setItem(KEY, JSON.stringify(stand)); } catch (e) {} if (window.TrainerSync) TrainerSync.changed(); };
+  const mc = T.antwort === 'mc', anzahl = T.anzahl > 0 ? Math.round(T.anzahl) : 0, endlos = !anzahl;
+  const Z = T.zeit && T.zeit.start > 0 ? {start:+T.zeit.start, schritt:+T.zeit.schritt || 0, min:T.zeit.min > 0 ? +T.zeit.min : 0.5} : null;
+  let stufe = Math.min(Math.max(stand.stufe || 0, 0), ST.length - 1), gib = null, phase = 'start', akt = null, richtige = 0, nr = 0, fehler = [];
+  let raf = 0, warte = 0, t0 = 0, dauer = 0;
+  root.innerHTML = '<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><linearGradient id="af-fg" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#d9230f"/><stop offset=".55" stop-color="#ff7a00"/><stop offset="1" stop-color="#ffd23f"/></linearGradient></defs></svg>'
+    + '<div class="tr"><div class="af-kopf"><nav class="af-flammen" aria-label="Stufen"></nav><span class="tr-info"></span></div><div class="tr-karte" aria-live="polite"></div></div>';
+  root.classList.add('af-training');
+  const $ = s => root.querySelector(s), karte = $('.tr-karte'), lebt = () => root.isConnected;
+  const best = () => stand.best[stufe] || 0;
+  const zeitText = s => String(Math.round(s * 100) / 100).replace('.', ',') + ' s';
+  function kopf(){
+    $('.af-flammen').innerHTML = ST.length > 1 ? ST.map((x, i) => `<button class="af-flamme${i === stufe ? ' on' : ''}" type="button" data-trstufe="${i}" title="Stufe ${i + 1}${x.name ? ': ' + esc(x.name) : ''}" aria-label="Stufe ${i + 1}${x.name ? ': ' + esc(x.name) : ''}" aria-pressed="${i === stufe}">${FLAMME(i + 1)}</button>`).join('') : '';
+    $('.tr-info').innerHTML = phase === 'start' || phase === 'ende' ? `Bestleistung: <b>${best()}</b>${endlos ? '' : ' von ' + anzahl}`
+      : endlos ? `🔥 Serie: <b>${richtige}</b> <span class="muted">· Bestleistung ${best()}</span>` : `Aufgabe ${nr} von ${anzahl} <span class="muted">· ✓ ${richtige}</span>`;
+  }
+  function halt(){ cancelAnimationFrame(raf); clearTimeout(warte); }
+  function startBild(){
+    halt(); phase = 'start';
+    try { gib = trGeber(ST[stufe], T); } catch (e) { karte.innerHTML = `<p class="af-fb falsch">${esc(e.message)}</p>`; return; }
+    const name = ST[stufe].name ? `<h2 class="tr-titel">${ST.length > 1 ? `Stufe ${stufe + 1}: ` : ''}${esc(ST[stufe].name)}</h2>` : '';
+    const zeit = Z ? `Für jede Aufgabe hast du <b>${zeitText(Z.start)}</b>${Z.schritt < 0 ? `, nach jeder richtigen Antwort ${zeitText(-Z.schritt)} weniger (mindestens ${zeitText(Z.min)})` : Z.schritt > 0 ? `, nach jeder richtigen Antwort ${zeitText(Z.schritt)} mehr` : ''}.` : 'Ohne Zeitdruck.';
+    karte.innerHTML = name + `<ul class="tr-regeln"><li>${endlos ? 'Endlos: Wie lang wird deine Serie? Ein Fehler beendet sie.' : `${anzahl} Aufgaben – wie viele schaffst du?`}</li><li>${zeit}</li><li>${mc ? 'Klicke die richtige Antwort an (oder Taste 1–4).' : 'Tippe die Antwort ein und drücke Enter.'}${T.versuche ? ' Bei einem Fehler darfst du es nochmal versuchen.' : ''}</li></ul>`
+      + `<button class="btn haupt tr-start" type="button">▶ Start</button>`;
+    kopf(); const b = $('.tr-start'); if (b && document.activeElement && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) b.focus({preventScroll:true});
+  }
+  function starte(){ halt(); richtige = 0; nr = 0; fehler = []; phase = 'laeuft'; naechste(); }
+  function naechste(){
+    halt();
+    if (!lebt()) return;
+    if (!endlos && nr >= anzahl) return ende();
+    nr++; phase = 'laeuft';
+    try { akt = gib(); } catch (e) { karte.innerHTML = `<p class="af-fb falsch">${esc(e.message)}</p>`; return; }
+    karte.innerHTML = (Z ? '<div class="tr-zeit" aria-hidden="true"><div class="tr-balken"></div></div>' : '') + `<div class="tr-frage">${akt.frage}</div>`
+      + (mc ? `<div class="tr-mc">${akt.optionen.map((o, i) => `<button class="tr-opt" type="button" data-tropt="${i}"><span class="tr-taste">${i + 1}</span>${esc(o.t)}</button>`).join('')}</div>`
+        : `<form class="tr-form" autocomplete="off"><input class="feld tr-ein" ${akt.zahl ? 'inputmode="decimal" ' : ''}autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Antwort"><button class="btn haupt" type="submit">OK</button></form>`)
+      + `<div class="tr-rueck"></div>` + (Z ? '' : '<button class="btn klein tr-weiss" type="button">Weiß ich nicht</button>');
+    kopf();
+    const ein = $('.tr-ein'); if (ein) ein.focus({preventScroll:true});
+    if (Z){ dauer = Math.max(Z.min, Z.start + richtige * Z.schritt); t0 = performance.now(); raf = requestAnimationFrame(tick); }
+  }
+  function tick(){
+    if (!lebt() || phase !== 'laeuft') return;
+    const rest = 1 - (performance.now() - t0) / (dauer * 1000), b = $('.tr-balken');
+    if (b){ b.style.width = Math.max(0, rest * 100) + '%'; b.classList.toggle('knapp', rest < 0.3); }
+    if (rest <= 0) return falsch('zeit', '');
+    raf = requestAnimationFrame(tick);
+  }
+  function antwort(text, opt){
+    if (phase !== 'laeuft') return;
+    const r = opt != null ? (akt.optionen[opt].ok ? 'ok' : 'falsch') : akt.pruefe(text);
+    if (r === 'ok') return gut();
+    if (T.versuche){
+      const rk = $('.tr-rueck'); rk.className = 'tr-rueck falsch'; rk.textContent = r === 'fast' ? 'Fast – achte auf die Schreibweise. Nochmal!' : 'Nicht ganz – nochmal!';
+      karte.classList.remove('tr-wackeln'); void karte.offsetWidth; karte.classList.add('tr-wackeln');
+      if (opt != null){ const b = root.querySelector(`[data-tropt="${opt}"]`); if (b){ b.disabled = true; b.classList.add('falsch'); } }
+      else { const e = $('.tr-ein'); e.value = ''; e.focus(); }
+      return;
+    }
+    falsch(r, opt != null ? akt.optionen[opt].t : text);
+  }
+  function gut(){
+    halt(); richtige++; phase = 'pause';
+    karte.classList.add('tr-gut'); const rk = $('.tr-rueck'); rk.className = 'tr-rueck ok'; rk.textContent = '✓ Richtig';
+    kopf(); warte = setTimeout(() => { karte.classList.remove('tr-gut'); naechste(); }, 450);
+  }
+  function falsch(grund, eingabe){
+    halt(); phase = 'loesung';
+    fehler.push({frage:akt.frage, loesung:akt.loesung, eingabe, zeit:grund === 'zeit'});
+    const rk = $('.tr-rueck'); rk.className = 'tr-rueck falsch';
+    rk.innerHTML = `${grund === 'zeit' ? '⏱ Zeit abgelaufen.' : grund === 'fast' ? 'Fast – achte auf die Schreibweise.' : '✗ Leider falsch.'} Richtig ist: <b>${esc(akt.loesung)}</b> <span class="muted">(Enter: weiter)</span>`;
+    if (mc) root.querySelectorAll('[data-tropt]').forEach(b => { b.disabled = true; if (akt.optionen[+b.dataset.tropt].ok) b.classList.add('richtig'); else if (akt.optionen[+b.dataset.tropt].t === eingabe) b.classList.add('falsch'); });
+    const e = $('.tr-ein'); if (e) e.readOnly = true;
+    const w = $('.tr-weiss'); if (w) w.remove();
+    warte = setTimeout(weiter, grund === 'zeit' ? 1800 : 2200);
+  }
+  function weiter(){ if (phase !== 'loesung') return; if (endlos) ende(); else naechste(); }
+  function ende(){
+    halt(); phase = 'ende';
+    const alt = best(), neu = richtige > alt;
+    if (neu){ stand.best[stufe] = richtige; speichern(); }
+    const titel = (cfg.titel || 'Training') + (ST[stufe].name ? ' · ' + ST[stufe].name : '');
+    if (window.TrainerSync) TrainerSync.event({modus:'endlos', stufe:stufe + 1, aufgabe:'training', titel:`${titel}: ${endlos ? 'Serie ' + richtige : richtige + ' von ' + anzahl}`, gesamt:0, erstmals:true});
+    const liste = fehler.length ? `<details class="tr-fehler"${endlos ? ' open' : ''}><summary>${endlos ? 'Daran lag es' : `Fehler (${fehler.length})`}</summary><table><tr><th>Aufgabe</th><th>deine Antwort</th><th>richtig</th></tr>${fehler.slice(-12).map(f => `<tr><td>${f.frage}</td><td>${f.zeit ? '⏱' : f.eingabe ? esc(f.eingabe) : '–'}</td><td><b>${esc(f.loesung)}</b></td></tr>`).join('')}</table></details>` : '';
+    karte.innerHTML = `<h2 class="tr-ergebnis">${endlos ? `Serie: ${richtige}` : `${richtige} von ${anzahl} richtig`}</h2>`
+      + `<p>${neu ? '🎉 <b>Neue Bestleistung!</b>' : `Bestleistung: ${alt}${endlos ? '' : ' von ' + anzahl}`}</p>` + liste
+      + `<button class="btn haupt tr-start" type="button">↻ ${endlos ? 'Neue Serie' : 'Nochmal'}</button>`;
+    kopf(); $('.tr-start').focus({preventScroll:true});
+    if (cfg.fertig && richtige >= (T.ziel != null ? T.ziel : endlos ? 10 : 0)) cfg.fertig();
+  }
+  root.addEventListener('click', e => {
+    const f = e.target.closest('[data-trstufe]'); if (f){ stufe = +f.dataset.trstufe; stand.stufe = stufe; speichern(); return startBild(); }
+    if (e.target.closest('.tr-start')) return starte();
+    const o = e.target.closest('[data-tropt]'); if (o && !o.disabled) return antwort(null, +o.dataset.tropt);
+    if (e.target.closest('.tr-weiss')) return falsch('weiss', '');
+  });
+  root.addEventListener('submit', e => { if (!e.target.closest('.tr-form')) return; e.preventDefault(); const v = $('.tr-ein').value; if (phase === 'loesung') return weiter(); if (v.trim()) antwort(v); });
+  function taste(e){
+    if (!lebt()){ document.removeEventListener('keydown', taste); return; }
+    if (e.target.closest && e.target.closest('input,textarea,select') && !e.target.closest('.af-training')) return;
+    if (phase === 'loesung' && e.key === 'Enter'){ e.preventDefault(); return weiter(); }
+    if (mc && phase === 'laeuft' && /^[1-4]$/.test(e.key) && akt.optionen[+e.key - 1]){ const b = root.querySelector(`[data-tropt="${+e.key - 1}"]`); if (b && !b.disabled){ e.preventDefault(); antwort(null, +e.key - 1); } }
+  }
+  document.addEventListener('keydown', taste);
+  startBild();
+  return {stop:halt, start:starte};
+}
+
+window.Aufgaben = {baue, sequenz, endlos, training, mc, mehrfach, finde, zahl, eur, mischen, esc, bsText, TYPEN};
 })();
 
 </script>

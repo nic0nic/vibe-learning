@@ -160,6 +160,14 @@ Aufgaben-JSON (reine Daten, kein JavaScript; Aufgabentypen wie in lib/aufgaben.j
                  "material": "…", "aufgaben": [{"typ": "mc", …}, …]}, …]}
   Statt "schritte" geht auch "aufgaben": [...] (wird ein einziger Schritt).
   Kombinierte Aufgabe: {"typ": "kombi", "teile": [Aufgabe, Aufgabe, …]} – Teil 2 erscheint nach richtiger Lösung von Teil 1 usw.
+  Training (Schritt mit "training" statt "aufgaben"): Aufgaben nacheinander, auf Zeit und/oder endlos (lib/aufgaben.js training)
+    "training": {"antwort": "eingabe" | "mc", "anzahl": 20 (weglassen = endlos: Serie + Bestleistung),
+      "zeit": {"start": 5, "schritt": -0.1, "min": 1.5} (weglassen = ohne Zeit), "versuche": true (korrigieren erlaubt), "ziel": 15,
+      "szenarien": [Szenario, …] oder "woerterbuch": {…} – oder "stufen": [{"name": "bis 20", "szenarien": […]}, {"name": "Lektion 2", "woerterbuch": {…}}]}
+    Szenario (Zahlen, Format in lib/formel.js): {"frage": "{a} + {b} =", "werte": {"a": [1, 10], "b": [1, 10]}, "loesung": "a + b",
+      "bedingung": "b <= a", "runden": 2, "einheit": "€", "falsch": ["a - b"]}
+    Wörterbuch: {"sprachen": ["Englisch", "Deutsch"], "richtung": "a-b" | "b-a" | "beide", "tippfehler": false,
+      "eintraege": [["house", "Haus|Gebäude"], …]}   (| = mehrere richtige Antworten)
   Altes Format {"typ": …, "danach": {…}} wandelt normalisiere in eine Kombi um (Seite.ohneDanach).
 
 API
@@ -171,7 +179,7 @@ API
       (td/th auch colspan, rowspan); jedes andere „<“ + Buchstabe, „</“, „<!“ oder „<?“ wird abgelehnt.
   Seite.toolId(titel, zufall)     → id für katalog.js (a–z, 0–9, -, höchstens 20 Zeichen)
   Seite.seiteHTML(json, opt)      → komplette HTML-Seite
-      opt = {pfad: 'BWR/9II/finanzierung', toolId, einzeln: false, lib: {aufgabenJs, aufgabenCss, bwrCss}}
+      opt = {pfad: 'BWR/9II/finanzierung', toolId, einzeln: false, lib: {aufgabenJs, aufgabenCss, bwrCss, formelJs}}
       einzeln: true → ohne Menü und Server, Bibliotheken eingebettet (Vorschau, Download)
       bycs: {scormJs, stufen} (nur mit einzeln) → für ein SCORM-Paket: window.PF_BYCS und scorm.js vor den
             Bibliotheken eingebettet, wie in werkzeuge/bycs-pakete.py (dort statt sync.js)
@@ -248,6 +256,14 @@ API
       stufe = {name, neu() → Aufgabe (beliebiger Typ, frisch erzeugt; h/ok für Rechenweg nutzen)}
       Meldet TrainerSync.event (modus 'endlos', stufe 1…n). Gespeichert: <key>-endlos {stufe, rekord:{stufe: n}}.
       Rückgabe {neu() (neue Aufgabe), stufe(n) (Stufe wechseln)}. Vorbild: BWR/9II/finanzierung/zinsrechnung.html
+  Aufgaben.training({el, key, training, titel, fertig})  Aufgaben auf Zeit und/oder endlos (Schritt mit "training" im
+      Aufgaben-JSON, Format im Kopf von lib/seite.js). Zahlen-Szenarien brauchen lib/formel.js (window.Formel).
+      Feste Runde (anzahl) → Ergebnis + Bestleistung; ohne anzahl endlos: ein Fehler beendet die Serie.
+      zeit {start, schritt, min}: Balken läuft ab, Zeit je Aufgabe = max(min, start + richtige · schritt).
+      versuche:true → falsche Eingabe darf korrigiert werden (sonst sofort Fehler, Lösung kurz sichtbar).
+      Gespeichert: <key>-training {stufe, best:{stufe: n}}. Meldet je Runde/Serie TrainerSync.event (modus 'endlos'),
+      fertig() nach der ersten Runde (bzw. ab training.ziel richtigen) oder einer Serie ab 10 (bzw. ziel).
+      In Aufgaben.sequenz: schritt.training statt schritt.aufgaben.
   Aufgaben.mc.html(a, auswahl:Set, geprueft, reihenfolge?) / Aufgaben.mc.pruefen(a, auswahl) → {ok, gruende}
       für Seiten mit eigenem Ablauf (Excel-Erklärungen: tabelle.js, und-oder.html)
   Aufgaben.finde(antworten, text) → {i (Eintrag), wort, fast} oder null   (Freitext-Abgleich, auch einzeln nutzbar)

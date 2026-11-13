@@ -26,11 +26,13 @@ document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: da
 <script src="../../katalog.js"></script>
 <script src="../../nav.js"></script>
 <script src="../../sync.js"></script>
+<script src="../../lib/formel.js"></script>
 <script src="../../lib/seite.js"></script>
 <script src="../../lib/zip.js"></script>
 <script src="../../vorlage-editor.js"></script>
 <script src="../../BWR/kontenplan.js"></script>
 <script src="../../vorlage-typen.js"></script>
+<script src="../../vorlage-training.js"></script>
 <script src="../python/lib/codemirror.min.js"></script>
 <script src="../../vorlage-json.js"></script>
 <style>
@@ -142,6 +144,31 @@ dialog.kp-dialog:not([open]){display:none}
 .kp-dialog>.hinweis{margin:4px 16px}
 .kp-weitere{border-top:1px solid var(--border);padding:10px 16px 14px;background:var(--panel2)}
 .kp-eigen{flex:1 1 220px;max-width:360px}
+
+/* Training-Schritt (vorlage-training.js) */
+.tkarte{background:var(--panel);border:2px solid var(--border);border-left:6px solid #5e81ac;border-radius:10px;padding:10px 12px;cursor:pointer}
+.tkarte.gewaehlt{border-color:var(--marke)}
+.tr-h{margin:16px 0 6px;padding-top:10px;border-top:1px solid var(--border)}
+.tr-reihe{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:flex-end}
+.tr-reihe>label.klein{flex-basis:100%}
+.tr-reihe .feld{flex:1 1 120px;min-width:0}
+.tr-stufen{display:flex;flex-wrap:wrap;gap:5px;margin:4px 0 6px}
+.tr-stufen .btn.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.tr-knoepfe{display:flex;gap:4px;margin-left:auto}
+.seg .btn[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:#fff}
+.tr-art{margin:8px 0}
+.tr-szenario{border:1px solid var(--border);border-left:4px solid #5e81ac;border-radius:9px;padding:8px 10px;margin:8px 0;background:var(--panel)}
+.tr-kopf{display:flex;justify-content:space-between;align-items:center}
+.tr-werte,.tr-woerter{width:100%;font:13px/1.45 var(--mono);resize:vertical}
+.tr-wf:empty{display:none}
+.tr-proben ul{margin:6px 0;padding-left:20px;font-size:14px}
+.tr-proben li{margin:2px 0}
+dialog.tr-dialog{width:min(720px,calc(100vw - 24px));max-height:calc(100vh - 24px);padding:0}
+.tr-dinnen{padding:10px 16px 14px;display:flex;flex-direction:column;gap:8px}
+.tr-roh{width:100%;font:13px/1.4 var(--mono)}
+.tr-tab{border-collapse:collapse;width:100%;font-size:14px}
+.tr-tab th,.tr-tab td{border-bottom:1px solid var(--border);padding:3px 8px;text-align:left}
+.tr-dinnen .spacer{flex:1}
 
 /* Schalter für Optionen eines Aufgabentyps (z. B. Buchungssatz: Jgst. 7, Beträge ziehen) */
 .schalterleiste{display:flex;flex-wrap:wrap;gap:6px 18px;margin:4px 0 10px;padding:8px 10px;background:var(--panel2);border-radius:10px}
@@ -321,6 +348,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
 <!-- Bibliotheken für die erzeugten Seiten (online leer → fetch; in Einzeldatei/ByCS-Paket eingebettet) -->
 <script type="application/json" data-einbetten="../../lib/aufgaben.js"></script>
 <script type="application/json" data-einbetten="../../lib/aufgaben.css"></script>
+<script type="application/json" data-einbetten="../../lib/formel.js"></script>
 <script type="application/json" data-einbetten="../../BWR/bwr.css"></script>
 <script type="application/json" data-einbetten="../../scorm.js"></script>
 <script type="application/json" data-einbetten="../../lib/scorm-manifest.xml"></script>
@@ -329,6 +357,8 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;'}[c]));
 const BEISPIEL = {titel:'Beispiel: Kredite', kurztext:'Kurze Wiederholung', schritte:[
+  {kurz:'Kopfrechnen', titel:'Prozente im Kopf', html:'<p>Wie viel sind p % von einem Betrag? So schnell du kannst!</p>',
+   training:{antwort:'eingabe', anzahl:10, zeit:{start:8, schritt:-0.3, min:3}, szenarien:[{frage:'{p} % von {g} € =', werte:{p:{aus:[1, 2, 5, 10, 20, 25, 50]}, g:[100, 2000, 100]}, loesung:'g * p / 100', einheit:'€'}]}},
   {kurz:'Erklärung', titel:'Was ist ein Kredit?', html:'<h2>Kredit</h2><p>Ein Kredit ist die <b>zeitweilige Überlassung von Geld</b> gegen <b>Zinsen</b>.</p>'},
   {kurz:'1', titel:'Kreditfähigkeit', aufgaben:[{typ:'mc', frage:'Was bedeutet Kreditfähigkeit?', options:['rechtliche Fähigkeit, einen Kreditvertrag abzuschließen', 'Fähigkeit, den Kredit zurückzuzahlen'], correct:[0], why:{1:'Das ist die Kreditwürdigkeit.'}}]},
   {kurz:'2', titel:'Lückentext', aufgaben:[{typ:'luecken', frage:'Vervollständige.', text:'Zinsen und Tilgung zusammen heißen [[Schuldendienst|Disagio|Skonto]].'},
@@ -435,8 +465,8 @@ async function lib(){
     if (el && el.textContent.trim()) return JSON.parse(el.textContent);
     return fetch(p).then(r => { if (!r.ok) throw new Error(p); return r.text(); });
   };
-  const [aufgabenJs, aufgabenCss, bwrCss, scormJs, manifest] = await Promise.all(['../../lib/aufgaben.js', '../../lib/aufgaben.css', '../../BWR/bwr.css', '../../scorm.js', '../../lib/scorm-manifest.xml'].map(t));
-  return (LIB = {aufgabenJs, aufgabenCss, bwrCss, scormJs, manifest});
+  const [aufgabenJs, aufgabenCss, bwrCss, scormJs, manifest, formelJs] = await Promise.all(['../../lib/aufgaben.js', '../../lib/aufgaben.css', '../../BWR/bwr.css', '../../scorm.js', '../../lib/scorm-manifest.xml', '../../lib/formel.js'].map(t));
+  return (LIB = {aufgabenJs, aufgabenCss, bwrCss, scormJs, manifest, formelJs});
 }
 // Aufgaben-JSON mit Prüfung; null bei Fehlern (Hinweis in wo, im JSON-Modus als Meldung, im Editor unter der Mitte)
 function daten(wo){

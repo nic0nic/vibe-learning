@@ -9,6 +9,14 @@
  *                  "material": "…", "aufgaben": [{"typ": "mc", …}, …]}, …]}
  *   Statt "schritte" geht auch "aufgaben": [...] (wird ein einziger Schritt).
  *   Kombinierte Aufgabe: {"typ": "kombi", "teile": [Aufgabe, Aufgabe, …]} – Teil 2 erscheint nach richtiger Lösung von Teil 1 usw.
+ *   Training (Schritt mit "training" statt "aufgaben"): Aufgaben nacheinander, auf Zeit und/oder endlos (lib/aufgaben.js training)
+ *     "training": {"antwort": "eingabe" | "mc", "anzahl": 20 (weglassen = endlos: Serie + Bestleistung),
+ *       "zeit": {"start": 5, "schritt": -0.1, "min": 1.5} (weglassen = ohne Zeit), "versuche": true (korrigieren erlaubt), "ziel": 15,
+ *       "szenarien": [Szenario, …] oder "woerterbuch": {…} – oder "stufen": [{"name": "bis 20", "szenarien": […]}, {"name": "Lektion 2", "woerterbuch": {…}}]}
+ *     Szenario (Zahlen, Format in lib/formel.js): {"frage": "{a} + {b} =", "werte": {"a": [1, 10], "b": [1, 10]}, "loesung": "a + b",
+ *       "bedingung": "b <= a", "runden": 2, "einheit": "€", "falsch": ["a - b"]}
+ *     Wörterbuch: {"sprachen": ["Englisch", "Deutsch"], "richtung": "a-b" | "b-a" | "beide", "tippfehler": false,
+ *       "eintraege": [["house", "Haus|Gebäude"], …]}   (| = mehrere richtige Antworten)
  *   Altes Format {"typ": …, "danach": {…}} wandelt normalisiere in eine Kombi um (Seite.ohneDanach).
  *
  * API
@@ -20,7 +28,7 @@
  *       (td/th auch colspan, rowspan); jedes andere „<“ + Buchstabe, „</“, „<!“ oder „<?“ wird abgelehnt.
  *   Seite.toolId(titel, zufall)     → id für katalog.js (a–z, 0–9, -, höchstens 20 Zeichen)
  *   Seite.seiteHTML(json, opt)      → komplette HTML-Seite
- *       opt = {pfad: 'BWR/9II/finanzierung', toolId, einzeln: false, lib: {aufgabenJs, aufgabenCss, bwrCss}}
+ *       opt = {pfad: 'BWR/9II/finanzierung', toolId, einzeln: false, lib: {aufgabenJs, aufgabenCss, bwrCss, formelJs}}
  *       einzeln: true → ohne Menü und Server, Bibliotheken eingebettet (Vorschau, Download)
  *       bycs: {scormJs, stufen} (nur mit einzeln) → für ein SCORM-Paket: window.PF_BYCS und scorm.js vor den
  *             Bibliotheken eingebettet, wie in werkzeuge/bycs-pakete.py (dort statt sync.js)
@@ -58,6 +66,9 @@
     else if (x && typeof x === 'object') Object.keys(x).forEach(k => alleTexte(x[k], wo, f));
   }
   const istText = v => typeof v === 'string' && v.trim() !== '';
+  // Rechenausdrücke der Trainings-Szenarien (lib/formel.js); fehlt sie (z. B. im Hook), werden Formeln nicht geprüft
+  let Formel = null;
+  try { Formel = typeof window !== 'undefined' && window.Formel ? window.Formel : require('./formel.js'); } catch (e) {}
   const r2 = n => Math.round(n * 100) / 100;
 
   // altes Format: Folgeaufgaben als danach-Kette → Kombi mit Teilen (auch danach in Teilen einer Kombi)
@@ -155,6 +166,40 @@
     }
   }
 
+  function pruefeTraining(t, wo, f) {
+    if (!t || typeof t !== 'object' || Array.isArray(t)) return f.push(`${wo}: „training“ muss ein Objekt sein`);
+    if (t.antwort != null && !['eingabe', 'mc'].includes(t.antwort)) f.push(`${wo}: „antwort“ ist "eingabe" (eintippen) oder "mc" (Auswahl)`);
+    if (t.anzahl != null && !(Number.isInteger(t.anzahl) && t.anzahl > 0 && t.anzahl <= 500)) f.push(`${wo}: „anzahl“ = Aufgaben pro Runde (1 bis 500) – oder weglassen für endlos`);
+    if (t.ziel != null && !(Number.isInteger(t.ziel) && t.ziel >= 0)) f.push(`${wo}: „ziel“ = so viele richtige zählen den Schritt als erledigt (ganze Zahl)`);
+    if (t.zeit != null) {
+      const z = t.zeit;
+      if (!z || typeof z !== 'object' || !(z.start > 0)) f.push(`${wo}: Zeit: „start“ = Sekunden für die erste Aufgabe (größer als 0)`);
+      else {
+        if (z.schritt != null && typeof z.schritt !== 'number') f.push(`${wo}: Zeit: „schritt“ = Sekunden mehr/weniger je richtiger Antwort, z. B. -0.1`);
+        if (z.min != null && !(z.min > 0)) f.push(`${wo}: Zeit: „min“ = kürzeste Zeit in Sekunden (größer als 0)`);
+        if (z.min > z.start) f.push(`${wo}: Zeit: „min“ ist größer als „start“`);
+      }
+    }
+    const stufen = Array.isArray(t.stufen) ? t.stufen : null;
+    if (t.stufen != null && (!stufen || !stufen.length)) f.push(`${wo}: „stufen“ muss eine Liste mit mindestens einer Stufe sein`);
+    (stufen && stufen.length ? stufen : [t]).forEach((s, k) => {
+      const ws = stufen ? `${wo}, Stufe ${k + 1}${s && s.name ? ` („${s.name}“)` : ''}` : wo;
+      if (!s || typeof s !== 'object') return f.push(`${ws}: Stufe muss ein Objekt sein`);
+      const sz = Array.isArray(s.szenarien) && s.szenarien.length, wb = s.woerterbuch && typeof s.woerterbuch === 'object';
+      if (!sz && !wb) return f.push(`${ws}: Es fehlen Aufgaben – „szenarien“ (Zahlen) oder „woerterbuch“ (Vokabeln)`);
+      if (sz && wb) f.push(`${ws}: Entweder „szenarien“ oder „woerterbuch“, nicht beides`);
+      if (sz) s.szenarien.forEach((x, i) => { if (Formel) Formel.pruefeSzenario(x).forEach(e => f.push(`${ws}, Szenario ${i + 1}: ${e}`)); });
+      if (wb) {
+        const w = s.woerterbuch, E = Array.isArray(w.eintraege) ? w.eintraege : null;
+        if (!E || !E.length) f.push(`${ws}: Das Wörterbuch hat keine Einträge („eintraege“: [["house", "Haus"], …])`);
+        else E.forEach((x, i) => { if (!Array.isArray(x) || x.length < 2 || !istText(x[0]) || !istText(x[1])) f.push(`${ws}, Eintrag ${i + 1}: braucht zwei Seiten, z. B. ["house", "Haus"]`); });
+        if (E && t.antwort === 'mc' && E.length < 4) f.push(`${ws}: Für Multiple Choice braucht das Wörterbuch mindestens 4 Einträge (für die falschen Antworten)`);
+        if (w.richtung != null && !['a-b', 'b-a', 'beide'].includes(w.richtung)) f.push(`${ws}: „richtung“ ist "a-b", "b-a" oder "beide"`);
+        if (w.sprachen != null && !(Array.isArray(w.sprachen) && w.sprachen.length === 2)) f.push(`${ws}: „sprachen“ braucht zwei Namen, z. B. ["Englisch", "Deutsch"]`);
+      }
+    });
+  }
+
   function pruefe(j) {   // danach-Ketten prüft sie schon als Kombi (normalisiere)
     const f = [];
     if (!j || typeof j !== 'object' || Array.isArray(j)) return ['Das ist kein Aufgaben-JSON (Objekt mit „titel“ und „schritte“ erwartet).'];
@@ -169,7 +214,8 @@
     if (n.schritte.length > 40) f.push('Höchstens 40 Schritte.');
     n.schritte.forEach((s, i) => {
       const wo = `Schritt ${i + 1}`;
-      if (!s.html && !(s.aufgaben && s.aufgaben.length)) f.push(`${wo}: weder Erklärung („html“) noch Aufgaben`);
+      if (!s.html && !(s.aufgaben && s.aufgaben.length) && !s.training) f.push(`${wo}: weder Erklärung („html“) noch Aufgaben`);
+      if (s.training != null) { pruefeTraining(s.training, `${wo}, Training`, f); if (s.aufgaben && s.aufgaben.length) f.push(`${wo}: Ein Schritt mit Training hat keine weiteren Aufgaben – lege dafür einen eigenen Schritt an`); }
       if (s.aufgaben != null && !Array.isArray(s.aufgaben)) f.push(`${wo}: „aufgaben“ muss eine Liste sein`);
       (s.aufgaben || []).forEach((a, k) => pruefeAufgabe(a, `${wo}, Aufgabe ${k + 1}`, f));
       alleTexte(s, wo, f);
@@ -207,9 +253,10 @@
       ? ` window.PF_BYCS = {stufen: ${Math.max(0, parseInt(opt.bycs.stufen, 10) || 0)}};</script>\n<script>${String(opt.bycs.scormJs || '').replace(/<\/script/g, '<\\/script')}</script>\n<script>` : '';
     const kopf = opt.einzeln
       ? `<script>window.PF_EINZELDATEI = true;${bycs}${THEME}</script>\n<style>${BASIS_CSS}${bwr && lib.bwrCss ? lib.bwrCss : ''}</style>\n<style>${lib.aufgabenCss || ''}</style>\n<script>${String(lib.aufgabenJs || '').replace(/<\/script/g, '<\\/script')}</script>`
+        + (lib.formelJs ? `\n<script>${String(lib.formelJs).replace(/<\/script/g, '<\\/script')}</script>` : '')
       : `<script src="${hoch}katalog.js"></script>\n<script src="${hoch}nav.js"></script>\n<script src="${hoch}sync.js"></script>\n<script>\n${THEME}\n</script>\n`
         + (bwr ? `<link rel="stylesheet" href="${hoch}BWR/bwr.css">` : `<style>${BASIS_CSS}</style>`)
-        + `\n<link rel="stylesheet" href="${hoch}lib/aufgaben.css">\n<script src="${hoch}lib/aufgaben.js"></script>`;
+        + `\n<link rel="stylesheet" href="${hoch}lib/aufgaben.css">\n<script src="${hoch}lib/aufgaben.js"></script>\n<script src="${hoch}lib/formel.js"></script>`;
     return `<!doctype html>
 <html lang="de" data-trainer="${esc(id)}">
 <head>

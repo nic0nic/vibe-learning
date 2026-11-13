@@ -11,6 +11,10 @@
  *   Baukasten.rueck() / vor()   Rückgängig / Wiederholen (auch Strg+Z / Strg+Y außerhalb von Textfeldern)
  *   Baukasten.fehler()          Fehler aus Seite.pruefe
  *   Baukasten.aufgabe() / aendere(fn(a))   markierte Aufgabe lesen bzw. ändern (für Dialoge der Typen, z. B. Kontenplan)
+ *   Baukasten.schritt() / aendereSchritt(fn(x))   markierten Schritt lesen bzw. ändern (z. B. Vokabel-Import);
+ *   aendereSchrittStill(fn(x)) ändert ohne neu zu zeichnen (für Textfelder, die beim Verlassen übernommen werden)
+ * Training-Schritt (schritt.training): Baustein „⏱ Training“ in der Leiste; Formular aus vorlage-training.js
+ *   (Baukasten.training = {neu(), kurz(t), form(x, H), tun:{…}}), Knöpfe data-tun laufen über aendern.
  *   Baukasten.sauber(html)      HTML auf Seite.ERLAUBT bereinigen (fremde Tags werden ausgepackt, script/style entfernt)
  *
  * Typ registrieren (vorlage-typen.js): Baukasten.typ('mc', {name, symbol, neu() → Aufgabe, kurz(a) → Text,
@@ -146,6 +150,7 @@
   function leiste() {
     if (E.leiste.childElementCount) return;
     E.leiste.innerHTML = `<button class="teil" type="button" data-baustein="schritt" title="Ziehen oder anklicken"><span class="sym">📄</span><span>Schritt / Erklärung</span></button>`
+      + (window.Baukasten.training ? `<button class="teil" type="button" data-baustein="training" title="Neuer Schritt: Aufgaben auf Zeit und/oder endlos (Kopfrechnen, Vokabeln …)"><span class="sym">⏱</span><span>Training (Zeit / endlos)</span></button>` : '')
       + '<div class="leiste-trenn">Aufgaben</div>'
       + Object.keys(TYPEN).sort((x, y) => (x === 'kombi') - (y === 'kombi')).map(k => (k === 'kombi' ? '<div class="leiste-trenn">Kombinieren</div>' : '')
         + `<button class="teil" type="button" data-baustein="${k}" title="Ziehen oder anklicken"><span class="sym">${TYPEN[k].symbol}</span><span>${esc(TYPEN[k].name)}</span></button>`).join('')
@@ -172,7 +177,7 @@
     pruefSel();
     const reiter = S().map((x, s) => {
       const f = fehlerVon(s).length, info = !(x.aufgaben && x.aufgaben.length);
-      return `<button type="button" class="reiter${s === sel.s ? ' on' : ''}${f ? ' hatfehler' : ''}" data-ziel="reiter" data-zieh="schritt" data-s="${s}" title="${esc(x.titel || '')}">${info ? '📄 ' : ''}${esc(x.kurz || String(s + 1))}</button>`;
+      return `<button type="button" class="reiter${s === sel.s ? ' on' : ''}${f ? ' hatfehler' : ''}" data-ziel="reiter" data-zieh="schritt" data-s="${s}" title="${esc(x.titel || '')}">${x.training ? '⏱ ' : info ? '📄 ' : ''}${esc(x.kurz || String(s + 1))}</button>`;
     }).join('') + '<button type="button" class="reiter plus" data-ziel="reiterende" data-baustein-klick="schritt" title="Neuer Schritt">＋</button>';
     let inhalt;
     if (!S().length) inhalt = '<div class="leer-start" data-ziel="reiterende">Noch keine Schritte. Ziehe einen Baustein hierher – oder klicke links auf einen.</div>';
@@ -185,8 +190,9 @@
         ${x.html ? `<div class="sk-html">${sauber(x.html)}</div>` : `<div class="muted sk-leer">Kein Erklärtext. Klicke hier, um einen zu schreiben.</div>`}
         ${x.material ? `<div class="sk-erinnerung">Material: ${esc(nurText(x.material).slice(0, 120))}</div>` : ''}
       </div>
-      <div class="aliste">${l.map((a, i) => karte(sel.s, i, a, 0)).join('')}
-        <div class="ende" data-ziel="liste" data-s="${sel.s}">${l.length ? '＋ Aufgabe hierher ziehen' : 'Aufgaben aus der Leiste hierher ziehen'}</div></div>`;
+      ${x.training ? `<div class="tkarte${kopfGew ? ' gewaehlt' : ''}" data-wahl="schritt"><div class="ak-kopf"><span class="sym">⏱</span><b>Training</b></div><div class="ak-kurz">${esc(TR() ? TR().kurz(x.training) : '')}</div><p class="hinweis">Einstellungen rechts. Ein Training-Schritt hat keine weiteren Aufgaben.</p></div>`
+      : `<div class="aliste">${l.map((a, i) => karte(sel.s, i, a, 0)).join('')}
+        <div class="ende" data-ziel="liste" data-s="${sel.s}">${l.length ? '＋ Aufgabe hierher ziehen' : 'Aufgaben aus der Leiste hierher ziehen'}</div></div>`}`;
     }
     E.mitte.innerHTML = `<div class="reiterleiste">${reiter}</div><div class="schrittflaeche">${inhalt}</div>`;
   }
@@ -248,13 +254,14 @@
       const x = schritt(); H.wurzel = x;
       E.panel.innerHTML = `<h3>Schritt ${sel.s + 1}</h3>
         <div class="zeile">${H.knopf('s-links', '←', {}, {titel: 'nach vorn'})}${H.knopf('s-rechts', '→', {}, {titel: 'nach hinten'})}${H.knopf('s-kopie', 'Duplizieren')}${H.knopf('s-weg', 'Löschen', {}, {weg: true})}</div>
-        ${fehlerHTML(fehlerVon(sel.s, null))}
+        <div class="panel-fehler">${fehlerHTML(fehlerVon(sel.s, null))}</div>
         ${H.feld('titel', 'Titel des Schritts')}
         ${H.feld('kurz', 'Knopf-Beschriftung (kurz, z. B. 7.1)', {ph: 'automatisch: ' + (sel.s + 1)})}
         ${H.rt('html', 'Erklärtext (optional)')}
         <details${x.erinnerung || x.material ? ' open' : ''}><summary>Erinnerung und Material</summary>
         ${H.rt('erinnerung', 'Erinnerung (aufklappbar über den Aufgaben)', {klein: true})}${H.feld('erinnerungZu', 'Erinnerung startet zugeklappt', {art: 'bool'})}
-        ${H.rt('material', 'Material (steht über den Aufgaben)', {klein: true})}</details>`;
+        ${H.rt('material', 'Material (steht über den Aufgaben)', {klein: true})}</details>
+        ${x.training && TR() ? `<h3 class="tr-h">⏱ Training</h3>${TR().form(x, H)}` : ''}`;
       return;
     }
     const T = TYPEN[a.typ]; H.wurzel = a; H.vorher = sel.tiefe > 1 ? kette(sel.s, sel.i, sel.tiefe - 1) : null;
@@ -276,15 +283,20 @@
   const aufgabeFehler = a => sel.tiefe ? teilFehler(sel.s, sel.i, sel.tiefe) : fehlerVon(sel.s, sel.i).filter(x => a.typ !== 'kombi' || !/Teil \d/.test(x));
   const fehlerHTML = f => f.length ? `<div class="meldung fehler"><ul>${f.map(x => `<li>${esc(x.replace(/^Schritt \d+(, Aufgabe \d+)?(, Teil \d+)?(:\s*|,\s*)?/, ''))}</li>`).join('')}</ul></div>` : '';
   // nach jeder Eingabe: Fehlerkasten im Panel neu, ohne das Formular (und den Fokus) anzutasten
-  function panelFehler() { const a = aufgabe(), el = E.panel && E.panel.querySelector('.panel-fehler'); if (a && el) el.innerHTML = fehlerHTML(aufgabeFehler(a)); }
+  function panelFehler() { const a = aufgabe(), el = E.panel && E.panel.querySelector('.panel-fehler'); if (el) el.innerHTML = fehlerHTML(a ? aufgabeFehler(a) : fehlerVon(sel.s, null)); }
+  const TR = () => window.Baukasten.training;
 
   /* ---------- Einfügen, Verschieben, Löschen ---------- */
   function neueAufgabe(b) { return TYPEN[b].neu(); }
   const istKombi = b => b === 'kombi';
   function neuerSchritt(erklaerung) { return erklaerung ? {titel: 'Neuer Schritt', html: '<p>Erklärtext</p>', aufgaben: []} : {titel: 'Neuer Schritt', aufgaben: []}; }
+  const neuerTraining = () => ({kurz: 'Training', titel: 'Training', html: '<p>Löse so viele Aufgaben wie möglich.</p>', training: TR().neu()});
+  const istSchrittBaustein = b => b === 'schritt' || b === 'training';
+  const neuerSchrittVon = b => b === 'training' ? neuerTraining() : neuerSchritt(true);
   function klickBaustein(b) {
     aendern(() => {
-      if (b === 'schritt') { const at = S().length ? sel.s + 1 : 0; S().splice(at, 0, neuerSchritt(true)); sel = {s: at, i: null, tiefe: 0}; return; }
+      if (istSchrittBaustein(b)) { const at = S().length ? sel.s + 1 : 0; S().splice(at, 0, neuerSchrittVon(b)); sel = {s: at, i: null, tiefe: 0}; return; }
+      if (schritt() && schritt().training) { const at = sel.s + 1; S().splice(at, 0, neuerSchritt()); sel = {s: at, i: null, tiefe: 0}; }   // Aufgaben nicht in ein Training
       if (!S().length) S().push(neuerSchritt());
       const l = schritt().aufgaben || (schritt().aufgaben = []);
       const k = sel.i != null && l[sel.i];
@@ -301,9 +313,9 @@
     return kette(q.s, q.i, 0).teile.splice(q.tiefe - 1, 1)[0];
   }
   function ablegen(q, z) {
-    if (q.art === 'neu' && q.baustein === 'schritt') {
+    if (q.art === 'neu' && istSchrittBaustein(q.baustein)) {
       if (!['reiter', 'reiterende'].includes(z.art)) return;
-      return aendern(() => { const at = z.art === 'reiter' ? z.s + (z.nach ? 1 : 0) : S().length; S().splice(at, 0, neuerSchritt(true)); sel = {s: at, i: null, tiefe: 0}; });
+      return aendern(() => { const at = z.art === 'reiter' ? z.s + (z.nach ? 1 : 0) : S().length; S().splice(at, 0, neuerSchrittVon(q.baustein)); sel = {s: at, i: null, tiefe: 0}; });
     }
     if (q.art === 'schritt') {
       if (z.art !== 'reiter' && z.art !== 'reiterende') return;
@@ -442,13 +454,14 @@
     o.nach = art === 'reiter' ? x > r.left + r.width / 2 : y > r.top + r.height / 2;
     if (q.art === 'zeile') return art === 'zeile' && d.liste === q.liste ? o : null;
     if (q.art === 'karte') return art === 'zspalte' ? o : null;
-    if (q.art === 'schritt' || (q.art === 'neu' && q.baustein === 'schritt')) return art === 'reiter' || art === 'reiterende' ? o : null;
+    if (q.art === 'schritt' || (q.art === 'neu' && istSchrittBaustein(q.baustein))) return art === 'reiter' || art === 'reiterende' ? o : null;
+    if (art === 'reiter' && S()[o.s] && S()[o.s].training) return null;   // keine Aufgaben in einen Training-Schritt
     return ['karte', 'liste', 'reiter', 'reiterende', 'danach', 'teil', 'teilkarte'].includes(art) ? o : null;
   }
   function markiere(z) {
     document.querySelectorAll('.z-vor,.z-nach,.z-in').forEach(x => x.classList.remove('z-vor', 'z-nach', 'z-in'));
     if (!z || z.art === 'text') return;
-    const zwischen = ['karte', 'zeile', 'teilkarte'].includes(z.art) || (z.art === 'reiter' && zug && (zug.q.art === 'schritt' || zug.q.baustein === 'schritt'));
+    const zwischen = ['karte', 'zeile', 'teilkarte'].includes(z.art) || (z.art === 'reiter' && zug && (zug.q.art === 'schritt' || istSchrittBaustein(zug.q.baustein)));
     z.el.classList.add(zwischen ? (z.nach ? 'z-nach' : 'z-vor') : 'z-in');
   }
   function start(e) {
@@ -530,6 +543,7 @@
     if (tun) {
       const n = tun.dataset.tun;
       if (TUN[n]) return TUN[n](tun.dataset);
+      if (!aufgabe() && TR() && TR().tun[n]) return aendern(() => TR().tun[n](schritt(), tun.dataset, H));
       const T = TYPEN[(aufgabe() || {}).typ];
       if (T && T.tun && T.tun[n]) return aendern(() => T.tun[n](aufgabe(), tun.dataset, H));
     }
@@ -618,6 +632,9 @@
 
   // für Dialoge der Typen (z. B. Kontenplan): markierte Aufgabe lesen und ändern (mit Rückgängig, Panel wird neu gezeichnet)
   const aendere = fn => { const a = aufgabe(); if (a) aendern(() => fn(a)); };
-  window.Baukasten = {start: start2, setze, daten, rueck, vor, kopf, sauber, aufgabe, aendere, fehler: () => fehlerListe, kannRueck: () => rueckL.length > 0, kannVor: () => vorL.length > 0,
+  const aendereSchritt = fn => { const x = schritt(); if (x) aendern(() => fn(x)); };
+  // wie eine Eingabe in ein Feld: mit Rückgängig, aber ohne das Panel neu zu zeichnen (Fokus bleibt, wo er ist)
+  const aendereSchrittStill = fn => { const x = schritt(); if (!x) return; merke(); fn(x); geaendert(); };
+  window.Baukasten = {start: start2, setze, daten, rueck, vor, kopf, sauber, aufgabe, aendere, schritt: () => schritt(), aendereSchritt, aendereSchrittStill, fehler: () => fehlerListe, kannRueck: () => rueckL.length > 0, kannVor: () => vorL.length > 0,
     typ(name, def) { TYPEN[name] = def; }, TYPEN, zahlLesen};
 })();
