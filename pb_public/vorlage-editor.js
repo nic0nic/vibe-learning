@@ -10,6 +10,7 @@
  *   Baukasten.daten()           aktuelles Aufgaben-JSON (Kopie)
  *   Baukasten.rueck() / vor()   Rückgängig / Wiederholen (auch Strg+Z / Strg+Y außerhalb von Textfeldern)
  *   Baukasten.fehler()          Fehler aus Seite.pruefe
+ *   Baukasten.aufgabe() / aendere(fn(a))   markierte Aufgabe lesen bzw. ändern (für Dialoge der Typen, z. B. Kontenplan)
  *   Baukasten.sauber(html)      HTML auf Seite.ERLAUBT bereinigen (fremde Tags werden ausgepackt, script/style entfernt)
  *
  * Typ registrieren (vorlage-typen.js): Baukasten.typ('mc', {name, symbol, neu() → Aufgabe, kurz(a) → Text,
@@ -615,6 +616,8 @@
   // Titel und Kurztext kommen aus der Kopfzeile der Seite
   function kopf(k, v) { merke('kopf:' + k); if (v) doc[k] = v; else if (k === 'titel') doc.titel = ''; else delete doc[k]; geaendert(); }
 
-  window.Baukasten = {start: start2, setze, daten, rueck, vor, kopf, sauber, fehler: () => fehlerListe, kannRueck: () => rueckL.length > 0, kannVor: () => vorL.length > 0,
+  // für Dialoge der Typen (z. B. Kontenplan): markierte Aufgabe lesen und ändern (mit Rückgängig, Panel wird neu gezeichnet)
+  const aendere = fn => { const a = aufgabe(); if (a) aendern(() => fn(a)); };
+  window.Baukasten = {start: start2, setze, daten, rueck, vor, kopf, sauber, aufgabe, aendere, fehler: () => fehlerListe, kannRueck: () => rueckL.length > 0, kannVor: () => vorL.length > 0,
     typ(name, def) { TYPEN[name] = def; }, TYPEN, zahlLesen};
 })();

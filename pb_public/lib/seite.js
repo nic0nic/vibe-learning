@@ -115,7 +115,11 @@
     });
     if (a.typ === 'buchungssatz' && Array.isArray(a.soll) && Array.isArray(a.haben) && Array.isArray(a.konten)) {
       const summe = l => r2(l.reduce((s, x) => s + (Array.isArray(x) ? Number(x[1]) || 0 : 0), 0));
-      [...a.soll, ...a.haben].forEach(x => { if (!Array.isArray(x) || !a.konten.includes(x[0]) || typeof x[1] !== 'number') f.push(`${wo}: Buchungszeile ${JSON.stringify(x)} – Konto muss in „konten“ stehen, Betrag als Zahl`); });
+      [...a.soll, ...a.haben].forEach(x => {
+        if (!Array.isArray(x) || !istText(x[0])) f.push(`${wo}: In der Lösung fehlt bei einer Zeile das Konto.`);
+        else if (!a.konten.includes(x[0])) f.push(`${wo}: Das Konto „${x[0]}“ steht in der Lösung, aber nicht in der Kontenauswahl für die Schüler.`);
+        else if (typeof x[1] !== 'number') f.push(`${wo}: In der Lösung fehlt beim Konto „${x[0]}“ der Betrag.`);
+      });
       if (summe(a.soll) !== summe(a.haben)) f.push(`${wo}: Soll (${summe(a.soll)}) und Haben (${summe(a.haben)}) sind nicht gleich groß`);
       if (a.jgst != null && a.jgst !== 7) f.push(`${wo}: „jgst“ ist nur für die 7. Jahrgangsstufe nötig: "jgst": 7 (sonst weglassen)`);
       if (a.jgst === 7) a.konten.forEach(k => { if (/\d/.test(k)) f.push(`${wo}: In Jgst. 7 Konten nur mit Kürzel, ohne Nummer: „${k}“`); });

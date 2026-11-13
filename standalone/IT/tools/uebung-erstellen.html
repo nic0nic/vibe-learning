@@ -1568,7 +1568,11 @@ html[data-theme=dark] .pf-item{--bc:#88c0d0}
     });
     if (a.typ === 'buchungssatz' && Array.isArray(a.soll) && Array.isArray(a.haben) && Array.isArray(a.konten)) {
       const summe = l => r2(l.reduce((s, x) => s + (Array.isArray(x) ? Number(x[1]) || 0 : 0), 0));
-      [...a.soll, ...a.haben].forEach(x => { if (!Array.isArray(x) || !a.konten.includes(x[0]) || typeof x[1] !== 'number') f.push(`${wo}: Buchungszeile ${JSON.stringify(x)} – Konto muss in „konten“ stehen, Betrag als Zahl`); });
+      [...a.soll, ...a.haben].forEach(x => {
+        if (!Array.isArray(x) || !istText(x[0])) f.push(`${wo}: In der Lösung fehlt bei einer Zeile das Konto.`);
+        else if (!a.konten.includes(x[0])) f.push(`${wo}: Das Konto „${x[0]}“ steht in der Lösung, aber nicht in der Kontenauswahl für die Schüler.`);
+        else if (typeof x[1] !== 'number') f.push(`${wo}: In der Lösung fehlt beim Konto „${x[0]}“ der Betrag.`);
+      });
       if (summe(a.soll) !== summe(a.haben)) f.push(`${wo}: Soll (${summe(a.soll)}) und Haben (${summe(a.haben)}) sind nicht gleich groß`);
       if (a.jgst != null && a.jgst !== 7) f.push(`${wo}: „jgst“ ist nur für die 7. Jahrgangsstufe nötig: "jgst": 7 (sonst weglassen)`);
       if (a.jgst === 7) a.konten.forEach(k => { if (/\d/.test(k)) f.push(`${wo}: In Jgst. 7 Konten nur mit Kürzel, ohne Nummer: „${k}“`); });
@@ -1770,6 +1774,7 @@ Aufgaben.sequenz({el:'#app', key:${JSON.stringify(id)}, schritte:DATEN.schritte}
  *   Baukasten.daten()           aktuelles Aufgaben-JSON (Kopie)
  *   Baukasten.rueck() / vor()   Rückgängig / Wiederholen (auch Strg+Z / Strg+Y außerhalb von Textfeldern)
  *   Baukasten.fehler()          Fehler aus Seite.pruefe
+ *   Baukasten.aufgabe() / aendere(fn(a))   markierte Aufgabe lesen bzw. ändern (für Dialoge der Typen, z. B. Kontenplan)
  *   Baukasten.sauber(html)      HTML auf Seite.ERLAUBT bereinigen (fremde Tags werden ausgepackt, script/style entfernt)
  *
  * Typ registrieren (vorlage-typen.js): Baukasten.typ('mc', {name, symbol, neu() → Aufgabe, kurz(a) → Text,
@@ -2375,8 +2380,106 @@ Aufgaben.sequenz({el:'#app', key:${JSON.stringify(id)}, schritte:DATEN.schritte}
   // Titel und Kurztext kommen aus der Kopfzeile der Seite
   function kopf(k, v) { merke('kopf:' + k); if (v) doc[k] = v; else if (k === 'titel') doc.titel = ''; else delete doc[k]; geaendert(); }
 
-  window.Baukasten = {start: start2, setze, daten, rueck, vor, kopf, sauber, fehler: () => fehlerListe, kannRueck: () => rueckL.length > 0, kannVor: () => vorL.length > 0,
+  // für Dialoge der Typen (z. B. Kontenplan): markierte Aufgabe lesen und ändern (mit Rückgängig, Panel wird neu gezeichnet)
+  const aendere = fn => { const a = aufgabe(); if (a) aendern(() => fn(a)); };
+  window.Baukasten = {start: start2, setze, daten, rueck, vor, kopf, sauber, aufgabe, aendere, fehler: () => fehlerListe, kannRueck: () => rueckL.length > 0, kannVor: () => vorL.length > 0,
     typ(name, def) { TYPEN[name] = def; }, TYPEN, zahlLesen};
+})();
+
+</script>
+<script>/* ../../BWR/kontenplan.js */
+/* kontenplan.js – Kontenplan (nach dem IKR) für bayerische Realschulen, LehrplanPLUS (ISB, Stand 2022)
+ *
+ * Abgetippt aus Kontenplan_LehrplanPLUS.pdf; Aufbau wie im Original: vier Spalten, darin Blöcke.
+ *   KONTENPLAN.spalten = [[block, …], …]   block = {kopf:'Aktive Bestandskonten'} (grau hinterlegt)
+ *                                                | {klasse:'Kontenklasse 0 Sachanlagen'}
+ *                                                | {gruppe:'05 Grundstücke und Bauten', konten:[[nr, kürzel, name, klr], …]}
+ *       klr = true: Konto geht in die Kosten- und Leistungsrechnung ein (im Original mit *)
+ *   KONTENPLAN.konten  = flache Liste {nr, kz, name, klr} in der Reihenfolge des Plans
+ *   KONTENPLAN.finde('2800 BK' | 'BK' | '2800') → Konto oder null
+ *   KONTENPLAN.text(konto, jgst7) → '2800 BK' bzw. in Jgst. 7 'BK'
+ * Genutzt vom Editor („Übung erstellen“, Buchungssatz: Konten auswählen). Eine lesbare Fassung für Chats steht
+ * als kontenplan.md im Austausch-Ordner (erzeugt aus dieser Datei: werkzeuge/kontenplan-md.js).
+ */
+(function () {
+  'use strict';
+  const K = (nr, kz, name, klr) => [nr, kz, name, !!klr];
+  const spalten = [
+    [
+      {kopf: 'Aktive Bestandskonten'},
+      {klasse: 'Kontenklasse 0 Sachanlagen'},
+      {gruppe: '05 Grundstücke und Bauten', konten: [K('0500', 'GR', 'Grundstücke'), K('0530', 'BVG', 'Betriebs- und Verwaltungsgebäude')]},
+      {gruppe: '07 Technische Anlagen und Maschinen', konten: [K('0700', 'MA', 'Maschinen und Anlagen')]},
+      {gruppe: '08 Betriebs- und Geschäftsausstattung', konten: [K('0840', 'FP', 'Fuhrpark'), K('0860', 'BM', 'Büromaschinen'), K('0870', 'BGA', 'Büromöbel und Geschäftsausstattung'), K('0890', 'GWG', 'Geringwertige Wirtschaftsgüter')]},
+      {klasse: 'Kontenklasse 1 Finanzanlagen'},
+      {gruppe: '15 Wertpapiere des Anlagevermögens', konten: [K('1500', 'WP', 'Wertpapiere des Anlagevermögens')]},
+      {klasse: 'Kontenklasse 2 Umlaufvermögen und ARA'},
+      {gruppe: '20 Roh-, Hilfs-, Betriebsstoffe, Fremdbauteile', konten: [K('2000', 'R', 'Rohstoffe (Fertigungsmaterial)'), K('2010', 'F', 'Fremdbauteile'), K('2020', 'H', 'Hilfsstoffe'), K('2030', 'B', 'Betriebsstoffe')]},
+      {gruppe: '24 Forderungen aus Lieferungen und Leistungen', konten: [K('2400', 'FO', 'Forderungen aus Lieferungen und Leistungen'), K('2470', 'ZWFO', 'Zweifelhafte Forderungen')]},
+      {gruppe: '26 Sonstige Vermögensgegenstände', konten: [K('2600', 'VORST', 'Vorsteuer')]},
+      {gruppe: '28 Flüssige Mittel', konten: [K('2800', 'BK', 'Bank (Kontokorrentkonto)'), K('2880', 'KA', 'Kasse')]},
+      {gruppe: '29 Aktive Rechnungsabgrenzung', konten: [K('2900', 'ARA', 'Aktive Rechnungsabgrenzung')]}
+    ],
+    [
+      {kopf: 'Passive Bestandskonten'},
+      {klasse: 'Kontenklasse 3 Eigenkapital und Rückstellungen'},
+      {gruppe: '30 Eigenkapital', konten: [K('3000', 'EK', 'Eigenkapital'), K('3001', 'P', 'Privatkonto')]},
+      {gruppe: '36 Wertberichtigungen', konten: [K('3670', 'EWB', 'Einzelwertberichtigung'), K('3680', 'PWB', 'Pauschalwertberichtigung')]},
+      {gruppe: '39 Sonstige Rückstellungen', konten: [K('3900', 'RST', 'Rückstellungen')]},
+      {klasse: 'Kontenklasse 4 Verbindlichkeiten und PRA'},
+      {gruppe: '42 Verbindlichkeiten bei Kreditinstituten', konten: [K('4200', 'KBKV', 'Kurzfristige Bankverbindlichkeiten (bis zu einem Jahr)'), K('4250', 'LBKV', 'Langfristige Bankverbindlichkeiten')]},
+      {gruppe: '44 Verbindlichkeiten aus Lieferungen und Leistungen', konten: [K('4400', 'VE', 'Verbindlichkeiten aus LL')]},
+      {gruppe: '48 Sonstige Verbindlichkeiten', konten: [K('4800', 'UST', 'Umsatzsteuer'), K('4830', 'VFA', 'Sonstige Steuerverbindlichkeiten'), K('4840', 'VSV', 'Verbindlichkeiten gegenüber Sozialversicherungsträgern')]},
+      {gruppe: '49 Passive Rechnungsabgrenzung', konten: [K('4900', 'PRA', 'Passive Rechnungsabgrenzung')]},
+      {kopf: 'Ertragskonten'},
+      {klasse: 'Kontenklasse 5 Erträge'},
+      {gruppe: '50 Umsatzerlöse für eigene Erzeugnisse', konten: [K('5000', 'UEFE', 'Umsatzerlöse für eigene Erzeugnisse', 1), K('5001', 'EBFE', 'Erlösberichtigungen')]},
+      {gruppe: '54 Sonstige betriebliche Erträge', konten: [K('5400', 'EMP', 'Erlöse aus Vermietung und Verpachtung'), K('5430', 'ASBE', 'Andere sonstige betriebliche Erträge', 1), K('5490', 'PFE', 'Periodenfremde Erträge'), K('5495', 'EFO', 'Erträge aus abgeschriebenen Forderungen')]}
+    ],
+    [
+      {gruppe: '56 Erträge aus anderen Wertpapieren', konten: [K('5650', 'EAWP', 'Erträge aus dem Abgang von Wertpapieren des Anlagevermögens')]},
+      {gruppe: '57 Zinsen und ähnliche Erträge', konten: [K('5710', 'ZE', 'Zinserträge'), K('5780', 'DDE', 'Dividendenerträge')]},
+      {kopf: 'Aufwandskonten'},
+      {klasse: 'Kontenklasse 6 Betriebliche Aufwendungen'},
+      {gruppe: '60 Aufwendungen für Roh-, Hilfs-, Betriebsstoffe und Fremdbauteile', konten: [
+        K('6000', 'AWR', 'Aufwendungen für Rohstoffe', 1), K('6001', 'BZKR', 'Bezugskosten für Rohstoffe'), K('6002', 'NR', 'Nachlässe für Rohstoffe'),
+        K('6010', 'AWF', 'Aufwendungen für Fremdbauteile', 1), K('6011', 'BZKF', 'Bezugskosten für Fremdbauteile'), K('6012', 'NF', 'Nachlässe für Fremdbauteile'),
+        K('6020', 'AWH', 'Aufwendungen für Hilfsstoffe', 1), K('6021', 'BZKH', 'Bezugskosten für Hilfsstoffe'), K('6022', 'NH', 'Nachlässe für Hilfsstoffe'),
+        K('6030', 'AWB', 'Aufwendungen für Betriebsstoffe', 1), K('6031', 'BZKB', 'Bezugskosten für Betriebsstoffe'), K('6032', 'NB', 'Nachlässe für Betriebsstoffe'),
+        K('6040', 'AWVM', 'Aufwendungen für Verpackungsmaterial', 1)]},
+      {gruppe: '61 Aufwendungen für bezogene Leistungen', konten: [K('6140', 'AFR', 'Ausgangsfrachten', 1), K('6160', 'FRI', 'Fremdinstandhaltung', 1)]},
+      {gruppe: '62 Löhne und Gehälter', konten: [K('6200', 'LG', 'Löhne und Gehälter', 1)]},
+      {gruppe: '64 Soziale Abgaben', konten: [K('6400', 'AGASV', 'Arbeitgeberanteil zur Sozialversicherung', 1)]}
+    ],
+    [
+      {gruppe: '65 Abschreibungen', konten: [K('6520', 'ABSA', 'Abschreibungen auf Sachanlagen', 1), K('6540', 'ABGWG', 'Abschreibungen auf GWG', 1)]},
+      {gruppe: '67 Aufwendungen für die Inanspruchnahme von Rechten und Diensten', konten: [K('6700', 'AWMP', 'Mieten, Pachten', 1), K('6730', 'GEB', 'Gebühren', 1), K('6750', 'KGV', 'Kosten des Geldverkehrs', 1), K('6760', 'PROV', 'Provisionen', 1), K('6770', 'RBK', 'Rechts- und Beratungskosten', 1)]},
+      {gruppe: '68 Aufwendungen für Kommunikation', konten: [K('6800', 'BMK', 'Büromaterial und Kleingüter', 1), K('6820', 'KOM', 'Kommunikationsgebühren', 1), K('6850', 'REK', 'Reisekosten', 1), K('6870', 'WER', 'Werbung', 1)]},
+      {gruppe: '69 Sonstige Aufwendungen', konten: [K('6900', 'VBEI', 'Versicherungsbeiträge', 1), K('6950', 'ABFO', 'Abschreibungen auf Forderungen'), K('6990', 'PFAW', 'Periodenfremde Aufwendungen')]},
+      {klasse: 'Kontenklasse 7 Weitere Aufwendungen'},
+      {gruppe: '70 Betriebliche Steuern', konten: [K('7000', 'GWST', 'Gewerbesteuer', 1), K('7020', 'GRST', 'Grundsteuer', 1), K('7030', 'KFZST', 'Kraftfahrzeugsteuer', 1)]},
+      {gruppe: '74 Verluste aus Finanzanlagen', konten: [K('7460', 'VAWP', 'Verluste aus dem Abgang von Wertpapieren des Anlagevermögens')]},
+      {gruppe: '75 Zinsen', konten: [K('7510', 'ZAW', 'Zinsaufwendungen', 1)]},
+      {kopf: 'Konten für die Ergebnisrechnung'},
+      {klasse: 'Kontenklasse 8 Ergebnisrechnungen'},
+      {gruppe: '', konten: [K('8010', 'SBK', 'Schlussbilanzkonto'), K('8020', 'GUV', 'Gewinn- und Verlustkonto')]},
+      {klasse: 'Kontenklasse 9 Kosten- und Leistungsrechnung'}
+    ]
+  ];
+  const konten = [];
+  spalten.forEach(sp => sp.forEach(b => (b.konten || []).forEach(([nr, kz, name, klr]) => konten.push({nr, kz, name, klr}))));
+  // '2800 BK', 'BK', '2800', 'bk' → Konto
+  function finde(s) {
+    s = String(s || '').trim(); if (!s) return null;
+    const m = s.match(/^(\d{4})(?:\s+(\S+))?$/);
+    if (m) return konten.find(k => k.nr === m[1]) || null;
+    const u = s.toUpperCase();
+    return konten.find(k => k.kz === u) || null;
+  }
+  const text = (k, jgst7) => jgst7 ? k.kz : k.nr + ' ' + k.kz;
+  const KONTENPLAN = {titel: 'Kontenplan (nach dem IKR) und Abkürzungsverzeichnis zur Verwendung an Bayerischen Realschulen – LehrplanPLUS',
+    hinweis: '* Kennzeichen für Konten, die in die Kosten- und Leistungsrechnung eingehen.', spalten, konten, finde, text};
+  if (typeof module !== 'undefined' && module.exports) module.exports = KONTENPLAN; else window.KONTENPLAN = KONTENPLAN;
 })();
 
 </script>
@@ -2578,8 +2681,13 @@ Aufgaben.sequenz({el:'#app', key:${JSON.stringify(id)}, schritte:DATEN.schritte}
         <label class="schalter" title="7. Jahrgangsstufe: Konten nur mit Kürzel, ohne Kontonummer (z. B. BK)"><input type="checkbox" data-tun="jgst7"${a.jgst === 7 ? ' checked' : ''}><span></span> Jgst. 7</label>
         <label class="schalter" title="Die Schüler ziehen vorgegebene Beträge auf die Betragsfelder, statt sie einzutippen"><input type="checkbox" data-tun="bzieh"${a.betraege ? ' checked' : ''}><span></span> Beträge ziehen</label></div>
         ${betraege}
-        ${H.feld('konten', a.jgst === 7 ? 'Konten zur Auswahl (eine Zeile pro Konto, nur Kürzel)' : 'Konten zur Auswahl (eine Zeile pro Konto, Nummer und Kürzel)', {art: 'zeilen', pflicht: true, zeilen: 5, neu: true})}
-        <p class="hinweis">Die Schüler suchen das Konto per Nummer oder Kürzel (z. B. „ve“ → ${a.jgst === 7 ? 'VE' : '4400 VE'}). Ablenker einfach mit in die Liste schreiben.</p>
+        <label class="klein">Konten zur Auswahl für die Schüler (auch Ablenker)</label>
+        <div class="konten-liste">${(a.konten || []).map((k, i) => { const p = KP && KP.finde(k);
+          return `<span class="konto-chip${p ? '' : ' eigen'}" title="${H.esc(p ? p.nr + ' ' + p.kz + ' – ' + p.name : 'nicht im Kontenplan')}">${H.esc(k)}<button type="button" data-tun="kontoweg" data-i="${i}" aria-label="${H.esc(k)} entfernen">×</button></span>`; }).join('') || '<span class="hinweis warn">Noch keine Konten.</span>'}</div>
+        <div class="reihe wrap">${KP ? '<button type="button" class="btn klein" data-kontenplan="1">📒 Konten auswählen …</button>' : ''}
+          <input class="feld konto-neu" list="kp-vorschlaege" placeholder="${a.jgst === 7 ? 'Konto, z. B. BK' : 'Konto, z. B. 2800 oder BK'}" aria-label="Konto hinzufügen"><button type="button" class="btn klein" data-konto-dazu="1">＋ Hinzufügen</button></div>
+        ${KP ? `<datalist id="kp-vorschlaege">${KP.konten.map(k => `<option value="${H.esc(KP.text(k, a.jgst === 7))}">${H.esc(k.name)}</option>`).join('')}</datalist>` : ''}
+        <p class="hinweis">Die Schüler suchen das Konto per Nummer oder Kürzel (z. B. „ve“ → ${a.jgst === 7 ? 'VE' : '4400 VE'}).</p>
         <label class="klein">Soll</label>${seite('soll')}<label class="klein">an Haben</label>${seite('haben')}
         <p class="hinweis${gleich ? '' : ' warn'}">Summe Soll ${H.zahl(sum('soll'))} · Haben ${H.zahl(sum('haben'))}${gleich ? ' ✓' : ' – nicht gleich!'}</p>
         <label class="klein">Steuerkonten (für den Hinweis „Steuer fehlt“)</label>
@@ -2588,14 +2696,15 @@ Aufgaben.sequenz({el:'#app', key:${JSON.stringify(id)}, schritte:DATEN.schritte}
 `;
     },
     tun: {
-      jgst7(a) {
-        if (a.jgst === 7) { delete a.jgst; return; }
-        a.jgst = 7;
-        const k = x => String(x).replace(/^\d+\s+/, '');
+      jgst7(a) {   // an: Nummern weg („4400 VE“ → „VE“), aus: Nummern aus dem Kontenplan zurück
+        const an = a.jgst !== 7;
+        if (an) a.jgst = 7; else delete a.jgst;
+        const k = x => { const p = KP && KP.finde(String(x).replace(/^\d+\s+/, '')); return p ? KP.text(p, an) : an ? String(x).replace(/^\d+\s+/, '') : x; };
         a.konten = [...new Set((a.konten || []).map(k))];
         ['soll', 'haben'].forEach(s => (a[s] || []).forEach(x => { x[0] = k(x[0]); }));
         if (a.steuer) a.steuer = a.steuer.map(k);
       },
+      kontoweg(a, d) { a.konten.splice(+d.i, 1); },
       bzieh(a, d, H) { if (a.betraege) delete a.betraege; else { a.betraege = []; const v = H.vorher; if (v && v.typ === 'zahlen' && Array.isArray(v.felder)) dazu(a, v.felder.map(f => [H.text(f.t || ''), f.l])); else dazu(a, ausLoesung(a)); } },
       betragplus(a) { (a.betraege = a.betraege || []).push(['', 0]); },
       betragweg(a, d) { a.betraege.splice(+d.i, 1); },
@@ -2606,6 +2715,70 @@ Aufgaben.sequenz({el:'#app', key:${JSON.stringify(id)}, schritte:DATEN.schritte}
       steuer(a, d) { const k = d.k2, s = a.steuer || []; a.steuer = s.includes(k) ? s.filter(x => x !== k) : [...s, k]; if (!a.steuer.length) delete a.steuer; }
     }
   });
+
+  /* ---------- Buchungssatz: Kontenplan (BWR/kontenplan.js) ---------- */
+  const KP = window.KONTENPLAN || null;
+  // Eingabe → Eintrag in der Kontenliste: Konto aus dem Plan in der Schreibweise der Aufgabe, sonst der Text selbst
+  const kontoEintrag = (s, jgst7) => { s = String(s || '').replace(/\s+–.*$/, '').trim(); const p = KP && KP.finde(s); return p ? KP.text(p, jgst7) : s; };
+  const planIndex = s => { const p = KP && KP.finde(s); return p ? KP.konten.indexOf(p) : 1e6; };
+  function kontenSortieren(a) { a.konten = (a.konten || []).map((k, i) => [planIndex(k), i, k]).sort((x, y) => x[0] - y[0] || x[1] - y[1]).map(x => x[2]); }
+  function kontoDazu(a, s) { const k = kontoEintrag(s, a.jgst === 7); if (!k) return; a.konten = a.konten || []; if (!a.konten.includes(k)) a.konten.push(k); kontenSortieren(a); }
+  function kontoUmschalten(a, p) {
+    const i = (a.konten || []).findIndex(k => { const q = KP.finde(k); return q && q.nr === p.nr; });
+    if (i >= 0) a.konten.splice(i, 1); else kontoDazu(a, KP.text(p, a.jgst === 7));
+  }
+  // Konto aus dem Formular hinzufügen (Enter oder Knopf)
+  function ausFeld() {
+    const inp = document.querySelector('.konto-neu'); if (!inp || !inp.value.trim()) return;
+    const v = inp.value; B.aendere(a => kontoDazu(a, v));
+    const neu = document.querySelector('.konto-neu'); if (neu) neu.focus();
+  }
+  document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.matches && e.target.matches('.konto-neu')) { e.preventDefault(); ausFeld(); } });
+  document.addEventListener('click', e => {
+    if (e.target.closest('[data-konto-dazu]')) return ausFeld();
+    if (e.target.closest('[data-kontenplan]')) return kontenplanZeigen();
+  });
+
+  // Overlay: Kontenplan wie im Original (vier Spalten), Konten zum Anklicken, unten weitere Konten
+  function kontenplanZeigen() {
+    const H = {esc: s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]))};
+    const d = document.createElement('dialog'); d.className = 'kp-dialog';
+    d.innerHTML = `<div class="kp-oben"><div><b>Kontenplan</b> <span class="kp-titel">nach dem IKR, LehrplanPLUS</span></div>
+        <input type="search" class="feld kp-suche" placeholder="Suchen: Nummer, Kürzel oder Bezeichnung" aria-label="Konten suchen">
+        <span class="kp-zahl"></span><button type="button" class="btn haupt kp-fertig">Fertig</button></div>
+      <p class="hinweis kp-hilfe">Konten anklicken, die die Schüler zur Auswahl haben sollen (die richtigen und Ablenker). Nochmal klicken entfernt sie.</p>
+      <div class="kp-spalten">${KP.spalten.map(sp => `<div class="kp-spalte">${sp.map(b =>
+        b.kopf ? `<div class="kp-kopf">${H.esc(b.kopf)}</div>` : b.klasse ? `<div class="kp-klasse">${H.esc(b.klasse)}</div>`
+        : `<div class="kp-gruppe">${b.gruppe ? `<div class="kp-gname">${H.esc(b.gruppe)}</div>` : ''}${b.konten.map(([nr, kz, name, klr]) =>
+          `<button type="button" class="kp-konto" data-nr="${nr}" aria-pressed="false"><span class="kp-stern">${klr ? '*' : ''}</span><b>${nr} ${H.esc(kz)}</b> <span>${H.esc(name)}</span></button>`).join('')}</div>`).join('')}</div>`).join('')}</div>
+      <p class="hinweis">${H.esc(KP.hinweis)}</p>
+      <div class="kp-weitere"><b>Weitere Optionen hinzufügen</b> <span class="hinweis">– Konten, die nicht im Kontenplan stehen</span>
+        <div class="reihe wrap"><input class="feld kp-eigen" placeholder="z. B. Bank oder 9999 XY" aria-label="weiteres Konto"><button type="button" class="btn klein kp-eigen-dazu">＋ Hinzufügen</button></div>
+        <div class="konten-liste kp-eigene"></div></div>`;
+    document.body.appendChild(d);
+    function stand() {
+      const a = B.aufgabe(); if (!a || a.typ !== 'buchungssatz') { d.close(); return; }
+      const gew = new Set((a.konten || []).map(k => (KP.finde(k) || {}).nr).filter(Boolean));
+      d.querySelectorAll('.kp-konto').forEach(b => { const an = gew.has(b.dataset.nr); b.classList.toggle('an', an); b.setAttribute('aria-pressed', an); });
+      d.querySelector('.kp-zahl').textContent = `${(a.konten || []).length} ausgewählt`;
+      d.querySelector('.kp-eigene').innerHTML = (a.konten || []).map((k, i) => KP.finde(k) ? '' : `<span class="konto-chip eigen">${H.esc(k)}<button type="button" data-eigen-weg="${i}" aria-label="${H.esc(k)} entfernen">×</button></span>`).join('');
+    }
+    d.addEventListener('click', e => {
+      const k = e.target.closest('.kp-konto');
+      if (k) { const p = KP.konten.find(x => x.nr === k.dataset.nr); B.aendere(a => kontoUmschalten(a, p)); return stand(); }
+      const w = e.target.closest('[data-eigen-weg]');
+      if (w) { B.aendere(a => a.konten.splice(+w.dataset.eigenWeg, 1)); return stand(); }
+      if (e.target.closest('.kp-eigen-dazu')) { const inp = d.querySelector('.kp-eigen'), v = inp.value; if (v.trim()) { B.aendere(a => kontoDazu(a, v)); inp.value = ''; stand(); } inp.focus(); return; }
+      if (e.target.closest('.kp-fertig') || e.target === d) d.close();   // Klick neben das Fenster schließt
+    });
+    d.querySelector('.kp-eigen').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); d.querySelector('.kp-eigen-dazu').click(); } });
+    d.querySelector('.kp-suche').addEventListener('input', e => {
+      const q = e.target.value.trim().toLowerCase();
+      d.querySelectorAll('.kp-konto').forEach(b => b.classList.toggle('kp-aus', !!q && !b.textContent.toLowerCase().includes(q)));
+    });
+    d.addEventListener('close', () => d.remove());
+    stand(); d.showModal(); d.querySelector('.kp-suche').focus();
+  }
 
   /* ---------- Kombinierte Aufgabe ---------- */
   B.typ('kombi', {
@@ -2967,6 +3140,39 @@ code{font:12.5px var(--mono);background:var(--panel2);border-radius:4px;padding:
 .teil-lbl{font:700 11.5px system-ui,sans-serif;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-top:2px}
 .akteil{cursor:grab}
 .teil-zone{border:2px dashed var(--border);border-radius:9px;padding:8px 10px;font-size:12.5px;color:var(--muted);text-align:center}
+/* Buchungssatz: Kontenliste und Kontenplan im Overlay */
+.konten-liste{display:flex;flex-wrap:wrap;gap:5px;margin:4px 0 6px}
+.konto-chip{display:inline-flex;align-items:center;gap:2px;font:600 13px var(--mono);background:var(--panel2);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:7px;padding:2px 2px 2px 8px}
+.konto-chip.eigen{border-left-color:var(--muted);border-style:dashed}
+.konto-chip button{border:0;background:none;color:var(--muted);font-size:15px;line-height:1;cursor:pointer;padding:0 5px}
+.konto-chip button:hover{color:var(--err)}
+.konto-neu{flex:1 1 160px;min-width:0}
+dialog.kp-dialog{width:min(1280px,calc(100vw - 24px));max-height:calc(100vh - 24px);padding:0;display:flex;flex-direction:column}
+dialog.kp-dialog:not([open]){display:none}
+.kp-oben{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;padding:10px 16px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--panel);z-index:1}
+.kp-titel{color:var(--muted);font-size:13px}
+.kp-suche{flex:1 1 220px;max-width:380px}
+.kp-zahl{color:var(--muted);font-size:13px;margin-left:auto}
+.kp-hilfe{margin:8px 16px 0}
+.kp-spalten{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0 14px;padding:8px 16px;overflow:auto}
+@media (max-width:1050px){.kp-spalten{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:600px){.kp-spalten{grid-template-columns:minmax(0,1fr)}}
+.kp-spalte{display:flex;flex-direction:column;gap:2px}
+.kp-kopf{background:color-mix(in srgb,var(--muted) 22%,var(--panel));font:700 13px system-ui,sans-serif;padding:4px 8px;margin-top:8px;border-radius:4px}
+.kp-klasse{font:700 13px system-ui,sans-serif;margin:8px 0 2px}
+.kp-gruppe{margin:2px 0 4px}
+.kp-gname{font-size:12.5px;color:var(--muted);margin:2px 0}
+.kp-konto{display:flex;gap:6px;align-items:baseline;width:100%;text-align:left;background:none;border:1px solid transparent;border-radius:6px;padding:2px 6px 2px 4px;font:13px system-ui,sans-serif;color:var(--text);cursor:pointer}
+.kp-konto b{font-family:var(--mono);white-space:nowrap}
+.kp-konto:hover{border-color:var(--accent)}
+.kp-konto.an{background:color-mix(in srgb,var(--accent) 22%,var(--panel));border-color:var(--accent)}
+.kp-konto.an::after{content:"✓";margin-left:auto;color:var(--accent);font-weight:700}
+.kp-konto.kp-aus{opacity:.25}
+.kp-stern{width:8px;flex:none;color:var(--muted)}
+.kp-dialog>.hinweis{margin:4px 16px}
+.kp-weitere{border-top:1px solid var(--border);padding:10px 16px 14px;background:var(--panel2)}
+.kp-eigen{flex:1 1 220px;max-width:360px}
+
 /* Schalter für Optionen eines Aufgabentyps (z. B. Buchungssatz: Jgst. 7, Beträge ziehen) */
 .schalterleiste{display:flex;flex-wrap:wrap;gap:6px 18px;margin:4px 0 10px;padding:8px 10px;background:var(--panel2);border-radius:10px}
 .schalter{display:inline-flex;align-items:center;gap:8px;font:600 13.5px system-ui,sans-serif;cursor:pointer;user-select:none}

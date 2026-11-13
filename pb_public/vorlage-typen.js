@@ -195,8 +195,13 @@
         <label class="schalter" title="7. Jahrgangsstufe: Konten nur mit Kürzel, ohne Kontonummer (z. B. BK)"><input type="checkbox" data-tun="jgst7"${a.jgst === 7 ? ' checked' : ''}><span></span> Jgst. 7</label>
         <label class="schalter" title="Die Schüler ziehen vorgegebene Beträge auf die Betragsfelder, statt sie einzutippen"><input type="checkbox" data-tun="bzieh"${a.betraege ? ' checked' : ''}><span></span> Beträge ziehen</label></div>
         ${betraege}
-        ${H.feld('konten', a.jgst === 7 ? 'Konten zur Auswahl (eine Zeile pro Konto, nur Kürzel)' : 'Konten zur Auswahl (eine Zeile pro Konto, Nummer und Kürzel)', {art: 'zeilen', pflicht: true, zeilen: 5, neu: true})}
-        <p class="hinweis">Die Schüler suchen das Konto per Nummer oder Kürzel (z. B. „ve“ → ${a.jgst === 7 ? 'VE' : '4400 VE'}). Ablenker einfach mit in die Liste schreiben.</p>
+        <label class="klein">Konten zur Auswahl für die Schüler (auch Ablenker)</label>
+        <div class="konten-liste">${(a.konten || []).map((k, i) => { const p = KP && KP.finde(k);
+          return `<span class="konto-chip${p ? '' : ' eigen'}" title="${H.esc(p ? p.nr + ' ' + p.kz + ' – ' + p.name : 'nicht im Kontenplan')}">${H.esc(k)}<button type="button" data-tun="kontoweg" data-i="${i}" aria-label="${H.esc(k)} entfernen">×</button></span>`; }).join('') || '<span class="hinweis warn">Noch keine Konten.</span>'}</div>
+        <div class="reihe wrap">${KP ? '<button type="button" class="btn klein" data-kontenplan="1">📒 Konten auswählen …</button>' : ''}
+          <input class="feld konto-neu" list="kp-vorschlaege" placeholder="${a.jgst === 7 ? 'Konto, z. B. BK' : 'Konto, z. B. 2800 oder BK'}" aria-label="Konto hinzufügen"><button type="button" class="btn klein" data-konto-dazu="1">＋ Hinzufügen</button></div>
+        ${KP ? `<datalist id="kp-vorschlaege">${KP.konten.map(k => `<option value="${H.esc(KP.text(k, a.jgst === 7))}">${H.esc(k.name)}</option>`).join('')}</datalist>` : ''}
+        <p class="hinweis">Die Schüler suchen das Konto per Nummer oder Kürzel (z. B. „ve“ → ${a.jgst === 7 ? 'VE' : '4400 VE'}).</p>
         <label class="klein">Soll</label>${seite('soll')}<label class="klein">an Haben</label>${seite('haben')}
         <p class="hinweis${gleich ? '' : ' warn'}">Summe Soll ${H.zahl(sum('soll'))} · Haben ${H.zahl(sum('haben'))}${gleich ? ' ✓' : ' – nicht gleich!'}</p>
         <label class="klein">Steuerkonten (für den Hinweis „Steuer fehlt“)</label>
@@ -205,14 +210,15 @@
 `;
     },
     tun: {
-      jgst7(a) {
-        if (a.jgst === 7) { delete a.jgst; return; }
-        a.jgst = 7;
-        const k = x => String(x).replace(/^\d+\s+/, '');
+      jgst7(a) {   // an: Nummern weg („4400 VE“ → „VE“), aus: Nummern aus dem Kontenplan zurück
+        const an = a.jgst !== 7;
+        if (an) a.jgst = 7; else delete a.jgst;
+        const k = x => { const p = KP && KP.finde(String(x).replace(/^\d+\s+/, '')); return p ? KP.text(p, an) : an ? String(x).replace(/^\d+\s+/, '') : x; };
         a.konten = [...new Set((a.konten || []).map(k))];
         ['soll', 'haben'].forEach(s => (a[s] || []).forEach(x => { x[0] = k(x[0]); }));
         if (a.steuer) a.steuer = a.steuer.map(k);
       },
+      kontoweg(a, d) { a.konten.splice(+d.i, 1); },
       bzieh(a, d, H) { if (a.betraege) delete a.betraege; else { a.betraege = []; const v = H.vorher; if (v && v.typ === 'zahlen' && Array.isArray(v.felder)) dazu(a, v.felder.map(f => [H.text(f.t || ''), f.l])); else dazu(a, ausLoesung(a)); } },
       betragplus(a) { (a.betraege = a.betraege || []).push(['', 0]); },
       betragweg(a, d) { a.betraege.splice(+d.i, 1); },
@@ -223,6 +229,70 @@
       steuer(a, d) { const k = d.k2, s = a.steuer || []; a.steuer = s.includes(k) ? s.filter(x => x !== k) : [...s, k]; if (!a.steuer.length) delete a.steuer; }
     }
   });
+
+  /* ---------- Buchungssatz: Kontenplan (BWR/kontenplan.js) ---------- */
+  const KP = window.KONTENPLAN || null;
+  // Eingabe → Eintrag in der Kontenliste: Konto aus dem Plan in der Schreibweise der Aufgabe, sonst der Text selbst
+  const kontoEintrag = (s, jgst7) => { s = String(s || '').replace(/\s+–.*$/, '').trim(); const p = KP && KP.finde(s); return p ? KP.text(p, jgst7) : s; };
+  const planIndex = s => { const p = KP && KP.finde(s); return p ? KP.konten.indexOf(p) : 1e6; };
+  function kontenSortieren(a) { a.konten = (a.konten || []).map((k, i) => [planIndex(k), i, k]).sort((x, y) => x[0] - y[0] || x[1] - y[1]).map(x => x[2]); }
+  function kontoDazu(a, s) { const k = kontoEintrag(s, a.jgst === 7); if (!k) return; a.konten = a.konten || []; if (!a.konten.includes(k)) a.konten.push(k); kontenSortieren(a); }
+  function kontoUmschalten(a, p) {
+    const i = (a.konten || []).findIndex(k => { const q = KP.finde(k); return q && q.nr === p.nr; });
+    if (i >= 0) a.konten.splice(i, 1); else kontoDazu(a, KP.text(p, a.jgst === 7));
+  }
+  // Konto aus dem Formular hinzufügen (Enter oder Knopf)
+  function ausFeld() {
+    const inp = document.querySelector('.konto-neu'); if (!inp || !inp.value.trim()) return;
+    const v = inp.value; B.aendere(a => kontoDazu(a, v));
+    const neu = document.querySelector('.konto-neu'); if (neu) neu.focus();
+  }
+  document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.matches && e.target.matches('.konto-neu')) { e.preventDefault(); ausFeld(); } });
+  document.addEventListener('click', e => {
+    if (e.target.closest('[data-konto-dazu]')) return ausFeld();
+    if (e.target.closest('[data-kontenplan]')) return kontenplanZeigen();
+  });
+
+  // Overlay: Kontenplan wie im Original (vier Spalten), Konten zum Anklicken, unten weitere Konten
+  function kontenplanZeigen() {
+    const H = {esc: s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]))};
+    const d = document.createElement('dialog'); d.className = 'kp-dialog';
+    d.innerHTML = `<div class="kp-oben"><div><b>Kontenplan</b> <span class="kp-titel">nach dem IKR, LehrplanPLUS</span></div>
+        <input type="search" class="feld kp-suche" placeholder="Suchen: Nummer, Kürzel oder Bezeichnung" aria-label="Konten suchen">
+        <span class="kp-zahl"></span><button type="button" class="btn haupt kp-fertig">Fertig</button></div>
+      <p class="hinweis kp-hilfe">Konten anklicken, die die Schüler zur Auswahl haben sollen (die richtigen und Ablenker). Nochmal klicken entfernt sie.</p>
+      <div class="kp-spalten">${KP.spalten.map(sp => `<div class="kp-spalte">${sp.map(b =>
+        b.kopf ? `<div class="kp-kopf">${H.esc(b.kopf)}</div>` : b.klasse ? `<div class="kp-klasse">${H.esc(b.klasse)}</div>`
+        : `<div class="kp-gruppe">${b.gruppe ? `<div class="kp-gname">${H.esc(b.gruppe)}</div>` : ''}${b.konten.map(([nr, kz, name, klr]) =>
+          `<button type="button" class="kp-konto" data-nr="${nr}" aria-pressed="false"><span class="kp-stern">${klr ? '*' : ''}</span><b>${nr} ${H.esc(kz)}</b> <span>${H.esc(name)}</span></button>`).join('')}</div>`).join('')}</div>`).join('')}</div>
+      <p class="hinweis">${H.esc(KP.hinweis)}</p>
+      <div class="kp-weitere"><b>Weitere Optionen hinzufügen</b> <span class="hinweis">– Konten, die nicht im Kontenplan stehen</span>
+        <div class="reihe wrap"><input class="feld kp-eigen" placeholder="z. B. Bank oder 9999 XY" aria-label="weiteres Konto"><button type="button" class="btn klein kp-eigen-dazu">＋ Hinzufügen</button></div>
+        <div class="konten-liste kp-eigene"></div></div>`;
+    document.body.appendChild(d);
+    function stand() {
+      const a = B.aufgabe(); if (!a || a.typ !== 'buchungssatz') { d.close(); return; }
+      const gew = new Set((a.konten || []).map(k => (KP.finde(k) || {}).nr).filter(Boolean));
+      d.querySelectorAll('.kp-konto').forEach(b => { const an = gew.has(b.dataset.nr); b.classList.toggle('an', an); b.setAttribute('aria-pressed', an); });
+      d.querySelector('.kp-zahl').textContent = `${(a.konten || []).length} ausgewählt`;
+      d.querySelector('.kp-eigene').innerHTML = (a.konten || []).map((k, i) => KP.finde(k) ? '' : `<span class="konto-chip eigen">${H.esc(k)}<button type="button" data-eigen-weg="${i}" aria-label="${H.esc(k)} entfernen">×</button></span>`).join('');
+    }
+    d.addEventListener('click', e => {
+      const k = e.target.closest('.kp-konto');
+      if (k) { const p = KP.konten.find(x => x.nr === k.dataset.nr); B.aendere(a => kontoUmschalten(a, p)); return stand(); }
+      const w = e.target.closest('[data-eigen-weg]');
+      if (w) { B.aendere(a => a.konten.splice(+w.dataset.eigenWeg, 1)); return stand(); }
+      if (e.target.closest('.kp-eigen-dazu')) { const inp = d.querySelector('.kp-eigen'), v = inp.value; if (v.trim()) { B.aendere(a => kontoDazu(a, v)); inp.value = ''; stand(); } inp.focus(); return; }
+      if (e.target.closest('.kp-fertig') || e.target === d) d.close();   // Klick neben das Fenster schließt
+    });
+    d.querySelector('.kp-eigen').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); d.querySelector('.kp-eigen-dazu').click(); } });
+    d.querySelector('.kp-suche').addEventListener('input', e => {
+      const q = e.target.value.trim().toLowerCase();
+      d.querySelectorAll('.kp-konto').forEach(b => b.classList.toggle('kp-aus', !!q && !b.textContent.toLowerCase().includes(q)));
+    });
+    d.addEventListener('close', () => d.remove());
+    stand(); d.showModal(); d.querySelector('.kp-suche').focus();
+  }
 
   /* ---------- Kombinierte Aufgabe ---------- */
   B.typ('kombi', {

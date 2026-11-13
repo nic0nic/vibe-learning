@@ -29,6 +29,7 @@ document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: da
 <script src="../../lib/seite.js"></script>
 <script src="../../lib/zip.js"></script>
 <script src="../../vorlage-editor.js"></script>
+<script src="../../BWR/kontenplan.js"></script>
 <script src="../../vorlage-typen.js"></script>
 <script src="../python/lib/codemirror.min.js"></script>
 <script src="../../vorlage-json.js"></script>
@@ -109,6 +110,39 @@ code{font:12.5px var(--mono);background:var(--panel2);border-radius:4px;padding:
 .teil-lbl{font:700 11.5px system-ui,sans-serif;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-top:2px}
 .akteil{cursor:grab}
 .teil-zone{border:2px dashed var(--border);border-radius:9px;padding:8px 10px;font-size:12.5px;color:var(--muted);text-align:center}
+/* Buchungssatz: Kontenliste und Kontenplan im Overlay */
+.konten-liste{display:flex;flex-wrap:wrap;gap:5px;margin:4px 0 6px}
+.konto-chip{display:inline-flex;align-items:center;gap:2px;font:600 13px var(--mono);background:var(--panel2);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:7px;padding:2px 2px 2px 8px}
+.konto-chip.eigen{border-left-color:var(--muted);border-style:dashed}
+.konto-chip button{border:0;background:none;color:var(--muted);font-size:15px;line-height:1;cursor:pointer;padding:0 5px}
+.konto-chip button:hover{color:var(--err)}
+.konto-neu{flex:1 1 160px;min-width:0}
+dialog.kp-dialog{width:min(1280px,calc(100vw - 24px));max-height:calc(100vh - 24px);padding:0;display:flex;flex-direction:column}
+dialog.kp-dialog:not([open]){display:none}
+.kp-oben{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;padding:10px 16px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--panel);z-index:1}
+.kp-titel{color:var(--muted);font-size:13px}
+.kp-suche{flex:1 1 220px;max-width:380px}
+.kp-zahl{color:var(--muted);font-size:13px;margin-left:auto}
+.kp-hilfe{margin:8px 16px 0}
+.kp-spalten{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0 14px;padding:8px 16px;overflow:auto}
+@media (max-width:1050px){.kp-spalten{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:600px){.kp-spalten{grid-template-columns:minmax(0,1fr)}}
+.kp-spalte{display:flex;flex-direction:column;gap:2px}
+.kp-kopf{background:color-mix(in srgb,var(--muted) 22%,var(--panel));font:700 13px system-ui,sans-serif;padding:4px 8px;margin-top:8px;border-radius:4px}
+.kp-klasse{font:700 13px system-ui,sans-serif;margin:8px 0 2px}
+.kp-gruppe{margin:2px 0 4px}
+.kp-gname{font-size:12.5px;color:var(--muted);margin:2px 0}
+.kp-konto{display:flex;gap:6px;align-items:baseline;width:100%;text-align:left;background:none;border:1px solid transparent;border-radius:6px;padding:2px 6px 2px 4px;font:13px system-ui,sans-serif;color:var(--text);cursor:pointer}
+.kp-konto b{font-family:var(--mono);white-space:nowrap}
+.kp-konto:hover{border-color:var(--accent)}
+.kp-konto.an{background:color-mix(in srgb,var(--accent) 22%,var(--panel));border-color:var(--accent)}
+.kp-konto.an::after{content:"✓";margin-left:auto;color:var(--accent);font-weight:700}
+.kp-konto.kp-aus{opacity:.25}
+.kp-stern{width:8px;flex:none;color:var(--muted)}
+.kp-dialog>.hinweis{margin:4px 16px}
+.kp-weitere{border-top:1px solid var(--border);padding:10px 16px 14px;background:var(--panel2)}
+.kp-eigen{flex:1 1 220px;max-width:360px}
+
 /* Schalter für Optionen eines Aufgabentyps (z. B. Buchungssatz: Jgst. 7, Beträge ziehen) */
 .schalterleiste{display:flex;flex-wrap:wrap;gap:6px 18px;margin:4px 0 10px;padding:8px 10px;background:var(--panel2);border-radius:10px}
 .schalter{display:inline-flex;align-items:center;gap:8px;font:600 13.5px system-ui,sans-serif;cursor:pointer;user-select:none}

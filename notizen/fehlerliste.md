@@ -27,6 +27,11 @@ Gesammelt im Thread „Aufbau der Seite“. Umgesetzt wird erst, wenn die Lehrkr
 
 ### Version vom 13.11.
 
+59. **Übung erstellen: Konten für den Buchungssatz aus dem Kontenplan wählen** (gewünscht 13.11.)
+    Neu `pb_public/BWR/kontenplan.js`: ISB-Kontenplan LehrplanPLUS (77 Konten, vier Spalten wie im PDF, Kennzeichen * für KLR, `finde('bk'|'2800'|'2800 BK')`, `text(konto, jgst7)`). Daraus `werkzeuge/kontenplan-md.js` → `~/austausch/kontenplan.md` (für Chats; nur in kontenplan.js ändern).
+    Editor, Buchungssatz: Konten als Liste (Chips mit ×) statt Textfeld; Feld „Konto hinzufügen“ mit Vorschlägen aus dem Kontenplan („bk“, „2800“ → 2800 BK bzw. in Jgst. 7 BK); Knopf „📒 Konten auswählen …“ öffnet den Kontenplan im Overlay (vier Spalten, Suche, Konten anklicken/abwählen, ausgewählte mit ✓, unten „Weitere Optionen hinzufügen“ für Konten außerhalb des Plans). Liste und Overlay zeigen denselben Stand; Liste nach Kontenplan sortiert. Schalter Jgst. 7 aus: Nummern kommen aus dem Kontenplan zurück. Meldung „Das Konto „…“ steht in der Lösung, aber nicht in der Kontenauswahl“ statt JSON-Sprache (auch pruefe.py).
+    Getestet in Chromium: Hinzufügen per Enter/Knopf, Overlay an/ab, Suche, eigene Konten, Jgst. 7 an/aus, Strg+Z, Chip entfernen, Einzeldatei.
+
 58. **Übung erstellen: JSON-Modus mit Syntaxhervorhebung; Beträge ohne Bezeichnung** (gewünscht 13.11.)
     Neues `pb_public/vorlage-json.js`: CodeMirror 5 (aus `IT/python/lib/`) statt Textfeld, eigener Modus `vljson`: Feldnamen, Texte, HTML-Tags in Texten, Zahlen, true/false/null, Wert von "typ" hervorgehoben; Klammern in drei Farben je Tiefe; Klammer am Cursor + Gegenstück markiert, sonst das umschließende Paar (gestrichelt, Balken in der Zeilenleiste); Klammern/Anführungszeichen schließen selbst, Einrückung, Tab = 2 Leerzeichen, aktive Zeile, Zeilennummern, Strg+F des Browsers findet alles (viewportMargin Infinity). Eigener JSON-Prüfer: Stelle unterkringelt, Zeile markiert, deutsche Meldung unter dem Editor zum Anklicken (Komma zu viel/zu wenig, fehlender Doppelpunkt, offener Text, '…' statt "…", 8,5 statt 8.5 …), auch beim Wechsel in den Editor-Modus. Helles und dunkles Thema.
     `betraege`: Bezeichnung darf leer sein (`["", 238]`), dann zeigt die Karte nur den Betrag; Prüfungen in seite.js/pruefe.py angepasst.
