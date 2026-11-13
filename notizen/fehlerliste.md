@@ -23,9 +23,27 @@ Gesammelt im Thread „Aufbau der Seite“. Umgesetzt wird erst, wenn die Lehrkr
     `nav.js`: Läuft die Übung in einem iframe gleichen Ursprungs (Moodle-Player), gibt es einen zweiten Knopf „Großansicht“. Er legt das iframe per CSS über das ganze Fenster (fixed, z-index, Scrollen der Moodle-Seite aus); geht auch, wo Vollbild nicht klappt (iPad, Apps). Bleibt für die Sitzung an (sessionStorage `pf-gross`), Esc oder Knopf beendet und stellt den alten Stil wieder her. Auf der Webseite selbst kein Knopf (dort wirkungslos).
     Getestet in Chromium (iPad-Größe 820×1180) im nachgebauten Moodle-Player: an, nach Neuladen weiter an, Esc, an/aus, Webseite ohne Knopf. Nicht auf echtem iPad/ByCS.
 
+62. **Weitere Designs** (vorgeschlagen 13.11., Unterbau steht: `lib/designs.js`, siehe Nr. 63)
+    Je Design: Farben/Muster in CSS, eigene Flamme, ggf. fester Hell/Dunkel-Modus. Schriften nur eingebettet (keine Google Fonts: Datenschutz, offline, ByCS).
+    1. Comic: dicke Konturen, Rasterpunkte, Feedback als Sprechblase, „ZACK!“ bei richtig (Comic-Schrift einbetten, OFL).
+    2. Titelkarte (Wes-Anderson-Pastell, symmetrisch, zentrierte Versalien in Serifenschrift, Rahmenlinien; Hintergrund wählbar: Rosa, Mint, Senf, Himmelblau, Bordeaux).
+    3. Secondhand (Thrift Store): braun/beige, Sakko-Karo mit dünnen blauen und roten Linien, Etiketten als Karten.
+    4. Trattoria: rot-weiß karierte Tischdecke, Aufgaben als Speisekarte, „Perfetto!“.
+    5. Chemielabor: Laborblatt, Reagenzglas als Flamme, Zeitbalken als Flüssigkeit im Messzylinder.
+    6. Videothek/Kino: Filmstreifen-Ränder, Filmklappe als Flamme, DVD-Hüllen.
+    7. Candy Factory: Pastell, Zuckerstangen-Streifen, Bonbons als Flammen.
+    8. Musik: Notenlinien, Noten als Flammen; Töne bei Antworten als eigene Option für alle Designs (Standard aus, Web Audio).
+    Verworfen (keine eindeutige Bildsprache): Wald (nur Farbvariante), Australien (Klischees, Punktmalerei heikel), Fahrradladen.
+
 ## Erledigt
 
 ### Version vom 13.11.
+
+63. **Designs: Unterbau + Kommandozeile** (gewünscht 13.11.)
+    Neu `lib/designs.js`: Design = CSS unter `html[data-design]` (überschreibt die Farbvariablen), Flammen-Vorlage (`window.PF_FLAMME`, genutzt von `aufgaben.js` und Excel `basis.js`), fester Hell/Dunkel-Modus (dann kein Knopf). Erstes Design „Kommandozeile“: schwarz, grüne Monospace-Schrift, Scanlines, `~/ `-Titel mit blinkendem Cursor, `> `-Aufgaben, `[ Knöpfe ]`, Flammen als `[1]`, gestrichelter Zeitbalken, immer dunkel.
+    - Aufgaben-JSON: `"design": "kommandozeile"` (oben), `Seite.pruefe` kennt die Designs, `seiteHTML` bettet CSS ein (Vorschau, Download, ByCS, Einreichen). Editor: Auswahl „Design“ neben „Vorschau“ (auch im JSON-Modus). Skill (SKILL.md, pruefe.py) ergänzt.
+    - Angemeldete: im Konto-Menü „Design“ mit Hinweis „Experimentell – nicht alle Übungen sind dafür gebaut. Gilt auf diesem Gerät.“ (localStorage `pf-design`, nav.js lädt designs.js nach; Seiten mit eigenem Design behalten es; beim Abmelden zurück auf Standard). Datenschutz ergänzt.
+    Getestet in Chromium: Editor-Auswahl → JSON, Vorschau mit Training (Flammen, Zeitbalken), MC, Zahlen, Zuordnen, Buchungssatz, Lückentext; mit PocketBase (leere Testdatenbank, vorgetäuschte Lehrersitzung): Menü, Wechsel, BWR-Erarbeitung, Excel WENN, SQL, Startseite, Abmelden setzt zurück. Nicht auf Touch-Geräten, nicht mit echter Schüleranmeldung.
 
 61. **Training: Eingabe ließ sich in der Vorschau nicht bestätigen** (gemeldet 13.11.)
     Die Vorschau von „Übung erstellen“ läuft im iframe mit `sandbox="allow-scripts"`; dort schickt der Browser kein `<form>` ab, Enter und „OK“ taten nichts (heruntergeladen ging es). Jetzt ohne Formular: Enter im Feld und Klick auf „OK“ direkt verdrahtet – geht auch in anderen abgeschotteten Einbettungen (z. B. Moodle). Getestet in der Vorschau und als Einzeldatei.

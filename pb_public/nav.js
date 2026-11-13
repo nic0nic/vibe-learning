@@ -21,6 +21,9 @@
  * Läuft die Seite in einem iframe gleichen Ursprungs (ByCS/Moodle-Player), gibt es daneben „Großansicht“:
  * Das oberste erreichbare iframe-Element wird per CSS über das ganze Fenster gelegt. Geht auch dort, wo
  * Vollbild nicht klappt (iPad, Apps); bleibt für die Sitzung eingeschaltet (sessionStorage pf-gross), Esc beendet.
+ * Design (lib/designs.js): Haben Angemeldete im Konto-Menü (sync.js) ein anderes Design gewählt (localStorage pf-design),
+ * lädt nav.js designs.js nach und schaltet es ein – außer die Seite bringt selbst ein Design mit (html[data-design]).
+ * Experimentell: handgebaute Seiten (Excel, SQL …) sehen dann nur teilweise anders aus.
  * Unten auf jeder Seite (außer Einzeldateien) stehen Links zu Impressum und Datenschutz (pb_public/impressum.html, datenschutz.html).
  */
 (function () {
@@ -38,6 +41,14 @@
   // oder <html data-fach="BWR">, sonst die zuletzt gewählte (localStorage pf-fach), sonst die erste.
   const BER = K.bereiche.find(b => b.tools.some(t => t.id === TOOL)) || K.bereiche.find(b => b.pfad === root.dataset.bereich) || null;
   const BEREICH = BER ? BER.id : '';
+  // gewähltes Design (Einstellung im Konto-Menü) nachladen; Seiten mit eigenem Design behalten es
+  let wunsch = null; try { wunsch = localStorage.getItem('pf-design'); } catch (e) {}
+  if (wunsch && wunsch !== 'standard' && !root.dataset.design){
+    root.dataset.design = wunsch;
+    const s = document.createElement('script'); s.src = BASE + 'lib/designs.js';
+    s.onload = () => { if (window.Designs) Designs.anwenden(wunsch); };
+    document.head.appendChild(s);
+  }
   const FACHSEITE = K.faecher.find(f => f.id === root.dataset.fach) || null;
   let GRUPPE = BER ? BER.gruppe : K.gruppen.find(g => g.pfad === root.dataset.gruppe) || (FACHSEITE && K.gruppen.find(g => g.fach === FACHSEITE));
   if (GRUPPE){ try { localStorage.setItem('pf-fach', GRUPPE.pfad); } catch (e) {} }

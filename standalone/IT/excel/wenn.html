@@ -178,6 +178,9 @@ window.KATALOG.einreichungen = /* EINREICHUNGEN-ANFANG */ [] /* EINREICHUNGEN-EN
  * Läuft die Seite in einem iframe gleichen Ursprungs (ByCS/Moodle-Player), gibt es daneben „Großansicht“:
  * Das oberste erreichbare iframe-Element wird per CSS über das ganze Fenster gelegt. Geht auch dort, wo
  * Vollbild nicht klappt (iPad, Apps); bleibt für die Sitzung eingeschaltet (sessionStorage pf-gross), Esc beendet.
+ * Design (lib/designs.js): Haben Angemeldete im Konto-Menü (sync.js) ein anderes Design gewählt (localStorage pf-design),
+ * lädt nav.js designs.js nach und schaltet es ein – außer die Seite bringt selbst ein Design mit (html[data-design]).
+ * Experimentell: handgebaute Seiten (Excel, SQL …) sehen dann nur teilweise anders aus.
  * Unten auf jeder Seite (außer Einzeldateien) stehen Links zu Impressum und Datenschutz (pb_public/impressum.html, datenschutz.html).
  */
 (function () {
@@ -195,6 +198,14 @@ window.KATALOG.einreichungen = /* EINREICHUNGEN-ANFANG */ [] /* EINREICHUNGEN-EN
   // oder <html data-fach="BWR">, sonst die zuletzt gewählte (localStorage pf-fach), sonst die erste.
   const BER = K.bereiche.find(b => b.tools.some(t => t.id === TOOL)) || K.bereiche.find(b => b.pfad === root.dataset.bereich) || null;
   const BEREICH = BER ? BER.id : '';
+  // gewähltes Design (Einstellung im Konto-Menü) nachladen; Seiten mit eigenem Design behalten es
+  let wunsch = null; try { wunsch = localStorage.getItem('pf-design'); } catch (e) {}
+  if (wunsch && wunsch !== 'standard' && !root.dataset.design){
+    root.dataset.design = wunsch;
+    const s = document.createElement('script'); s.src = BASE + 'lib/designs.js';
+    s.onload = () => { if (window.Designs) Designs.anwenden(wunsch); };
+    document.head.appendChild(s);
+  }
   const FACHSEITE = K.faecher.find(f => f.id === root.dataset.fach) || null;
   let GRUPPE = BER ? BER.gruppe : K.gruppen.find(g => g.pfad === root.dataset.gruppe) || (FACHSEITE && K.gruppen.find(g => g.fach === FACHSEITE));
   if (GRUPPE){ try { localStorage.setItem('pf-fach', GRUPPE.pfad); } catch (e) {} }
@@ -734,6 +745,10 @@ html[data-theme=dark] .pf-item{--bc:#88c0d0}
 .ts-badge.gast .ts-dot{background:#d08770}
 .ts-dd{display:none;position:absolute;right:0;top:calc(100% + 6px);min-width:240px;z-index:70;background:var(--panel,#f6f8fb);color:var(--text,#2e3440);border:1px solid var(--border,#cdd3de);border-radius:12px;box-shadow:0 14px 30px rgba(0,0,0,.18);padding:6px;font:14px/1.4 system-ui,sans-serif}
 .ts-wrap.open .ts-dd{display:block}
+.ts-einst{padding:8px 10px;border-bottom:1px solid var(--border,#cdd3de);margin-bottom:4px}
+.ts-einst label{display:flex;align-items:center;justify-content:space-between;gap:8px;font-weight:600}
+.ts-einst select{font:inherit;background:var(--panel2,#eceff4);color:inherit;border:1px solid var(--border,#cdd3de);border-radius:6px;padding:3px 6px}
+.ts-einst small{display:block;margin-top:4px;color:var(--muted,#5b6578);font-size:12px;line-height:1.35}
 .ts-dd .ts-info{padding:8px 10px;color:var(--muted,#5b6578);border-bottom:1px solid var(--border,#cdd3de);margin-bottom:4px}
 .ts-dd .ts-info b{color:var(--text,#2e3440)}
 .ts-dd a,.ts-dd button{display:block;width:100%;text-align:left;padding:8px 10px;border-radius:8px;border:0;background:none;color:inherit;font:inherit;text-decoration:none;cursor:pointer}
@@ -752,6 +767,23 @@ html[data-theme=dark] .pf-item{--bc:#88c0d0}
     const i = menuEl.querySelector('.ts-status'); if (i) i.textContent = t;
   }
 
+  // Einstellung „Design“ (lib/designs.js, nur für Angemeldete, gilt auf diesem Gerät; nav.js schaltet es ein)
+  const DESIGN_HTML = `<div class="ts-einst"><label>Design <select class="ts-design" aria-label="Design"><option value="standard">Standard</option></select></label>
+    <small>Experimentell – nicht alle Übungen sind dafür gebaut. Gilt auf diesem Gerät.</small></div>`;
+  function designWahl(){
+    const sel = menuEl && menuEl.querySelector('.ts-design'); if (!sel) return;
+    const fuellen = () => {
+      if (!window.Designs) return;
+      let akt = 'standard'; try { akt = localStorage.getItem('pf-design') || 'standard'; } catch (e) {}
+      sel.innerHTML = Designs.liste().map(d => `<option value="${escH(d.id)}"${d.id === akt ? ' selected' : ''}>${escH(d.name)}</option>`).join('');
+    };
+    if (window.Designs) fuellen();
+    else { const s = document.createElement('script'); s.src = BASE + 'lib/designs.js'; s.onload = fuellen; document.head.appendChild(s); }
+    sel.addEventListener('change', () => {
+      try { if (sel.value === 'standard') localStorage.removeItem('pf-design'); else localStorage.setItem('pf-design', sel.value); } catch (e) {}
+      location.reload();
+    });
+  }
   // Menü oben rechts: angemeldet (Dropdown mit Abmelden) oder Gast (Klick öffnet die Anmeldung)
   function showMenu(){
     if (menuEl) menuEl.remove();
@@ -763,12 +795,12 @@ html[data-theme=dark] .pf-item{--bc:#88c0d0}
       const klasse = ls.get(K.klasse);
       menuEl.innerHTML = `<button class="ts-badge saving" type="button"><span class="ts-dot"></span>👤 <span class="ts-lang">${escH(ls.get(K.anzeige) || ls.get(K.code))}</span></button>
         <div class="ts-dd"><div class="ts-info">Angemeldet als <b>${escH(ls.get(K.anzeige) || ls.get(K.code))}</b>${klasse ? ' (Klasse ' + escH(klasse) + ')' : ''}<br><span class="ts-status"></span></div>
-        <button type="button" data-a="ab">Abmelden</button></div>`;
+        ${DESIGN_HTML}<button type="button" data-a="ab">Abmelden</button></div>`;
     } else if (L){
       menuEl.innerHTML = `<button class="ts-badge" type="button">👤 <span class="ts-lang">${escH(L.name)}</span></button>
         <div class="ts-dd"><div class="ts-info">Angemeldet als <b>${escH(L.name)}</b> (${L.rolle === 'admin' ? 'Admin' : 'Lehrkraft'})</div>
         <a href="${BASE + CONFIG.verwaltung}">Verwaltung: Klassen und Auswertung</a>
-        <button type="button" data-a="ab">Abmelden</button></div>`;
+        ${DESIGN_HTML}<button type="button" data-a="ab">Abmelden</button></div>`;
     } else {
       menuEl.innerHTML = `<button class="ts-badge gast" type="button" title="Fortschritt wird nicht gespeichert. Klicken zum Anmelden."><span class="ts-dot"></span>Nicht angemeldet<span class="ts-lang">&nbsp;– Fortschritt wird nicht gespeichert</span></button>`;
     }
@@ -779,6 +811,7 @@ html[data-theme=dark] .pf-item{--bc:#88c0d0}
     });
     const ab = menuEl.querySelector('[data-a="ab"]');
     if (ab) ab.addEventListener('click', abmelden);
+    designWahl();
     document.addEventListener('click', e => { if (menuEl && !menuEl.contains(e.target)) menuEl.classList.remove('open'); });
   }
 
@@ -850,12 +883,13 @@ html[data-theme=dark] .pf-item{--bc:#88c0d0}
   }
 
   async function abmelden(){
-    if (lehrerSitzung()){ ss.del(SS.lehrer); ss.del(SS.gast); location.reload(); return; }
+    const ohneDesign = () => { try { localStorage.removeItem('pf-design'); } catch (e) {} };   // Design gilt nur für Angemeldete
+    if (lehrerSitzung()){ ohneDesign(); ss.del(SS.lehrer); ss.del(SS.gast); location.reload(); return; }
     if (!confirm(`Abmelden?\n\nAngemeldet als ${ls.get(K.anzeige) || ls.get(K.code)}. Dein Fortschritt bleibt auf dem Server gespeichert.`)) return;
     if (pushPending) await push();
     await flush();
     if (queue().length && !confirm('Einige gelöste Aufgaben konnten noch nicht übertragen werden (keine Verbindung). Trotzdem abmelden?')) return;
-    wipeLocal(); ss.del(SS.gast); ss.del('ts-sichtbar');
+    ohneDesign(); wipeLocal(); ss.del(SS.gast); ss.del('ts-sichtbar');
     location.reload();
   }
   function abgelaufen(){
@@ -1263,8 +1297,8 @@ function renderHeader(){
   let h = '';
   for (let n = 1; LEVELS[n]; n++){
     h += `<button class="flame${n === level ? ' on' : ''}" data-level="${n}" title="Stufe ${n}: ${esc(LEVELS[n].name)}" aria-label="Stufe ${n}" aria-pressed="${n === level}">
-      <svg viewBox="0 0 32 40"><path d="M16 2C18 9 27 14 27 26C27 33 22 38 16 38C10 38 5 33 5 26C5 20 9 16 11 11C12 15 13 17 15 18C16 13 17 8 16 2Z"/>
-      <text x="16" y="32" text-anchor="middle">${n}</text></svg></button>`;
+      ${window.PF_FLAMME ? String(window.PF_FLAMME).replace(/\{n\}/g, n) : `<svg viewBox="0 0 32 40"><path d="M16 2C18 9 27 14 27 26C27 33 22 38 16 38C10 38 5 33 5 26C5 20 9 16 11 11C12 15 13 17 15 18C16 13 17 8 16 2Z"/>
+      <text x="16" y="32" text-anchor="middle">${n}</text></svg>`}</button>`;   // Design (lib/designs.js) kann die Flamme ersetzen
   }
   $('#flames').innerHTML = h;
   $('#flames').style.display = mode === 'lernen' ? 'none' : '';

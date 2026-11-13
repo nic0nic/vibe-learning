@@ -4,7 +4,7 @@
  * Im Browser: <script src="lib/seite.js"></script> → window.Seite; im Hook: require(…/pb_public/lib/seite.js).
  *
  * Aufgaben-JSON (reine Daten, kein JavaScript; Aufgabentypen wie in lib/aufgaben.js):
- *   {"titel": "Kredite bei der Bank", "kurztext": "…",
+ *   {"titel": "Kredite bei der Bank", "kurztext": "…", "design": "kommandozeile" (optional, lib/designs.js),
  *    "schritte": [{"kurz": "5.1", "titel": "…", "html": "<p>Erklärung</p>", "erinnerung": "…", "erinnerungZu": true,
  *                  "material": "…", "aufgaben": [{"typ": "mc", …}, …]}, …]}
  *   Statt "schritte" geht auch "aufgaben": [...] (wird ein einziger Schritt).
@@ -21,14 +21,14 @@
  *
  * API
  *   Seite.TYPEN                     Aufgabentypen mit Pflichtfeldern (muss zu lib/aufgaben.js passen)
- *   Seite.normalisiere(json)        → {titel, kurztext, schritte} (Schritte bekommen id und kurz, danach → kombi)
+ *   Seite.normalisiere(json)        → {titel, kurztext, design, schritte} (Schritte bekommen id und kurz, danach → kombi)
  *   Seite.ohneDanach(aufgabe)       → Aufgabe mit danach-Kette als {"typ": "kombi", "teile": […]} (sonst unverändert)
  *   Seite.pruefe(json)              → Liste von Fehlern (leer = in Ordnung), deutsch, mit Fundstelle
  *       HTML in Texten nur nach Erlaubtliste (Seite.ERLAUBT): Tags wie p, b, ul, table … mit höchstens class
  *       (td/th auch colspan, rowspan); jedes andere „<“ + Buchstabe, „</“, „<!“ oder „<?“ wird abgelehnt.
  *   Seite.toolId(titel, zufall)     → id für katalog.js (a–z, 0–9, -, höchstens 20 Zeichen)
  *   Seite.seiteHTML(json, opt)      → komplette HTML-Seite
- *       opt = {pfad: 'BWR/9II/finanzierung', toolId, einzeln: false, lib: {aufgabenJs, aufgabenCss, bwrCss, formelJs}}
+ *       opt = {pfad: 'BWR/9II/finanzierung', toolId, einzeln: false, design (statt json.design), lib: {aufgabenJs, aufgabenCss, bwrCss, formelJs}}
  *       einzeln: true → ohne Menü und Server, Bibliotheken eingebettet (Vorschau, Download)
  *       bycs: {scormJs, stufen} (nur mit einzeln) → für ein SCORM-Paket: window.PF_BYCS und scorm.js vor den
  *             Bibliotheken eingebettet, wie in werkzeuge/bycs-pakete.py (dort statt sync.js)
@@ -69,6 +69,8 @@
   // Rechenausdrücke der Trainings-Szenarien (lib/formel.js); fehlt sie (z. B. im Hook), werden Formeln nicht geprüft
   let Formel = null;
   try { Formel = typeof window !== 'undefined' && window.Formel ? window.Formel : require('./formel.js'); } catch (e) {}
+  let Designs = null;   // andere Optik (lib/designs.js); fehlt sie, bleibt es beim Standard
+  try { Designs = typeof window !== 'undefined' && window.Designs ? window.Designs : require('./designs.js'); } catch (e) {}
   const r2 = n => Math.round(n * 100) / 100;
 
   // altes Format: Folgeaufgaben als danach-Kette → Kombi mit Teilen (auch danach in Teilen einer Kombi)
@@ -85,7 +87,7 @@
   }
   function normalisiere(j) {
     const schritte = Array.isArray(j.schritte) ? j.schritte : Array.isArray(j.aufgaben) ? [{kurz: 'Aufgaben', titel: j.titel, aufgaben: j.aufgaben}] : [];
-    return {titel: j.titel, kurztext: j.kurztext || '', schritte: schritte.map((s, i) => Object.assign({}, s, {id: 's' + (i + 1), kurz: s.kurz || String(i + 1)},
+    return {titel: j.titel, kurztext: j.kurztext || '', design: j.design || '', schritte: schritte.map((s, i) => Object.assign({}, s, {id: 's' + (i + 1), kurz: s.kurz || String(i + 1)},
       Array.isArray(s.aufgaben) ? {aufgaben: s.aufgaben.map(ohneDanach)} : {}))};
   }
 
@@ -209,6 +211,7 @@
     if (j.titel != null) alleTexte(j.titel, 'Titel', f);
     if (j.kurztext != null) alleTexte(j.kurztext, 'Kurztext', f);
     if (!istText(j.titel)) f.push('„titel“ fehlt.');
+    if (j.design != null && j.design !== 'standard' && !(Designs && Designs.hole(j.design))) f.push(`Das Design „${j.design}“ gibt es nicht${Designs ? ` (möglich: ${Designs.liste().map(d => d.id).join(', ')})` : ''}.`);
     const n = normalisiere(j);
     if (!n.schritte.length) f.push('Keine Schritte bzw. Aufgaben gefunden („schritte“ oder „aufgaben“).');
     if (n.schritte.length > 40) f.push('Höchstens 40 Schritte.');
@@ -247,6 +250,7 @@
     const n = normalisiere(json), id = opt.toolId || toolId(n.titel), pfad = String(opt.pfad || '').replace(/^\/+|\/+$/g, '');
     const hoch = pfad ? '../'.repeat(pfad.split('/').length) : '';
     const bwr = /^BWR\//.test(pfad), lib = opt.lib || {};
+    const design = Designs ? Designs.kopf(opt.design != null ? opt.design : n.design) : '';
     const daten = JSON.stringify({titel: n.titel, kurztext: n.kurztext, schritte: n.schritte}, null, 1).replace(/<\//g, '<\\/');
     const titel = esc(n.titel);
     const bycs = opt.einzeln && opt.bycs
@@ -269,7 +273,7 @@
   Gespeichert: ${esc(id)}-stand = {schritt, erledigt}.
 -->
 ${kopf}
-<style>${SEITE_CSS}</style>
+<style>${SEITE_CSS}</style>${design ? '\n' + design : ''}
 </head>
 <body>
 <div class="wrap">

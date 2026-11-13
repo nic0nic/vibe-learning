@@ -155,7 +155,7 @@ Wird genutzt von IT/tools/uebung-erstellen.html (Vorschau, Download, ByCS-Paket)
 Im Browser: <script src="lib/seite.js"></script> → window.Seite; im Hook: require(…/pb_public/lib/seite.js).
 
 Aufgaben-JSON (reine Daten, kein JavaScript; Aufgabentypen wie in lib/aufgaben.js):
-  {"titel": "Kredite bei der Bank", "kurztext": "…",
+  {"titel": "Kredite bei der Bank", "kurztext": "…", "design": "kommandozeile" (optional, lib/designs.js),
    "schritte": [{"kurz": "5.1", "titel": "…", "html": "<p>Erklärung</p>", "erinnerung": "…", "erinnerungZu": true,
                  "material": "…", "aufgaben": [{"typ": "mc", …}, …]}, …]}
   Statt "schritte" geht auch "aufgaben": [...] (wird ein einziger Schritt).
@@ -172,14 +172,14 @@ Aufgaben-JSON (reine Daten, kein JavaScript; Aufgabentypen wie in lib/aufgaben.j
 
 API
   Seite.TYPEN                     Aufgabentypen mit Pflichtfeldern (muss zu lib/aufgaben.js passen)
-  Seite.normalisiere(json)        → {titel, kurztext, schritte} (Schritte bekommen id und kurz, danach → kombi)
+  Seite.normalisiere(json)        → {titel, kurztext, design, schritte} (Schritte bekommen id und kurz, danach → kombi)
   Seite.ohneDanach(aufgabe)       → Aufgabe mit danach-Kette als {"typ": "kombi", "teile": […]} (sonst unverändert)
   Seite.pruefe(json)              → Liste von Fehlern (leer = in Ordnung), deutsch, mit Fundstelle
       HTML in Texten nur nach Erlaubtliste (Seite.ERLAUBT): Tags wie p, b, ul, table … mit höchstens class
       (td/th auch colspan, rowspan); jedes andere „<“ + Buchstabe, „</“, „<!“ oder „<?“ wird abgelehnt.
   Seite.toolId(titel, zufall)     → id für katalog.js (a–z, 0–9, -, höchstens 20 Zeichen)
   Seite.seiteHTML(json, opt)      → komplette HTML-Seite
-      opt = {pfad: 'BWR/9II/finanzierung', toolId, einzeln: false, lib: {aufgabenJs, aufgabenCss, bwrCss, formelJs}}
+      opt = {pfad: 'BWR/9II/finanzierung', toolId, einzeln: false, design (statt json.design), lib: {aufgabenJs, aufgabenCss, bwrCss, formelJs}}
       einzeln: true → ohne Menü und Server, Bibliotheken eingebettet (Vorschau, Download)
       bycs: {scormJs, stufen} (nur mit einzeln) → für ein SCORM-Paket: window.PF_BYCS und scorm.js vor den
             Bibliotheken eingebettet, wie in werkzeuge/bycs-pakete.py (dort statt sync.js)

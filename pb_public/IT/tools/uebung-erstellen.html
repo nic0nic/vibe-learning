@@ -27,6 +27,7 @@ document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: da
 <script src="../../nav.js"></script>
 <script src="../../sync.js"></script>
 <script src="../../lib/formel.js"></script>
+<script src="../../lib/designs.js"></script>
 <script src="../../lib/seite.js"></script>
 <script src="../../lib/zip.js"></script>
 <script src="../../vorlage-editor.js"></script>
@@ -125,6 +126,8 @@ dialog.kp-dialog:not([open]){display:none}
 .kp-titel{color:var(--muted);font-size:13px}
 .kp-suche{flex:1 1 220px;max-width:380px}
 .kp-zahl{color:var(--muted);font-size:13px;margin-left:auto}
+.design-wahl{display:inline-flex;align-items:center;gap:6px;font:600 13px system-ui,sans-serif;color:var(--muted)}
+.design-wahl select{padding:5px 6px}
 .kp-hilfe{margin:8px 16px 0}
 .kp-spalten{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0 14px;padding:8px 16px;overflow:auto}
 @media (max-width:1050px){.kp-spalten{grid-template-columns:repeat(2,minmax(0,1fr))}}
@@ -302,6 +305,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <button class="btn" id="speichern" type="button" title="Als .json speichern, um später weiterzuarbeiten">Speichern</button>
     <input type="file" id="datei" accept=".json,application/json" hidden>
     <span class="spacer"></span>
+    <label class="design-wahl" title="Optik der heruntergeladenen Übung (Datei, ByCS) – auch in der Vorschau">Design <select class="feld" id="design" aria-label="Design"></select></label>
     <button class="btn" id="vorschau" type="button">▶ Vorschau</button>
     <button class="btn haupt" id="abgeben" type="button">Herunterladen / Einreichen</button>
   </div>
@@ -379,14 +383,16 @@ $('#bereich').addEventListener('change', () => { entwurf.bereich = $('#bereich')
 
 /* ---------- Editor ---------- */
 let modus = 'editor';
-function kopfFelder(d){ $('#titel').value = d.titel || ''; $('#kurztext').value = d.kurztext || ''; }
+function kopfFelder(d){ $('#titel').value = d.titel || ''; $('#kurztext').value = d.kurztext || ''; $('#design').value = d.design && Designs.hole(d.design) ? d.design : 'standard'; }
+$('#design').innerHTML = Designs.liste().map(x => `<option value="${x.id}" title="${esc(x.beschreibung)}">${esc(x.name)}</option>`).join('');
 function knoepfe(){ $('#rueck').disabled = modus !== 'editor' || !Baukasten.kannRueck(); $('#vor').disabled = modus !== 'editor' || !Baukasten.kannVor(); }
 Baukasten.start({leiste:$('#leiste'), mitte:$('#mitte'), panel:$('#panel'), fehler:$('#fehler'),
   geaendert(d){ if (modus !== 'editor') return; entwurf.json = JSON.stringify(d, null, 2); merken(); knoepfe(); }});
-['titel', 'kurztext'].forEach(k => $('#' + k).addEventListener('input', () => {
-  if (modus === 'editor') return Baukasten.kopf(k, $('#' + k).value.trim());
+['titel', 'kurztext', 'design'].forEach(k => $('#' + k).addEventListener(k === 'design' ? 'change' : 'input', () => {
+  const v = k === 'design' && $('#design').value === 'standard' ? '' : $('#' + k).value.trim();
+  if (modus === 'editor') return Baukasten.kopf(k, v);
   const d = jsonLesen(true); if (!d) return;   // im JSON-Modus direkt ins JSON schreiben
-  if ($('#' + k).value.trim()) d[k] = $('#' + k).value.trim(); else if (k === 'kurztext') delete d[k]; else d[k] = '';
+  if (v) d[k] = v; else if (k !== 'titel') delete d[k]; else d[k] = '';
   JE.setze(JSON.stringify(d, null, 2)); entwurf.json = JE.text(); merken();
 }));
 $('#rueck').addEventListener('click', () => { Baukasten.rueck(); kopfFelder(Baukasten.daten()); knoepfe(); });

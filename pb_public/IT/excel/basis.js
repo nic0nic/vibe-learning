@@ -71,8 +71,8 @@ function renderHeader(){
   let h = '';
   for (let n = 1; LEVELS[n]; n++){
     h += `<button class="flame${n === level ? ' on' : ''}" data-level="${n}" title="Stufe ${n}: ${esc(LEVELS[n].name)}" aria-label="Stufe ${n}" aria-pressed="${n === level}">
-      <svg viewBox="0 0 32 40"><path d="M16 2C18 9 27 14 27 26C27 33 22 38 16 38C10 38 5 33 5 26C5 20 9 16 11 11C12 15 13 17 15 18C16 13 17 8 16 2Z"/>
-      <text x="16" y="32" text-anchor="middle">${n}</text></svg></button>`;
+      ${window.PF_FLAMME ? String(window.PF_FLAMME).replace(/\{n\}/g, n) : `<svg viewBox="0 0 32 40"><path d="M16 2C18 9 27 14 27 26C27 33 22 38 16 38C10 38 5 33 5 26C5 20 9 16 11 11C12 15 13 17 15 18C16 13 17 8 16 2Z"/>
+      <text x="16" y="32" text-anchor="middle">${n}</text></svg>`}</button>`;   // Design (lib/designs.js) kann die Flamme ersetzen
   }
   $('#flames').innerHTML = h;
   $('#flames').style.display = mode === 'lernen' ? 'none' : '';

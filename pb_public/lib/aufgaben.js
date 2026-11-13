@@ -702,7 +702,8 @@ function sequenz(cfg){
 }
 
 /* ---------- Endlos (zufällige Aufgaben je Stufe, Serie und Rekord) ---------- */
-const FLAMME = n => `<svg viewBox="0 0 32 40" aria-hidden="true"><path d="M16 2C18 9 27 14 27 26C27 33 22 38 16 38C10 38 5 33 5 26C5 20 9 16 11 11C12 15 13 17 15 18C16 13 17 8 16 2Z"/><text x="16" y="32" text-anchor="middle">${n}</text></svg>`;
+// Flamme einer Stufe; ein Design (lib/designs.js) kann sie über window.PF_FLAMME ersetzen ({n} = Stufe)
+const FLAMME = n => window.PF_FLAMME ? String(window.PF_FLAMME).replace(/\{n\}/g, n) : `<svg viewBox="0 0 32 40" aria-hidden="true"><path d="M16 2C18 9 27 14 27 26C27 33 22 38 16 38C10 38 5 33 5 26C5 20 9 16 11 11C12 15 13 17 15 18C16 13 17 8 16 2Z"/><text x="16" y="32" text-anchor="middle">${n}</text></svg>`;
 function endlos(cfg){
   const root = typeof cfg.el === 'string' ? document.querySelector(cfg.el) : cfg.el, ST = cfg.stufen, KEY = cfg.key + '-endlos';
   let stand = {}; try { stand = JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) {}
