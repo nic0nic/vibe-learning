@@ -27,6 +27,11 @@ Gesammelt im Thread „Aufbau der Seite“. Umgesetzt wird erst, wenn die Lehrkr
 
 ### Version vom 13.11.
 
+58. **Übung erstellen: JSON-Modus mit Syntaxhervorhebung; Beträge ohne Bezeichnung** (gewünscht 13.11.)
+    Neues `pb_public/vorlage-json.js`: CodeMirror 5 (aus `IT/python/lib/`) statt Textfeld, eigener Modus `vljson`: Feldnamen, Texte, HTML-Tags in Texten, Zahlen, true/false/null, Wert von "typ" hervorgehoben; Klammern in drei Farben je Tiefe; Klammer am Cursor + Gegenstück markiert, sonst das umschließende Paar (gestrichelt, Balken in der Zeilenleiste); Klammern/Anführungszeichen schließen selbst, Einrückung, Tab = 2 Leerzeichen, aktive Zeile, Zeilennummern, Strg+F des Browsers findet alles (viewportMargin Infinity). Eigener JSON-Prüfer: Stelle unterkringelt, Zeile markiert, deutsche Meldung unter dem Editor zum Anklicken (Komma zu viel/zu wenig, fehlender Doppelpunkt, offener Text, '…' statt "…", 8,5 statt 8.5 …), auch beim Wechsel in den Editor-Modus. Helles und dunkles Thema.
+    `betraege`: Bezeichnung darf leer sein (`["", 238]`), dann zeigt die Karte nur den Betrag; Prüfungen in seite.js/pruefe.py angepasst.
+    Getestet in Chromium: Farben, Klammerpaare (daneben/umschließend), Fehler mit Sprung, Bearbeiten → Entwurf/Titelfeld, Einrückung/Autoclose, Wechsel in den Editor, Vorschau mit Betrag ohne Bezeichnung, dunkel, Einzeldatei per file://.
+
 57. **Editor: Fehler bei neuer Zuordnen-Karte blieb stehen** (gemeldet 13.11.)
     Der Fehlerkasten im Formular wurde nur beim Neuzeichnen des Panels erneuert – nach dem Eintippen stand der behobene Fehler weiter da. Jetzt wird er nach jeder Eingabe aktualisiert (ohne Fokusverlust). Ortsangabe sauber abgeschnitten (vorher „, Karte 5: …“). Meldungen verständlich: „Karte 3 im Feld „Feld 3“: Die Karte hat noch keinen Text.“ bzw. „Karte „…“: Die Karte gehört zu keinem Feld.“ (auch in `pruefe.py`).
 

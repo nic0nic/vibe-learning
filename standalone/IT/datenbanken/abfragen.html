@@ -1612,7 +1612,7 @@ pre.af-bs{font:13px/1.5 var(--mono,monospace);background:var(--panel2);border:1p
 /* Buchungssatz: Beträge zum Ziehen (betraege) */
 .af-betraege{margin-bottom:12px}
 .af-bliste{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
-.af-betrag{display:inline-flex;flex-direction:column;align-items:flex-end;background:var(--panel);color:var(--text);border:1px solid var(--border);border-left:5px solid var(--accent);border-radius:8px;padding:4px 10px;font:600 15px var(--mono,monospace);cursor:grab;touch-action:none;user-select:none}
+.af-betrag{display:inline-flex;flex-direction:column;align-items:flex-end;justify-content:flex-end;background:var(--panel);color:var(--text);border:1px solid var(--border);border-left:5px solid var(--accent);border-radius:8px;padding:4px 10px;font:600 15px var(--mono,monospace);cursor:grab;touch-action:none;user-select:none}
 .af-betrag small{font:500 12px system-ui,sans-serif;color:var(--muted)}
 .af-betrag.gewaehlt{outline:3px solid var(--accent)}
 .af-betrag.af-geist{width:auto}
@@ -3388,7 +3388,8 @@ window.addEventListener('resize', () => acUpdate());
  *                Gilt als gelöst (fertig), sobald der Chat einmal ganz durchlaufen ist.
  *   buchungssatz konten:['2800 BK', …] (Auswahl), soll:[['0700 MA', 40000], …], haben:[…],
  *                steuer:['2600 VORST', '4800 UST'] (für den Hinweis), nebenrechnung (HTML nach Lösung),
- *                betraege:[['Rechnungsbetrag', 11900], …] → Beträge (z. B. aus einer Kalkulation davor) zum Ziehen
+ *                betraege:[['Rechnungsbetrag', 11900], ['', 238], …] → Beträge (z. B. aus einer Kalkulation davor) zum Ziehen,
+ *                Bezeichnung darf leer sein (dann nur der Betrag);
  *                auf die Betragsfelder oder erst Betrag, dann Feld antippen; auch Ablenker, mehrfach nutzbar,
  *                jgst:7 → Konten nur mit Kürzel ohne Nummer (konten:['BK', 'UEFE', 'UST']).
  *                Konto eintippen: Liste filtert nach Nummer oder Kürzel (z. B. „ve“ → 4400 VE).
@@ -3690,7 +3691,7 @@ const TYPEN = {
         + `<div class="af-sk"${pos(nS, 3)}>Haben</div>` + z.haben.map((x, i) => zeile('haben', x, i, 1 + nS + i, 3)).join('')
         + `<button class="btn klein af-plus" type="button" data-plus="haben"${pos(1 + nS + nH, 3)}>+ Haben-Konto</button>`;
       const bank = a.betraege ? `<div class="af-betraege"><div class="af-sk">Beträge – auf ein Betragsfeld ziehen oder erst Betrag, dann Feld antippen</div><div class="af-bliste">`
-        + a.betraege.map(([t, b], i) => `<span class="af-betrag${z.bwahl === i ? ' gewaehlt' : ''}" data-betrag="${i}" tabindex="0" role="button"><small>${esc(t)}</small>${esc(zahlText(b))} €</span>`).join('') + '</div></div>' : '';
+        + a.betraege.map(([t, b], i) => `<span class="af-betrag${z.bwahl === i ? ' gewaehlt' : ''}" data-betrag="${i}" tabindex="0" role="button">${t ? `<small>${esc(t)}</small>` : ''}${esc(zahlText(b))} €</span>`).join('') + '</div></div>' : '';
       return bank + `<div class="af-builder">${raster}</div>`;
     },
     pruefen(a, z){

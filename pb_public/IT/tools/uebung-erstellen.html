@@ -22,6 +22,7 @@ document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: da
 </script>
 <link rel="stylesheet" href="../../seite.css">
 <link rel="stylesheet" href="../../lib/aufgaben.css">
+<link rel="stylesheet" href="../python/lib/codemirror.css">
 <script src="../../katalog.js"></script>
 <script src="../../nav.js"></script>
 <script src="../../sync.js"></script>
@@ -29,6 +30,8 @@ document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: da
 <script src="../../lib/zip.js"></script>
 <script src="../../vorlage-editor.js"></script>
 <script src="../../vorlage-typen.js"></script>
+<script src="../python/lib/codemirror.min.js"></script>
+<script src="../../vorlage-json.js"></script>
 <style>
 :root{--marke:#c05a1c}
 [data-theme=dark]{--marke:#ebcb8b}
@@ -179,7 +182,35 @@ code{font:12.5px var(--mono);background:var(--panel2);border-radius:4px;padding:
 @media (max-width:1000px){.jsonbereich{grid-template-columns:minmax(0,1fr)}}
 .kasten{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px 16px}
 .kasten h2{font-size:16px;margin:0 0 8px}
-#json{width:100%;min-height:62vh;resize:vertical;font:13px/1.45 var(--mono);background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px}
+#json{width:100%;min-height:62vh;font:13px/1.45 var(--mono)}
+/* JSON-Editor (vorlage-json.js) */
+:root{--j-key:#4f73a3;--j-str:#4e7d39;--j-tag:#a3434c;--j-kw:#8a5f84;--j-num:#b0631f;--j-atom:#8a5f84;--j-b0:#b07d1a;--j-b1:#8a5f84;--j-b2:#2f7f8c;--j-sel:#d8dee9;--j-akt:color-mix(in srgb,var(--accent) 7%,transparent)}
+[data-theme=dark]{--j-key:#88c0d0;--j-str:#a3be8c;--j-tag:#d08770;--j-kw:#b48ead;--j-num:#d08770;--j-atom:#b48ead;--j-b0:#ebcb8b;--j-b1:#b48ead;--j-b2:#88c0d0;--j-sel:#434c5e;--j-akt:rgba(255,255,255,.04)}
+#modusJson .CodeMirror{height:62vh;min-height:300px;font:13px/1.5 var(--mono);background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:8px;resize:vertical;overflow:hidden}
+.cm-s-vljson .CodeMirror-gutters{background:var(--panel);border-right:1px solid var(--border)}
+.cm-s-vljson .CodeMirror-linenumber{color:var(--muted)}
+.cm-s-vljson .CodeMirror-cursor{border-left:2px solid var(--text)}
+.cm-s-vljson .CodeMirror-selected,.cm-s-vljson.CodeMirror-focused .CodeMirror-selected{background:var(--j-sel)}
+.cm-s-vljson .CodeMirror-activeline-background{background:var(--j-akt)}
+.cm-s-vljson .cm-property{color:var(--j-key);font-weight:600}
+.cm-s-vljson .cm-string{color:var(--j-str)}
+.cm-s-vljson .cm-string.cm-tag{color:var(--j-tag)}
+.cm-s-vljson .cm-string.cm-keyword{color:var(--j-kw);font-weight:700}
+.cm-s-vljson .cm-number{color:var(--j-num)}
+.cm-s-vljson .cm-atom{color:var(--j-atom);font-weight:600}
+.cm-s-vljson .cm-punctuation{color:var(--muted)}
+.cm-s-vljson .cm-b0{color:var(--j-b0);font-weight:700}.cm-s-vljson .cm-b1{color:var(--j-b1);font-weight:700}.cm-s-vljson .cm-b2{color:var(--j-b2);font-weight:700}
+.cm-s-vljson .cm-error{color:var(--err);text-decoration:wavy underline var(--err)}
+.cm-s-vljson .CodeMirror-matchingbracket{color:inherit!important;background:color-mix(in srgb,var(--accent) 30%,transparent);outline:1px solid var(--accent);border-radius:2px}
+.cm-s-vljson .CodeMirror-nonmatchingbracket{color:var(--err)!important;background:color-mix(in srgb,var(--err) 25%,transparent);border-radius:2px}
+.cm-s-vljson .json-umschliesst{background:color-mix(in srgb,var(--accent) 16%,transparent);outline:1px dashed var(--accent);border-radius:2px}
+.cm-s-vljson .json-bereich{box-shadow:inset -3px 0 0 color-mix(in srgb,var(--accent) 60%,transparent)}
+.cm-s-vljson .json-fehler{text-decoration:wavy underline var(--err);text-decoration-skip-ink:none;background:color-mix(in srgb,var(--err) 18%,transparent)}
+.cm-s-vljson .json-fehlerzeile{background:color-mix(in srgb,var(--err) 8%,transparent)}
+.json-status{margin-top:6px;font-size:13px;min-height:20px}
+.json-status .ok{color:var(--ok,#5e8a45)}
+.json-status .fehler{background:none;border:0;padding:0;font:600 13px system-ui,sans-serif;color:var(--err);cursor:pointer;text-align:left}
+.json-status .fehler:hover{text-decoration:underline}
 .knoepfe{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
 .schritte-liste{color:var(--muted);margin:0;padding-left:20px;font-size:14px}
 dialog{border:1px solid var(--border);border-radius:14px;background:var(--panel);color:var(--text);padding:0;max-width:calc(100vw - 32px)}
@@ -292,18 +323,23 @@ Baukasten.start({leiste:$('#leiste'), mitte:$('#mitte'), panel:$('#panel'), fehl
   if (modus === 'editor') return Baukasten.kopf(k, $('#' + k).value.trim());
   const d = jsonLesen(true); if (!d) return;   // im JSON-Modus direkt ins JSON schreiben
   if ($('#' + k).value.trim()) d[k] = $('#' + k).value.trim(); else if (k === 'kurztext') delete d[k]; else d[k] = '';
-  $('#json').value = JSON.stringify(d, null, 2); entwurf.json = $('#json').value; merken();
+  JE.setze(JSON.stringify(d, null, 2)); entwurf.json = JE.text(); merken();
 }));
 $('#rueck').addEventListener('click', () => { Baukasten.rueck(); kopfFelder(Baukasten.daten()); knoepfe(); });
 $('#vor').addEventListener('click', () => { Baukasten.vor(); kopfFelder(Baukasten.daten()); knoepfe(); });
 document.addEventListener('keydown', e => { if (modus === 'editor' && (e.ctrlKey || e.metaKey) && /^[zy]$/i.test(e.key)) setTimeout(() => { kopfFelder(Baukasten.daten()); knoepfe(); }, 0); });
 
 /* ---------- JSON-Modus ---------- */
+/* JSON-Editor (vorlage-json.js): Farben, Klammerpaare, Fehler an der Stelle */
+const JE = VorlageJson.editor($('#json'), {aenderung(){ entwurf.json = JE.text(); merken(); const d = jsonLesen(true); if (d) kopfFelder(d); }});
 const meldung = (ok, html) => { $('#meldung').innerHTML = html ? `<div class="meldung ${ok ? 'ok' : 'fehler'}">${html}</div>` : ''; };
 function jsonLesen(still){
   let d;
-  try { d = JSON.parse($('#json').value); }
-  catch (err){ if (!still) meldung(false, '<b>Das ist kein gültiges JSON.</b> ' + esc(err.message) + '<br>Tipp: den Block aus dem Chat vollständig kopieren, mit { am Anfang und } am Ende.'); return null; }
+  try { d = JSON.parse(JE.text()); }
+  catch (err){
+    if (!still){ const f = VorlageJson.jsonFehler(JE.text()), z = f ? JE.text().slice(0, f.pos).split('\n').length : 0;
+      meldung(false, '<b>Das ist kein gültiges JSON.</b> ' + (f ? `Zeile ${z}: ${esc(f.was)}` : esc(err.message)) + '<br>Die Stelle ist im Editor markiert. Tipp: den Block aus dem Chat vollständig kopieren, mit { am Anfang und } am Ende.'); }
+    return null; }
   if (!d || typeof d !== 'object' || Array.isArray(d) || !(Array.isArray(d.schritte) || Array.isArray(d.aufgaben))){
     if (!still) meldung(false, 'Das ist kein Aufgaben-JSON: Es braucht <code>"titel"</code> und eine Liste <code>"schritte"</code> (oder <code>"aufgaben"</code>).'); return null;
   }
@@ -312,6 +348,7 @@ function jsonLesen(still){
 function zeige(m){
   modus = m; entwurf.modus = m;
   $('#modusEditor').hidden = m !== 'editor'; $('#modusJson').hidden = m !== 'json';
+  if (m === 'json') setTimeout(() => JE.refresh(), 0);
   document.querySelectorAll('[data-modus]').forEach(b => b.classList.toggle('on', b.dataset.modus === m));
   knoepfe();
 }
@@ -321,23 +358,22 @@ function setzeModus(m){
     const d = jsonLesen(); if (!d) return;
     zeige(m); Baukasten.setze(d); kopfFelder(Baukasten.daten());
   } else {
-    $('#json').value = JSON.stringify(Baukasten.daten(), null, 2); zeige(m);
+    JE.setze(JSON.stringify(Baukasten.daten(), null, 2)); zeige(m);
   }
-  meldung(true, ''); entwurf.json = m === 'json' ? $('#json').value : JSON.stringify(Baukasten.daten(), null, 2); merken();
+  meldung(true, ''); entwurf.json = m === 'json' ? JE.text() : JSON.stringify(Baukasten.daten(), null, 2); merken();
 }
 document.querySelectorAll('[data-modus]').forEach(b => b.addEventListener('click', () => setzeModus(b.dataset.modus)));
 $('#zumEditor').addEventListener('click', () => setzeModus('editor'));
-$('#json').addEventListener('input', () => { entwurf.json = $('#json').value; merken(); const d = jsonLesen(true); if (d) kopfFelder(d); });
 $('#kopieren').addEventListener('click', async () => {
-  try { await navigator.clipboard.writeText($('#json').value); meldung(true, '✓ Kopiert. Füge das JSON z. B. in eine Notiz ein, um später weiterzuarbeiten.'); }
-  catch (e){ $('#json').select(); meldung(false, 'Kopieren hat nicht geklappt – das JSON ist jetzt markiert, kopiere es mit Strg+C.'); }
+  try { await navigator.clipboard.writeText(JE.text()); meldung(true, '✓ Kopiert. Füge das JSON z. B. in eine Notiz ein, um später weiterzuarbeiten.'); }
+  catch (e){ JE.markiereAlles(); meldung(false, 'Kopieren hat nicht geklappt – das JSON ist jetzt markiert, kopiere es mit Strg+C.'); }
 });
-$('#beispiel').addEventListener('click', () => { $('#json').value = JSON.stringify(BEISPIEL, null, 2); kopfFelder(BEISPIEL); entwurf.json = $('#json').value; merken(); meldung(true, 'Beispiel geladen.'); });
+$('#beispiel').addEventListener('click', () => { JE.setze(JSON.stringify(BEISPIEL, null, 2)); kopfFelder(BEISPIEL); entwurf.json = JE.text(); merken(); meldung(true, 'Beispiel geladen.'); });
 
 /* ---------- Neu, Öffnen, Speichern ---------- */
 function laden(d){
   if (modus === 'editor'){ Baukasten.setze(d); kopfFelder(Baukasten.daten()); }
-  else { $('#json').value = JSON.stringify(d, null, 2); kopfFelder(d); entwurf.json = $('#json').value; merken(); }
+  else { JE.setze(JSON.stringify(d, null, 2)); kopfFelder(d); entwurf.json = JE.text(); merken(); }
   knoepfe();
 }
 const aktuell = () => modus === 'editor' ? Baukasten.daten() : jsonLesen();
@@ -451,7 +487,7 @@ $('#einreichen').addEventListener('click', async () => {
   delete entwurf.titel; delete entwurf.kurztext;
   const ok = d && typeof d === 'object' && (Array.isArray(d.schritte) || Array.isArray(d.aufgaben));
   if (ok && entwurf.modus !== 'json'){ Baukasten.setze(d); kopfFelder(Baukasten.daten()); zeige('editor'); }
-  else if (entwurf.json){ $('#json').value = entwurf.json; zeige('json'); if (ok) kopfFelder(d); }
+  else if (entwurf.json){ JE.setze(entwurf.json); zeige('json'); if (ok) kopfFelder(d); }
   else zeige('editor');
   merken();
 })();

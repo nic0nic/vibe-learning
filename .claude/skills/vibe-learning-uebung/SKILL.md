@@ -228,7 +228,8 @@ Formeln mit Bruchstrich in jedem HTML-Text: <span class="bruch"><span>Zähler</s
                Gilt als gelöst (fertig), sobald der Chat einmal ganz durchlaufen ist.
   buchungssatz konten:['2800 BK', …] (Auswahl), soll:[['0700 MA', 40000], …], haben:[…],
                steuer:['2600 VORST', '4800 UST'] (für den Hinweis), nebenrechnung (HTML nach Lösung),
-               betraege:[['Rechnungsbetrag', 11900], …] → Beträge (z. B. aus einer Kalkulation davor) zum Ziehen
+               betraege:[['Rechnungsbetrag', 11900], ['', 238], …] → Beträge (z. B. aus einer Kalkulation davor) zum Ziehen,
+               Bezeichnung darf leer sein (dann nur der Betrag);
                auf die Betragsfelder oder erst Betrag, dann Feld antippen; auch Ablenker, mehrfach nutzbar,
                jgst:7 → Konten nur mit Kürzel ohne Nummer (konten:['BK', 'UEFE', 'UST']).
                Konto eintippen: Liste filtert nach Nummer oder Kürzel (z. B. „ve“ → 4400 VE).

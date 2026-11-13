@@ -188,7 +188,7 @@
       const sum = s => r2((a[s] || []).reduce((t, x) => t + (Number(x[1]) || 0), 0));
       const gleich = sum('soll') === sum('haben');
       const v = H.vorher, rechnung = v && v.typ === 'zahlen' && Array.isArray(v.felder);
-      const betraege = !a.betraege ? '' : '<label class="klein">Beträge zum Ziehen</label>' + (a.betraege.map((x, i) => H.zeile('betraege', i, `<div class="reihe">${H.feld(`betraege.${i}.0`, '', {pflicht: true, ph: 'Bezeichnung, z. B. Rechnungsbetrag'})}${H.feld(`betraege.${i}.1`, '', {art: 'zahl', pflicht: true, ph: 'Betrag'})}${weg('betragweg', {i})}</div>`)).join('')
+      const betraege = !a.betraege ? '' : '<label class="klein">Beträge zum Ziehen</label>' + (a.betraege.map((x, i) => H.zeile('betraege', i, `<div class="reihe">${H.feld(`betraege.${i}.0`, '', {pflicht: true, ph: 'Bezeichnung (optional)'})}${H.feld(`betraege.${i}.1`, '', {art: 'zahl', pflicht: true, ph: 'Betrag'})}${weg('betragweg', {i})}</div>`)).join('')
         + `<div class="reihe wrap">${plus('betragplus', 'Betrag')}${H.knopf('betragloesung', 'Beträge der Lösung dazu')}${rechnung ? H.knopf('betragvorher', 'Ergebnisse der Rechnung davor dazu', {}, {titel: 'Felder der Rechenaufgabe davor mit Bezeichnung und Lösung'}) : ''}</div>
         <p class="hinweis">Die Schüler ziehen die Beträge auf die Betragsfelder (oder tippen erst Betrag, dann Feld). Beträge, die nicht gebraucht werden, sind Ablenker${rechnung ? '' : '. In einer kombinierten Aufgabe nach einer Rechenaufgabe (Zahlen) lassen sich deren Ergebnisse übernehmen'}.</p>`);
       return `<div class="schalterleiste">
