@@ -65,7 +65,7 @@ const {eur} = Aufgaben, $ = s => document.querySelector(s);
 /* ---------- Material (Werte aus dem Heft, Kapitel 7) ---------- */
 const R = {netto:10000, ust:1900, brutto:11900, zinsenKK:58.31, bruttoSkonto:238, nettoSkonto:200, ueberweisung:11662};
 const RECHNUNG = `<div class="mt">Material: Eingangsrechnung eines Holzlieferanten (Auszug)</div>
-  <table class="beleg"><tr><td>Rechnungsdatum</td><td>02.11.</td></tr><tr><td>20 Hälse aus Ahorn, Warenwert netto</td><td>${eur(R.netto)}</td></tr>
+  <table class="beleg"><tr><td>Rechnungsdatum</td><td>02.11.</td></tr><tr><td>Holz (Mahagoni), Warenwert netto</td><td>${eur(R.netto)}</td></tr>
   <tr><td>+ 19 % Umsatzsteuer</td><td>${eur(R.ust)}</td></tr><tr class="summe"><td>Rechnungsbetrag</td><td>${eur(R.brutto)}</td></tr></table>
   <p style="margin:8px 0 0">Zahlungsbedingungen: Zahlbar innerhalb von 30 Tagen ohne Abzug; bei Zahlung innerhalb von 10 Tagen 2 % Skonto.</p>`;
 const KK_TEXT = `<p style="margin:8px 0 0">Saitgig hat zurzeit kein Guthaben. Nutzt Jakob das Skonto, muss er den Überweisungsbetrag mit dem Kontokorrentkredit bezahlen. Die Bank verlangt dafür für die 20 Tage <b>${eur(R.zinsenKK)}</b> Zinsen.</p>`;
@@ -202,7 +202,7 @@ Aufgaben.sequenz({el:'#app', key:'kurzkredit', schritte:[
           'Beide sind bis zum Ende einer Frist kostenlos.', 'Beide dienen zur langfristigen Finanzierung von Maschinen.', 'Beide gewährt ein Lieferer.'], correct:[0],
         why:{1:'Kostenlos bis zum Ende einer Frist ist nur der Lieferantenkredit (Skontofrist).', 2:'Beide sind kurzfristig – Maschinen finanziert man langfristig (Goldene Finanzierungsregel).', 3:'Beide gewährt die Bank.'}}]},
 
-  {id:'a73', kurz:'7.3', titel:'7.3 Skonto berechnen',
+  {id:'a73', kurz:'7.3', titel:'7.3 Skonto berechnen und buchen',
     erinnerung:'<p>Bruttoskonto = Rechnungsbetrag · Skontosatz : 100<br>Nettoskonto = Bruttoskonto : 1,19<br>Überweisungsbetrag = Rechnungsbetrag – Bruttoskonto</p>',
     material:RECHNUNG,
     aufgaben:[{typ:'zahlen', nr:'7.3', knopf:'Ergebnisse überprüfen',
@@ -211,7 +211,14 @@ Aufgaben.sequenz({el:'#app', key:'kurzkredit', schritte:[
       felder:[
         {t:'Bruttoskonto', l:R.bruttoSkonto, e:'€', h:'Bruttoskonto = Rechnungsbetrag · Skontosatz : 100'},
         {t:'Nettoskonto', l:R.nettoSkonto, e:'€', h:'Nettoskonto = Bruttoskonto : 1,19'},
-        {t:'Überweisungsbetrag', l:R.ueberweisung, e:'€', h:'Überweisungsbetrag = Rechnungsbetrag – Bruttoskonto'}]}]},
+        {t:'Überweisungsbetrag', l:R.ueberweisung, e:'€', h:'Überweisungsbetrag = Rechnungsbetrag – Bruttoskonto'}],
+      // erscheint erst, wenn die Kalkulation richtig ist; Beträge daraus zum Ziehen
+      danach:{typ:'buchungssatz', frage:'Jakob überweist den Rechnungsbetrag innerhalb der Skontofrist mit Skontoabzug. Bilde den Buchungssatz für die Zahlung.',
+        konten:['2600 VORST', '2800 BK', '4400 VE', '4800 UST', '6000 AWR', '6002 NR', '7510 ZAW'],
+        soll:[['4400 VE', R.brutto]], haben:[['2800 BK', R.ueberweisung], ['6002 NR', R.nettoSkonto], ['2600 VORST', R.bruttoSkonto - R.nettoSkonto]],
+        steuer:['2600 VORST'],
+        betraege:[['Rechnungsbetrag', R.brutto], ['Bruttoskonto', R.bruttoSkonto], ['Nettoskonto', R.nettoSkonto], ['Steuerberichtigung', R.bruttoSkonto - R.nettoSkonto], ['Überweisungsbetrag', R.ueberweisung]],
+        nebenrechnung:`Steuerberichtigung = Bruttoskonto – Nettoskonto = ${eur(R.bruttoSkonto)} – ${eur(R.nettoSkonto)} = ${eur(R.bruttoSkonto - R.nettoSkonto)}`}}]},
 
   {id:'a74', kurz:'7.4', titel:'7.4 Kostenvergleich',
     erinnerung:'<p><b>Kosten des Lieferantenkredits</b> = entgangener Nettoskonto (siehe 7.3: Nettoskonto = Rechnungsbetrag · 2 % : 1,19). <b>Kosten des Kontokorrentkredits</b> = Zinsen der Bank. <b>Kostenvorteil</b> = Differenz beider Kosten.</p>',

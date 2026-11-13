@@ -97,6 +97,7 @@
       const summe = l => r2(l.reduce((s, x) => s + (Array.isArray(x) ? Number(x[1]) || 0 : 0), 0));
       [...a.soll, ...a.haben].forEach(x => { if (!Array.isArray(x) || !a.konten.includes(x[0]) || typeof x[1] !== 'number') f.push(`${wo}: Buchungszeile ${JSON.stringify(x)} – Konto muss in „konten“ stehen, Betrag als Zahl`); });
       if (summe(a.soll) !== summe(a.haben)) f.push(`${wo}: Soll (${summe(a.soll)}) und Haben (${summe(a.haben)}) sind nicht gleich groß`);
+      if (a.betraege !== undefined && (!Array.isArray(a.betraege) || a.betraege.some(x => !Array.isArray(x) || !istText(x[0]) || typeof x[1] !== 'number'))) f.push(`${wo}: „betraege“ braucht Einträge [Text, Betrag als Zahl]`);
     }
     if (a.typ === 'tabelle' && Array.isArray(a.spalten) && Array.isArray(a.zeilen)) {
       let felder = 0;

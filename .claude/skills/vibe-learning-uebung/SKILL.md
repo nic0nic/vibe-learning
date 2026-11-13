@@ -221,7 +221,9 @@ danach (weitere Aufgabe, erscheint erst nach richtiger Lösung, z. B. Handlungse
                Bei Fehlern erklärt der Bot und macht weiter; am Ende Punkte und „Noch einmal“.
                Gilt als gelöst (fertig), sobald der Chat einmal ganz durchlaufen ist.
   buchungssatz konten:['2800 BK', …] (Auswahlliste), soll:[['0700 MA', 40000], …], haben:[…],
-               steuer:['2600 VORST', '4800 UST'] (für den Hinweis), nebenrechnung (HTML nach Lösung)
+               steuer:['2600 VORST', '4800 UST'] (für den Hinweis), nebenrechnung (HTML nach Lösung),
+               betraege:[['Rechnungsbetrag', 11900], …] → Beträge (z. B. aus einer Kalkulation davor) zum Ziehen
+               auf die Betragsfelder oder erst Betrag, dann Feld antippen; auch Ablenker, mehrfach nutzbar
                prüft: Konten, Soll/Haben vertauscht, fehlende Steuer, Beträge; Lösung im Skill-Format
 
 API
@@ -542,8 +544,19 @@ SQLKURS = {
              aufgabe:{typ, …}               Baustein aus lib/aufgaben.js (Seite bindet ../../lib/aufgaben.js/.css ein)
              access:{frage, felder, where, sort, tipp, auch}, krit:'bloecke'|'falsch'|'text'
                                             Abfrage im Access-Entwurf, geprüft wie eine Übung
+             entwurf:{frage, felder, where, sort, tipp, auch}, ui:'block'|'zieh'
+                                            Abfrage im SQL-Entwurf (SELECT durch Anklicken im Tabfenster).
+                                            'block': Bedingung als Baustein mit Feld, Vergleich, Wert;
+                                            'zieh': fertige Bedingungen in die WHERE-Zeile ziehen,
+                                            bausteine:["…"] = falsche Bedingungen dazu (Ablenker).
+                                            vorgabe:{felder, where, sort} = so ist der Entwurf vorausgefüllt
+                                            (Abfrage abändern); zeigen:true = die Abfrage entwurf ist schon
+                                            fertig eingetragen, der Schritt ist mit „Ausführen“ erledigt
+                                            (auftrag: eigener Auftragstext statt „Zeige die Felder …“).
            Stand unter id(-ansicht)-lernen {idx, done}; gelöste Schritte melden modus 'erarbeitung'.
 }
+Tooltipps: Gibt es einen Knopf #ttBtn, schaltet er Erklärungen beim Überfahren ein und aus
+(Elemente mit data-tt, gespeichert unter id-tooltipps).
 Ohne aufgaben: freie Abfragen (wie filmdatenbank.html). Kein Prüfen, keine Modi, kein Dock;
 die Knöpfe #checkBtn, #nextBtn, #skipBtn, #prevBtn braucht basis.js trotzdem (hidden).
 Beim Stufenwechsel wird die bisherige Abfrage in den SQL-Editor übernommen,

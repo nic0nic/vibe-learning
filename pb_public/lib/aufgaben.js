@@ -42,7 +42,9 @@
  *                Bei Fehlern erklärt der Bot und macht weiter; am Ende Punkte und „Noch einmal“.
  *                Gilt als gelöst (fertig), sobald der Chat einmal ganz durchlaufen ist.
  *   buchungssatz konten:['2800 BK', …] (Auswahlliste), soll:[['0700 MA', 40000], …], haben:[…],
- *                steuer:['2600 VORST', '4800 UST'] (für den Hinweis), nebenrechnung (HTML nach Lösung)
+ *                steuer:['2600 VORST', '4800 UST'] (für den Hinweis), nebenrechnung (HTML nach Lösung),
+ *                betraege:[['Rechnungsbetrag', 11900], …] → Beträge (z. B. aus einer Kalkulation davor) zum Ziehen
+ *                auf die Betragsfelder oder erst Betrag, dann Feld antippen; auch Ablenker, mehrfach nutzbar
  *                prüft: Konten, Soll/Haben vertauscht, fehlende Steuer, Beträge; Lösung im Skill-Format
  *
  * API
@@ -333,7 +335,9 @@ const TYPEN = {
         + `<input class="feld af-zahl" data-seite="${s}" data-i="${i}" data-w="b" value="${esc(x.b)}" placeholder="Betrag" inputmode="decimal" autocomplete="off" aria-label="Betrag in €">`
         + (z[s].length > 1 ? `<button class="af-x" type="button" data-weg="${s}" data-i="${i}" aria-label="Zeile entfernen">×</button>` : '') + '</div>';
       const spalte = (s, t) => `<div class="af-spalte"><div class="af-sk">${t}</div>${z[s].map((x, i) => zeile(s, x, i)).join('')}<button class="btn klein" type="button" data-plus="${s}">+ Konto</button></div>`;
-      return `<div class="af-builder">${spalte('soll', 'Soll')}<div class="af-an">an</div>${spalte('haben', 'Haben')}</div>`;
+      const bank = a.betraege ? `<div class="af-betraege"><div class="af-sk">Beträge – auf ein Betragsfeld ziehen oder erst Betrag, dann Feld antippen</div><div class="af-bliste">`
+        + a.betraege.map(([t, b], i) => `<span class="af-betrag${z.bwahl === i ? ' gewaehlt' : ''}" data-betrag="${i}" tabindex="0" role="button"><small>${esc(t)}</small>${esc(zahlText(b))} €</span>`).join('') + '</div></div>' : '';
+      return bank + `<div class="af-builder">${spalte('soll', 'Soll')}<div class="af-an">an</div>${spalte('haben', 'Haben')}</div>`;
     },
     pruefen(a, z){
       const ein = s => z[s].filter(x => x.k || String(x.b).trim()).map(x => ({k:x.k, b:zahl(x.b)}));
@@ -458,7 +462,9 @@ document.addEventListener('click', e => {
     if (zo && z.wahl != null){ legen(ctx, z.wahl, zo.dataset.zone); z.wahl = null; return ctx.zeichne(); }
   }
   if (a.typ === 'buchungssatz'){
-    const p = t.closest('[data-plus]'), w = t.closest('[data-weg]');
+    const p = t.closest('[data-plus]'), w = t.closest('[data-weg]'), bt = t.closest('[data-betrag]'), feld = t.closest('.af-zahl[data-seite]');
+    if (bt){ z.bwahl = z.bwahl === +bt.dataset.betrag ? null : +bt.dataset.betrag; return ctx.zeichne(); }
+    if (feld && z.bwahl != null){ betragSetzen(ctx, feld, z.bwahl); return; }
     if (p){ z[p.dataset.plus].push({k:'', b:''}); return ctx.zeichne(); }
     if (w){ z[w.dataset.weg].splice(+w.dataset.i, 1); return ctx.zeichne(); }
   }
@@ -515,6 +521,39 @@ document.addEventListener('pointerup', e => {
   g.ctx.zeichne(); setTimeout(() => { zieht = false; }, 0);
 });
 document.addEventListener('pointercancel', () => { if (zug && zug.geist){ zug.geist.remove(); zug.ctx.zeichne(); } zug = null; zieht = false; });
+
+/* Buchungssatz: Betrag aus der Liste (betraege) in ein Betragsfeld legen – antippen oder ziehen */
+function betragSetzen(ctx, feld, i){
+  ctx.z[feld.dataset.seite][+feld.dataset.i].b = zahlText(ctx.a.betraege[i][1]);
+  ctx.z.bwahl = null; ctx.z.fb = null; ctx.zeichne();
+}
+let bzug = null;
+document.addEventListener('pointerdown', e => {
+  const b = e.target.closest && e.target.closest('.af-betrag'); if (!b) return;
+  bzug = {ctx:ctxVon(b), i:+b.dataset.betrag, el:b, x:e.clientX, y:e.clientY, geist:null};
+});
+document.addEventListener('pointermove', e => {
+  if (!bzug) return;
+  if (!bzug.geist){
+    if (Math.hypot(e.clientX - bzug.x, e.clientY - bzug.y) < 6) return;
+    bzug.geist = bzug.el.cloneNode(true); bzug.geist.classList.add('af-geist'); document.body.appendChild(bzug.geist);
+  }
+  e.preventDefault();
+  bzug.geist.style.left = (e.clientX - 50) + 'px'; bzug.geist.style.top = (e.clientY - 18) + 'px';
+  bzug.ctx.el.querySelectorAll('.af-zahl.ziel').forEach(x => x.classList.remove('ziel'));
+  const ziel = document.elementFromPoint(e.clientX, e.clientY), f = ziel && ziel.closest('.af-zahl[data-seite]');
+  if (f && bzug.ctx.el.contains(f)) f.classList.add('ziel');
+});
+document.addEventListener('pointerup', e => {
+  if (!bzug) return;
+  const g = bzug; bzug = null;
+  if (!g.geist) return;
+  g.geist.remove();
+  const ziel = document.elementFromPoint(e.clientX, e.clientY), f = ziel && ziel.closest('.af-zahl[data-seite]');
+  if (f && g.ctx.el.contains(f)) betragSetzen(g.ctx, f, g.i); else g.ctx.zeichne();
+  zieht = true; setTimeout(() => { zieht = false; }, 0);   // kein Klick (Antippen) hinterher
+});
+document.addEventListener('pointercancel', () => { if (bzug && bzug.geist){ bzug.geist.remove(); bzug.ctx.zeichne(); } bzug = null; });
 
 /* ---------- Sequenz (Erarbeitung aus Schritten) ---------- */
 function sequenz(cfg){

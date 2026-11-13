@@ -27,6 +27,11 @@ Gesammelt im Thread „Aufbau der Seite“. Umgesetzt wird erst, wenn die Lehrkr
 
 ### Version vom 13.11.
 
+55. **Kurzfristige Kredite 7.3: Buchungssatz für die Zahlung mit Skonto** (gewünscht 13.11.)
+    Nach richtiger Kalkulation erscheint (als `danach`) der Buchungssatz `4400 VE 11.900,00 an 2800 BK 11.662,00 / 6002 NR 200,00 / 2600 VORST 38,00`. Die Beträge aus der Kalkulation (Rechnungsbetrag, Bruttoskonto als Ablenker, Nettoskonto, Steuerberichtigung, Überweisungsbetrag) lassen sich auf die Betragsfelder ziehen oder antippen. Rechnung jetzt über „Holz (Mahagoni)“ statt „20 Hälse aus Ahorn“.
+    - `lib/aufgaben.js`: Typ `buchungssatz` mit neuer Option `betraege:[[Text, Betrag], …]`; Prüfung in `lib/seite.js`, Skill `vibe-learning-seite-erstellen` (typen.md, pruefe.py). Noch nicht im Baukasten von vorlage.html.
+    Getestet in Chromium: Buchungssatz erst nach richtiger Kalkulation, Ziehen und Antippen, fehlende VORST, Lösung, Schritt erledigt. Nicht auf Touch-Geräten.
+
 54. **Datenbanken: Erarbeitung für abfragen.html und Tooltipps** (gewünscht 13.11.)
     `abfragen.html` hat jetzt „Erarbeitung | Übungen | Endlos“. 18 Schritte: Überblick über SELECT/FROM/WHERE/ORDER BY → drei fertige Abfragen ausführen (SELECT+FROM, WHERE, ORDER BY) → Zuordnen der vier Teile → Abfrage lesen (MC) → fünf Abfragen abändern (Feld tauschen, Wert, Vergleichszeichen, Sortierrichtung, Sortierung ergänzen) → Merkkasten Bedingungen → fünf Abfragen mit Bedingung per Drag & Drop aus Bausteinen mit Ablenkern (Text, Grenzwert, mit Sortierung, LIKE, Text ohne Anführungszeichen) → Abschluss. SELECT immer durch Anklicken in der „Übersicht über die Felder der Tabelle“.
     - `abfragen.js`: neuer Schritt `entwurf` mit `ui:'block'|'zieh'`, `vorgabe` (vorausgefüllt), `zeigen` (mit Ausführen erledigt), `bausteine` (Ablenker), `auftrag`.
