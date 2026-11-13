@@ -13,7 +13,12 @@
  *   Baukasten.sauber(html)      HTML auf Seite.ERLAUBT bereinigen (fremde Tags werden ausgepackt, script/style entfernt)
  *
  * Typ registrieren (vorlage-typen.js): Baukasten.typ('mc', {name, symbol, neu() → Aufgabe, kurz(a) → Text,
- *   form(a, H) → HTML, tun: {name(a, dataset)} (Knöpfe data-tun), verschiebe(a, liste, von, nach) (optional)})
+ *   form(a, H) → HTML, tun: {name(a, dataset, H)} (Knöpfe data-tun), verschiebe(a, liste, von, nach) (optional),
+ *   varianten: [{name, symbol, neu()}] (eigene Bausteine in der Leiste, gleicher typ), titel(a) → Name auf Karte/Panel,
+ *   frageLabel (statt „Aufgabenstellung“), okLabel})
+ * Kombinierte Aufgabe (typ kombi, teile:[…]): Block wie „falls“ in Scratch, Teile untereinander, unten beliebig
+ *   erweiterbar. Auswahl sel = {s, i, tiefe}: tiefe 0 = Aufgabe im Schritt, tiefe k = Teil k der Kombi.
+ *   H.vorher = Teil davor (nur in einer Kombi), z. B. um Beträge aus einer Rechnung zu übernehmen.
  * Formular-Helfer H: H.feld(pfad, label, {art, ph, pflicht, neu}) mit art text|area|zahl|bool|nein|liste|zeilen|gruppen
  *   (gruppen: Zeilen mit Komma-Listen → [[…], …]; neu: Panel nach dem Verlassen neu zeichnen),
  *   H.rt(pfad, label, {klein, ph, knoepfe:'kurz' (nur F, K, Bruch, ⌫), pflicht (leer = '' statt löschen)}) Texteditor mit HTML, H.lt(pfad) Lückentext (Lücken als Chips, /Lücke(richtig, falsch …)),
@@ -85,13 +90,14 @@
   /* ---------- Modell ---------- */
   const S = () => doc.schritte;
   const schritt = () => S()[sel.s];
-  function kette(s, i, tiefe) { let a = S()[s] && (S()[s].aufgaben || [])[i]; for (let d = 0; d < tiefe && a; d++) a = a.danach; return a; }
+  function kette(s, i, tiefe) { const a = S()[s] && (S()[s].aufgaben || [])[i]; return !tiefe ? a : a && Array.isArray(a.teile) ? a.teile[tiefe - 1] : undefined; }
+  const typName = a => { const T = TYPEN[a.typ]; return T ? (T.titel ? T.titel(a) : T.name) : 'Unbekannter Typ „' + a.typ + '“'; };
   const aufgabe = () => sel.i == null ? null : kette(sel.s, sel.i, sel.tiefe);
   function normal(d) {
     d = JSON.parse(JSON.stringify(d || {}));
     if (!Array.isArray(d.schritte)) d.schritte = Array.isArray(d.aufgaben) ? [{titel: d.titel, aufgaben: d.aufgaben}] : [];
     delete d.aufgaben;
-    d.schritte.forEach(s => { delete s.id; if (s.aufgaben != null && !Array.isArray(s.aufgaben)) s.aufgaben = []; });
+    d.schritte.forEach(s => { delete s.id; if (s.aufgaben != null && !Array.isArray(s.aufgaben)) s.aufgaben = []; if (s.aufgaben) s.aufgaben = s.aufgaben.map(Seite.ohneDanach); });
     if (d.titel == null) d.titel = '';
     return d;
   }
@@ -104,7 +110,7 @@
   function ort(obj) {
     for (let s = 0; s < S().length; s++) {
       const l = S()[s].aufgaben || [];
-      for (let i = 0; i < l.length; i++) { let a = l[i], t = 0; while (a) { if (a === obj) return {s, i, tiefe: t}; a = a.danach; t++; } }
+      for (let i = 0; i < l.length; i++) { if (l[i] === obj) return {s, i, tiefe: 0}; const k = (l[i].teile || []).indexOf(obj); if (k >= 0) return {s, i, tiefe: k + 1}; }
     }
     return null;
   }
@@ -140,20 +146,26 @@
     if (E.leiste.childElementCount) return;
     E.leiste.innerHTML = `<button class="teil" type="button" data-baustein="schritt" title="Ziehen oder anklicken"><span class="sym">📄</span><span>Schritt / Erklärung</span></button>`
       + '<div class="leiste-trenn">Aufgaben</div>'
-      + Object.keys(TYPEN).map(k => `<button class="teil" type="button" data-baustein="${k}" title="Ziehen oder anklicken"><span class="sym">${TYPEN[k].symbol}</span><span>${esc(TYPEN[k].name)}</span></button>`).join('')
-      + '<p class="hinweis">Bausteine in die Mitte ziehen oder anklicken (kommt hinter die markierte Aufgabe).</p>';
+      + Object.keys(TYPEN).sort((x, y) => (x === 'kombi') - (y === 'kombi')).map(k => (k === 'kombi' ? '<div class="leiste-trenn">Kombinieren</div>' : '') + [[k, TYPEN[k]], ...(TYPEN[k].varianten || []).map((v, j) => [k + ':' + j, v])]
+        .map(([b, T]) => `<button class="teil${b.includes(':') ? ' variante' : ''}${k === 'kombi' ? ' kombi' : ''}" type="button" data-baustein="${b}" title="Ziehen oder anklicken"><span class="sym">${T.symbol}</span><span>${esc(T.name)}</span></button>`).join('')).join('')
+      + '<p class="hinweis">Bausteine in die Mitte ziehen oder anklicken (kommt hinter die markierte Aufgabe; ist eine kombinierte Aufgabe markiert, wird es ihr nächster Teil).</p>';
   }
 
+  const teilFehler = (s, i, k) => fehlerVon(s, i).filter(x => new RegExp(`Teil ${k}(?!\\d)`).test(x));
   function karte(s, i, a, tiefe) {
-    const T = TYPEN[a.typ], f = tiefe === 0 ? fehlerVon(s, i).length : 0;
+    const T = TYPEN[a.typ], kombi = a.typ === 'kombi' && !tiefe, f = tiefe === 0 ? fehlerVon(s, i).length : teilFehler(s, i, tiefe).length;
     const gew = sel.s === s && sel.i === i && sel.tiefe === tiefe;
-    const kopf = `<div class="ak-kopf"><span class="sym">${T ? T.symbol : '❓'}</span><b>${tiefe ? 'danach: ' : ''}${esc(T ? T.name : 'Unbekannter Typ „' + a.typ + '“')}</b>${a.nr ? `<span class="ak-nr">${esc(a.nr)}</span>` : ''}${f ? `<span class="ak-f" title="${f} Fehler">⚠ ${f}</span>` : ''}</div>`;
+    const kopf = `<div class="ak-kopf"><span class="sym">${T ? T.symbol : '❓'}</span><b>${esc(typName(a))}</b>${a.nr ? `<span class="ak-nr">${esc(a.nr)}</span>` : ''}${f ? `<span class="ak-f" title="${f} Fehler">⚠ ${f}</span>` : ''}</div>`;
     const frage = a.frage ? `<div class="ak-frage">${esc(nurText(a.frage).slice(0, 160))}</div>` : '';
-    let kurz = ''; try { kurz = T ? T.kurz(a) : ''; } catch (e) {}
+    let kurz = ''; try { kurz = T && !kombi ? T.kurz(a) : ''; } catch (e) {}
     let innen = kopf + frage + (kurz ? `<div class="ak-kurz">${esc(kurz)}</div>` : '');
-    if (a.danach) innen += karte(s, i, a.danach, tiefe + 1);
-    else innen += `<div class="danach-zone${sel.s === s && sel.i === i ? ' zeigen' : ''}" data-ziel="danach" data-s="${s}" data-i="${i}" data-tiefe="${tiefe}">＋ Folgeaufgabe (erscheint nach richtiger Lösung): Baustein hierher ziehen</div>`;
-    return `<div class="akarte${tiefe ? ' akdanach' : ''}${gew ? ' gewaehlt' : ''}${f ? ' hatfehler' : ''}" ${tiefe ? '' : `data-ziel="karte" `}data-zieh="aufgabe" data-s="${s}" data-i="${i}" data-tiefe="${tiefe}">${innen}</div>`;
+    const da = `data-s="${s}" data-i="${i}"`;
+    if (kombi) {   // Scratch-Block: Teile im Bauch, unten erweiterbar
+      const t = Array.isArray(a.teile) ? a.teile : [];
+      innen += `<div class="kombi-bauch">${t.map((x, k) => `<div class="teil-lbl">Teil ${k + 1}${k ? ` · erscheint, wenn Teil ${k} gelöst ist` : ''}</div>${karte(s, i, x, k + 1)}`).join('')}
+        <div class="teil-zone" data-ziel="teil" ${da} data-tiefe="${t.length + 1}">＋ Teil ${t.length + 1}${t.length ? ` (erscheint, wenn Teil ${t.length} gelöst ist)` : ''}: Baustein hierher ziehen</div></div><div class="kombi-fuss"></div>`;
+    } else if (!tiefe) innen += `<div class="danach-zone${sel.s === s && sel.i === i ? ' zeigen' : ''}" data-ziel="danach" ${da} data-tiefe="0">＋ Teil 2 anhängen (erscheint nach richtiger Lösung, wird zur kombinierten Aufgabe): Baustein hierher ziehen</div>`;
+    return `<div class="akarte${kombi ? ' akombi' : ''}${tiefe ? ' akteil' : ''}${gew ? ' gewaehlt' : ''}${f ? ' hatfehler' : ''}" data-ziel="${tiefe ? 'teilkarte' : 'karte'}" data-zieh="aufgabe" ${da} data-tiefe="${tiefe}">${innen}</div>`;
   }
   function mitte() {
     pruefSel();
@@ -244,37 +256,44 @@
         ${H.rt('material', 'Material (steht über den Aufgaben)', {klein: true})}</details>`;
       return;
     }
-    const T = TYPEN[a.typ]; H.wurzel = a;
+    const T = TYPEN[a.typ]; H.wurzel = a; H.vorher = sel.tiefe > 1 ? kette(sel.s, sel.i, sel.tiefe - 1) : null;
+    const fl = sel.tiefe ? teilFehler(sel.s, sel.i, sel.tiefe) : fehlerVon(sel.s, sel.i).filter(x => a.typ !== 'kombi' || !/Teil \d/.test(x));
     let form = '';
     try { form = T ? T.form(a, H) : `<p class="hinweis">Diesen Typ kennt der Editor nicht. Bearbeite ihn im JSON-Modus.</p>`; } catch (e) { form = `<p class="meldung fehler">Formular nicht möglich: ${esc(e.message)}. Bitte im JSON-Modus prüfen.</p>`; }
-    E.panel.innerHTML = `<h3>${T ? T.symbol + ' ' + esc(T.name) : esc(a.typ)}${sel.tiefe ? ' <small>(Folgeaufgabe)</small>' : ''}</h3>
-      <div class="zeile">${sel.tiefe ? '' : H.knopf('a-hoch', '↑', {}, {titel: 'nach oben'}) + H.knopf('a-runter', '↓', {}, {titel: 'nach unten'})}${H.knopf('a-kopie', 'Duplizieren')}${H.knopf('a-weg', 'Löschen', {}, {weg: true})}</div>
-      ${sel.tiefe ? '' : fehlerHTML(fehlerVon(sel.s, sel.i))}
-      ${T && T.ohneFrage ? '' : H.rt('frage', 'Aufgabenstellung', {klein: true})}
+    E.panel.innerHTML = `<h3>${T ? T.symbol + ' ' + esc(typName(a)) : esc(a.typ)}${sel.tiefe ? ` <small>(Teil ${sel.tiefe} der kombinierten Aufgabe)</small>` : ''}</h3>
+      <div class="zeile">${H.knopf('a-hoch', '↑', {}, {titel: sel.tiefe ? 'Teil nach oben' : 'nach oben'}) + H.knopf('a-runter', '↓', {}, {titel: sel.tiefe ? 'Teil nach unten' : 'nach unten'})}${H.knopf('a-kopie', 'Duplizieren')}${sel.tiefe ? H.knopf('a-raus', 'Aus der Kombi lösen', {}, {titel: 'als eigene Aufgabe hinter die kombinierte Aufgabe'}) : ''}${H.knopf('a-weg', 'Löschen', {}, {weg: true})}</div>
+      ${fehlerHTML(fl)}
+      ${T && T.ohneFrage ? '' : H.rt('frage', T && T.frageLabel || 'Aufgabenstellung', {klein: true})}
       ${form}
       <details${a.nr || a.erinnerung || a.material || a.ok ? ' open' : ''}><summary>Weitere Angaben</summary>
         ${H.feld('nr', 'Nummer (z. B. 7.1)')}
-        ${H.feld('ok', 'Text bei richtiger Lösung', {ph: 'Alles richtig!'})}
+        ${H.feld('ok', T && T.okLabel || 'Text bei richtiger Lösung', {ph: 'Alles richtig!'})}
         ${H.rt('erinnerung', 'Erinnerung (über der Aufgabe)', {klein: true})}${H.feld('erinnerungZu', 'Erinnerung startet zugeklappt', {art: 'bool'})}
         ${H.rt('material', 'Material (über der Aufgabe)', {klein: true})}</details>`;
   }
-  const fehlerHTML = f => f.length ? `<div class="meldung fehler"><ul>${f.map(x => `<li>${esc(x.replace(/^Schritt \d+(, Aufgabe \d+)?:?\s*/, ''))}</li>`).join('')}</ul></div>` : '';
+  const fehlerHTML = f => f.length ? `<div class="meldung fehler"><ul>${f.map(x => `<li>${esc(x.replace(/^Schritt \d+(, Aufgabe \d+)?(, Teil \d+)?:?\s*/, ''))}</li>`).join('')}</ul></div>` : '';
 
   /* ---------- Einfügen, Verschieben, Löschen ---------- */
-  function neueAufgabe(typ) { return TYPEN[typ].neu(); }
+  function neueAufgabe(b) { const [t, v] = String(b).split(':'); return v != null ? TYPEN[t].varianten[+v].neu() : TYPEN[t].neu(); }
+  const istKombi = b => String(b).split(':')[0] === 'kombi';
   function neuerSchritt(erklaerung) { return erklaerung ? {titel: 'Neuer Schritt', html: '<p>Erklärtext</p>', aufgaben: []} : {titel: 'Neuer Schritt', aufgaben: []}; }
   function klickBaustein(b) {
     aendern(() => {
       if (b === 'schritt') { const at = S().length ? sel.s + 1 : 0; S().splice(at, 0, neuerSchritt(true)); sel = {s: at, i: null, tiefe: 0}; return; }
       if (!S().length) S().push(neuerSchritt());
       const l = schritt().aufgaben || (schritt().aufgaben = []);
+      const k = sel.i != null && l[sel.i];
+      if (k && k.typ === 'kombi' && !istKombi(b)) {   // markierte Kombi: neuer Teil hinter dem markierten Teil bzw. am Ende
+        const t = k.teile || (k.teile = []), at = sel.tiefe ? sel.tiefe : t.length;
+        t.splice(at, 0, neueAufgabe(b)); sel = {s: sel.s, i: sel.i, tiefe: at + 1}; return;
+      }
       const at = sel.i == null ? l.length : sel.i + 1;
       l.splice(at, 0, neueAufgabe(b)); sel = {s: sel.s, i: at, tiefe: 0};
     });
   }
-  function holeAufgabe(q) {   // Aufgabe aus ihrer Stelle lösen (mit eigener Folgeaufgabe)
+  function holeAufgabe(q) {   // Aufgabe bzw. Teil aus ihrer Stelle lösen (eine Kombi mit nur einem Teil bleibt stehen)
     if (q.tiefe === 0) return S()[q.s].aufgaben.splice(q.i, 1)[0];
-    const p = kette(q.s, q.i, q.tiefe - 1), a = p.danach; delete p.danach; return a;
+    return kette(q.s, q.i, 0).teile.splice(q.tiefe - 1, 1)[0];
   }
   function ablegen(q, z) {
     if (q.art === 'neu' && q.baustein === 'schritt') {
@@ -293,20 +312,23 @@
     }
     if (q.art !== 'neu' && q.art !== 'aufgabe') return;
     const quelle = q.art === 'aufgabe' ? kette(q.s, q.i, q.tiefe) : null;
+    const inKombi = ['danach', 'teil', 'teilkarte'].includes(z.art);
+    if (inKombi && (quelle ? quelle.typ === 'kombi' : istKombi(q.baustein))) return;   // keine Kombi in der Kombi
     aendern(() => {
       // Ziel als Objekt merken, dann Quelle lösen, dann einfügen
-      let liste, vorObj = null, nach = false, eltern = null, neuS = null;
+      let liste, vorObj = null, nach = false, neuS = null, huelle = null, kombi = null;
       if (z.art === 'karte') { liste = S()[z.s].aufgaben; vorObj = liste[z.i]; nach = z.nach; }
       else if (z.art === 'liste') liste = S()[z.s].aufgaben || (S()[z.s].aufgaben = []);
       else if (z.art === 'reiter') liste = S()[z.s].aufgaben || (S()[z.s].aufgaben = []);
       else if (z.art === 'reiterende') { neuS = neuerSchritt(); S().push(neuS); liste = neuS.aufgaben; }
-      else if (z.art === 'danach') {
-        eltern = kette(z.s, z.i, z.tiefe);
-        for (let a = quelle; a; a = a.danach) if (a === eltern) return;   // nicht in sich selbst
+      else if (z.art === 'danach') { huelle = kette(z.s, z.i, 0); if (quelle === huelle) return; }   // Aufgabe wird Teil 1 einer neuen Kombi
+      else if (z.art === 'teil' || z.art === 'teilkarte') {
+        kombi = kette(z.s, z.i, 0); liste = kombi.teile || (kombi.teile = []);
+        if (z.art === 'teilkarte') { vorObj = liste[z.tiefe - 1]; nach = z.nach; }
       } else return;
       if (quelle === vorObj && quelle) return;
       const a = quelle ? holeAufgabe(q) : neueAufgabe(q.baustein);
-      if (eltern) eltern.danach = a;
+      if (huelle) { const l = S()[z.s].aufgaben; l[l.indexOf(huelle)] = {typ: 'kombi', teile: [huelle, a]}; }
       else { const at = vorObj ? liste.indexOf(vorObj) + (nach ? 1 : 0) : liste.length; liste.splice(at, 0, a); }
       sel = ort(a) || sel;
     });
@@ -316,10 +338,20 @@
     's-rechts'() { if (sel.s < S().length - 1) aendern(() => { const x = S().splice(sel.s, 1)[0]; S().splice(++sel.s, 0, x); }); },
     's-kopie'() { aendern(() => { S().splice(sel.s + 1, 0, JSON.parse(JSON.stringify(schritt()))); sel.s++; }); },
     's-weg'() { const x = schritt(); if ((x.aufgaben || []).length && !confirm(`Schritt ${sel.s + 1} mit ${x.aufgaben.length} Aufgabe(n) löschen?`)) return; aendern(() => { S().splice(sel.s, 1); sel = {s: Math.max(0, sel.s - 1), i: null, tiefe: 0}; }); },
-    'a-hoch'() { if (sel.i > 0) aendern(() => { const l = schritt().aufgaben, x = l.splice(sel.i, 1)[0]; l.splice(--sel.i, 0, x); }); },
-    'a-runter'() { const l = schritt().aufgaben; if (sel.i < l.length - 1) aendern(() => { const x = l.splice(sel.i, 1)[0]; l.splice(++sel.i, 0, x); }); },
-    'a-kopie'() { aendern(() => { const k = JSON.parse(JSON.stringify(aufgabe())); if (sel.tiefe) { const p = kette(sel.s, sel.i, sel.tiefe); k.danach = p.danach; p.danach = k; sel.tiefe++; } else { schritt().aufgaben.splice(sel.i + 1, 0, k); sel.i++; } }); },
-    'a-weg'() { aendern(() => { const q = Object.assign({}, sel), a = holeAufgabe(q); if (q.tiefe && a.danach) kette(q.s, q.i, q.tiefe - 1).danach = a.danach; sel = q.tiefe ? {s: q.s, i: q.i, tiefe: q.tiefe - 1} : {s: q.s, i: null, tiefe: 0}; }); }
+    'a-hoch'() {
+      if (sel.tiefe) { const t = kette(sel.s, sel.i, 0).teile; if (sel.tiefe > 1) aendern(() => { const x = t.splice(sel.tiefe - 1, 1)[0]; t.splice(--sel.tiefe - 1, 0, x); }); return; }
+      if (sel.i > 0) aendern(() => { const l = schritt().aufgaben, x = l.splice(sel.i, 1)[0]; l.splice(--sel.i, 0, x); });
+    },
+    'a-runter'() {
+      if (sel.tiefe) { const t = kette(sel.s, sel.i, 0).teile; if (sel.tiefe < t.length) aendern(() => { const x = t.splice(sel.tiefe - 1, 1)[0]; t.splice(++sel.tiefe - 1, 0, x); }); return; }
+      const l = schritt().aufgaben; if (sel.i < l.length - 1) aendern(() => { const x = l.splice(sel.i, 1)[0]; l.splice(++sel.i, 0, x); });
+    },
+    'a-kopie'() { aendern(() => { const k = JSON.parse(JSON.stringify(aufgabe())); if (sel.tiefe) { kette(sel.s, sel.i, 0).teile.splice(sel.tiefe, 0, k); sel.tiefe++; } else { schritt().aufgaben.splice(sel.i + 1, 0, k); sel.i++; } }); },
+    'a-raus'() { aendern(() => { const a = holeAufgabe(sel); schritt().aufgaben.splice(sel.i + 1, 0, a); sel = {s: sel.s, i: sel.i + 1, tiefe: 0}; }); },
+    'a-weg'() { aendern(() => { const q = Object.assign({}, sel); holeAufgabe(q); sel = q.tiefe ? {s: q.s, i: q.i, tiefe: 0} : {s: q.s, i: null, tiefe: 0}; }); },
+    // Kombi auflösen: Teile werden einzelne Aufgaben an ihrer Stelle
+    'k-aufloesen'() { aendern(() => { const l = schritt().aufgaben, k = l[sel.i]; l.splice(sel.i, 1, ...(k.teile || [])); sel = {s: sel.s, i: (k.teile || []).length ? sel.i : null, tiefe: 0}; }); },
+    'k-wahl'(d) { sel.tiefe = +d.t; mitte(); panel(); }
   };
 
   /* ---------- Eingaben im Panel ---------- */
@@ -406,12 +438,12 @@
     if (q.art === 'zeile') return art === 'zeile' && d.liste === q.liste ? o : null;
     if (q.art === 'karte') return art === 'zspalte' ? o : null;
     if (q.art === 'schritt' || (q.art === 'neu' && q.baustein === 'schritt')) return art === 'reiter' || art === 'reiterende' ? o : null;
-    return ['karte', 'liste', 'reiter', 'reiterende', 'danach'].includes(art) ? o : null;
+    return ['karte', 'liste', 'reiter', 'reiterende', 'danach', 'teil', 'teilkarte'].includes(art) ? o : null;
   }
   function markiere(z) {
     document.querySelectorAll('.z-vor,.z-nach,.z-in').forEach(x => x.classList.remove('z-vor', 'z-nach', 'z-in'));
     if (!z || z.art === 'text') return;
-    const zwischen = ['karte', 'zeile'].includes(z.art) || (z.art === 'reiter' && zug && (zug.q.art === 'schritt' || zug.q.baustein === 'schritt'));
+    const zwischen = ['karte', 'zeile', 'teilkarte'].includes(z.art) || (z.art === 'reiter' && zug && (zug.q.art === 'schritt' || zug.q.baustein === 'schritt'));
     z.el.classList.add(zwischen ? (z.nach ? 'z-nach' : 'z-vor') : 'z-in');
   }
   function start(e) {
@@ -492,7 +524,7 @@
     const tun = t.closest('[data-tun]');
     if (tun) {
       const n = tun.dataset.tun;
-      if (TUN[n]) return TUN[n]();
+      if (TUN[n]) return TUN[n](tun.dataset);
       const T = TYPEN[(aufgabe() || {}).typ];
       if (T && T.tun && T.tun[n]) return aendern(() => T.tun[n](aufgabe(), tun.dataset, H));
     }

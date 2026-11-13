@@ -64,7 +64,7 @@ Aufgaben.sequenz({el:'#app', key:'TOOL-ID', schritte:[
   {id:'info', kurz:'Einführung', html:'<h2>…</h2><p>…</p>'},
   {id:'a1', kurz:'1.1', erinnerung:'<p>…</p>', material:'<div class="mt">Material</div>…', aufgaben:[
     {typ:'mc', nr:'1.1', frage:'…', options:['richtig', 'falsch'], correct:[0], why:{1:'Warum falsch'}},
-    {typ:'zahlen', frage:'…', felder:[{t:'Bruttoskonto', l:238, e:'€', h:'Hinweis'}], danach:{typ:'mc', …}},
+    {typ:'kombi', teile:[{typ:'zahlen', frage:'…', felder:[{t:'Bruttoskonto', l:238, e:'€', h:'Hinweis'}]}, {typ:'buchungssatz', …, betraege:[['Bruttoskonto', 238], …]}]},
     {typ:'luecken', text:'Der Kredit ist [[kurzfristig|langfristig]].'},
     {typ:'zuordnen', felder:[['a', 'Feld A'], ['b', 'Feld B']], karten:[{t:'…', z:'a'}]},
     {typ:'buchungssatz', konten:['2800 BK', '4250 LBKV'], soll:[['2800 BK', 80000]], haben:[['4250 LBKV', 80000]]},
@@ -159,10 +159,13 @@ Aufgaben-JSON (reine Daten, kein JavaScript; Aufgabentypen wie in lib/aufgaben.j
    "schritte": [{"kurz": "5.1", "titel": "…", "html": "<p>Erklärung</p>", "erinnerung": "…", "erinnerungZu": true,
                  "material": "…", "aufgaben": [{"typ": "mc", …}, …]}, …]}
   Statt "schritte" geht auch "aufgaben": [...] (wird ein einziger Schritt).
+  Kombinierte Aufgabe: {"typ": "kombi", "teile": [Aufgabe, Aufgabe, …]} – Teil 2 erscheint nach richtiger Lösung von Teil 1 usw.
+  Altes Format {"typ": …, "danach": {…}} wandelt normalisiere in eine Kombi um (Seite.ohneDanach).
 
 API
   Seite.TYPEN                     Aufgabentypen mit Pflichtfeldern (muss zu lib/aufgaben.js passen)
-  Seite.normalisiere(json)        → {titel, kurztext, schritte} (Schritte bekommen id und kurz)
+  Seite.normalisiere(json)        → {titel, kurztext, schritte} (Schritte bekommen id und kurz, danach → kombi)
+  Seite.ohneDanach(aufgabe)       → Aufgabe mit danach-Kette als {"typ": "kombi", "teile": […]} (sonst unverändert)
   Seite.pruefe(json)              → Liste von Fehlern (leer = in Ordnung), deutsch, mit Fundstelle
       HTML in Texten nur nach Erlaubtliste (Seite.ERLAUBT): Tags wie p, b, ul, table … mit höchstens class
       (td/th auch colspan, rowspan); jedes andere „<“ + Buchstabe, „</“, „<!“ oder „<?“ wird abgelehnt.
@@ -186,7 +189,10 @@ Farben kommen aus den Variablen der Seite (--panel, --panel2, --border, --accent
 Aufgabe = Objekt mit typ. Für alle Typen: nr (z. B. '7.1'), frage (Aufgabenstellung, HTML),
 erinnerung und material (HTML, stehen über der Aufgabe; erinnerungZu:true = Erinnerung startet zugeklappt), ok (Text bei Erfolg),
 Formeln mit Bruchstrich in jedem HTML-Text: <span class="bruch"><span>Zähler</span><span>Nenner</span></span> (aufgaben.css),
-danach (weitere Aufgabe, erscheint erst nach richtiger Lösung, z. B. Handlungsempfehlung).
+  kombi        Kombinierte Aufgabe: teile:[Aufgabe, …] (mindestens zwei, keine Kombi in der Kombi). Teil 2 erscheint
+               erst, wenn Teil 1 richtig gelöst ist, usw.; erledigt, wenn der letzte Teil gelöst ist (dann ok).
+               nr, frage, erinnerung, material der Kombi stehen über allen Teilen, jeder Teil hat eigene.
+               (Früher: danach:{…} an einer Aufgabe – Aufgaben-JSON mit danach wandelt lib/seite.js um.)
   mc           options:[Texte], correct:[Indizes] (mehrere = Mehrfachauswahl, oder multi:true), why:{Index: Erklärung},
                after (Text nach Erfolg), mono, mischen:false (Reihenfolge behalten), sofort:false
                (bei genau einer richtigen Antwort wird sonst beim Antippen sofort geprüft),
@@ -220,10 +226,13 @@ danach (weitere Aufgabe, erscheint erst nach richtiger Lösung, z. B. Handlungse
                  dazu r (Antwort des Bots bei richtig) und rFalsch (Erklärung bei falsch)
                Bei Fehlern erklärt der Bot und macht weiter; am Ende Punkte und „Noch einmal“.
                Gilt als gelöst (fertig), sobald der Chat einmal ganz durchlaufen ist.
-  buchungssatz konten:['2800 BK', …] (Auswahlliste), soll:[['0700 MA', 40000], …], haben:[…],
+  buchungssatz konten:['2800 BK', …] (Auswahl), soll:[['0700 MA', 40000], …], haben:[…],
                steuer:['2600 VORST', '4800 UST'] (für den Hinweis), nebenrechnung (HTML nach Lösung),
                betraege:[['Rechnungsbetrag', 11900], …] → Beträge (z. B. aus einer Kalkulation davor) zum Ziehen
-               auf die Betragsfelder oder erst Betrag, dann Feld antippen; auch Ablenker, mehrfach nutzbar
+               auf die Betragsfelder oder erst Betrag, dann Feld antippen; auch Ablenker, mehrfach nutzbar,
+               jgst:7 → Konten nur mit Kürzel ohne Nummer (konten:['BK', 'UEFE', 'UST']).
+               Konto eintippen: Liste filtert nach Nummer oder Kürzel (z. B. „ve“ → 4400 VE).
+               „an“ steht wie im Heft auf der Zeile des letzten Soll-Kontos neben dem ersten Haben-Konto.
                prüft: Konten, Soll/Haben vertauscht, fehlende Steuer, Beträge; Lösung im Skill-Format
 
 API

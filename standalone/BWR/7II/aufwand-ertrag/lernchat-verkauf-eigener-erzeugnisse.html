@@ -977,7 +977,9 @@ body{background:var(--bg);color:var(--text);font:15px/1.45 system-ui,-apple-syst
 .af-fb.falsch{background:var(--af-err-bg)}
 .af-knoepfe{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .af-hinweis{font-size:13px;color:var(--muted);margin:0 0 4px 2px}
-.af-danach{margin-top:14px}
+/* Kombinierte Aufgabe: Teile nacheinander */
+.af-teil+.af-teil{margin-top:16px;padding-top:12px;border-top:1px dashed var(--border);animation:af-rein .3s ease-out}
+.af-kende:empty{display:none}
 .af-aufgabe+.af-aufgabe{margin-top:18px;padding-top:12px;border-top:1px solid var(--border)}
 .erinnerung{border-left:4px solid var(--accent);background:var(--panel2);border-radius:0 10px 10px 0;padding:6px 12px;margin:0 0 12px}
 .erinnerung summary{cursor:pointer;font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);padding:2px 0}
@@ -1045,13 +1047,20 @@ body{background:var(--bg);color:var(--text);font:15px/1.45 system-ui,-apple-syst
 @keyframes af-wackeln{20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
 .af-geist{position:fixed;z-index:100;pointer-events:none;width:220px;box-shadow:0 8px 20px rgba(0,0,0,.25);transform:rotate(-2deg)}
 /* Buchungssatz */
-.af-builder{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:6px 10px;align-items:start}
-@media (max-width:600px){.af-builder{grid-template-columns:minmax(0,1fr)}}
-.af-an{font:700 14px var(--mono,monospace);align-self:end;padding-bottom:10px}
+.af-builder{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:6px 10px;align-items:center}
+.af-builder .af-sk{align-self:end}
+.af-builder .af-plus{justify-self:start}
+@media (max-width:600px){.af-builder{grid-template-columns:minmax(0,1fr)}.af-builder>*{grid-row:auto!important;grid-column:auto!important}}
+.af-an{font:700 14px var(--mono,monospace)}
 .af-spalte{display:flex;flex-direction:column;gap:6px;align-items:flex-start}
 .af-sk{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
 .af-bz{display:flex;flex-wrap:wrap;gap:4px;align-items:center;width:100%}
-.af-bz select{flex:1 1 130px;min-width:0}
+.af-kwahl{position:relative;flex:1 1 150px;min-width:0;display:flex}
+.af-konto{width:100%;min-width:0}
+.af-kliste{position:absolute;z-index:60;top:100%;left:0;right:0;margin-top:2px;max-height:240px;overflow-y:auto;background:var(--panel);border:1px solid var(--border);border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,.18);padding:3px}
+.af-kopt{padding:5px 9px;border-radius:6px;cursor:pointer;font-family:var(--mono,monospace);font-size:14px}
+.af-kopt:hover,.af-kopt.an{background:var(--accent);color:#fff}
+.af-kleer{padding:5px 9px;color:var(--muted);font-size:14px}
 .af-bz .af-zahl{flex:1 1 100px;width:auto}
 .af-x{background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:0 4px}
 pre.af-bs{font:13px/1.5 var(--mono,monospace);background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin:6px 0;overflow-x:auto}
@@ -1132,7 +1141,10 @@ pre.af-bs{font:13px/1.5 var(--mono,monospace);background:var(--panel2);border:1p
  * Aufgabe = Objekt mit typ. Für alle Typen: nr (z. B. '7.1'), frage (Aufgabenstellung, HTML),
  * erinnerung und material (HTML, stehen über der Aufgabe; erinnerungZu:true = Erinnerung startet zugeklappt), ok (Text bei Erfolg),
  * Formeln mit Bruchstrich in jedem HTML-Text: <span class="bruch"><span>Zähler</span><span>Nenner</span></span> (aufgaben.css),
- * danach (weitere Aufgabe, erscheint erst nach richtiger Lösung, z. B. Handlungsempfehlung).
+ *   kombi        Kombinierte Aufgabe: teile:[Aufgabe, …] (mindestens zwei, keine Kombi in der Kombi). Teil 2 erscheint
+ *                erst, wenn Teil 1 richtig gelöst ist, usw.; erledigt, wenn der letzte Teil gelöst ist (dann ok).
+ *                nr, frage, erinnerung, material der Kombi stehen über allen Teilen, jeder Teil hat eigene.
+ *                (Früher: danach:{…} an einer Aufgabe – Aufgaben-JSON mit danach wandelt lib/seite.js um.)
  *   mc           options:[Texte], correct:[Indizes] (mehrere = Mehrfachauswahl, oder multi:true), why:{Index: Erklärung},
  *                after (Text nach Erfolg), mono, mischen:false (Reihenfolge behalten), sofort:false
  *                (bei genau einer richtigen Antwort wird sonst beim Antippen sofort geprüft),
@@ -1166,10 +1178,13 @@ pre.af-bs{font:13px/1.5 var(--mono,monospace);background:var(--panel2);border:1p
  *                  dazu r (Antwort des Bots bei richtig) und rFalsch (Erklärung bei falsch)
  *                Bei Fehlern erklärt der Bot und macht weiter; am Ende Punkte und „Noch einmal“.
  *                Gilt als gelöst (fertig), sobald der Chat einmal ganz durchlaufen ist.
- *   buchungssatz konten:['2800 BK', …] (Auswahlliste), soll:[['0700 MA', 40000], …], haben:[…],
+ *   buchungssatz konten:['2800 BK', …] (Auswahl), soll:[['0700 MA', 40000], …], haben:[…],
  *                steuer:['2600 VORST', '4800 UST'] (für den Hinweis), nebenrechnung (HTML nach Lösung),
  *                betraege:[['Rechnungsbetrag', 11900], …] → Beträge (z. B. aus einer Kalkulation davor) zum Ziehen
- *                auf die Betragsfelder oder erst Betrag, dann Feld antippen; auch Ablenker, mehrfach nutzbar
+ *                auf die Betragsfelder oder erst Betrag, dann Feld antippen; auch Ablenker, mehrfach nutzbar,
+ *                jgst:7 → Konten nur mit Kürzel ohne Nummer (konten:['BK', 'UEFE', 'UST']).
+ *                Konto eintippen: Liste filtert nach Nummer oder Kürzel (z. B. „ve“ → 4400 VE).
+ *                „an“ steht wie im Heft auf der Zeile des letzten Soll-Kontos neben dem ersten Haben-Konto.
  *                prüft: Konten, Soll/Haben vertauscht, fehlende Steuer, Beträge; Lösung im Skill-Format
  *
  * API
@@ -1455,14 +1470,20 @@ const TYPEN = {
     zustand:() => ({soll:[{k:'', b:''}], haben:[{k:'', b:''}]}),
     html(a, z){
       if (z.geloest) return `<pre class="af-bs">${esc(bsText(a.soll, a.haben))}</pre>` + (a.nebenrechnung ? `<div class="af-hinweis">${a.nebenrechnung}</div>` : '');
-      const opt = k => '<option value="">Konto …</option>' + a.konten.map(x => `<option${x === k ? ' selected' : ''}>${esc(x)}</option>`).join('');
-      const zeile = (s, x, i) => `<div class="af-bz"><select class="feld" data-seite="${s}" data-i="${i}" data-w="k" aria-label="${s === 'soll' ? 'Soll' : 'Haben'}-Konto ${i + 1}">${opt(x.k)}</select>`
+      const ph = a.jgst === 7 ? 'Konto, z. B. BK' : 'Konto: Nr. oder Kürzel';
+      // Raster: Zeile 1 Überschriften, Soll ab Zeile 2; „an“ und das erste Haben-Konto auf der Zeile des letzten Soll-Kontos
+      const nS = z.soll.length, nH = z.haben.length, pos = (r, c) => ` style="grid-row:${r};grid-column:${c}"`;
+      const zeile = (s, x, i, r, c) => `<div class="af-bz"${pos(r, c)}><span class="af-kwahl"><input class="feld af-konto" data-seite="${s}" data-i="${i}" data-w="k" value="${esc(x.k)}" placeholder="${ph}" autocomplete="off" spellcheck="false" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-label="${s === 'soll' ? 'Soll' : 'Haben'}-Konto ${i + 1}"></span>`
         + `<input class="feld af-zahl" data-seite="${s}" data-i="${i}" data-w="b" value="${esc(x.b)}" placeholder="Betrag" inputmode="decimal" autocomplete="off" aria-label="Betrag in €">`
         + (z[s].length > 1 ? `<button class="af-x" type="button" data-weg="${s}" data-i="${i}" aria-label="Zeile entfernen">×</button>` : '') + '</div>';
-      const spalte = (s, t) => `<div class="af-spalte"><div class="af-sk">${t}</div>${z[s].map((x, i) => zeile(s, x, i)).join('')}<button class="btn klein" type="button" data-plus="${s}">+ Konto</button></div>`;
+      const raster = `<div class="af-sk"${pos(1, 1)}>Soll</div>` + z.soll.map((x, i) => zeile('soll', x, i, 2 + i, 1)).join('')
+        + `<button class="btn klein af-plus" type="button" data-plus="soll"${pos(2 + nS, 1)}>+ Soll-Konto</button>`
+        + `<div class="af-an"${pos(1 + nS, 2)}>an</div>`
+        + `<div class="af-sk"${pos(nS, 3)}>Haben</div>` + z.haben.map((x, i) => zeile('haben', x, i, 1 + nS + i, 3)).join('')
+        + `<button class="btn klein af-plus" type="button" data-plus="haben"${pos(1 + nS + nH, 3)}>+ Haben-Konto</button>`;
       const bank = a.betraege ? `<div class="af-betraege"><div class="af-sk">Beträge – auf ein Betragsfeld ziehen oder erst Betrag, dann Feld antippen</div><div class="af-bliste">`
         + a.betraege.map(([t, b], i) => `<span class="af-betrag${z.bwahl === i ? ' gewaehlt' : ''}" data-betrag="${i}" tabindex="0" role="button"><small>${esc(t)}</small>${esc(zahlText(b))} €</span>`).join('') + '</div></div>' : '';
-      return bank + `<div class="af-builder">${spalte('soll', 'Soll')}<div class="af-an">an</div>${spalte('haben', 'Haben')}</div>`;
+      return bank + `<div class="af-builder">${raster}</div>`;
     },
     pruefen(a, z){
       const ein = s => z[s].filter(x => x.k || String(x.b).trim()).map(x => ({k:x.k, b:zahl(x.b)}));
@@ -1471,6 +1492,7 @@ const TYPEN = {
       let t = null;
       if (!s.length || !h.length) t = 'Trage mindestens ein Soll-Konto und ein Haben-Konto ein.';
       else if (alle.some(x => !x.k)) t = 'Wähle zu jedem Betrag ein Konto aus.';
+      else if (alle.some(x => !a.konten.includes(x.k))) t = `Das Konto „${esc(alle.find(x => !a.konten.includes(x.k)).k)}“ gibt es hier nicht. Wähle die Konten aus der Liste.`;
       else if (alle.some(x => isNaN(x.b))) t = 'Trage zu jedem Konto einen Betrag ein, z. B. 12.500,00.';
       else if (new Set(alle.map(x => x.k)).size !== alle.length) t = 'Jedes Konto darf nur einmal im Buchungssatz stehen.';
       else if (ks(s) === ks(a.haben) && ks(h) === ks(a.soll)) t = 'Soll und Haben sind vertauscht. Überlege bei jedem Konto: Nimmt es zu oder ab, und auf welcher Seite steht es?';
@@ -1522,6 +1544,7 @@ function chatAntwort(ctx, wert, j){
 /* ---------- Baustein zeichnen und bedienen ---------- */
 function baue(el, a, opt){
   opt = opt || {};
+  if (a.typ === 'kombi') return baueKombi(el, a, opt);
   const typ = TYPEN[a.typ];
   if (!typ) throw new Error('aufgaben.js: unbekannter typ ' + a.typ);
   const z = a._z || (a._z = typ.zustand(a));
@@ -1532,8 +1555,7 @@ function baue(el, a, opt){
       + (a.frage ? `<p class="af-frage">${a.nr ? `<span class="af-nr">${a.nr}</span>` : ''}${a.frage}</p>` : '')
       + typ.html(a, z)
       + (!z.geloest && !sofort ? `<div class="af-knoepfe"><button class="btn haupt af-pruefen" type="button">${a.knopf || 'Prüfen'}</button></div>` : '')
-      + fbHTML(z.fb) + (z.geloest && a.danach ? '<div class="af-danach"></div>' : '');
-    if (z.geloest && a.danach) baue(el.querySelector('.af-danach'), a.danach, opt);
+      + fbHTML(z.fb);
     if (typ.nach) typ.nach(el, a, z);
   }};
   el.classList.add('af'); el._af = ctx;
@@ -1544,9 +1566,32 @@ function baue(el, a, opt){
 function pruefe(ctx){
   const {a, z, typ, opt} = ctx, r = typ.pruefen(a, z);
   z.fb = {ok:r.ok, t:r.t};
-  if (r.ok && !z.geloest){ z.geloest = true; if (!a.danach && opt.fertig) opt.fertig(a); }
+  const neu = r.ok && !z.geloest;
+  if (neu) z.geloest = true;
   ctx.zeichne();
-  if (r.ok && a.danach && a.danach._z && a.danach._z.geloest && opt.fertig) opt.fertig(a);
+  if (neu && opt.fertig) opt.fertig(a);
+}
+// Kombinierte Aufgabe: Teile nacheinander, der nächste erscheint nach richtiger Lösung des vorigen
+function baueKombi(el, a, opt){
+  const z = a._z || (a._z = {geloest:false});
+  el.classList.add('af-kombi');
+  el.innerHTML = erinnerungHTML(a) + (a.material ? `<div class="material">${a.material}</div>` : '')
+    + (a.frage ? `<p class="af-frage">${a.nr ? `<span class="af-nr">${a.nr}</span>` : ''}${a.frage}</p>` : '') + '<div class="af-teile"></div><div class="af-kende"></div>';
+  const box = el.querySelector('.af-teile'), T = a.teile || [];
+  const ende = () => { el.querySelector('.af-kende').innerHTML = a.ok ? fbHTML({ok:true, t:'✓ ' + a.ok}) : ''; };
+  function zeige(i){
+    const d = document.createElement('div'); d.className = 'af-teil'; box.appendChild(d);
+    baue(d, T[i], {fertig:() => weiter(i)});
+  }
+  function weiter(i){
+    if (i + 1 < T.length){ if (box.children.length === i + 1){ zeige(i + 1); const n = box.children[i + 1]; if (n.scrollIntoView) n.scrollIntoView({behavior:'smooth', block:'nearest'}); } return; }
+    if (!z.geloest){ z.geloest = true; ende(); if (opt.fertig) opt.fertig(a); }
+  }
+  // schon gelöste Teile (Zurückblättern): alle bis zum ersten offenen zeigen
+  let i = 0; zeige(0);
+  while (i + 1 < T.length && T[i]._z && T[i]._z.geloest){ i++; zeige(i); }
+  if (z.geloest) ende();
+  return {a, z, el};
 }
 const ctxVon = t => { const w = t.closest && t.closest('.af'); return w && w._af; };
 
@@ -1605,6 +1650,7 @@ document.addEventListener('change', e => {
   ctx.z.wahl[e.target.dataset.l] = e.target.value; delete ctx.z.ok[e.target.dataset.l]; e.target.className = '';
 });
 document.addEventListener('keydown', e => {
+  if (e.target.matches && e.target.matches('.af-konto')) return kwTaste(e);
   if (e.key !== 'Enter') return;
   const ctx = ctxVon(e.target); if (!ctx) return;
   if (e.target.matches('.af-chattext')){ e.preventDefault(); ctx.el.dataset.fokus = '1'; chatAntwort(ctx, e.target.value); }
@@ -1646,6 +1692,57 @@ document.addEventListener('pointerup', e => {
   g.ctx.zeichne(); setTimeout(() => { zieht = false; }, 0);
 });
 document.addEventListener('pointercancel', () => { if (zug && zug.geist){ zug.geist.remove(); zug.ctx.zeichne(); } zug = null; zieht = false; });
+
+/* Buchungssatz: Konto suchen – Liste unter dem Feld, gefiltert nach Nummer oder Kürzel */
+function kontoTreffer(konten, q){
+  q = String(q || '').trim().toLowerCase();
+  if (!q) return konten.slice();
+  const wert = k => { k = k.toLowerCase(); return k.split(/\s+/).some(w => w.startsWith(q)) ? 0 : k.includes(q) ? 1 : 2; };
+  return konten.map(k => [wert(k), k]).filter(x => x[0] < 2).sort((x, y) => x[0] - y[0]).map(x => x[1]);
+}
+let KW = null;   // offene Liste {inp, l (Treffer), i (markiert), box}
+function kwZu(){ if (KW){ KW.box.remove(); KW.inp.setAttribute('aria-expanded', 'false'); KW = null; } }
+function kwZeige(inp){
+  const ctx = ctxVon(inp); if (!ctx) return;
+  const voll = ctx.a.konten.includes(inp.value);   // schon gewähltes Konto: ganze Liste zeigen
+  const l = kontoTreffer(ctx.a.konten, voll ? '' : inp.value);
+  if (!KW || KW.inp !== inp){ kwZu(); const box = document.createElement('div'); box.className = 'af-kliste'; box.setAttribute('role', 'listbox'); inp.parentNode.appendChild(box); KW = {inp, box}; }
+  KW.l = l; KW.i = l.length ? Math.max(0, voll ? l.indexOf(inp.value) : 0) : -1;
+  KW.box.innerHTML = l.length ? l.map((k, j) => `<div class="af-kopt${j === KW.i ? ' an' : ''}" role="option" data-konto="${esc(k)}">${esc(k)}</div>`).join('') : '<div class="af-kleer">kein passendes Konto</div>';
+  inp.setAttribute('aria-expanded', 'true');
+}
+function kwWahl(inp, k){
+  const ctx = ctxVon(inp); kwZu(); if (!ctx) return;
+  const {seite, i} = inp.dataset;
+  ctx.z[seite][+i].k = k; ctx.z.fb = null; ctx.zeichne();
+  const b = ctx.el.querySelector(`.af-zahl[data-seite="${seite}"][data-i="${i}"]`); if (b) b.focus();
+}
+function kwTaste(e){
+  const inp = e.target;
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp'){
+    e.preventDefault(); if (!KW || KW.inp !== inp) return kwZeige(inp);
+    if (!KW.l.length) return;
+    KW.i = (KW.i + (e.key === 'ArrowDown' ? 1 : -1) + KW.l.length) % KW.l.length;
+    KW.box.querySelectorAll('.af-kopt').forEach((o, j) => o.classList.toggle('an', j === KW.i));
+    const o = KW.box.children[KW.i]; if (o && o.scrollIntoView) o.scrollIntoView({block:'nearest'});
+  } else if (e.key === 'Enter'){
+    e.preventDefault(); if (KW && KW.inp === inp && KW.l[KW.i]) kwWahl(inp, KW.l[KW.i]);
+  } else if (e.key === 'Escape' && KW){ e.preventDefault(); kwZu(); }
+}
+document.addEventListener('focusin', e => { if (e.target.matches && e.target.matches('.af-konto')){ e.target.select(); kwZeige(e.target); } });
+document.addEventListener('input', e => { if (e.target.matches && e.target.matches('.af-konto')) kwZeige(e.target); });
+document.addEventListener('pointerdown', e => {
+  const o = e.target.closest && e.target.closest('.af-kopt');
+  if (o && KW){ e.preventDefault(); kwWahl(KW.inp, o.dataset.konto); }
+});
+// Feld verlassen: eindeutige Eingabe („ve“, „4400“) wird zum Konto, sonst bleibt der Text (Prüfen meldet es)
+document.addEventListener('focusout', e => {
+  const inp = e.target; if (!inp.matches || !inp.matches('.af-konto')) return;
+  const ctx = ctxVon(inp); if (KW && KW.inp === inp) kwZu(); if (!ctx) return;
+  const v = inp.value.trim(), K = ctx.a.konten, lv = v.toLowerCase(), t = kontoTreffer(K, v);
+  const k = !v ? '' : K.find(x => x.toLowerCase() === lv || x.toLowerCase().split(/\s+/).includes(lv)) || (t.length === 1 ? t[0] : null);
+  if (k !== null){ inp.value = k; ctx.z[inp.dataset.seite][+inp.dataset.i].k = k; }
+});
 
 /* Buchungssatz: Betrag aus der Liste (betraege) in ein Betragsfeld legen – antippen oder ziehen */
 function betragSetzen(ctx, feld, i){
@@ -1714,7 +1811,7 @@ function sequenz(cfg){
     if (s.nach) s.nach(inhalt);
     if (oben) window.scrollTo(0, 0);
   }
-  const geloest = a => !!(a._z && a._z.geloest && (!a.danach || geloest(a.danach)));
+  const geloest = a => !!(a._z && a._z.geloest);
   function gehe(i){
     if (!istAufgabe(S[akt]) && i > akt && !stand.erledigt[S[akt].id]) erledigt(S[akt]);
     akt = Math.min(Math.max(i, 0), S.length - 1); stand.schritt = akt; speichern(); zeichne(true);

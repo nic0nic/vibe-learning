@@ -27,6 +27,12 @@ Gesammelt im Thread „Aufbau der Seite“. Umgesetzt wird erst, wenn die Lehrkr
 
 ### Version vom 13.11.
 
+56. **Aufgabentypen: Kombinierte Aufgabe, Buchungssatz mit Beträgen zum Ziehen, Buchungssatz Jgst. 7** (gewünscht 13.11.)
+    - Neuer Typ `kombi` (`teile:[…]`, beliebig viele, keine Kombi in der Kombi) ersetzt `danach`. Alle Seiten mit `danach` umgestellt (darlehensarten, kurzfristige-kredite, effektiver-zinssatz, zinsrechnung, und_oder_datenight). Alte JSONs mit `danach` wandelt `Seite.normalisiere`/`Seite.ohneDanach` um (Einreichen, Editor, Vorschau); `pruefe.py` des Skills meldet `danach` als veraltet.
+    - Editor: Kombi als Block wie „falls“ in Scratch (Kopf, Teile im Bauch, unten Zone „＋ Teil n“); „＋ Teil 2 anhängen“ an jeder Aufgabe macht daraus eine Kombi; Baustein anklicken bei markierter Kombi = nächster Teil; Teile ↑/↓, „Aus der Kombi lösen“, „Auflösen“. Leiste: Varianten „Buchungssatz: Beträge ziehen“ und „Buchungssatz Jgst. 7“ (gleicher Typ, Optionen im Formular: Haken Jgst. 7, Beträge zum Ziehen mit „Beträge der Lösung dazu“ / „Ergebnisse der Rechnung davor dazu“).
+    - Buchungssatz: `jgst: 7` (Konten nur Kürzel, Prüfung lehnt Nummern ab); Konto-Feld mit Suche nach Nummer oder Kürzel („ve“ → 4400 VE, Enter/Tab/Klick); „an“ steht nach `buchungssatz-syntax.md` auf der Zeile des letzten Soll-Kontos neben dem ersten Haben-Konto, „+ Soll-Konto“/„+ Haben-Konto“ darunter.
+    Getestet in Chromium: 7.3 (Suche, Positionen, Lösung, Zurückblättern), Datenight-Kontrollfrage, Darlehensarten, Editor (Ziehen in Kombi, Klick-Anhängen, Varianten, Beträge übernehmen, Jgst-7-Prüfung, Herausziehen, keine Kombi in Kombi, altes danach), Vorschau mit Jgst. 7 und zwei Soll-Konten, Handybreite, SQL-Erarbeitung ohne Fehler. Nicht auf Touch-Geräten, nicht mit PocketBase/Einreichen.
+
 55. **Kurzfristige Kredite 7.3: Buchungssatz für die Zahlung mit Skonto** (gewünscht 13.11.)
     Nach richtiger Kalkulation erscheint (als `danach`) der Buchungssatz `4400 VE 11.900,00 an 2800 BK 11.662,00 / 6002 NR 200,00 / 2600 VORST 38,00`. Die Beträge aus der Kalkulation (Rechnungsbetrag, Bruttoskonto als Ablenker, Nettoskonto, Steuerberichtigung, Überweisungsbetrag) lassen sich auf die Betragsfelder ziehen oder antippen. Rechnung jetzt über „Holz (Mahagoni)“ statt „20 Hälse aus Ahorn“.
     - `lib/aufgaben.js`: Typ `buchungssatz` mit neuer Option `betraege:[[Text, Betrag], …]`; Prüfung in `lib/seite.js`, Skill `vibe-learning-seite-erstellen` (typen.md, pruefe.py). Noch nicht im Baukasten von vorlage.html.

@@ -227,12 +227,11 @@ const ENDLOS = [
       Object.assign(b, (() => { const Z = r2(b.K * b.p * b.t / 36000), D = r2(b.K * b.d / 100), A = r2(b.K - D), KK = r2(Z + D); return {Z, D, A, KK, E:r2(KK * 36000 / (A * b.t))}; })());
     } while (!b.p || b.p <= 0.5 || b.E - b.p > 3 || Math.abs(a.E - b.E) < 0.1);
     const [n1, n2] = Aufgaben.mischen(BANKEN).slice(0, 2), besser = a.E < b.E ? 0 : 1;
-    return {typ:'zahlen', frage:`Saitgig braucht ${eur(a.K)} für ${a.t} Tage. Ermittle für beide Angebote den effektiven Zinssatz.`,
+    return {typ:'kombi', teile:[{typ:'zahlen', frage:`Saitgig braucht ${eur(a.K)} für ${a.t} Tage. Ermittle für beide Angebote den effektiven Zinssatz.`,
       material:`<div class="mt">Material</div><p><b>${n1}:</b> ${zz(a.p)} % p. a., Disagio ${a.d ? zz(a.d) + ' %' : 'keines'}<br><b>${n2}:</b> ${zz(b.p)} % p. a., Disagio ${b.d ? zz(b.d) + ' %' : 'keines'}</p>`,
       felder:[{t:n1, l:a.E, e:'%', tol:0.011, h:EF}, {t:n2, l:b.E, e:'%', tol:0.011, h:EF}],
-      ok:`Richtig!<br>${n1}:<br>${wegEff(a)}<br>${n2}:<br>${wegEff(b)}`,
-      danach:{typ:'mc', frage:'Welches Angebot ist günstiger?', options:[n1, n2], correct:[besser], mischen:false,
-        why:{[1 - besser]:'Günstiger ist das Angebot mit dem niedrigeren effektiven Zinssatz.'}}};
+      ok:`Richtig!<br>${n1}:<br>${wegEff(a)}<br>${n2}:<br>${wegEff(b)}`}, {typ:'mc', frage:'Welches Angebot ist günstiger?', options:[n1, n2], correct:[besser], mischen:false,
+        why:{[1 - besser]:'Günstiger ist das Angebot mit dem niedrigeren effektiven Zinssatz.'}}]};
   }},
   {name:'Kreditaufnahme buchen', neu(){ const x = angebot(Math.random() < 0.5); if (!x.d) x.d = 2;
     const D = r2(x.K * x.d / 100), A = r2(x.K - D), kv = x.n ? '4250 LBKV' : '4200 KBKV';

@@ -98,25 +98,22 @@ Aufgaben.sequenz({el:'#app', key:'darlehen', schritte:[
     <div class="info"><p>Jedes Jahr wird der <b>gleiche Betrag getilgt</b>: Kreditbetrag : Laufzeit = 40.000,00 € : 4 = <b>10.000,00 €</b>. Die Restschuld sinkt gleichmäßig, damit sinken auch die Zinsen – und die <b>Rate wird jedes Jahr kleiner</b>.</p></div>
     ${saeulen('abzahlung', 'Abzahlungsdarlehen')}${LEGENDE}`,
     material:ANGEBOT, erinnerung:'<p>Tilgung jedes Jahr 10.000,00 €<br>Zinsen = <span class="bruch"><span>Restschuld am Jahresanfang · 5</span><span>100</span></span><br>Rate = Zinsen + Tilgung<br>Restschuld am Ende = Restschuld am Anfang – Tilgung</p>',
-    aufgaben:[{...tabelle('abzahlung', [3]), nr:'2.1', frage:'Vervollständige den Tilgungsplan des Abzahlungsdarlehens.', ok:'Richtig! Die Tilgung bleibt gleich, Zinsen und Rate sinken.',
-      danach:{typ:'mc', frage:'Wie entwickelt sich die Rate beim Abzahlungsdarlehen?', options:['Sie sinkt jedes Jahr.', 'Sie bleibt gleich.', 'Sie steigt jedes Jahr.'], correct:[0], mischen:false,
-        why:{1:'Gleich bleibt hier die Tilgung, nicht die Rate.', 2:'Die Zinsen sinken, weil die Restschuld sinkt – damit sinkt auch die Rate.'}}}]},
+    aufgaben:[{typ:'kombi', teile:[{...tabelle('abzahlung', [3]), nr:'2.1', frage:'Vervollständige den Tilgungsplan des Abzahlungsdarlehens.', ok:'Richtig! Die Tilgung bleibt gleich, Zinsen und Rate sinken.'}, {typ:'mc', frage:'Wie entwickelt sich die Rate beim Abzahlungsdarlehen?', options:['Sie sinkt jedes Jahr.', 'Sie bleibt gleich.', 'Sie steigt jedes Jahr.'], correct:[0], mischen:false,
+        why:{1:'Gleich bleibt hier die Tilgung, nicht die Rate.', 2:'Die Zinsen sinken, weil die Restschuld sinkt – damit sinkt auch die Rate.'}}]}]},
   {id:'annuitaet', kurz:'Annuitätendarlehen', titel:'Annuitätendarlehen', html:() => `<h2>Annuitätendarlehen</h2>
     <div class="info"><p>Die <b>Rate</b> (Annuität = Zinsen + Tilgung) ist <b>jedes Jahr gleich hoch</b>, hier 11.280,47 €. Weil die Restschuld sinkt, werden die Zinsen kleiner – der <b>Tilgungsanteil steigt</b>. Die Bank nennt die Annuität im Angebot. Im letzten Jahr gleicht die Rate kleine Rundungsunterschiede aus (11.280,49 €).</p></div>
     ${saeulen('annuitaet', 'Annuitätendarlehen')}${LEGENDE}
     <div class="alltag"><b>Aus dem Alltag · Der Hauskredit deiner Eltern</b>Viele Familien zahlen ihr Haus über 20 bis 30 Jahre ab – jeden Monat mit der gleichen Rate. Am Anfang steckt darin viel Zins und wenig Tilgung, am Ende ist es umgekehrt.</div>`,
     material:ANGEBOT + '<p>Annuität laut Bank: <b>11.280,47 €</b> pro Jahr (letztes Jahr 11.280,49 €).</p>',
     erinnerung:'<p>Rate (Annuität) ist vorgegeben<br>Zinsen = <span class="bruch"><span>Restschuld am Jahresanfang · 5</span><span>100</span></span><br><b>Tilgung = Rate – Zinsen</b><br>Restschuld am Ende = Restschuld am Anfang – Tilgung</p>',
-    aufgaben:[{...tabelle('annuitaet', [4]), nr:'3.1', frage:'Vervollständige den Tilgungsplan des Annuitätendarlehens. Runde die Zinsen auf Cent.', ok:'Richtig! Die Rate bleibt gleich, die Tilgung steigt.',
-      danach:{typ:'mc', frage:'Was steigt beim Annuitätendarlehen von Jahr zu Jahr?', options:['die Tilgung', 'die Zinsen', 'die Rate'], correct:[0], mischen:false,
-        why:{1:'Die Zinsen sinken, weil die Restschuld sinkt.', 2:'Die Rate bleibt gleich – das ist das Besondere am Annuitätendarlehen.'}}}]},
+    aufgaben:[{typ:'kombi', teile:[{...tabelle('annuitaet', [4]), nr:'3.1', frage:'Vervollständige den Tilgungsplan des Annuitätendarlehens. Runde die Zinsen auf Cent.', ok:'Richtig! Die Rate bleibt gleich, die Tilgung steigt.'}, {typ:'mc', frage:'Was steigt beim Annuitätendarlehen von Jahr zu Jahr?', options:['die Tilgung', 'die Zinsen', 'die Rate'], correct:[0], mischen:false,
+        why:{1:'Die Zinsen sinken, weil die Restschuld sinkt.', 2:'Die Rate bleibt gleich – das ist das Besondere am Annuitätendarlehen.'}}]}]},
   {id:'fest', kurz:'Festdarlehen', titel:'Festdarlehen', html:() => `<h2>Festdarlehen (Fälligkeitsdarlehen)</h2>
     <div class="info"><p>Während der Laufzeit werden <b>nur Zinsen</b> gezahlt. Getilgt wird <b>einmalig am Ende</b> – der ganze Kreditbetrag auf einmal. Weil die Schuld bis zum Schluss voll bestehen bleibt, sind die <b>Zinsen jedes Jahr gleich hoch</b>.</p></div>
     ${saeulen('fest', 'Festdarlehen')}${LEGENDE}`,
     material:ANGEBOT, erinnerung:'<p>Tilgung erst im letzten Jahr (40.000,00 €)<br>Zinsen = <span class="bruch"><span>Restschuld am Jahresanfang · 5</span><span>100</span></span><br>Rate = Zinsen + Tilgung</p>',
-    aufgaben:[{...tabelle('fest', [1, 5]), nr:'4.1', frage:'Vervollständige den Tilgungsplan des Festdarlehens.', ok:'Richtig! Bis zum Schluss nur Zinsen, am Ende die ganze Tilgung.',
-      danach:{typ:'mc', frage:'Was muss Jakob beim Festdarlehen unbedingt einplanen?', options:['Am Ende der Laufzeit muss er 42.000,00 € auf einmal zahlen können.', 'Die Rate steigt jedes Jahr ein wenig.', 'Die Zinsen werden jedes Jahr kleiner.'], correct:[0],
-        why:{1:'Die Rate bleibt bis zum letzten Jahr gleich (nur Zinsen) – dann kommt die ganze Tilgung dazu.', 2:'Die Restschuld bleibt bis zum Ende 40.000,00 €, deshalb bleiben auch die Zinsen gleich.'}}}]},
+    aufgaben:[{typ:'kombi', teile:[{...tabelle('fest', [1, 5]), nr:'4.1', frage:'Vervollständige den Tilgungsplan des Festdarlehens.', ok:'Richtig! Bis zum Schluss nur Zinsen, am Ende die ganze Tilgung.'}, {typ:'mc', frage:'Was muss Jakob beim Festdarlehen unbedingt einplanen?', options:['Am Ende der Laufzeit muss er 42.000,00 € auf einmal zahlen können.', 'Die Rate steigt jedes Jahr ein wenig.', 'Die Zinsen werden jedes Jahr kleiner.'], correct:[0],
+        why:{1:'Die Rate bleibt bis zum letzten Jahr gleich (nur Zinsen) – dann kommt die ganze Tilgung dazu.', 2:'Die Restschuld bleibt bis zum Ende 40.000,00 €, deshalb bleiben auch die Zinsen gleich.'}}]}]},
   {id:'vergleich', kurz:'Vergleich', titel:'Darlehensarten vergleichen',
     erinnerung:'<p><b>Abzahlung:</b> gleiche Tilgung · <b>Annuität:</b> gleiche Rate · <b>Festdarlehen:</b> Tilgung am Ende</p>',
     aufgaben:[{typ:'zuordnen', nr:'5.1', frage:'Ordne die Merkmale der passenden Darlehensart zu.', ok:'Alle Merkmale richtig zugeordnet!',

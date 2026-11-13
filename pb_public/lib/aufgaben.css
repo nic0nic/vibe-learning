@@ -8,7 +8,9 @@
 .af-fb.falsch{background:var(--af-err-bg)}
 .af-knoepfe{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .af-hinweis{font-size:13px;color:var(--muted);margin:0 0 4px 2px}
-.af-danach{margin-top:14px}
+/* Kombinierte Aufgabe: Teile nacheinander */
+.af-teil+.af-teil{margin-top:16px;padding-top:12px;border-top:1px dashed var(--border);animation:af-rein .3s ease-out}
+.af-kende:empty{display:none}
 .af-aufgabe+.af-aufgabe{margin-top:18px;padding-top:12px;border-top:1px solid var(--border)}
 .erinnerung{border-left:4px solid var(--accent);background:var(--panel2);border-radius:0 10px 10px 0;padding:6px 12px;margin:0 0 12px}
 .erinnerung summary{cursor:pointer;font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);padding:2px 0}
@@ -76,13 +78,20 @@
 @keyframes af-wackeln{20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
 .af-geist{position:fixed;z-index:100;pointer-events:none;width:220px;box-shadow:0 8px 20px rgba(0,0,0,.25);transform:rotate(-2deg)}
 /* Buchungssatz */
-.af-builder{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:6px 10px;align-items:start}
-@media (max-width:600px){.af-builder{grid-template-columns:minmax(0,1fr)}}
-.af-an{font:700 14px var(--mono,monospace);align-self:end;padding-bottom:10px}
+.af-builder{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:6px 10px;align-items:center}
+.af-builder .af-sk{align-self:end}
+.af-builder .af-plus{justify-self:start}
+@media (max-width:600px){.af-builder{grid-template-columns:minmax(0,1fr)}.af-builder>*{grid-row:auto!important;grid-column:auto!important}}
+.af-an{font:700 14px var(--mono,monospace)}
 .af-spalte{display:flex;flex-direction:column;gap:6px;align-items:flex-start}
 .af-sk{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
 .af-bz{display:flex;flex-wrap:wrap;gap:4px;align-items:center;width:100%}
-.af-bz select{flex:1 1 130px;min-width:0}
+.af-kwahl{position:relative;flex:1 1 150px;min-width:0;display:flex}
+.af-konto{width:100%;min-width:0}
+.af-kliste{position:absolute;z-index:60;top:100%;left:0;right:0;margin-top:2px;max-height:240px;overflow-y:auto;background:var(--panel);border:1px solid var(--border);border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,.18);padding:3px}
+.af-kopt{padding:5px 9px;border-radius:6px;cursor:pointer;font-family:var(--mono,monospace);font-size:14px}
+.af-kopt:hover,.af-kopt.an{background:var(--accent);color:#fff}
+.af-kleer{padding:5px 9px;color:var(--muted);font-size:14px}
 .af-bz .af-zahl{flex:1 1 100px;width:auto}
 .af-x{background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:0 4px}
 pre.af-bs{font:13px/1.5 var(--mono,monospace);background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin:6px 0;overflow-x:auto}

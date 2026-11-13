@@ -3,6 +3,7 @@
  * Je Typ aus lib/aufgaben.js: name, symbol, neu() (Beispielaufgabe), kurz(a) (Zusammenfassung auf der Karte),
  * form(a, H) (Formular rechts, Helfer H: Kopfkommentar von vorlage-editor.js), tun (Knöpfe), verschiebe (optional).
  * Neuer Aufgabentyp in lib/aufgaben.js → hier ein Formular ergänzen (sonst: nur im JSON-Modus bearbeitbar).
+ * varianten: weitere Bausteine desselben Typs in der Leiste (z. B. Buchungssatz mit Beträgen zum Ziehen, Jgst. 7).
  */
 (function () {
   'use strict';
@@ -171,28 +172,66 @@
 
   /* ---------- Buchungssatz ---------- */
   const r2 = x => Math.round(x * 100) / 100;
+  const bsNeu = () => ({typ: 'buchungssatz', frage: 'Bilde den Buchungssatz.', konten: ['0700 MA', '2600 VORST', '2800 BK', '4400 VE'], soll: [['0700 MA', 10000], ['2600 VORST', 1900]], haben: [['4400 VE', 11900]], steuer: ['2600 VORST']});
+  // Beträge der Lösung als Vorschlag für die Liste zum Ziehen (Bezeichnung trägt die Lehrkraft ein)
+  const ausLoesung = a => [...(a.soll || []), ...(a.haben || [])].map(x => ['', Number(x[1]) || 0]);
+  const dazu = (a, l) => { const b = a.betraege || (a.betraege = []); l.forEach(x => { if (!b.some(y => y[1] === x[1])) b.push(x); }); };
   B.typ('buchungssatz', {
     name: 'Buchungssatz', symbol: '⚖',
-    neu: () => ({typ: 'buchungssatz', frage: 'Bilde den Buchungssatz.', konten: ['0700 MA', '2600 VORST', '2800 BK', '4400 VE'], soll: [['0700 MA', 10000], ['2600 VORST', 1900]], haben: [['4400 VE', 11900]], steuer: ['2600 VORST']}),
-    kurz: a => (a.soll || []).map(x => x[0]).join(', ') + ' an ' + (a.haben || []).map(x => x[0]).join(', '),
+    neu: bsNeu,
+    varianten: [
+      {name: 'Buchungssatz: Beträge ziehen', symbol: '⚖', neu: () => Object.assign(bsNeu(), {betraege: [['Nettowert', 10000], ['Vorsteuer', 1900], ['Rechnungsbetrag', 11900], ['Bruttoskonto', 238]]})},
+      {name: 'Buchungssatz Jgst. 7', symbol: '⚖', neu: () => ({typ: 'buchungssatz', jgst: 7, frage: 'Bilde den Buchungssatz.', konten: ['AWR', 'BK', 'UEFE', 'UST', 'VE', 'VORST'], soll: [['AWR', 2000], ['VORST', 380]], haben: [['VE', 2380]], steuer: ['VORST']})}
+    ],
+    titel: a => 'Buchungssatz' + (a.jgst === 7 ? ' Jgst. 7' : '') + (a.betraege ? ' (Beträge ziehen)' : ''),
+    kurz: a => (a.soll || []).map(x => x[0]).join(', ') + ' an ' + (a.haben || []).map(x => x[0]).join(', ') + (a.betraege ? ` · ${a.betraege.length} Beträge zum Ziehen` : ''),
     form(a, H) {
       const seite = s => (a[s] || []).map((x, i) => `<div class="reihe">
           <select class="feld" data-k="${s}.${i}.0" data-art="text" data-pflicht="1" aria-label="Konto"><option value="">– Konto –</option>${a.konten.map(k => `<option${k === x[0] ? ' selected' : ''}>${H.esc(k)}</option>`).join('')}${x[0] && !a.konten.includes(x[0]) ? `<option selected>${H.esc(x[0])}</option>` : ''}</select>
           ${H.feld(`${s}.${i}.1`, '', {art: 'zahl', pflicht: true, ph: 'Betrag'})}${weg('bweg', {s, i})}</div>`).join('') + plus('bplus', s === 'soll' ? 'Soll-Konto' : 'Haben-Konto', {s});
       const sum = s => r2((a[s] || []).reduce((t, x) => t + (Number(x[1]) || 0), 0));
       const gleich = sum('soll') === sum('haben');
-      return `${H.feld('konten', 'Konten in der Auswahlliste (eine Zeile pro Konto)', {art: 'zeilen', pflicht: true, zeilen: 5, neu: true})}
+      const v = H.vorher, rechnung = v && v.typ === 'zahlen' && Array.isArray(v.felder);
+      const betraege = !a.betraege ? '' : (a.betraege.map((x, i) => H.zeile('betraege', i, `<div class="reihe">${H.feld(`betraege.${i}.0`, '', {pflicht: true, ph: 'Bezeichnung, z. B. Rechnungsbetrag'})}${H.feld(`betraege.${i}.1`, '', {art: 'zahl', pflicht: true, ph: 'Betrag'})}${weg('betragweg', {i})}</div>`)).join('')
+        + `<div class="reihe wrap">${plus('betragplus', 'Betrag')}${H.knopf('betragloesung', 'Beträge der Lösung dazu')}${rechnung ? H.knopf('betragvorher', 'Ergebnisse der Rechnung davor dazu', {}, {titel: 'Felder der Rechenaufgabe davor mit Bezeichnung und Lösung'}) : ''}</div>
+        <p class="hinweis">Die Schüler ziehen die Beträge auf die Betragsfelder (oder tippen erst Betrag, dann Feld). Beträge, die nicht gebraucht werden, sind Ablenker${rechnung ? '' : '. In einer kombinierten Aufgabe nach einer Rechenaufgabe (Zahlen) lassen sich deren Ergebnisse übernehmen'}.</p>`);
+      return `<label class="hk"><input type="checkbox" data-tun="jgst7"${a.jgst === 7 ? ' checked' : ''}> Jgst. 7: Konten nur mit Kürzel (ohne Nummer)</label>
+        ${H.feld('konten', a.jgst === 7 ? 'Konten zur Auswahl (eine Zeile pro Konto, nur Kürzel)' : 'Konten zur Auswahl (eine Zeile pro Konto, Nummer und Kürzel)', {art: 'zeilen', pflicht: true, zeilen: 5, neu: true})}
+        <p class="hinweis">Die Schüler suchen das Konto per Nummer oder Kürzel (z. B. „ve“ → ${a.jgst === 7 ? 'VE' : '4400 VE'}). Ablenker einfach mit in die Liste schreiben.</p>
         <label class="klein">Soll</label>${seite('soll')}<label class="klein">an Haben</label>${seite('haben')}
         <p class="hinweis${gleich ? '' : ' warn'}">Summe Soll ${H.zahl(sum('soll'))} · Haben ${H.zahl(sum('haben'))}${gleich ? ' ✓' : ' – nicht gleich!'}</p>
         <label class="klein">Steuerkonten (für den Hinweis „Steuer fehlt“)</label>
         <div class="reihe wrap">${a.konten.map(k => `<label class="hk"><input type="checkbox" data-tun="steuer" data-k2="${H.esc(k)}"${(a.steuer || []).includes(k) ? ' checked' : ''}> ${H.esc(k)}</label>`).join('')}</div>
-        ${H.rt('nebenrechnung', 'Nebenrechnung (erscheint nach der Lösung, optional)', {klein: true})}`;
+        ${H.rt('nebenrechnung', 'Nebenrechnung (erscheint nach der Lösung, optional)', {klein: true})}
+        <label class="hk"><input type="checkbox" data-tun="bzieh"${a.betraege ? ' checked' : ''}> Beträge zum Ziehen vorgeben (statt eintippen)</label>${betraege}`;
     },
     tun: {
+      jgst7(a) { if (a.jgst === 7) delete a.jgst; else a.jgst = 7; },
+      bzieh(a, d, H) { if (a.betraege) delete a.betraege; else { a.betraege = []; const v = H.vorher; if (v && v.typ === 'zahlen' && Array.isArray(v.felder)) dazu(a, v.felder.map(f => [H.text(f.t || ''), f.l])); else dazu(a, ausLoesung(a)); } },
+      betragplus(a) { (a.betraege = a.betraege || []).push(['', 0]); },
+      betragweg(a, d) { a.betraege.splice(+d.i, 1); },
+      betragloesung(a) { dazu(a, ausLoesung(a)); },
+      betragvorher(a, d, H) { const v = H.vorher; if (v && Array.isArray(v.felder)) dazu(a, v.felder.map(f => [H.text(f.t || ''), f.l])); },
       bplus(a, d) { (a[d.s] = a[d.s] || []).push(['', 0]); },
       bweg(a, d) { a[d.s].splice(+d.i, 1); },
       steuer(a, d) { const k = d.k2, s = a.steuer || []; a.steuer = s.includes(k) ? s.filter(x => x !== k) : [...s, k]; if (!a.steuer.length) delete a.steuer; }
     }
+  });
+
+  /* ---------- Kombinierte Aufgabe ---------- */
+  B.typ('kombi', {
+    name: 'Kombinierte Aufgabe', symbol: '🧩',
+    neu: () => ({typ: 'kombi', teile: []}),
+    kurz: a => n((a.teile || []).length, 'Teil', 'Teile'),
+    frageLabel: 'Einleitung über allen Teilen (optional)', okLabel: 'Text, wenn alle Teile gelöst sind',
+    form(a, H) {
+      const t = a.teile || [];
+      return `<p class="hinweis">Die Teile erscheinen nacheinander: Teil 2 erst, wenn Teil 1 richtig gelöst ist, usw. Weitere Teile: Baustein links in die Zone „＋ Teil …“ ziehen – oder anklicken, solange die kombinierte Aufgabe markiert ist.</p>
+        <label class="klein">Teile (anklicken zum Bearbeiten)</label>
+        ${t.map((x, k) => `<div class="reihe"><button type="button" class="btn klein" data-tun="k-wahl" data-t="${k + 1}">${k + 1}. ${H.esc(((B.TYPEN[x.typ] || {}).titel ? B.TYPEN[x.typ].titel(x) : (B.TYPEN[x.typ] || {}).name) || x.typ)}</button><span class="hinweis">${H.esc(H.text(x.frage || '').slice(0, 60))}</span></div>`).join('') || '<p class="hinweis warn">Noch keine Teile.</p>'}
+        ${t.length ? H.knopf('k-aufloesen', 'Auflösen (Teile werden einzelne Aufgaben)') : ''}`;
+    },
+    tun: {}
   });
 
   /* ---------- Lern-Chat ---------- */

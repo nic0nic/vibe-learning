@@ -94,7 +94,20 @@ code{font:12.5px var(--mono);background:var(--panel2);border-radius:4px;padding:
 .akarte:hover{border-color:color-mix(in srgb,var(--accent) 60%,var(--border))}
 .akarte.gewaehlt{border-left-color:var(--marke)}
 .akarte.hatfehler{border-left-color:var(--err)}
-.akdanach{margin-top:8px;margin-left:14px;border-left-style:dashed}
+/* Kombinierte Aufgabe wie „falls“ in Scratch: Kopf, Bauch mit den Teilen, Fuß; nach unten erweiterbar */
+.akombi{--kf:#d08770;border-left:0;padding:0;overflow:hidden;background:transparent;border-color:transparent}
+.akombi>.ak-kopf,.akombi>.ak-frage{background:color-mix(in srgb,var(--kf) 22%,var(--panel));padding:8px 10px;margin:0}
+.akombi>.ak-kopf{border-radius:10px 10px 0 0;border:2px solid var(--kf);border-bottom:0}
+.akombi>.ak-frage{border:2px solid var(--kf);border-top:0;border-bottom:0}
+.kombi-bauch{border-left:16px solid var(--kf);border-right:2px solid var(--kf);padding:8px 10px 8px 12px;display:flex;flex-direction:column;gap:6px;background:var(--panel2)}
+.kombi-fuss{height:14px;background:var(--kf);border-radius:0 0 10px 10px}
+.akombi.gewaehlt{--kf:var(--marke)}
+.akombi.hatfehler>.ak-kopf{border-color:var(--err)}
+.teil-lbl{font:700 11.5px system-ui,sans-serif;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-top:2px}
+.akteil{cursor:grab}
+.teil-zone{border:2px dashed var(--border);border-radius:9px;padding:8px 10px;font-size:12.5px;color:var(--muted);text-align:center}
+.leiste .teil.variante{margin-left:14px;font-size:13px;padding:5px 9px}
+.leiste .teil.variante .sym{opacity:.6}
 .ak-kopf{display:flex;gap:6px;align-items:center;font-size:14px}
 .ak-nr{font:600 12px var(--mono);color:var(--muted)}
 .ak-f{margin-left:auto;color:var(--err);font-weight:700;font-size:13px}

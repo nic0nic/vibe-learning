@@ -267,10 +267,9 @@ const ERARBEITUNG = [
   {titel:'Kontrollfrage: Welcher Entwurf?', arbeit:'Auswählen',
    html:`<p>Herr Maier hat zwei Entwürfe gebaut. Der Unterschied ist klein – das Ergebnis nicht.</p>
    <div class="minis">${raster('Entwurf A', ['art', 'jahr'], [['"Film"', '&lt;2000']])}${raster('Entwurf B', ['art', 'jahr'], [['"Film"', ''], ['', '&lt;2000']])}</div>`,
-   aufgabe:{typ:'mc', frage:'<b>Herr Samstag</b> will einen Film, der vor 2000 erschienen ist. Welcher Entwurf passt?', options:['Entwurf A', 'Entwurf B'], correct:[0],
-     why:{1:'In Entwurf B stehen die Kriterien in verschiedenen Zeilen. Dann reicht eines davon – es kämen auch neue Filme und alte Serien.'},
-     danach:{typ:'mc', frage:'Und was findet Entwurf B?', options:['Nur Filme, die vor 2000 erschienen sind', 'Alle Filme, egal aus welchem Jahr, und dazu alles, was vor 2000 erschienen ist (auch Serien)', 'Gar nichts, weil keine Zeile beide Kriterien enthält'], correct:[1],
-       why:{0:'Das wäre Entwurf A: beide Kriterien in derselben Zeile.', 2:'Eine leere Zelle bedeutet: Für dieses Feld gibt es in dieser Zeile keine Einschränkung.'}}}},
+   aufgabe:{typ:'kombi', teile:[{typ:'mc', frage:'<b>Herr Samstag</b> will einen Film, der vor 2000 erschienen ist. Welcher Entwurf passt?', options:['Entwurf A', 'Entwurf B'], correct:[0],
+     why:{1:'In Entwurf B stehen die Kriterien in verschiedenen Zeilen. Dann reicht eines davon – es kämen auch neue Filme und alte Serien.'}}, {typ:'mc', frage:'Und was findet Entwurf B?', options:['Nur Filme, die vor 2000 erschienen sind', 'Alle Filme, egal aus welchem Jahr, und dazu alles, was vor 2000 erschienen ist (auch Serien)', 'Gar nichts, weil keine Zeile beide Kriterien enthält'], correct:[1],
+       why:{0:'Das wäre Entwurf A: beide Kriterien in derselben Zeile.', 2:'Eine leere Zelle bedeutet: Für dieses Feld gibt es in dieser Zeile keine Einschränkung.'}}]}},
 
   {titel:'UND oder ODER?', arbeit:'Zuordnen',
    html:`<p>Nicht jedes „und“ in einem Satz bedeutet ${U}. Überlege immer: Muss ein einzelner Datensatz <b>alle</b> Kriterien gleichzeitig erfüllen – oder reicht <b>eins</b>?</p>`,

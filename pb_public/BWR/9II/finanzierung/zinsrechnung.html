@@ -104,10 +104,9 @@ const SCHRITTE = [
     <p>Berechne die Zinsen so, wie du in Schritt 1 den Prozentwert berechnet hast.</p></div>`,
     material:JONAS,
     aufgaben:[
-      {typ:'zahlen', nr:'2.1', frage:'Berechne mithilfe der Prozentrechnung, wie viele Zinsen Jonas für ein Jahr zahlen muss.', felder:[{t:'Zinsen für ein Jahr', l:133.75, e:'€', h:'Rechne wie beim Prozentwert: ' + B('2.500,00 € · 5,35', '100')}],
-        ok:`Richtig: ${B('2.500,00 € · 5,35', '100')} = 133,75 €. Jonas zahlt also nach einem Jahr 2.633,75 € zurück.`,
-        danach:{typ:'mc', frage:'Welche Angabe hat bei Jonas die Rolle des Grundwerts?', options:['der Kreditbetrag von 2.500,00 €', 'der Zinssatz von 5,35 %', 'die Zinsen von 133,75 €'], correct:[0], mischen:false,
-          why:{1:'Der Zinssatz entspricht dem Prozentsatz.', 2:'Die Zinsen sind der Teil in Euro – sie entsprechen dem Prozentwert.'}}}]},
+      {typ:'kombi', teile:[{typ:'zahlen', nr:'2.1', frage:'Berechne mithilfe der Prozentrechnung, wie viele Zinsen Jonas für ein Jahr zahlen muss.', felder:[{t:'Zinsen für ein Jahr', l:133.75, e:'€', h:'Rechne wie beim Prozentwert: ' + B('2.500,00 € · 5,35', '100')}],
+        ok:`Richtig: ${B('2.500,00 € · 5,35', '100')} = 133,75 €. Jonas zahlt also nach einem Jahr 2.633,75 € zurück.`}, {typ:'mc', frage:'Welche Angabe hat bei Jonas die Rolle des Grundwerts?', options:['der Kreditbetrag von 2.500,00 €', 'der Zinssatz von 5,35 %', 'die Zinsen von 133,75 €'], correct:[0], mischen:false,
+          why:{1:'Der Zinssatz entspricht dem Prozentsatz.', 2:'Die Zinsen sind der Teil in Euro – sie entsprechen dem Prozentwert.'}}]}]},
 
   {id:'begriffe', kurz:'3 Begriffe', titel:'Von der Prozent- zur Zinsrechnung', html:`<h2>3 · Von der Prozent- zur Zinsrechnung</h2>
     <div class="info"><p>Die Zinsrechnung ist Prozentrechnung mit eigenen Namen:</p></div>
@@ -227,13 +226,12 @@ const SCHRITTE = [
   {id:'zeit', kurz:'12 t', titel:'Zinstage berechnen',
     erinnerung:`<p>t = ${B('Z · 100 · 360', 'K · p')}</p>`,
     material:'<div class="mt">Material</div><p>a) Ein Kredit über 12.000,00 € zu 4,5 % p. a. kostet 135,00 € Zinsen.<br>b) Ein Kredit über 5.400,00 € zu 6 % p. a. kostet 72,00 € Zinsen.</p>',
-    aufgaben:[{typ:'zahlen', nr:'12.1', frage:'Berechne jeweils die Laufzeit in Tagen.', felder:[
+    aufgaben:[{typ:'kombi', teile:[{typ:'zahlen', nr:'12.1', frage:'Berechne jeweils die Laufzeit in Tagen.', felder:[
       {t:'a) Laufzeit', l:90, e:'Tage', tol:0, h:'t = ' + B('135,00 · 100 · 360', '12.000,00 · 4,5')},
       {t:'b) Laufzeit', l:80, e:'Tage', tol:0, h:'t = ' + B('72,00 · 100 · 360', '5.400,00 · 6')}],
-      ok:'Richtig! a) 90 Tage · b) 80 Tage',
-      danach:{typ:'mc', frage:'Kredit a) wurde am 10.02. aufgenommen und läuft 90 Tage. An welchem Tag endet er?', options:['10.05.', '11.05.', '09.05.', '10.04.'], correct:[0], mischen:false,
+      ok:'Richtig! a) 90 Tage · b) 80 Tage'}, {typ:'mc', frage:'Kredit a) wurde am 10.02. aufgenommen und läuft 90 Tage. An welchem Tag endet er?', options:['10.05.', '11.05.', '09.05.', '10.04.'], correct:[0], mischen:false,
         why:{1:'Rechne nach: 20 (Feb) + 30 (Mär) + 30 (Apr) = 80 Tage, es fehlen noch 10 Tage – also der 10.05.', 2:'Der Endtag zählt mit: 20 + 30 + 30 + 10 = 90 Tage, das ist der 10.05.', 3:'Bis zum 10.04. sind es erst 20 + 30 + 10 = 60 Tage.'},
-        after:'20 (Februar) + 30 (März) + 30 (April) + 10 (Mai) = 90 Tage'}}]},
+        after:'20 (Februar) + 30 (März) + 30 (April) + 10 (Mai) = 90 Tage'}]}]},
 
   {id:'vergleich', kurz:'13 Vergleich', titel:'Dispo oder Kredit?', html:`<h2>13 · Dispo oder Kredit?</h2>
     <div class="info"><p>Jonas könnte sich auch einfach sein <b>Girokonto überziehen</b> (Dispositionskredit, kurz „Dispo“). Das ist bequem – aber ist es auch günstig?</p></div>
@@ -241,16 +239,15 @@ const SCHRITTE = [
     material:'<div class="mt">Material: zwei Möglichkeiten für 2.500,00 €, jeweils 130 Tage</div><p>A) Kredit der Bank: 5,35 % p. a. · B) Dispo auf dem Girokonto: 11,5 % p. a.</p>',
     erinnerung:`<p>${TF}</p>`, erinnerungZu:true,
     aufgaben:[
-      {typ:'zahlen', nr:'13.1', frage:'Berechne die Zinsen für beide Möglichkeiten und ermittle den Unterschied.', felder:[
+      {typ:'kombi', teile:[{typ:'zahlen', nr:'13.1', frage:'Berechne die Zinsen für beide Möglichkeiten und ermittle den Unterschied.', felder:[
         {t:'A) Zinsen beim Kredit', l:48.30, e:'€', tol:0.011, h:'Das hast du in Schritt 6 schon berechnet.'},
         {t:'B) Zinsen beim Dispo', l:103.82, e:'€', tol:0.011, h:'Z = ' + B('2.500,00 € · 11,5 · 130', '100 · 360')},
         {t:'Unterschied', l:55.52, e:'€', tol:0.011, h:'Dispozinsen – Kreditzinsen'}],
-        ok:'Richtig! Der Dispo kostet mehr als doppelt so viel.',
-        danach:{typ:'mc', frage:'Wozu rätst du Jonas? Wähle die passende Begründung.', options:[
+        ok:'Richtig! Der Dispo kostet mehr als doppelt so viel.'}, {typ:'mc', frage:'Wozu rätst du Jonas? Wähle die passende Begründung.', options:[
           'Er sollte den Kredit nehmen, weil er damit 55,52 € Zinsen spart.',
           'Er sollte den Dispo nehmen, weil er dort keine Zinsen zahlt.',
           'Es ist egal, weil beide 130 Tage laufen.'], correct:[0],
-          why:{1:'Auch beim Dispo zahlt man Zinsen – sogar deutlich höhere.', 2:'Gleiche Laufzeit, aber verschiedene Zinssätze – das macht den Unterschied.'}}}]},
+          why:{1:'Auch beim Dispo zahlt man Zinsen – sogar deutlich höhere.', 2:'Gleiche Laufzeit, aber verschiedene Zinssätze – das macht den Unterschied.'}}]}]},
 
   {id:'ueberblick', kurz:'Überblick', titel:'Überblick Zinsrechnung', aufgaben:[
     {typ:'luecken', frage:'Vervollständige den Überblick und übertrage ihn in dein Heft.', ok:'Richtig! Weiter üben kannst du oben im Modus „Endlos ∞“.',

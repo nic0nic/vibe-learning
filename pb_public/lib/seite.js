@@ -8,10 +8,13 @@
  *    "schritte": [{"kurz": "5.1", "titel": "…", "html": "<p>Erklärung</p>", "erinnerung": "…", "erinnerungZu": true,
  *                  "material": "…", "aufgaben": [{"typ": "mc", …}, …]}, …]}
  *   Statt "schritte" geht auch "aufgaben": [...] (wird ein einziger Schritt).
+ *   Kombinierte Aufgabe: {"typ": "kombi", "teile": [Aufgabe, Aufgabe, …]} – Teil 2 erscheint nach richtiger Lösung von Teil 1 usw.
+ *   Altes Format {"typ": …, "danach": {…}} wandelt normalisiere in eine Kombi um (Seite.ohneDanach).
  *
  * API
  *   Seite.TYPEN                     Aufgabentypen mit Pflichtfeldern (muss zu lib/aufgaben.js passen)
- *   Seite.normalisiere(json)        → {titel, kurztext, schritte} (Schritte bekommen id und kurz)
+ *   Seite.normalisiere(json)        → {titel, kurztext, schritte} (Schritte bekommen id und kurz, danach → kombi)
+ *   Seite.ohneDanach(aufgabe)       → Aufgabe mit danach-Kette als {"typ": "kombi", "teile": […]} (sonst unverändert)
  *   Seite.pruefe(json)              → Liste von Fehlern (leer = in Ordnung), deutsch, mit Fundstelle
  *       HTML in Texten nur nach Erlaubtliste (Seite.ERLAUBT): Tags wie p, b, ul, table … mit höchstens class
  *       (td/th auch colspan, rowspan); jedes andere „<“ + Buchstabe, „</“, „<!“ oder „<?“ wird abgelehnt.
@@ -26,7 +29,7 @@
   'use strict';
   const TYPEN = {
     mc: ['options', 'correct'], zahlen: ['felder'], luecken: ['text'], zuordnen: ['felder', 'karten'],
-    freitext: ['felder', 'antworten'], chat: ['nachrichten'], buchungssatz: ['konten', 'soll', 'haben'], tabelle: ['spalten', 'zeilen'], wahrheit: ['spalten', 'zeilen']
+    freitext: ['felder', 'antworten'], chat: ['nachrichten'], buchungssatz: ['konten', 'soll', 'haben'], kombi: ['teile'], tabelle: ['spalten', 'zeilen'], wahrheit: ['spalten', 'zeilen']
   };
   const MAX = 150000;
   // Erlaubtliste für HTML in eingereichten Texten (alles andere wird abgelehnt, auch unvollständige Tags)
@@ -57,9 +60,22 @@
   const istText = v => typeof v === 'string' && v.trim() !== '';
   const r2 = n => Math.round(n * 100) / 100;
 
+  // altes Format: Folgeaufgaben als danach-Kette → Kombi mit Teilen (auch danach in Teilen einer Kombi)
+  function ohneDanach(a) {
+    if (!a || typeof a !== 'object') return a;
+    if (a.typ === 'kombi' && Array.isArray(a.teile)) {
+      const teile = [].concat(...a.teile.map(t => { const k = ohneDanach(t); return k && k !== t && k.typ === 'kombi' && !t.teile ? k.teile : [k]; }));
+      return Object.assign({}, a, {teile});
+    }
+    if (!a.danach) return a;
+    const teile = [];
+    for (let x = a; x && typeof x === 'object'; x = x.danach) { const k = Object.assign({}, x); delete k.danach; teile.push(k); }
+    return {typ: 'kombi', teile};
+  }
   function normalisiere(j) {
     const schritte = Array.isArray(j.schritte) ? j.schritte : Array.isArray(j.aufgaben) ? [{kurz: 'Aufgaben', titel: j.titel, aufgaben: j.aufgaben}] : [];
-    return {titel: j.titel, kurztext: j.kurztext || '', schritte: schritte.map((s, i) => Object.assign({}, s, {id: 's' + (i + 1), kurz: s.kurz || String(i + 1)}))};
+    return {titel: j.titel, kurztext: j.kurztext || '', schritte: schritte.map((s, i) => Object.assign({}, s, {id: 's' + (i + 1), kurz: s.kurz || String(i + 1)},
+      Array.isArray(s.aufgaben) ? {aufgaben: s.aufgaben.map(ohneDanach)} : {}))};
   }
 
   function pruefeAufgabe(a, wo, f) {
@@ -97,6 +113,8 @@
       const summe = l => r2(l.reduce((s, x) => s + (Array.isArray(x) ? Number(x[1]) || 0 : 0), 0));
       [...a.soll, ...a.haben].forEach(x => { if (!Array.isArray(x) || !a.konten.includes(x[0]) || typeof x[1] !== 'number') f.push(`${wo}: Buchungszeile ${JSON.stringify(x)} – Konto muss in „konten“ stehen, Betrag als Zahl`); });
       if (summe(a.soll) !== summe(a.haben)) f.push(`${wo}: Soll (${summe(a.soll)}) und Haben (${summe(a.haben)}) sind nicht gleich groß`);
+      if (a.jgst != null && a.jgst !== 7) f.push(`${wo}: „jgst“ ist nur für die 7. Jahrgangsstufe nötig: "jgst": 7 (sonst weglassen)`);
+      if (a.jgst === 7) a.konten.forEach(k => { if (/\d/.test(k)) f.push(`${wo}: In Jgst. 7 Konten nur mit Kürzel, ohne Nummer: „${k}“`); });
       if (a.betraege !== undefined && (!Array.isArray(a.betraege) || a.betraege.some(x => !Array.isArray(x) || !istText(x[0]) || typeof x[1] !== 'number'))) f.push(`${wo}: „betraege“ braucht Einträge [Text, Betrag als Zahl]`);
     }
     if (a.typ === 'tabelle' && Array.isArray(a.spalten) && Array.isArray(a.zeilen)) {
@@ -116,10 +134,16 @@
       if (!felder) f.push(`${wo}: keine Felder zum Anklicken ({"l": true/false}) in der Tabelle`);
       if (a.werte != null && !(Array.isArray(a.werte) && a.werte.length === 2 && a.werte.every(istText))) f.push(`${wo}: „werte“ braucht genau zwei Wörter, z. B. ["ja", "nein"]`);
     }
-    if (a.danach) pruefeAufgabe(a.danach, wo + ' → danach', f);
+    if (a.typ === 'kombi' && Array.isArray(a.teile)) {
+      if (a.teile.length < 2) f.push(`${wo}: Eine kombinierte Aufgabe braucht mindestens zwei Teile`);
+      a.teile.forEach((t, i) => {
+        if (t && t.typ === 'kombi') return f.push(`${wo}, Teil ${i + 1}: keine kombinierte Aufgabe in einer kombinierten Aufgabe`);
+        pruefeAufgabe(t, `${wo}, Teil ${i + 1}`, f);
+      });
+    }
   }
 
-  function pruefe(j) {
+  function pruefe(j) {   // danach-Ketten prüft sie schon als Kombi (normalisiere)
     const f = [];
     if (!j || typeof j !== 'object' || Array.isArray(j)) return ['Das ist kein Aufgaben-JSON (Objekt mit „titel“ und „schritte“ erwartet).'];
     const roh = JSON.stringify(j);
@@ -203,7 +227,7 @@ Aufgaben.sequenz({el:'#app', key:${JSON.stringify(id)}, schritte:DATEN.schritte}
 `;
   }
 
-  const Seite = {TYPEN, ERLAUBT, normalisiere, pruefe, toolId, seiteHTML, MAX};
+  const Seite = {TYPEN, ERLAUBT, normalisiere, ohneDanach, pruefe, toolId, seiteHTML, MAX};
   if (typeof module !== 'undefined' && module.exports) module.exports = Seite;
   else window.Seite = Seite;
 })();
