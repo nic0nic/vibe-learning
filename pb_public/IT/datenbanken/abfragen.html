@@ -14,6 +14,7 @@ document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: da
 <link rel="stylesheet" href="../python/lib/codemirror.css">
 <link rel="stylesheet" href="lib/show-hint.min.css">
 <link rel="stylesheet" href="../excel/basis.css">
+<link rel="stylesheet" href="../../lib/aufgaben.css">
 <link rel="stylesheet" href="abfragen.css">
 </head>
 <body>
@@ -26,10 +27,11 @@ document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: da
   <div class="hdr-left">
     <div class="brand"><span>&gt;</span>SELECT<span>;</span></div>
     <div class="modes" role="group" aria-label="Modus">
-      <button data-mode="pfad">Übungen</button><button data-mode="endlos">Endlos</button>
+      <button data-mode="lernen">Erarbeitung</button><button data-mode="pfad">Übungen</button><button data-mode="endlos">Endlos</button>
     </div>
   </div>
   <div class="hdr-right">
+    <button class="ttbtn" id="ttBtn" aria-pressed="false" aria-label="Tooltipps"><span class="sw" aria-hidden="true"></span><span class="tl">Tooltipps</span></button>
     <button class="iconbtn" id="themeBtn" aria-label="Hell/Dunkel umschalten"></button>
     <div class="flames" id="flames" aria-label="Stufe wählen"></div>
   </div>
@@ -41,7 +43,7 @@ document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: da
       <span class="lvlname" id="lvlname"></span>
       <span id="taskmeta"></span>
     </div>
-    <p class="tasktext" id="tasktext"></p>
+    <div class="tasktext" id="tasktext"></div>
   </section>
 
   <section class="card" id="workcard">
@@ -70,6 +72,7 @@ document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: da
 <script src="../python/lib/codemirror.min.js"></script>
 <script src="lib/show-hint.min.js"></script>
 <script src="../excel/basis.js"></script>
+<script src="../../lib/aufgaben.js"></script>
 <script>
 /* Aufgaben: frage, felder (angezeigt), where (Bedingung), sort, tipp (nur Stufe 1–3).
    Die Musterlösung baut abfragen.js daraus: SELECT felder FROM filme WHERE … ORDER BY … */
@@ -144,6 +147,126 @@ const ENDLOS = [
     return {frage:`Bei welchen Einträgen hat jemand mit dem Nachnamen ${n} Regie geführt?`, felder:f, where:`regie LIKE ${q('%' + n + '%')}`, sort:sortiere(r, f, 'jahr')}; }
 ];
 
+/* Erarbeitung: Teile einer Abfrage zeigen → Abfragen abändern → Bedingungen ziehen.
+   SELECT immer durch Anklicken im Tabfenster. SQL in <pre class="sqlv"> färbt abfragen.js ein. */
+const sql = s => `<pre class="sqlv cm-s-default">${s}</pre>`;
+const AUSF = 'Klicke auf <b>▶ Ausführen</b> und sieh dir das Ergebnis an.';
+const NOLAN = "regie = 'Christopher Nolan'";
+const ERARBEITUNG = [
+  {titel:'Herr Maiers Filmsammlung', html:`<p>Herr Maier hat alle Filme und Serien, die er gesehen hat oder noch sehen will, in einer Datenbank gesammelt – in der Tabelle <code>filme</code>. Jede <b>Zeile</b> ist ein Datensatz (ein Film oder eine Serie), jede <b>Spalte</b> ein Feld, z. B. <code>titel</code> oder <code>jahr</code>.</p>
+   <p>Will er etwas wissen, stellt er der Datenbank eine Frage: eine <b>Abfrage</b>. In SQL besteht sie aus bis zu vier Teilen, immer in dieser Reihenfolge:</p>
+   <table class="teile"><tr><td>SELECT</td><td>Welche <b>Spalten</b> (Felder) sollen angezeigt werden?</td></tr><tr><td>FROM</td><td>Aus welcher <b>Tabelle</b> kommen die Daten?</td></tr>
+   <tr><td>WHERE</td><td>Welche <b>Datensätze</b> (Zeilen) sollen erscheinen? – eine Bedingung</td></tr><tr><td>ORDER BY</td><td>In welcher <b>Reihenfolge</b>?</td></tr></table>
+   <p>In dieser Erarbeitung siehst du zuerst fertige Abfragen, dann änderst du Abfragen ab, und am Ende baust du sie selbst: Die Felder wählst du im <b>Tabfenster</b> durch Anklicken, Bedingungen ziehst du in die WHERE-Zeile.</p>
+   <p>💡 Oben rechts kannst du die <b>Tooltipps</b> einschalten. Dann erklärt die Seite jeden Begriff und jeden Baustein, über den du mit der Maus fährst.</p>`},
+
+  // 1. Abfragen zeigen
+  {titel:'SELECT und FROM', ui:'block', zeigen:true, auftrag:AUSF,
+   html:`<p>Die einfachste Abfrage hat nur zwei Teile:</p>${sql('SELECT titel, jahr\nFROM filme')}
+   <ul><li><code>SELECT titel, jahr</code> – zeige die Felder <code>titel</code> und <code>jahr</code>,</li><li><code>FROM filme</code> – aus der Tabelle <code>filme</code>.</li></ul>
+   <p>Unten steht dieselbe Abfrage in der <b>Entwurfsansicht</b>. Links ist das <b>Tabfenster</b> mit allen Feldern der Tabelle. Die Felder für SELECT sind dort angeklickt.</p>`,
+   entwurf:{felder:['titel', 'jahr']},
+   nachher:'Das Ergebnis hat nur die zwei Spalten <code>titel</code> und <code>jahr</code> – aber <b>alle</b> Datensätze der Tabelle. SELECT wählt <b>Spalten</b> aus. Mit <code>*</code> statt der Feldnamen würden alle Spalten angezeigt.'},
+
+  {titel:'WHERE', ui:'block', zeigen:true, auftrag:AUSF,
+   html:`<p>Meist will Herr Maier nicht alle Datensätze sehen, sondern nur bestimmte, z. B. die alten Filme. Dafür gibt es <code>WHERE</code> mit einer <b>Bedingung</b>:</p>${sql('SELECT titel, jahr\nFROM filme\nWHERE jahr &lt; 1960')}
+   <p>Die Bedingung <code>jahr &lt; 1960</code> besteht aus einem <b>Feld</b>, einem <b>Vergleichszeichen</b> und einem <b>Wert</b>. Im Entwurf steht sie als Baustein in der Zeile WHERE.</p>`,
+   entwurf:{felder:['titel', 'jahr'], where:'jahr < 1960'},
+   nachher:'Jetzt erscheinen nur noch die Datensätze, die vor 1960 erschienen sind – wie viele es sind, steht über dem Ergebnis. WHERE wählt <b>Zeilen</b> aus.'},
+
+  {titel:'ORDER BY', ui:'block', zeigen:true, auftrag:AUSF,
+   html:`<p>Ohne Sortierung erscheinen die Datensätze in der Reihenfolge der Tabelle. Mit <code>ORDER BY</code> sortierst du nach einem Feld:</p>${sql('SELECT titel, imdb_bewertung\nFROM filme\nWHERE imdb_bewertung &gt;= 8.8\nORDER BY imdb_bewertung DESC')}
+   <ul><li><code>ASC</code> – aufsteigend: A → Z, 1 → 9</li><li><code>DESC</code> – absteigend: Z → A, 9 → 1</li></ul>`,
+   entwurf:{felder:['titel', 'imdb_bewertung'], where:'imdb_bewertung >= 8.8', sort:'imdb_bewertung DESC'},
+   nachher:'Ganz oben steht der Eintrag mit der besten IMDb-Bewertung. ORDER BY ändert nur die <b>Reihenfolge</b> – welche Datensätze erscheinen, bestimmt WHERE.'},
+
+  {titel:'Die vier Teile', arbeit:'Zuordnen',
+   aufgabe:{typ:'zuordnen', frage:'Zu welchem Teil der Abfrage gehört das?',
+     felder:[['s', 'SELECT'], ['f', 'FROM'], ['w', 'WHERE'], ['o', 'ORDER BY']],
+     karten:[
+       {t:'wählt die Spalten (Felder) aus', z:'s'}, {t:'* – alle Felder', z:'s'},
+       {t:'nennt die Tabelle', z:'f'}, {t:'filme', z:'f'},
+       {t:'wählt die Datensätze (Zeilen) mit einer Bedingung aus', z:'w'}, {t:'jahr &lt; 1960', z:'w'},
+       {t:'legt die Reihenfolge fest', z:'o'}, {t:'DESC – absteigend', z:'o'}]}},
+
+  {titel:'Eine Abfrage lesen', arbeit:'Auswählen',
+   html:`<p>Herr Maier hat diese Abfrage geschrieben:</p>${sql('SELECT titel, laufzeit\nFROM filme\nWHERE laufzeit &gt; 180\nORDER BY laufzeit DESC')}`,
+   aufgabe:{typ:'mc', frage:'Was zeigt die Abfrage?',
+     options:['Titel und Laufzeit aller Einträge, die länger als 180 Minuten dauern – der längste oben',
+       'Titel und Laufzeit aller Einträge – der längste oben',
+       'Alle Felder der Einträge, die länger als 180 Minuten dauern',
+       'Titel und Laufzeit aller Einträge, die länger als 180 Minuten dauern – der kürzeste oben'], correct:[0],
+     why:{1:'WHERE laufzeit > 180 lässt nur die Einträge durch, die länger als 180 Minuten dauern.', 2:'SELECT nennt nur zwei Felder: titel und laufzeit.', 3:'DESC sortiert absteigend: die größte Laufzeit steht oben.'}}},
+
+  // 2. Abfragen abändern
+  {titel:'Abändern: SELECT', ui:'block', vorgabe:{felder:['titel', 'jahr'], where:NOLAN},
+   html:`<p>Ab jetzt änderst du fertige Abfragen ab. Diese Abfrage zeigt Titel und Jahr aller Filme von Christopher Nolan – führe sie ruhig zuerst aus.</p>`,
+   entwurf:{frage:'Herr Maier will bei den Nolan-Filmen statt des Jahres sehen, wie gut sie auf IMDb bewertet sind.', felder:['titel', 'imdb_bewertung'], where:NOLAN,
+     tipp:'Klicke im Tabfenster auf <code>jahr</code> (herausnehmen) und auf <code>imdb_bewertung</code> (aufnehmen).'},
+   nachher:'SELECT änderst du, indem du im Tabfenster Felder an- und abklickst.'},
+
+  {titel:'Abändern: der Wert', ui:'block', vorgabe:{felder:['titel', 'imdb_bewertung'], where:NOLAN},
+   html:`<p>Herr Maier will dieselbe Liste für einen anderen Regisseur.</p>`,
+   entwurf:{frage:'Welche Filme von Steven Spielberg stehen in der Sammlung?', felder:['titel', 'imdb_bewertung'], where:"regie = 'Steven Spielberg'",
+     tipp:'Ändere nur den Wert im Bedingungs-Baustein. Die Anführungszeichen setzt der Entwurf selbst – schau in die SQL-Vorschau.'},
+   nachher:"In SQL steht ein Text in einfachen Anführungszeichen: <code>'Steven Spielberg'</code>."},
+
+  {titel:'Abändern: das Vergleichszeichen', ui:'block', vorgabe:{felder:['titel', 'jahr'], where:'jahr < 1960'},
+   html:`<p>Diese Abfrage findet die alten Filme. Herr Maier will jetzt das Gegenteil: die ganz neuen.</p>`,
+   entwurf:{frage:'Welche Einträge sind <b>ab</b> 2023 erschienen?', felder:['titel', 'jahr'], where:'jahr >= 2023',
+     tipp:'„ab 2023“ heißt: 2023 gehört dazu. Ändere das Vergleichszeichen und den Wert.'},
+   nachher:'<code>&lt;</code> und <code>&gt;</code> schließen den Wert aus, <code>&lt;=</code> und <code>&gt;=</code> schließen ihn ein.'},
+
+  {titel:'Abändern: die Richtung', ui:'block', vorgabe:{felder:['titel', 'jahr'], where:NOLAN, sort:'jahr ASC'},
+   html:`<p>Diese Abfrage zeigt die Nolan-Filme, die ältesten zuerst.</p>`,
+   entwurf:{frage:'Herr Maier will die <b>neuesten</b> Nolan-Filme oben sehen.', felder:['titel', 'jahr'], where:NOLAN, sort:'jahr DESC',
+     tipp:'Ändere bei ORDER BY nur die Richtung.'},
+   nachher:'DESC sortiert absteigend: Die größte Jahreszahl, also der neueste Film, steht oben.'},
+
+  {titel:'Abändern: Sortierung ergänzen', ui:'block', vorgabe:{felder:['titel', 'imdb_bewertung'], where:'imdb_bewertung >= 8.8'},
+   html:`<p>Diese Abfrage findet die am besten bewerteten Einträge – aber unsortiert.</p>`,
+   entwurf:{frage:'Herr Maier will die Liste alphabetisch, von A bis Z.', felder:['titel', 'imdb_bewertung'], where:'imdb_bewertung >= 8.8', sort:'titel ASC'},
+   nachher:'Sortieren kannst du nach jedem Feld. Bei einem Text heißt aufsteigend: alphabetisch.'},
+
+  // 3. Bedingungen ziehen
+  {titel:'Bedingungen', html:`<p>Jetzt baust du die Abfragen wieder selbst. Die Bedingung wählst du dabei aus mehreren Bausteinen aus – <b>nicht alle passen</b>.</p>
+   <div class="merke"><b>Merke: Bedingungen</b><ul>
+   <li>Eine Bedingung hat ein <b>Feld</b>, ein <b>Vergleichszeichen</b> und einen <b>Wert</b>: <code>jahr &lt; 1960</code></li>
+   <li>Vergleichszeichen: <code>=</code> gleich, <code>&lt;&gt;</code> ungleich, <code>&lt;</code> kleiner, <code>&lt;=</code> kleiner oder gleich, <code>&gt;</code> größer, <code>&gt;=</code> größer oder gleich</li>
+   <li>Texte stehen in einfachen Anführungszeichen: <code>art = 'Film'</code>. Zahlen stehen ohne, Kommazahlen mit Punkt: <code>imdb_bewertung &gt;= 8.5</code></li>
+   <li><code>LIKE</code> vergleicht mit einem Muster, <code>%</code> steht für beliebig viele Zeichen: <code>genres LIKE '%Horror%'</code> heißt „enthält Horror“.</li></ul></div>
+   <p>So geht es: Felder im Tabfenster anklicken, die passende Bedingung in die WHERE-Zeile ziehen (oder anklicken), bei Bedarf sortieren.</p>`},
+
+  {titel:'Bedingung ziehen: Text', ui:'zieh', bausteine:["art = 'Film'", "art <> 'Fernsehserie'", "titel = 'Fernsehserie'"],
+   entwurf:{frage:'Welche Fernsehserien stehen in der Sammlung?', felder:['titel', 'jahr'], where:"art = 'Fernsehserie'",
+     tipp:'Das Feld <code>art</code> brauchst du nur für die Bedingung – angezeigt werden soll es nicht.'},
+   nachher:'Mit <code>&lt;&gt;</code> hättest du genau das Gegenteil gefunden: alles außer Fernsehserien.'},
+
+  {titel:'Bedingung ziehen: Grenzwert', ui:'zieh', bausteine:['eigene_bewertung > 9', 'eigene_bewertung <= 9', 'imdb_bewertung >= 9'],
+   entwurf:{frage:'Welchen Einträgen hat Herr Maier <b>mindestens</b> 9 Punkte gegeben?', felder:['titel', 'eigene_bewertung'], where:'eigene_bewertung >= 9'},
+   nachher:'„mindestens 9“ schließt die 9 ein – deshalb <code>&gt;=</code>. Und es geht um Herrn Maiers <b>eigene</b> Bewertung, nicht um IMDb.'},
+
+  {titel:'Bedingung und Sortierung', ui:'zieh', bausteine:['laufzeit < 180', 'jahr > 180', 'laufzeit > 3'],
+   entwurf:{frage:'Welche Einträge dauern länger als drei Stunden (180 Minuten)? Die längsten sollen oben stehen.', felder:['titel', 'laufzeit'], where:'laufzeit > 180', sort:'laufzeit DESC'},
+   nachher:'Die Laufzeit steht in Minuten in der Tabelle. <code>laufzeit &gt; 3</code> hätte fast alles gefunden.'},
+
+  {titel:'Muster mit LIKE', ui:'zieh', bausteine:["genres = 'Horror'", "genres LIKE 'Horror'", "genres LIKE '%Komödie%'"],
+   entwurf:{frage:'Welche Einträge gehören (auch) zum Genre Horror?', felder:['titel', 'genres'], where:"genres LIKE '%Horror%'",
+     tipp:'Ein Eintrag kann mehrere Genres haben, z. B. „Horror, Thriller“. Sieh dir dazu die Tabelle an.'},
+   nachher:"<code>genres = 'Horror'</code> findet nur Einträge, bei denen <b>nur</b> Horror steht. <code>'%Horror%'</code> findet Horror an jeder Stelle."},
+
+  {titel:'Alles zusammen', ui:'zieh', bausteine:['regie = Christopher Nolan', "titel = 'Christopher Nolan'", "regie <> 'Christopher Nolan'"],
+   entwurf:{frage:'Welche Filme hat Christopher Nolan gedreht? Die auf IMDb am besten bewerteten sollen oben stehen.', felder:['titel', 'imdb_bewertung'], where:NOLAN, sort:'imdb_bewertung DESC'},
+   nachher:'Du kannst jetzt eine Abfrage aus allen vier Teilen zusammensetzen.'},
+
+  {titel:'Geschafft!', final:true, html:`<p>Du kennst jetzt alle Teile einer Abfrage:</p>
+   ${sql('SELECT titel, imdb_bewertung\nFROM filme\nWHERE regie = \'Christopher Nolan\'\nORDER BY imdb_bewertung DESC')}
+   <table class="teile"><tr><td>SELECT</td><td>Spalten (Felder), <code>*</code> = alle</td></tr><tr><td>FROM</td><td>Tabelle</td></tr>
+   <tr><td>WHERE</td><td>Datensätze (Zeilen), die die Bedingung erfüllen</td></tr><tr><td>ORDER BY</td><td>Reihenfolge: <code>ASC</code> aufsteigend, <code>DESC</code> absteigend</td></tr></table>
+   <p>In den <b>Übungen</b> stellst du die Bedingung zuerst als Baustein ein (Stufe 1), dann tippst du sie selbst (Stufe 2) und schreibst schließlich ganze SQL-Abfragen (Stufe 3 bis 5).</p>
+   <p><button class="btn primary" data-mode-go="pfad">Zu den Übungen</button> <button class="btn" data-mode-go="endlos">Endlos üben</button></p>`}
+];
+
 window.SQLKURS = {
   id: 'sql',
   tabelle: DB_FILME,
@@ -154,6 +277,7 @@ window.SQLKURS = {
     {name:'SQL mit Gerüst',                           ui:'sql', vorlage:'geruest'},
     {name:'SQL ohne Hilfe',                           ui:'sql', vorlage:'leer'}
   ],
+  erarbeitung: ERARBEITUNG,
   aufgaben: AUFGABEN,
   endlos: ENDLOS
 };

@@ -164,3 +164,27 @@ body.dragging .acell{border-color:var(--slot-border);background:var(--slot)}
 .mini .agrid{width:auto}
 .mini .agrid td{min-width:110px;height:30px;padding:3px 8px}
 .mini .agrid tr.krit td{height:32px}
+.fb.info{background:var(--panel2);border-color:var(--muted)}
+.tasktext pre.sqlv{margin:8px 0}
+.tasktext .teile{border-collapse:collapse;margin:8px 0;font-size:15px}
+.tasktext .teile td{padding:5px 10px;border-bottom:1px solid var(--panel2);vertical-align:top}
+.tasktext .teile td:first-child{font:700 15px var(--mono);color:var(--kw);white-space:nowrap}
+
+/* Erarbeitung: fertige Bedingungen zum Ziehen */
+.block.zb{display:inline-flex;align-items:center;color:var(--on-color);font:700 15px var(--mono);white-space:nowrap}
+#zpool{margin-top:12px}
+
+/* Tooltipps (Knopf #ttBtn) */
+.ttbtn{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 12px;border-radius:10px;border:1px solid var(--border);background:var(--panel2);color:var(--text);font:600 14px system-ui,sans-serif;cursor:pointer}
+.ttbtn .sw{position:relative;width:34px;height:20px;border-radius:999px;background:var(--border);transition:background .15s}
+.ttbtn .sw::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--panel);transition:left .15s}
+.ttbtn[aria-pressed=true] .sw{background:var(--accent)}
+.ttbtn[aria-pressed=true] .sw::after{left:16px}
+body.tt-an [data-tt]{cursor:help}
+body.tt-an button[data-tt],body.tt-an select[data-tt],body.tt-an input[data-tt],body.tt-an .block[data-drag][data-tt],body.tt-an .feld[data-tt]{cursor:pointer}
+body.tt-an .block[data-drag][data-tt]{cursor:grab}
+body.tt-an .tt-ziel{outline:2px dashed color-mix(in srgb,var(--accent) 80%,transparent);outline-offset:2px}
+body.tt-an .tabfenster.tt-ziel,body.tt-an .pool.tt-ziel{outline-offset:0}
+#tt{position:fixed;z-index:300;display:none;max-width:min(340px,calc(100vw - 16px));background:var(--panel);color:var(--text);border:2px solid var(--accent);border-radius:10px;padding:8px 12px;font:14px/1.45 system-ui,sans-serif;box-shadow:0 6px 20px rgba(0,0,0,.22);pointer-events:none}
+#tt code{font:13px var(--mono);background:var(--panel2);border-radius:4px;padding:0 3px}
+@media (max-width:640px){ .ttbtn .tl{display:none} }

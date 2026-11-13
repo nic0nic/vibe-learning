@@ -85,7 +85,7 @@ window.KATALOG = {
         {id: 'datenbanken', titel: 'Datenbanken', farbe: '#bf616a', farbeHell: '#a3434c', farbeSchrift: '#e0959b', text: 'Tabellen, Beziehungen und SQL-Abfragen.',
           tools: [
             {id: 'sqlfrei', datei: 'filmdatenbank.html', titel: 'Film-Datenbank', text: 'Eigene Abfragen an die Filmdatenbank stellen, ohne Aufgaben – mit Entwurfsansicht oder in SQL.'},
-            {id: 'sql', stufen: 5, datei: 'abfragen.html', titel: 'SQL-Abfragen', text: 'SELECT, FROM, WHERE und ORDER BY an einer Filmdatenbank – vom Entwurf wie in Access bis zur eigenen SQL-Abfrage.'},
+            {id: 'sql', stufen: 5, datei: 'abfragen.html', titel: 'SQL-Abfragen', text: 'SELECT, FROM, WHERE und ORDER BY an einer Filmdatenbank – mit Erarbeitung (Abfragen ansehen, abändern, Bedingungen ziehen) und Tooltipps, vom Entwurf bis zur eigenen SQL-Abfrage.'},
             {id: 'sqluo', stufen: ['Access 1', 'Access 2', 'Access 3', 'SQL 1', 'SQL 2', 'SQL 3', 'SQL 4', 'SQL 5'], datei: 'und_oder_datenight.html', titel: 'Datenight: UND / ODER', text: 'Drei Wochen Dates mit immer verrückteren Filmwünschen: Kriterien mit UND und ODER – mit Erarbeitung für Access (Zeilen und Wahrheitstabelle), im Access-Entwurf oder mit Blöcken und SQL.'},
             {id: 'bericht', datei: 'bericht.html', titel: 'Bericht (Versuch)', text: 'Berichte aus einer Abfrage entwerfen wie in Access: als Liste oder eine Seite je Datensatz, mit Seitenansicht als PDF.'}
           ]
@@ -1621,6 +1621,30 @@ body.dragging .acell{border-color:var(--slot-border);background:var(--slot)}
 .mini .agrid{width:auto}
 .mini .agrid td{min-width:110px;height:30px;padding:3px 8px}
 .mini .agrid tr.krit td{height:32px}
+.fb.info{background:var(--panel2);border-color:var(--muted)}
+.tasktext pre.sqlv{margin:8px 0}
+.tasktext .teile{border-collapse:collapse;margin:8px 0;font-size:15px}
+.tasktext .teile td{padding:5px 10px;border-bottom:1px solid var(--panel2);vertical-align:top}
+.tasktext .teile td:first-child{font:700 15px var(--mono);color:var(--kw);white-space:nowrap}
+
+/* Erarbeitung: fertige Bedingungen zum Ziehen */
+.block.zb{display:inline-flex;align-items:center;color:var(--on-color);font:700 15px var(--mono);white-space:nowrap}
+#zpool{margin-top:12px}
+
+/* Tooltipps (Knopf #ttBtn) */
+.ttbtn{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 12px;border-radius:10px;border:1px solid var(--border);background:var(--panel2);color:var(--text);font:600 14px system-ui,sans-serif;cursor:pointer}
+.ttbtn .sw{position:relative;width:34px;height:20px;border-radius:999px;background:var(--border);transition:background .15s}
+.ttbtn .sw::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--panel);transition:left .15s}
+.ttbtn[aria-pressed=true] .sw{background:var(--accent)}
+.ttbtn[aria-pressed=true] .sw::after{left:16px}
+body.tt-an [data-tt]{cursor:help}
+body.tt-an button[data-tt],body.tt-an select[data-tt],body.tt-an input[data-tt],body.tt-an .block[data-drag][data-tt],body.tt-an .feld[data-tt]{cursor:pointer}
+body.tt-an .block[data-drag][data-tt]{cursor:grab}
+body.tt-an .tt-ziel{outline:2px dashed color-mix(in srgb,var(--accent) 80%,transparent);outline-offset:2px}
+body.tt-an .tabfenster.tt-ziel,body.tt-an .pool.tt-ziel{outline-offset:0}
+#tt{position:fixed;z-index:300;display:none;max-width:min(340px,calc(100vw - 16px));background:var(--panel);color:var(--text);border:2px solid var(--accent);border-radius:10px;padding:8px 12px;font:14px/1.45 system-ui,sans-serif;box-shadow:0 6px 20px rgba(0,0,0,.22);pointer-events:none}
+#tt code{font:13px var(--mono);background:var(--panel2);border-radius:4px;padding:0 3px}
+@media (max-width:640px){ .ttbtn .tl{display:none} }
 
 </style>
 </head>
@@ -3195,8 +3219,19 @@ window.SQLKURS = {
  *              aufgabe:{typ, …}               Baustein aus lib/aufgaben.js (Seite bindet ../../lib/aufgaben.js/.css ein)
  *              access:{frage, felder, where, sort, tipp, auch}, krit:'bloecke'|'falsch'|'text'
  *                                             Abfrage im Access-Entwurf, geprüft wie eine Übung
+ *              entwurf:{frage, felder, where, sort, tipp, auch}, ui:'block'|'zieh'
+ *                                             Abfrage im SQL-Entwurf (SELECT durch Anklicken im Tabfenster).
+ *                                             'block': Bedingung als Baustein mit Feld, Vergleich, Wert;
+ *                                             'zieh': fertige Bedingungen in die WHERE-Zeile ziehen,
+ *                                             bausteine:["…"] = falsche Bedingungen dazu (Ablenker).
+ *                                             vorgabe:{felder, where, sort} = so ist der Entwurf vorausgefüllt
+ *                                             (Abfrage abändern); zeigen:true = die Abfrage entwurf ist schon
+ *                                             fertig eingetragen, der Schritt ist mit „Ausführen“ erledigt
+ *                                             (auftrag: eigener Auftragstext statt „Zeige die Felder …“).
  *            Stand unter id(-ansicht)-lernen {idx, done}; gelöste Schritte melden modus 'erarbeitung'.
  * }
+ * Tooltipps: Gibt es einen Knopf #ttBtn, schaltet er Erklärungen beim Überfahren ein und aus
+ * (Elemente mit data-tt, gespeichert unter id-tooltipps).
  * Ohne aufgaben: freie Abfragen (wie filmdatenbank.html). Kein Prüfen, keine Modi, kein Dock;
  * die Knöpfe #checkBtn, #nextBtn, #skipBtn, #prevBtn braucht basis.js trotzdem (hidden).
  * Beim Stufenwechsel wird die bisherige Abfrage in den SQL-Editor übernommen,
@@ -3217,6 +3252,55 @@ const KW = ['SELECT', 'FROM', 'WHERE', 'ORDER', 'BY', 'ASC', 'DESC', 'LIKE', 'IS
 const KWS = new Set(KW);
 const OPS = ['=', '<>', '<', '<=', '>', '>=', 'LIKE', 'NOT LIKE', 'IS NULL', 'IS NOT NULL'];
 const istText = n => { const f = FELD[n]; return f && f.art !== 'Zahl' && f.art !== 'Kommazahl'; };
+
+/* ---------- Tooltipps: was ein Begriff oder Baustein macht (HTML, nur eigene Texte) ---------- */
+const TT = {
+  SELECT:'<b>SELECT</b> – welche <b>Spalten</b> (Felder) im Ergebnis stehen. Mehrere Felder trennt ein Komma, <code>*</code> zeigt alle Felder.',
+  FROM:`<b>FROM</b> – aus welcher <b>Tabelle</b> die Daten kommen. Hier gibt es nur die Tabelle <code>${TAB}</code>.`,
+  WHERE:'<b>WHERE</b> – welche <b>Datensätze</b> (Zeilen) im Ergebnis stehen: nur die, für die die Bedingung stimmt. Ohne WHERE erscheinen alle Datensätze.',
+  'ORDER BY':'<b>ORDER BY</b> – in welcher <b>Reihenfolge</b> die Datensätze erscheinen: sortiert nach einem Feld. Ohne ORDER BY bleibt die Reihenfolge der Tabelle.',
+  ASC:'<b>ASC</b> (ascending) – aufsteigend sortieren: A → Z, 1 → 9, alt → neu.',
+  DESC:'<b>DESC</b> (descending) – absteigend sortieren: Z → A, 9 → 1, neu → alt.',
+  LIKE:"<b>LIKE</b> – vergleicht mit einem Muster. <code>%</code> steht für beliebig viele Zeichen: <code>'%Horror%'</code> = enthält Horror, <code>'Harry%'</code> = beginnt mit Harry.",
+  AND:'<b>AND</b> – beide Bedingungen müssen gelten.',
+  OR:'<b>OR</b> – mindestens eine der Bedingungen muss gelten.',
+  NOT:'<b>NOT</b> – kehrt die Bedingung um.',
+  IS:'<b>IS NULL</b> – das Feld ist leer. <b>IS NOT NULL</b> – das Feld ist nicht leer.',
+  NULL:'<b>NULL</b> – „leer“: In diesem Feld steht nichts.',
+  str:"Ein <b>Text</b> steht in SQL in einfachen Anführungszeichen <code>'…'</code> (Shift + #).",
+  num:'Eine <b>Zahl</b> steht ohne Anführungszeichen, Kommazahlen mit Punkt: <code>8.5</code>.',
+  op:'<b>Vergleichszeichen</b>: <code>=</code> gleich, <code>&lt;&gt;</code> ungleich, <code>&lt;</code> kleiner, <code>&lt;=</code> kleiner oder gleich, <code>&gt;</code> größer, <code>&gt;=</code> größer oder gleich.',
+  stern:'<b>*</b> – steht für <b>alle Felder</b> der Tabelle.',
+  tab:`<b>${TAB}</b> – der Name der Tabelle. Sie ist hier fest vorgegeben.`,
+  tabfenster:`<b>Tabfenster</b> der Tabelle <code>${TAB}</code>: Hier stehen alle Felder. Ein Klick auf ein Feld nimmt es in <b>SELECT</b> auf, ein zweiter Klick nimmt es wieder heraus. 🔑 = Primärschlüssel.`,
+  selchips:'Die Felder, die im Ergebnis angezeigt werden – in dieser Reihenfolge. Mit × entfernst du ein Feld, oder du klickst es im Tabfenster noch einmal an.',
+  wb:'<b>Bedingungs-Baustein</b>: Feld, Vergleichszeichen und Wert. Nur Datensätze, für die die Bedingung stimmt, kommen ins Ergebnis.',
+  wf:'Das <b>Feld</b>, das in der Bedingung geprüft wird. „keine Bedingung“ = alle Datensätze.',
+  wop:'Das <b>Vergleichszeichen</b>: <code>=</code> gleich, <code>&lt;&gt;</code> ungleich, <code>&lt;</code> / <code>&gt;</code> kleiner / größer, <code>&lt;=</code> / <code>&gt;=</code> mit Gleich, <code>LIKE</code> Muster mit <code>%</code>, <code>IS NULL</code> leer.',
+  wv:'Der <b>Vergleichswert</b>. Text ohne Anführungszeichen eintippen – die setzt der Entwurf selbst. Bei LIKE: <code>%</code> für beliebig viele Zeichen.',
+  zslot:'<b>WHERE-Zeile</b>: Hierher kommt die Bedingung. Ziehe einen Bedingungs-Baustein hinein oder klicke ihn an. Leer = keine Bedingung, alle Datensätze erscheinen.',
+  zpool:'<b>Bedingungs-Bausteine</b> zur Auswahl. Nicht alle passen: Achte auf das Feld, das Vergleichszeichen und den Wert.',
+  wheretext:'Hier tippst du die <b>Bedingung</b> ein, z. B. <code>jahr &gt; 2000</code>. Enter führt die Abfrage aus.',
+  cmp:'<b>Vergleich</b>: Feld, Vergleichszeichen und Wert, z. B. <code>jahr &gt;= 1960</code>. In die WHERE-Zeile oder in eine Lücke von AND/OR ziehen.',
+  sf:'Das <b>Feld</b>, nach dem sortiert wird. „nicht sortieren“ = Reihenfolge wie in der Tabelle.',
+  sdir:'Die <b>Richtung</b>: ASC = aufsteigend (A → Z, 1 → 9), DESC = absteigend (Z → A, 9 → 1).',
+  sqlv:'So heißt deine Abfrage in <b>SQL</b>. Die Vorschau ändert sich mit jedem Klick im Entwurf.',
+  editor:'<b>SQL-Editor</b>: Hier schreibst du die Abfrage selbst. Strg + Enter führt sie aus, Vorschläge erscheinen beim Tippen.',
+  ergebnis:'<b>Ergebnis</b> der Abfrage: Jede Zeile ist ein Datensatz, jede Spalte ein Feld aus SELECT.',
+  tabelle:`Die ganze Tabelle <code>${TAB}</code> mit allen Feldern und Datensätzen – zum Nachschauen, wie die Werte geschrieben sind.`,
+  runBtn:'<b>Ausführen</b>: Die Abfrage läuft, das Ergebnis erscheint unten als Tabelle.',
+  checkBtn:'<b>Prüfen</b>: Liefert deine Abfrage genau die gesuchten Datensätze?',
+  resetBtn:'<b>Zurücksetzen</b>: Die Abfrage beginnt wieder von vorne.',
+  tabBtn:`Zeigt die ganze Tabelle <code>${TAB}</code> an (oder blendet sie wieder aus).`,
+  lernen:'<b>Erarbeitung</b>: Schritt für Schritt lernen, wie eine Abfrage aufgebaut ist.',
+  pfad:'<b>Übungen</b>: feste Aufgaben in Stufen (Flammen), von Bausteinen bis zum eigenen SQL.',
+  endlos:'<b>Endlos</b>: immer neue Zufallsaufgaben – wie lang wird deine Serie?',
+  flames:'<b>Stufen</b>: je höher, desto weniger Hilfe – von Bausteinen bis SQL ohne Gerüst.'
+};
+function feldTT(f, kurz){
+  if (!f) return '';
+  return `<b>${esc(f.n)}</b> (${esc(f.art)}): ${esc(f.d)}.` + (kurz ? '' : '<br>Klick: in SELECT aufnehmen bzw. wieder herausnehmen.');
+}
 
 /* ---------- Zustand ---------- */
 let db = null, CUR = null, S = null, ed = null, endScen = -1, endSeed = 0;
@@ -3461,7 +3545,9 @@ function farbe(src){
     const s = src.slice(x.a, x.b);
     const cls = x.t === 'kw' ? 'keyword' : x.t === 'str' || x.t === 'dq' ? 'string' : x.t === 'num' ? 'number' : x.t === 'op' || x.t === 'star' ? 'operator'
       : x.t === 'word' && FELD[x.v.toLowerCase()] ? 'variable-2' : x.t === 'word' && x.v.toLowerCase() === TAB.toLowerCase() ? 'builtin' : '';
-    h += cls ? `<span class="cm-${cls}">${esc(s)}</span>` : esc(s);
+    const tt = x.t === 'kw' ? TT[x.u === 'ORDER' || x.u === 'BY' ? 'ORDER BY' : x.u] : x.t === 'str' ? TT.str : x.t === 'num' ? TT.num
+      : x.t === 'op' ? TT.op : x.t === 'star' ? TT.stern : cls === 'variable-2' ? feldTT(FELD[x.v.toLowerCase()], true) : cls === 'builtin' ? TT.tab : '';
+    h += cls ? `<span class="cm-${cls}"${tt ? ` data-tt="${esc(tt)}"` : ''}>${esc(s)}</span>` : esc(s);
     i = x.b;
   }
   return h + esc(src.slice(i));
@@ -3559,7 +3645,33 @@ function loadTask(){ if (mode === 'pfad') CUR = STD[pfadIdx]; setup(); }
 function setup(start){
   S = {sel:[], wf:'', wop:'=', wv:'', where:'', sf:'', sdir:'ASC', fb:null, success:false, erg:null, ergInfo:'', start, kn:{}, wurzel:null};
   if (stufe().ui === 'access') S.acc = neuAccess(stufe());
+  if (stufe().ui === 'zieh') S.zieh = neuZieh();
+  if (mode === 'lernen' && LST) vorgabeEintragen();
   render();
+}
+// Erarbeitung: fertige Bedingungen zum Ziehen (richtige + Ablenker), gemischt
+function neuZieh(){
+  const st = mode === 'lernen' && LST ? schritt() : {};
+  const Z = {bl:{}, pool:[], slot:null};
+  [CUR && CUR.where, ...(st.bausteine || [])].filter(Boolean).forEach((w, i) => { Z.bl['z' + i] = w; Z.pool.push('z' + i); });
+  Z.pool = shuffle(Z.pool, rng(rand()));
+  return Z;
+}
+// Erarbeitung: Entwurf mit vorgabe (bzw. bei zeigen mit der Abfrage selbst) vorausfüllen
+function vorgabeEintragen(){
+  const st = schritt(), v = st.vorgabe || (st.zeigen && st.entwurf);
+  if (!v) return;
+  S.sel = v.felder.slice();
+  if (v.sort){ const [f, d] = v.sort.split(/\s+/); S.sf = f; S.sdir = /DESC/i.test(d || '') ? 'DESC' : 'ASC'; }
+  if (!v.where) return;
+  if (S.zieh){
+    let id = Object.keys(S.zieh.bl).find(k => S.zieh.bl[k] === v.where);
+    if (!id){ id = 'zv'; S.zieh.bl[id] = v.where; S.zieh.pool.push(id); }
+    S.zieh.slot = id;
+  } else {
+    const n = parseWhere(v.where);
+    S.wf = n.f; S.wop = n.op; S.wv = n.v ? String(n.v.num !== undefined ? n.v.num : n.v.str) : '';
+  }
 }
 // freie Abfragen: bisherige Abfrage in den SQL-Editor mitnehmen (nur das Gerüst zählt nicht)
 function mitnehmen(){
@@ -3589,7 +3701,9 @@ window.skipTask = skip;
 
 /* ---------- Erarbeitung ---------- */
 const schritt = () => ER()[lernIdx];
-const schrittArt = st => st.access ? 'access' : st.aufgabe ? 'aufgabe' : 'info';
+const schrittArt = st => st.access ? 'access' : st.entwurf ? 'entwurf' : st.aufgabe ? 'aufgabe' : 'info';
+const mitAbfrage = st => st.access || st.entwurf;   // Schritt mit Abfrage (Ausführen, Prüfen, Ergebnis)
+const zeigeSt = () => mode === 'lernen' && LST && !!schritt().zeigen;
 function speichereLernen(){ store('lernen', JSON.stringify({idx:lernIdx, done:[...lernDone]})); }
 function ersterOffener(){ const E = ER(); for (let i = 0; i < E.length; i++) if (!lernDone.has(i)) return i; return E.length - 1; }
 const offen = i => i <= ersterOffener() || lernDone.has(i);
@@ -3602,8 +3716,8 @@ function schrittGeschafft(){
 function zeigeSchritt(){
   lernIdx = Math.min(ER().length - 1, Math.max(0, lernIdx)); speichereLernen();
   const st = schritt(), art = schrittArt(st);
-  LST = {name:'Erarbeitung', ui:'access', krit:st.krit || 'bloecke'};
-  CUR = art === 'access' ? st.access : null;
+  LST = art === 'entwurf' ? {name:'Erarbeitung', ui:st.ui || 'zieh'} : {name:'Erarbeitung', ui:'access', krit:st.krit || 'bloecke'};
+  CUR = mitAbfrage(st) || null;
   if (art === 'info' && !lernDone.has(lernIdx)){ lernDone.add(lernIdx); speichereLernen(); }
   setup();
 }
@@ -3621,9 +3735,11 @@ function renderLernen(){
   $('#lvlname').textContent = 'Erarbeitung · ' + st.titel;
   $('#taskmeta').textContent = `Schritt ${lernIdx + 1} von ${E.length}`;
   const schon = art !== 'info' && lernDone.has(lernIdx) ? '<p class="schon">✓ Diesen Schritt hast du schon gelöst. Du kannst ihn noch einmal bearbeiten.</p>' : '';
-  $('#tasktext').innerHTML = schon + (st.html || '') + (art === 'access' ? `<div class="auftrag">${aufgabeText(st.access)}</div>` + (st.access.tipp ? `<div class="tipp">💡 ${st.access.tipp}</div>` : '') : '');
+  const a = mitAbfrage(st);
+  $('#tasktext').innerHTML = schon + (st.html || '') + (a ? `<div class="auftrag">${st.auftrag || aufgabeText(a)}</div>` + (a.tipp ? `<div class="tipp">💡 ${a.tipp}</div>` : '') : '');
+  $('#tasktext').querySelectorAll('pre.sqlv').forEach(p => { p.innerHTML = farbe(p.textContent); });
   $('#workcard').style.display = art === 'info' ? 'none' : '';
-  ['#runBtn', '#tabBtn'].forEach(b => { $(b).style.display = art === 'access' ? '' : 'none'; });
+  ['#runBtn', '#tabBtn'].forEach(b => { $(b).style.display = a ? '' : 'none'; });
   if (art === 'aufgabe'){
     $('#worktitle').textContent = st.arbeit || 'Aufgabe';
     const W = $('#work'); W.innerHTML = '<div></div>';
@@ -3658,6 +3774,7 @@ function entwurfSQL(){
     }
   }
   if (L.ui === 'baum' && S.wurzel){ try { s += '\nWHERE ' + baumSQL(S.wurzel); } catch (e){ if (e.fehlt) return e; throw e; } }
+  if (L.ui === 'zieh' && S.zieh.slot) s += '\nWHERE ' + S.zieh.bl[S.zieh.slot];
   if (L.ui === 'text' && S.where.trim()){ s += '\nWHERE '; off = s.length; s += S.where.trim(); }
   if (S.sf) s += '\nORDER BY ' + S.sf + ' ' + S.sdir;
   return {sql:s, off};
@@ -3913,20 +4030,22 @@ function knotenHTML(id){
 }
 function baumPool(){
   return `<div class="pool" data-drop="bpool"><div class="pool-title">Bausteine – ziehen oder anklicken · zum Löschen hierher zurückziehen</div><div class="pool-items">` +
-    `<div class="block hex builder" data-drag="1" data-neu="cmp" title="Vergleich, z. B. jahr &gt;= 1960">Feld <b>=</b> Wert</div>` +
-    `<div class="block hex logik und" data-drag="1" data-neu="und" title="beide Bedingungen müssen gelten"><span class="mini"></span><span class="lw">AND</span><span class="mini"></span></div>` +
-    `<div class="block hex logik oder" data-drag="1" data-neu="oder" title="mindestens eine Bedingung muss gelten"><span class="mini"></span><span class="lw">OR</span><span class="mini"></span></div></div></div>`;
+    `<div class="block hex builder" data-drag="1" data-neu="cmp" title="Vergleich, z. B. jahr &gt;= 1960" data-tt="${esc(TT.cmp)}">Feld <b>=</b> Wert</div>` +
+    `<div class="block hex logik und" data-drag="1" data-neu="und" title="beide Bedingungen müssen gelten" data-tt="${esc(TT.AND)}"><span class="mini"></span><span class="lw">AND</span><span class="mini"></span></div>` +
+    `<div class="block hex logik oder" data-drag="1" data-neu="oder" title="mindestens eine Bedingung muss gelten" data-tt="${esc(TT.OR)}"><span class="mini"></span><span class="lw">OR</span><span class="mini"></span></div></div></div>`;
 }
 
 /* ---------- Ziehen (basis.js): Access-Kriterien und Blöcke ---------- */
 window.dragData = (b, e) => {
   if (e.target.closest('select,input,option,button')) return null;
   if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
-  return {id:b.dataset.id, neu:b.dataset.neu, acc:b.dataset.acc, src:!!(b.dataset.id || b.dataset.acc)};
+  ttAus();
+  return {id:b.dataset.id, neu:b.dataset.neu, acc:b.dataset.acc, zb:b.dataset.zb, src:!!(b.dataset.id || b.dataset.acc || b.dataset.zb)};
 };
-window.dropOk = t => { const k = t.dataset.drop; return D.acc ? k === 'acell' || k === 'apool' : k === 'bslot' || k === 'bpool'; };
+window.dropOk = t => { const k = t.dataset.drop; return D.zb ? k === 'zslot' || k === 'zpool' : D.acc ? k === 'acell' || k === 'apool' : k === 'bslot' || k === 'bpool'; };
 window.applyDrop = (d, type, idx, t) => {
-  if (d.acc){
+  if (d.zb){ if (type === 'zslot') S.zieh.slot = d.zb; else if (S.zieh.slot === d.zb) S.zieh.slot = null; }
+  else if (d.acc){
     const Z = S.acc.zellen, von = Object.keys(Z).find(k => Z[k] === d.acc);
     if (type === 'apool'){ if (von) delete Z[von]; }
     else { const k = t.dataset.k, alt = Z[k]; if (von) delete Z[von]; if (alt && von) Z[von] = alt; Z[k] = d.acc; }
@@ -3934,12 +4053,48 @@ window.applyDrop = (d, type, idx, t) => {
   else baumAblegen(d, t.dataset.p, t.dataset.k);
   neuZeichnen();
 };
-window.dragTap = d => { if (d.neu){ baumTipp(d.neu); neuZeichnen(); } };
+window.dragTap = d => {
+  if (d.neu){ baumTipp(d.neu); neuZeichnen(); }
+  else if (d.zb){ S.zieh.slot = S.zieh.slot === d.zb ? null : d.zb; neuZeichnen(); }   // antippen: einsetzen bzw. zurücklegen
+};
 function neuZeichnen(){
   if (S.fb || S.success){ S.fb = null; S.success = false; renderFeedback(); }
+  ttAus();
   if (stufe().ui === 'access') $('#accbox').innerHTML = accessHTML();
+  else if (stufe().ui === 'zieh'){ $('#whereinh').innerHTML = ziehSlot(); $('#zpool').outerHTML = ziehPool(); }
   else { $('#whereinh').innerHTML = slotHTML('root', 'root'); }
   vorschau();
+}
+
+/* ---------- Erarbeitung: fertige Bedingungen in die WHERE-Zeile ziehen ---------- */
+const OPWORT = {'=':'gleich', '<>':'ungleich', '<':'kleiner als', '<=':'kleiner als oder gleich', '>':'größer als', '>=':'größer als oder gleich'};
+// Bedingung in Worten, z. B. für Tooltipps: „nur Datensätze, bei denen jahr kleiner als 1970 ist“
+function bedWorte(where){
+  if (lex(where).some(x => x.t === 'word' && !FELD[x.v.toLowerCase()]))
+    return 'Achtung: Hier steht ein Text ohne Anführungszeichen. SQL hält ihn dann für einen Feldnamen und meldet einen Fehler';
+  let n; try { n = parseWhere(where); } catch (e) { return ''; }
+  if (n.t !== 'cmp') return '';
+  if (!n.v) return `nur Datensätze, bei denen ${c(n.f)} ${n.op === 'IS NULL' ? 'leer' : 'nicht leer'} ist`;
+  const w = n.v.str !== undefined ? n.v.str : String(n.v.num);
+  if (/LIKE/.test(n.op)){
+    const m = w.replace(/^%|%$/g, ''), art = /^%.*%$/.test(w) ? `irgendwo „${esc(m)}“ enthält` : /%$/.test(w) ? `mit „${esc(m)}“ beginnt` : /^%/.test(w) ? `mit „${esc(m)}“ endet` : `genau „${esc(w)}“ ist (ohne % wie =)`;
+    return `nur Datensätze, bei denen ${c(n.f)} ${n.op === 'NOT LIKE' ? 'nicht ' : ''}${art}`;
+  }
+  return `nur Datensätze, bei denen ${c(n.f)} ${OPWORT[n.op] || n.op} ${n.v.str !== undefined ? '„' + esc(w) + '“' : esc(w)} ist`;
+}
+function ziehBlock(id){
+  const w = S.zieh.bl[id], wort = bedWorte(w);
+  const tt = `<b>Bedingungs-Baustein</b> ${c(w)}<br>${wort ? wort.charAt(0).toUpperCase() + wort.slice(1) + '.<br>' : ''}Ziehen oder anklicken: in die WHERE-Zeile einsetzen bzw. zurücklegen.`;
+  return `<div class="block hex builder zb" data-drag="1" data-zb="${id}" data-tt="${esc(tt)}">${esc(w)}</div>`;
+}
+function ziehSlot(){
+  const id = S.zieh.slot;
+  return `<div class="slot hex bslot" data-drop="zslot" data-tt="${esc(TT.zslot)}">${id ? ziehBlock(id) : '<span class="ph">Bedingung hierher ziehen – oder leer lassen</span>'}</div>`;
+}
+function ziehPool(){
+  const frei = S.zieh.pool.filter(id => id !== S.zieh.slot);
+  return `<div class="pool" id="zpool" data-drop="zpool" data-tt="${esc(TT.zpool)}"><div class="pool-title">Bedingungen – die passende in die WHERE-Zeile ziehen oder anklicken${S.zieh.pool.length > 1 ? ' (nicht alle passen)' : ''}</div>` +
+    `<div class="pool-items">${frei.map(ziehBlock).join('') || '<span class="ph">alle eingesetzt</span>'}</div></div>`;
 }
 
 /* ---------- Kalender statt Aufgabenliste ---------- */
@@ -3971,8 +4126,19 @@ function ausfuehren(){
   const r = fuehreAus(q.sql);
   if (r.err){ zeigeFehler(r.err, q); return null; }
   S.erg = r.res; S.fb = null; S.ergInfo = '';
+  if (zeigeSt()) gezeigt(q, r.res);
   renderFeedback(); renderErgebnis();
   return {q, res:r.res};
+}
+// Erarbeitung: gezeigte Abfrage ausgeführt → Schritt erledigt (nur, wenn sie noch unverändert ist)
+function gezeigt(q, res){
+  if (vergleiche(q, res, abfrage(sqlVon(CUR)), CUR)){
+    S.success = false; S.fb = {type:'info', html:'Das ist nicht mehr die gezeigte Abfrage. Ausprobieren ist erlaubt! Mit „Zurücksetzen“ kommst du zur gezeigten Abfrage zurück.'};
+    return;
+  }
+  schrittGeschafft(); S.success = true;
+  S.fb = {type:'ok', html:[schritt().nachher, canNext() ? 'Weiter geht es mit „Weiter“.' : ''].filter(Boolean).join('<br>') || 'Gut gemacht!'};
+  renderNav();
 }
 function vergleiche(q, ist, soll, a){
   const ACC = stufe().ui === 'access';
@@ -4025,7 +4191,8 @@ function vergleiche(q, ist, soll, a){
 }
 function check(){
   if (FREI){ ausfuehren(); return; }
-  if (mode === 'lernen' && schrittArt(schritt()) !== 'access') return;
+  if (mode === 'lernen' && !mitAbfrage(schritt())) return;
+  if (zeigeSt()){ ausfuehren(); return; }
   const r = ausfuehren(); if (!r) return;
   const soll = abfrage(sqlVon(CUR));
   let fehler = vergleiche(r.q, r.res, soll, CUR);
@@ -4060,9 +4227,11 @@ function renderFeedback(){
 function renderNav(){
   if (FREI) return;
   if (mode === 'lernen'){
-    navLernen(lernIdx, ER().length, schrittArt(schritt()) !== 'access');
-    ['#runBtn', '#tabBtn'].forEach(b => { $(b).style.display = schrittArt(schritt()) === 'access' ? '' : 'none'; });
+    navLernen(lernIdx, ER().length, !mitAbfrage(schritt()));
+    ['#runBtn', '#tabBtn'].forEach(b => { $(b).style.display = mitAbfrage(schritt()) ? '' : 'none'; });
+    if (zeigeSt()) $('#checkBtn').style.display = 'none';   // gezeigte Abfrage: nur ausführen
   } else navPfad();
+  $('#runBtn').classList.toggle('primary', zeigeSt());
   renderDock();
 }
 function renderDock(){ $('#dock').innerHTML = mode === 'lernen' ? lernDock() : K.kalender && mode === 'pfad' ? kalenderHTML() : dockHTML(); }
@@ -4080,14 +4249,14 @@ function renderErgebnis(){
   if (!S.erg){ E.innerHTML = ''; E.style.display = 'none'; return; }
   E.style.display = '';
   const n = S.erg.values.length;
-  E.innerHTML = `<div class="worktitle">${S.ergInfo || 'Ergebnis (Datenblattansicht)'} <span class="wthint">· ${n === 1 ? '1 Datensatz' : n + ' Datensätze'}</span></div>` +
+  E.innerHTML = `<div class="worktitle" data-tt="${esc(S.ergInfo ? TT.tabelle : TT.ergebnis)}">${S.ergInfo || 'Ergebnis (Datenblattansicht)'} <span class="wthint">· ${n === 1 ? '1 Datensatz' : n + ' Datensätze'}</span></div>` +
     (S.erg.columns.length ? tabelleHTML(S.erg) : '<p class="ph">Keine Datensätze gefunden.</p>');
 }
 function feldListe(){
   const sel = new Set(S.sel);
-  return `<div class="tabfenster" role="list" aria-label="Felder der Tabelle ${TAB}"><div class="tabkopf">${esc(TAB)}</div>` +
-    `<button class="feld${sel.has('*') ? ' on' : ''}" data-feld="*" title="alle Felder">*</button>` +
-    T.felder.map(f => `<button class="feld${sel.has(f.n) ? ' on' : ''}" data-feld="${esc(f.n)}" title="${esc(f.d)}">${/PRIMARY/.test(f.typ) ? '<span class="key" aria-label="Primärschlüssel">🔑</span>' : ''}${esc(f.n)}<span class="typ">${esc(f.art)}</span></button>`).join('') + '</div>';
+  return `<div class="tabfenster" role="list" aria-label="Felder der Tabelle ${TAB}" data-tt="${esc(TT.tabfenster)}"><div class="tabkopf">${esc(TAB)}</div>` +
+    `<button class="feld${sel.has('*') ? ' on' : ''}" data-feld="*" title="alle Felder" data-tt="${esc(TT.stern)}">*</button>` +
+    T.felder.map(f => `<button class="feld${sel.has(f.n) ? ' on' : ''}" data-feld="${esc(f.n)}" title="${esc(f.d)}" data-tt="${esc(feldTT(f))}">${/PRIMARY/.test(f.typ) ? '<span class="key" aria-label="Primärschlüssel">🔑</span>' : ''}${esc(f.n)}<span class="typ">${esc(f.art)}</span></button>`).join('') + '</div>';
 }
 function felderHTML(){
   return `<details class="felder"><summary>Felder der Tabelle ${c(TAB)}</summary><table class="ds">` +
@@ -4100,9 +4269,9 @@ function selChips(){
 }
 function whereBlock(){
   const ops = OPS.map(o => `<option${S.wop === o ? ' selected' : ''}>${o}</option>`).join('');
-  const val = /NULL/.test(S.wop) ? '' : `<input class="cvin" id="wv" type="text" autocomplete="off" spellcheck="false" placeholder="Wert" value="${esc(S.wv)}" size="${Math.max(5, S.wv.length + 1)}" aria-label="Vergleichswert">`;
-  return `<div class="block hex builder wb"><select class="opsel" id="wf" aria-label="Feld">${feldOptionen(S.wf, '— keine Bedingung —')}</select>` +
-    (S.wf ? `<select class="opsel" id="wop" aria-label="Vergleich">${ops}</select>${val}` : '') + '</div>' +
+  const val = /NULL/.test(S.wop) ? '' : `<input class="cvin" id="wv" type="text" autocomplete="off" spellcheck="false" placeholder="Wert" value="${esc(S.wv)}" size="${Math.max(5, S.wv.length + 1)}" aria-label="Vergleichswert" data-tt="${esc(TT.wv)}">`;
+  return `<div class="block hex builder wb" data-tt="${esc(TT.wb)}"><select class="opsel" id="wf" aria-label="Feld" data-tt="${esc(TT.wf)}">${feldOptionen(S.wf, '— keine Bedingung —')}</select>` +
+    (S.wf ? `<select class="opsel" id="wop" aria-label="Vergleich" data-tt="${esc(TT.wop)}">${ops}</select>${val}` : '') + '</div>' +
     (S.wf && istText(S.wf) && !/NULL/.test(S.wop) ? '<span class="wthint">Anführungszeichen setzt der Entwurf selbst.</span>' : '');
 }
 function vorschau(){
@@ -4111,6 +4280,7 @@ function vorschau(){
 }
 function render(){
   const L = stufe(), a = CUR;
+  ttAus();
   renderHeader();
   document.querySelectorAll('[data-ansicht]').forEach(b => b.classList.toggle('on', b.dataset.ansicht === ansicht));
   document.querySelectorAll('[data-mode="lernen"]').forEach(b => { b.hidden = !ER(); });
@@ -4120,7 +4290,7 @@ function render(){
   ['#runBtn', '#tabBtn'].forEach(b => { $(b).style.display = ''; });
   if (lernen){
     renderLernen();
-    if (schrittArt(schritt()) !== 'access'){ renderFeedback(); renderErgebnis(); renderNav(); return; }
+    if (!mitAbfrage(schritt())){ renderFeedback(); renderErgebnis(); renderNav(); return; }
   }
   else $('#lvlname').textContent = `Stufe ${level}: ${L.name}`;
   if (lernen){ /* Text steht schon (renderLernen) */ }
@@ -4137,7 +4307,7 @@ function render(){
     vorschau();
   } else if (L.ui === 'sql'){
     $('#worktitle').textContent = 'SQL-Ansicht';
-    W.innerHTML = '<div class="edwrap" id="edwrap"></div><div class="edhint">Strg + Enter führt aus · Vorschläge erscheinen beim Tippen (Enter oder Tab übernimmt)</div>';
+    W.innerHTML = `<div class="edwrap" id="edwrap" data-tt="${esc(TT.editor)}"></div><div class="edhint">Strg + Enter führt aus · Vorschläge erscheinen beim Tippen (Enter oder Tab übernimmt)</div>`;
     let start = '';
     if (S.start) start = S.start;
     else if (L.vorlage !== 'leer') start = ['SELECT ', 'FROM ', ...(FREI || a.where ? ['WHERE '] : []), ...(FREI || a.sort ? ['ORDER BY '] : [])].join('\n');
@@ -4148,13 +4318,13 @@ function render(){
   } else {
     $('#worktitle').textContent = 'Entwurfsansicht';
     W.innerHTML = `<div class="entwurf">${feldListe()}<div class="klauseln">
-      <div class="kl"><span class="kw cm-keyword">SELECT</span><div class="kinh" id="selchips">${selChips()}</div></div>
-      <div class="kl"><span class="kw cm-keyword">FROM</span><div class="kinh"><span class="cm-builtin tabn">${esc(TAB)}</span></div></div>
-      <div class="kl"><span class="kw cm-keyword">WHERE</span><div class="kinh" id="whereinh">${L.ui === 'block' ? whereBlock() : L.ui === 'baum' ? slotHTML('root', 'root') : '<div class="edwrap eins" id="wherewrap"></div>'}</div></div>
-      <div class="kl"><span class="kw cm-keyword">ORDER BY</span><div class="kinh"><select class="sortsel" id="sf" aria-label="Sortieren nach">${feldOptionen(S.sf, '— nicht sortieren —')}</select>
-        <select class="sortsel" id="sdir" aria-label="Richtung"${S.sf ? '' : ' hidden'}><option value="ASC"${S.sdir === 'ASC' ? ' selected' : ''}>ASC – aufsteigend</option><option value="DESC"${S.sdir === 'DESC' ? ' selected' : ''}>DESC – absteigend</option></select></div></div>
-    </div></div>${L.ui === 'baum' ? baumPool() : ''}
-    <div class="sqlvbox"><span class="sqlvl">SQL</span><pre class="sqlv cm-s-default" id="sqlv"></pre></div>`;
+      <div class="kl"><span class="kw cm-keyword" data-tt="${esc(TT.SELECT)}">SELECT</span><div class="kinh" id="selchips" data-tt="${esc(TT.selchips)}">${selChips()}</div></div>
+      <div class="kl"><span class="kw cm-keyword" data-tt="${esc(TT.FROM)}">FROM</span><div class="kinh"><span class="cm-builtin tabn" data-tt="${esc(TT.tab)}">${esc(TAB)}</span></div></div>
+      <div class="kl"><span class="kw cm-keyword" data-tt="${esc(TT.WHERE)}">WHERE</span><div class="kinh" id="whereinh">${L.ui === 'block' ? whereBlock() : L.ui === 'baum' ? slotHTML('root', 'root') : L.ui === 'zieh' ? ziehSlot() : `<div class="edwrap eins" id="wherewrap" data-tt="${esc(TT.wheretext)}"></div>`}</div></div>
+      <div class="kl"><span class="kw cm-keyword" data-tt="${esc(TT['ORDER BY'])}">ORDER BY</span><div class="kinh"><select class="sortsel" id="sf" aria-label="Sortieren nach" data-tt="${esc(TT.sf)}">${feldOptionen(S.sf, '— nicht sortieren —')}</select>
+        <select class="sortsel" id="sdir" aria-label="Richtung" data-tt="${esc(TT.sdir)}"${S.sf ? '' : ' hidden'}><option value="ASC"${S.sdir === 'ASC' ? ' selected' : ''}>ASC – aufsteigend</option><option value="DESC"${S.sdir === 'DESC' ? ' selected' : ''}>DESC – absteigend</option></select></div></div>
+    </div></div>${L.ui === 'baum' ? baumPool() : L.ui === 'zieh' ? ziehPool() : ''}
+    <div class="sqlvbox"><span class="sqlvl" data-tt="${esc(TT.sqlv)}">SQL</span><pre class="sqlv cm-s-default" id="sqlv"></pre></div>`;
     if (L.ui === 'text'){
       ed = editor($('#wherewrap'), {value:S.where, extraKeys:{'Enter':() => ausfuehren(), 'Ctrl-Enter':() => ausfuehren(), 'Shift-Ctrl-Enter':() => check(), 'Ctrl-Space':cm => cm.showHint({hint:hinweisListe, completeSingle:false})}});
       ed.state.platzhalter = 'Bedingung eintippen, z. B. jahr > 2000 – oder leer lassen';
@@ -4229,6 +4399,46 @@ $('#runBtn').addEventListener('click', () => ausfuehren());
 $('#resetBtn').addEventListener('click', () => setup());
 $('#prevBtn').addEventListener('click', () => { if (mode === 'lernen') gotoStep(lernIdx - 1); else gotoTask(pfadIdx - 1); });
 $('#tabBtn').textContent = `Tabelle ${TAB} ansehen`;
+
+/* ---------- Tooltipps ein/aus ---------- */
+let ttAn = false, ttEl = null, ttZiel = null, ttUhr = 0;
+function ttAus(){ if (ttEl) ttEl.style.display = 'none'; if (ttZiel) ttZiel.classList.remove('tt-ziel'); ttZiel = null; clearTimeout(ttUhr); }
+function ttZeige(z){
+  if (!ttEl){ ttEl = document.createElement('div'); ttEl.id = 'tt'; ttEl.setAttribute('role', 'tooltip'); document.body.appendChild(ttEl); }
+  if (z.title){ z.dataset.tit = z.title; z.removeAttribute('title'); }   // sonst doppelt mit dem Browser-Tooltipp
+  if (ttZiel) ttZiel.classList.remove('tt-ziel');
+  ttZiel = z; z.classList.add('tt-ziel'); ttEl.innerHTML = z.dataset.tt; ttEl.style.display = 'block';
+  const r = z.getBoundingClientRect(), w = ttEl.offsetWidth, h = ttEl.offsetHeight;
+  const x = Math.max(8, Math.min(innerWidth - w - 8, r.left + r.width / 2 - w / 2));
+  const y = r.bottom + h + 12 < innerHeight ? r.bottom + 8 : Math.max(8, r.top - h - 8);
+  ttEl.style.left = x + 'px'; ttEl.style.top = y + 'px';
+}
+function ttSetze(an){
+  ttAn = an; ttAus();
+  try { localStorage.setItem(K.id + '-tooltipps', an ? '1' : '0'); } catch (e) {}
+  document.body.classList.toggle('tt-an', an);
+  const b = $('#ttBtn'); b.setAttribute('aria-pressed', an); b.title = an ? 'Tooltipps ausschalten' : 'Tooltipps einschalten: Erklärungen beim Überfahren mit der Maus';
+  if (!an) document.querySelectorAll('[data-tit]').forEach(z => { z.title = z.dataset.tit; delete z.dataset.tit; });
+}
+if ($('#ttBtn')){
+  // feste Knöpfe der Seite
+  ['runBtn', 'checkBtn', 'resetBtn', 'tabBtn', 'flames'].forEach(id => { const b = $('#' + id); if (b) b.dataset.tt = TT[id]; });
+  document.querySelectorAll('[data-mode]').forEach(b => { if (TT[b.dataset.mode]) b.dataset.tt = TT[b.dataset.mode]; });
+  let an = false; try { an = localStorage.getItem(K.id + '-tooltipps') === '1'; } catch (e) {}
+  ttSetze(an);
+  $('#ttBtn').addEventListener('click', () => ttSetze(!ttAn));
+  document.addEventListener('pointerover', e => {
+    if (!ttAn || document.body.classList.contains('dragging')) return;
+    const z = e.target.closest && e.target.closest('[data-tt]');
+    if (z === ttZiel) return;
+    if (!z){ ttAus(); return; }
+    ttZeige(z);
+    clearTimeout(ttUhr); if (e.pointerType !== 'mouse') ttUhr = setTimeout(ttAus, 4000);   // Touch: kein „Verlassen“
+  });
+  document.addEventListener('pointerout', e => { if (ttAn && e.pointerType === 'mouse' && !e.relatedTarget) ttAus(); });
+  document.addEventListener('focusin', e => { const z = ttAn && e.target.closest('[data-tt]'); if (z) ttZeige(z); });
+  window.addEventListener('scroll', ttAus, {passive:true});
+}
 
 /* ---------- Start ---------- */
 K._test = {accZellen, parseWhere};   // nur für automatische Tests
