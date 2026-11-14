@@ -34,6 +34,7 @@ Gesammelt im Thread „Aufbau der Seite“. Umgesetzt wird erst, wenn die Lehrkr
     In `lib/designs.js` 12 neue Einträge (gemeinsame Bausteine `grund`, `schrift`, `flamme`, `eigene`, `ausruf`). Eigene Flammenform nur, wo sie passt; sonst bleibt die Flamme und wird im Stil gezeichnet.
     - Comic (`comic`): Rasterpunkte, dicke Konturen mit hartem Schatten, Rückmeldung als Sprechblase mit „ZACK!“, Flamme mit dicker Kontur. Schriften eingebettet (Bangers, Comic Neue; OFL, ca. 80 KB, nur in Seiten mit diesem Design).
     - Titelkarte (`titelkarte-rosa`, `-mint`, `-senf`, `-himmelblau`, `-bordeaux`): symmetrisch, Serifen-Versalien, doppelte Rahmenlinien; Bordeaux dunkel, die anderen hell. Flamme als feine Kontur.
+    - Titelkarte Modern (`titelkarte-modern`, 14.11., Vorbild: Kapitelkarten in `~/austausch/titelkarten`): rot-rosa Raster, weiße Karte mit cremefarbenen Querstreifen, fette geometrische Versalien (Jost eingebettet, OFL, ca. 28 KB), Briefmarke mit Zähnung schräg an der Ecke (eigenes Motiv), Farbbalken oben an den Karten. Im Menü unter Titelkarte.
     - Secondhand (`secondhand`): Sakko-Karo mit blauen und roten Linien, Karten/Antworten als Preisetiketten mit Loch, Knöpfe mit Steppnaht, Zeitbalken als Maßband, Flamme gesteppt.
     - Trattoria (`trattoria`): karierte Tischdecke, Speisekarte (N°, gepunktete Linien, Ornamente), „Perfetto!“.
     - Chemielabor (`chemielabor`): Millimeterpapier, Laborblatt, Reagenzgläser als Stufen, Zeitbalken als Messzylinder.
