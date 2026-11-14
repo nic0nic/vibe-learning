@@ -9,7 +9,8 @@
   Zahlensysteme für die 6. Jahrgangsstufe: Dezimal-, Binär- und Hexadezimalsystem mit Stellenwerten erklären,
   Bits zum Anklicken (Lichtschalter-Modell), Übungen zum Umrechnen (lib/aufgaben.js) und Endlos-Modus
   (Aufgaben.training) mit vier Stufen derselben Aufgaben: Auswählen, Auswählen auf Zeit, Eintippen, Eintippen auf Zeit.
-  Endlos-Aufgaben: zufällig dezimal ↔ binär (1–63), dezimal ↔ hexadezimal (1–255), binär ↔ hexadezimal (1–255).
+  Endlos-Aufgaben: zufällig zwischen den eingeschalteten Basen (Schalter Dezimal/Binär/Hexadezimal, „Advanced“: Basen 1–32,
+  1 = Unär/Strichliste). Größte Zahl 255, mit Binär 63, mit Unär 20; kleinste = kleinere Basis (sonst gleiche Ziffer).
   Gespeichert: zahlensysteme-stand = {schritt, erledigt}, zahlensysteme-endlos-training = {stufe, best},
   zahlensysteme-systeme = eingeschaltete Basen im Endlosmodus (mind. zwei); Bestleistung je Kombination
   über training.variante (alle drei = Standard-Bestleistung).
@@ -2244,6 +2245,16 @@ sub{font-size:.7em}
 .sys[aria-checked=true] .knopf::after{left:16px}
 .sys:disabled{cursor:not-allowed;opacity:.75}
 .systeme .hinweis{font-size:13px}
+.systeme .extra{font-weight:600;color:var(--accent-text,var(--accent))}
+.advanced{margin:-6px 0 14px}
+.advanced summary{cursor:pointer;font-weight:600;color:var(--accent-text,var(--accent));width:max-content;max-width:100%}
+.advanced p{margin:6px 0 8px;font-size:14px}
+.basen{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:6px}
+.basis{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:44px;font:700 16px var(--mono);background:var(--panel);color:var(--text);border:2px solid var(--border);border-radius:10px;cursor:pointer;padding:3px 2px}
+.basis small{font:600 10px system-ui,sans-serif;color:var(--muted)}
+.basis[aria-checked=true]{background:var(--accent);border-color:var(--accent);color:#fff}
+.basis[aria-checked=true] small{color:inherit;opacity:.85}
+.basis:disabled{cursor:not-allowed;opacity:.75}
 </style>
 </head>
 <body>
@@ -2271,57 +2282,78 @@ function bitsBauen(el){
 }
 
 /* ---------- Endlos: Aufgaben zum Umrechnen ---------- */
-const BASIS = {2: 'Binär', 10: 'Dezimal', 16: 'Hexadezimal'};
-const text = (v, b) => v.toString(b).toUpperCase();
+/* Basen 1–32: die drei Schalter (Dezimal, Binär, Hexadezimal) und „Advanced“ mit allen Basen teilen sich eine Auswahl.
+   Basis 1 = Unärsystem (Strichliste mit Einsen: 5 = 11111). Mindestens zwei Basen bleiben an. */
+const HAUPT = [10, 2, 16], ALLE = Array.from({length:32}, (_, i) => i + 1);
+const NAMEN = {1: 'Unär', 2: 'Binär', 8: 'Oktal', 10: 'Dezimal', 16: 'Hexadezimal'};
+const name = b => NAMEN[b] || 'Basis ' + b;
+const text = (v, b) => b === 1 ? '1'.repeat(v).replace(/1{5}(?=1)/g, '$& ') : v.toString(b).toUpperCase();   // Strichliste in Fünfern
 const zufall = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
-const ARTEN = [[10, 2, 63], [2, 10, 63], [10, 16, 255], [16, 10, 255], [2, 16, 255], [16, 2, 255]];   // von, nach, größte Zahl
-/* Schalter: welche Zahlensysteme vorkommen. Mindestens zwei bleiben an, sonst gibt es nichts umzurechnen. */
+const grenze = b => b === 1 ? 20 : b === 2 ? 63 : 255;   // größte Zahl: Strichlisten und Binärzahlen bleiben kurz
 const SYS_KEY = 'zahlensysteme-systeme';
 let systeme = [2, 10, 16];
-try { const g = JSON.parse(localStorage.getItem(SYS_KEY)); if (Array.isArray(g) && g.filter(b => BASIS[b]).length >= 2) systeme = g.filter(b => BASIS[b]); } catch (e) {}
-const systemeText = () => systeme.length === 3 ? '' : [10, 2, 16].filter(b => systeme.includes(b)).map(b => BASIS[b]).join(' + ');   // alle drei = Standard
-const arten = () => ARTEN.filter(([von, nach]) => systeme.includes(von) && systeme.includes(nach));
+try { const g = JSON.parse(localStorage.getItem(SYS_KEY)), ok = Array.isArray(g) ? [...new Set(g.map(Number).filter(b => ALLE.includes(b)))] : []; if (ok.length >= 2) systeme = ok; } catch (e) {}
+const reihenfolge = l => [...HAUPT.filter(b => l.includes(b)), ...l.filter(b => !HAUPT.includes(b)).sort((x, y) => x - y)];
+const standard = () => systeme.length === 3 && HAUPT.every(b => systeme.includes(b));
+const systemeText = () => standard() ? '' : reihenfolge(systeme).map(name).join(' + ');   // Bestleistung je Kombination; Standard = alle drei
+function arten(){   // [von, nach, kleinste, größte]: unter der kleineren Basis (außer 1) sähe die Zahl in beiden Systemen gleich aus
+  const A = [];
+  systeme.forEach(von => systeme.forEach(nach => { if (von !== nach) A.push([von, nach, Math.max(2, Math.min(von, nach) === 1 ? 2 : Math.min(von, nach)), Math.min(grenze(von), grenze(nach))]); }));
+  return A;
+}
 function systemeBauen(el){
-  const box = el.querySelector('.systeme'); if (!box) return;
+  const box = el.querySelector('.sysbox'); if (!box) return;
+  const offen = systeme.some(b => !HAUPT.includes(b));
+  box.innerHTML = `<div class="systeme" role="group" aria-label="Zahlensysteme"></div>
+    <details class="advanced"${offen ? ' open' : ''}><summary>Advanced: eigene Basen von 1 bis 32</summary>
+      <p class="muted">Wähle beliebige Basen (mindestens zwei). Basis 1 ist eine Strichliste aus Einsen (7 = 11111 11), ab Basis 11 kommen Buchstaben als Ziffern dazu (A = 10, B = 11 …, V = 31).</p>
+      <div class="basen" role="group" aria-label="Basen 1 bis 32"></div></details>`;
   const zeigen = () => {
-    box.innerHTML = '<span class="lbl">Zahlensysteme:</span>' + [10, 2, 16].map(b => {
-      const an = systeme.includes(b), fest = an && systeme.length <= 2;
-      return `<button type="button" class="sys" role="switch" data-b="${b}" aria-checked="${an}"${fest ? ' disabled title="Mindestens zwei Zahlensysteme bleiben an"' : ''}><span class="knopf"></span>${BASIS[b]}</button>`;
-    }).join('') + (systeme.length <= 2 ? '<span class="muted hinweis">mindestens zwei</span>' : '');
+    const fest = b => systeme.includes(b) && systeme.length <= 2, tip = ' disabled title="Mindestens zwei Zahlensysteme bleiben an"';
+    box.querySelector('.systeme').innerHTML = '<span class="lbl">Zahlensysteme:</span>' + HAUPT.map(b =>
+      `<button type="button" class="sys" role="switch" data-b="${b}" aria-checked="${systeme.includes(b)}"${fest(b) ? tip : ''}><span class="knopf"></span>${name(b)}</button>`).join('')
+      + (systeme.length <= 2 ? '<span class="muted hinweis">mindestens zwei</span>' : '')
+      + (systeme.some(b => !HAUPT.includes(b)) ? `<span class="hinweis extra">+ ${reihenfolge(systeme.filter(b => !HAUPT.includes(b))).map(name).join(', ')}</span>` : '');
+    box.querySelector('.basen').innerHTML = ALLE.map(b =>
+      `<button type="button" class="basis" role="switch" data-b="${b}" aria-checked="${systeme.includes(b)}" aria-label="${name(b)}"${fest(b) ? tip : ''}>${b}${NAMEN[b] ? `<small>${b === 16 ? 'Hex' : NAMEN[b]}</small>` : ''}</button>`).join('');
   };
   box.addEventListener('click', e => {
-    const k = e.target.closest('.sys'); if (!k || k.disabled) return;
-    const b = +k.dataset.b;
+    const k = e.target.closest('[data-b]'); if (!k || k.disabled) return;
+    const b = +k.dataset.b, sel = k.classList.contains('sys') ? '.sys' : '.basis';
     systeme = systeme.includes(b) ? systeme.filter(x => x !== b) : [...systeme, b];
     try { localStorage.setItem(SYS_KEY, JSON.stringify(systeme)); } catch (e) {}
     const tr = el.querySelector('.af-training'); if (tr) tr.dispatchEvent(new Event('af-variante'));   // Bestleistung je Kombination
-    zeigen(); box.querySelector(`[data-b="${b}"]`).focus();
+    zeigen(); box.querySelector(`${sel}[data-b="${b}"]`).focus();
   });
   zeigen();
 }
-function ablenker(v, max){   // typische Fehler: ±1, ±2, ein Bit falsch, Hex-Ziffern vertauscht, ±16
-  const k = [v + 1, v - 1, v + 2, v - 2, v + 16, v - 16];
-  for (let i = 0; (1 << i) <= max; i++) k.push(v ^ (1 << i));
-  if (v >= 16) { const h = v.toString(16).padStart(2, '0'); k.push(parseInt(h[1] + h[0], 16)); }
-  const aus = [];
-  Aufgaben.mischen(k).forEach(x => { if (x > 0 && x <= max && x !== v && !aus.includes(x) && aus.length < 3) aus.push(x); });
+function ablenker(v, von, nach, min, max){   // typische Fehler: ±1, ±2, ± eine Basis, ein Bit falsch, Ziffern vertauscht
+  const k = [v + 1, v - 1, v + 2, v - 2];
+  [von, nach].forEach(b => { if (b > 2) k.push(v + b, v - b); });
+  if (von === 2 || nach === 2) for (let i = 0; (1 << i) <= max; i++) k.push(v ^ (1 << i));
+  [von, nach].forEach(b => { const t = b > 1 ? v.toString(b) : ''; if (t.length === 2) k.push(parseInt(t[1] + t[0], b)); });
+  const aus = [], dazu = x => { if (x >= 1 && x <= max && x !== v && !aus.includes(x) && aus.length < 3) aus.push(x); };
+  Aufgaben.mischen(k).forEach(dazu);
+  for (let n = 0; aus.length < 3 && n < 200; n++) dazu(zufall(Math.max(1, min - 3), max));
   return aus;
 }
 let zuletzt = '';
 function neueAufgabe({mc}){
   let art, v;
   const A = arten();
-  do { art = A[zufall(0, A.length - 1)]; v = zufall(art[0] === 2 || art[1] === 2 ? 2 : 1, art[2]); } while (art + v === zuletzt);
+  do { art = A[zufall(0, A.length - 1)]; v = zufall(art[2], art[3]); } while (A.length * (art[3] - art[2]) > 1 && art + v === zuletzt);
   zuletzt = art + v;
-  const [von, nach, max] = art, loesung = text(v, nach);
+  const [von, nach, min, max] = art, loesung = text(v, nach);
   return {
-    frage: `<span class="tr-sprache">${BASIS[von]} → ${BASIS[nach]}</span><span class="tr-wort">${text(v, von)}<sub>${von}</sub> = ?<sub>${nach}</sub></span>`,
+    frage: `<span class="tr-sprache">${name(von)} → ${name(nach)}</span><span class="tr-wort">${text(v, von)}<sub>${von}</sub> = ?<sub>${nach}</sub></span>`,
     loesung,
-    optionen: mc ? Aufgaben.mischen([{t:loesung, ok:true}, ...ablenker(v, max).map(x => ({t:text(x, nach), ok:false}))]) : null,
+    optionen: mc ? Aufgaben.mischen([{t:loesung, ok:true}, ...ablenker(v, von, nach, min, max).map(x => ({t:text(x, nach), ok:false}))]) : null,
     pruefe(eingabe){
-      const t = String(eingabe).replace(/\s+/g, '').replace(/^0x/i, '').replace(/[₀-₉]/g, '').toUpperCase();
-      const erlaubt = {2: /^[01]+$/, 10: /^\d+$/, 16: /^[0-9A-F]+$/}[nach];
-      return erlaubt.test(t) && parseInt(t, nach) === v ? 'ok' : 'falsch';
+      let t = String(eingabe).replace(/\s+/g, '').replace(/[₀-₉]/g, '').toUpperCase();
+      if (nach === 16) t = t.replace(/^0X/, '');
+      if (nach === 1) return /^1+$/.test(t) && t.length === v ? 'ok' : 'falsch';
+      const gueltig = t && [...t].every(c => /[0-9A-Z]/.test(c) && parseInt(c, 36) < nach);
+      return gueltig && parseInt(t, nach) === v ? 'ok' : 'falsch';
     }
   };
 }
@@ -2367,7 +2399,7 @@ Aufgaben.sequenz({el:'#app', key:'zahlensysteme', schritte:[
     {typ:'mc', nr:'3.3', frage:`Wie schreibt man ${S('30', 10)} hexadezimal?`, html:true, options:['1E', '1D', '30', 'E1'], correct:[0], why:{1:'1D wäre 16 + 13 = 29.', 2:'Das ist die Dezimalzahl.', 3:'Die Reihenfolge stimmt nicht: zuerst die 16er.'}},
     {typ:'zuordnen', nr:'3.4', frage:'Je 4 Bit sind eine Hex-Ziffer: Ordne zu.', felder:[['a', 'A'], ['f', 'F'], ['s', '7'], ['c', 'C']],
       karten:[{t:'1010', z:'a'}, {t:'1111', z:'f'}, {t:'0111', z:'s'}, {t:'1100', z:'c'}]}]},
-  {id:'endlos', kurz:'Endlos', titel:'Umrechnen', html:'<h2>Endlos umrechnen</h2><p>Zufällige Aufgaben zwischen dezimal, binär und hexadezimal. Mit den Schaltern legst du fest, welche Zahlensysteme vorkommen. Wähle die Stufe an den Flammen: <b>1</b> Auswählen · <b>2</b> Auswählen auf Zeit · <b>3</b> Eintippen · <b>4</b> Eintippen auf Zeit. Ein Fehler beendet die Serie. Die Bestleistung zählt für jede Kombination von Zahlensystemen extra.</p><div class="systeme" role="group" aria-label="Zahlensysteme"></div>',
+  {id:'endlos', kurz:'Endlos', titel:'Umrechnen', html:'<h2>Endlos umrechnen</h2><p>Zufällige Aufgaben zwischen dezimal, binär und hexadezimal. Mit den Schaltern legst du fest, welche Zahlensysteme vorkommen, unter <b>Advanced</b> auch andere Basen von 1 bis 32. Wähle die Stufe an den Flammen: <b>1</b> Auswählen · <b>2</b> Auswählen auf Zeit · <b>3</b> Eintippen · <b>4</b> Eintippen auf Zeit. Ein Fehler beendet die Serie. Die Bestleistung zählt für jede Kombination von Zahlensystemen extra.</p><div class="sysbox"></div>',
    nach: systemeBauen,
    training:{variante:systemeText, stufen:[
      {name:'Auswählen', antwort:'mc', neu:neueAufgabe},
