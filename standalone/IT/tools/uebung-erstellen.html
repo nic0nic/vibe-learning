@@ -12,6 +12,8 @@
   Modi wechseln, prüfen, im abgeschotteten iframe testen, als Datei oder für ByCS (SCORM-ZIP wie werkzeuge/bycs-pakete.py: scorm.js,
   lib/scorm-manifest.xml, lib/zip.js) herunterladen oder als angemeldete Lehrkraft einreichen
   (POST /api/trainer/einreichen → Pull Request, pb_hooks/einreichen.pb.js; Knopf nur für Lehrkräfte sichtbar).
+  Lehrkräfte können dort auch eine eigene Seite (HTML mit eigenem Code) hochladen: Seite.eigeneSeite prüft die eingebundenen
+  Dateien, der Pull Request wird als „eigener Code“ markiert.
   Die Bibliotheken für die erzeugten Seiten stehen als <script type="application/json" data-einbetten> unten: online leer
   (dann fetch), in standalone/ und bycs/ füllt werkzeuge/einzeldateien.py sie (als JSON-Text), damit alles ohne Server läuft.
   Die Vorschau läuft mit sandbox="allow-scripts" ohne same-origin: eingefügtes HTML kommt nicht an Anmeldedaten.
@@ -2340,6 +2342,9 @@ ${S} .af-flamme.on,${S} .flame.on{animation:pf-note 1.2s ease-in-out infinite al
  *       HTML in Texten nur nach Erlaubtliste (Seite.ERLAUBT): Tags wie p, b, ul, table … mit höchstens class
  *       (td/th auch colspan, rowspan); jedes andere „<“ + Buchstabe, „</“, „<!“ oder „<?“ wird abgelehnt.
  *   Seite.toolId(titel, zufall)     → id für katalog.js (a–z, 0–9, -, höchstens 20 Zeichen)
+ *   Seite.eigeneSeite(html, {pfad, toolId}) → {fehler, html, titel, skripte, zeilen}: eigene Seite (HTML mit eigenem Code)
+ *       prüfen (nur Bausteine aus pb_public, keine externen Dateien, keine Einzeldatei) und für den Bereich anpassen
+ *       (relative Pfade, data-trainer). Den Code selbst prüft niemand automatisch: Einreichen markiert den Pull Request.
  *   Seite.seiteHTML(json, opt)      → komplette HTML-Seite
  *       opt = {pfad: 'BWR/9II/finanzierung', toolId, einzeln: false, design (statt json.design), lib: {aufgabenJs, aufgabenCss, bwrCss, formelJs}}
  *       einzeln: true → ohne Menü und Server, Bibliotheken eingebettet (Vorschau, Download)
@@ -2604,7 +2609,42 @@ Aufgaben.sequenz({el:'#app', key:${JSON.stringify(id)}, schritte:DATEN.schritte}
 `;
   }
 
-  const Seite = {TYPEN, ERLAUBT, normalisiere, ohneDanach, pruefe, toolId, seiteHTML, MAX};
+  // Eigene Seite (HTML mit eigenem Code, z. B. aus dem Skill vibe-learning-seite-erstellen) für einen Bereich vorbereiten:
+  // Bausteine nur relativ aus pb_public (katalog.js, nav.js, sync.js, seite.css, lib/…, BWR/bwr.css), Pfade an die Tiefe des
+  // Bereichs anpassen, data-trainer = toolId. Der Code selbst wird nicht geprüft – deshalb markiert der Pull Request ihn.
+  const MAX_EIGEN = 400000;
+  const BAUSTEIN = /^(?:\.\.\/)+(?:katalog\.js|nav\.js|sync\.js|seite\.css|lib\/[a-z0-9.-]+\.(?:js|css)|BWR\/bwr\.css)$/;
+  function eigeneSeite(html, opt) {
+    opt = opt || {};
+    const fehler = [];
+    html = String(html || '');
+    if (html.length > MAX_EIGEN) fehler.push(`Die Seite ist zu groß (höchstens ${MAX_EIGEN / 1000} KB).`);
+    if (/PF_EINZELDATEI/.test(html)) fehler.push('Das ist eine heruntergeladene Einzeldatei (alles eingebettet). Bitte die Quellseite einreichen, die die Bausteine über ../../lib/… einbindet.');
+    const t = html.match(/<title>([\s\S]*?)<\/title>/);
+    const titel = t ? t[1].trim().replace(/\s*[–-]\s*vibe learning$/, '').replace(/&amp;/g, '&').slice(0, 120) : '';
+    if (!titel) fehler.push('<title> fehlt.');
+    ['katalog.js', 'nav.js', 'sync.js'].forEach(d => { if (!new RegExp(`<script\\s+src="(?:\\.\\./)+${d.replace('.', '\\.')}"`).test(html)) fehler.push(`<script src="../../${d}"><\/script> fehlt.`); });
+    const extern = [];
+    html.replace(/<script\b[^>]*\bsrc="([^"]*)"|<link\b[^>]*\bhref="([^"]*)"/gi, (m, src, href) => {
+      const u = src || href;
+      if (href && !/rel="stylesheet"/i.test(m)) return m;
+      if (!BAUSTEIN.test(u)) extern.push(u);
+      return m;
+    });
+    if (extern.length) fehler.push('Nur Bausteine von vibe learning einbinden, keine anderen oder externen Dateien: ' + extern.slice(0, 5).join(', '));
+    if (/<(?:iframe|object|embed)\b/i.test(html)) fehler.push('iframe, object und embed sind nicht erlaubt.');
+    const skripte = [];
+    html.replace(/<script\b(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi, (m, code) => { skripte.push(code); return m; });
+    const zeilen = skripte.reduce((n, c) => n + c.split('\n').filter(z => z.trim()).length, 0);
+    if (opt.pfad != null) {
+      const hoch = '../'.repeat(String(opt.pfad).split('/').length);
+      html = html.replace(/((?:src|href)=")(?:\.\.\/)+(?=(?:katalog\.js|nav\.js|sync\.js|seite\.css|lib\/|BWR\/))/g, `$1${hoch}`);
+    }
+    if (opt.toolId) html = /data-trainer="[^"]*"/.test(html) ? html.replace(/data-trainer="[^"]*"/, `data-trainer="${opt.toolId}"`) : html.replace(/<html\b/, `<html data-trainer="${opt.toolId}"`);
+    return {fehler, html, titel, skripte: skripte.length, zeilen};
+  }
+
+  const Seite = {TYPEN, ERLAUBT, normalisiere, ohneDanach, pruefe, toolId, seiteHTML, eigeneSeite, MAX, MAX_EIGEN};
   if (typeof module !== 'undefined' && module.exports) module.exports = Seite;
   else window.Seite = Seite;
 })();
@@ -4533,6 +4573,8 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
 #vorschauDlg[open]{display:flex;flex-direction:column}
 #vorschauDlg iframe{flex:1;width:100%;border:0;background:var(--bg)}
 #abgebenDlg{width:min(560px,100%)}
+#eigenBox{margin:6px 0 10px}#eigenBox summary{cursor:pointer;font-weight:600}
+.eigen-zeile{display:flex;flex-direction:column;gap:8px;align-items:flex-start}.eigen-zeile .feld{width:100%}
 [hidden]{display:none!important}
 </style>
 </head>
@@ -4592,6 +4634,10 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
       <label class="klein" for="bereich">Fach, Jahrgangsstufe und Bereich</label><select class="feld" id="bereich"></select>
       <div class="knoepfe"><button class="btn" type="button" id="download" title="Eine HTML-Datei, läuft per Doppelklick im Browser">Als Datei herunterladen</button><button class="btn" type="button" id="bycs" title="SCORM-Paket für die ByCS-Lernplattform (Aktivität „Lernpaket“): Fortschritt und Ergebnisse landen in Moodle">Für ByCS herunterladen (.zip)</button><button class="btn haupt" type="button" id="einreichen" hidden>Einreichen</button></div>
       <p class="hinweis" id="einreichHinweis"></p>
+      <details id="eigenBox" hidden><summary>Eigene Seite mit eigenem Code einreichen</summary>
+        <p class="hinweis">Für Seiten, die über die Bausteine hinausgehen (z. B. mit dem Skill „vibe-learning-seite-erstellen“ gebaut): die <b>Quellseite</b> (.html) hochladen, nicht die heruntergeladene Einzeldatei. Bereich oben wählen. Der Vorschlag wird als <b>„eigener Code“</b> markiert und vor der Freigabe geprüft.</p>
+        <div class="eigen-zeile"><input type="file" class="feld" id="eigenDatei" accept=".html,.htm,text/html" aria-label="HTML-Datei der eigenen Seite"><input class="feld" id="eigenText" maxlength="300" placeholder="Kurztext für die Übersicht (optional)" aria-label="Kurztext"><button class="btn haupt" type="button" id="eigenEinreichen">Eigene Seite einreichen</button></div>
+      </details>
       <div id="ergebnis"></div>
     </div>
   </dialog>
@@ -4840,24 +4886,39 @@ const lehrer = () => window.TrainerSync && TrainerSync.lehrer;
 function hinweis(){
   const L = lehrer();   // Einreichen (Pull Request) nur für angemeldete Lehrkräfte sichtbar
   $('#einreichHinweis').innerHTML = L ? `Angemeldet als ${esc(L.name)}. Beim Einreichen entsteht ein Vorschlag (Pull Request) auf GitHub; nach der Freigabe erscheint die Übung im Menü. Dein Name wird dabei nicht übertragen.` : '';
-  $('#einreichHinweis').hidden = !L; $('#einreichen').hidden = !L; $('#einreichen').disabled = !L;
+  $('#einreichHinweis').hidden = !L; $('#einreichen').hidden = !L; $('#einreichen').disabled = !L; $('#eigenBox').hidden = !L;
 }
+// Einreichen an den Server (Pull Request); body = {json …} oder {html …} (eigene Seite)
+async function einreichenSenden(knopf, body){
+  const L = lehrer();
+  knopf.disabled = true; $('#ergebnis').innerHTML = '<div class="meldung ok">Wird eingereicht …</div>';
+  try {
+    const r = await fetch('../../api/trainer/einreichen', {method:'POST', headers:{'Content-Type':'application/json', ...(L.rolle === 'admin' ? {Authorization:L.token} : {'X-Lehrer-Token':L.token})},
+      body:JSON.stringify(Object.assign({bereich:bereich().id, pfad:bereich().pfad}, body))});
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(esc(j.message || 'Fehler ' + r.status) + (j.fehler ? '<ul>' + j.fehler.map(x => `<li>${esc(x)}</li>`).join('') + '</ul>' : '') + (j.detail && L.rolle === 'admin' ? `<br><small>Für den Admin: ${esc(j.detail)}</small>` : ''));
+    $('#ergebnis').innerHTML = j.url ? `<div class="meldung ok">✓ Eingereicht! Der Vorschlag liegt jetzt zur Freigabe bereit${j.eigen ? ' (markiert als eigener Code)' : ''}: <a href="${esc(j.url)}" target="_blank" rel="noopener">Pull Request ansehen</a></div>`
+      : `<div class="meldung ok">✓ Testlauf: Die Seite würde unter <code>${esc(j.pfad)}</code> angelegt${j.eigen ? ' (eigener Code)' : ''}.</div>`;
+  } catch (err){ $('#ergebnis').innerHTML = `<div class="meldung fehler">${err.message}</div>`; }
+  knopf.disabled = false;
+}
+$('#eigenEinreichen').addEventListener('click', async () => {
+  const L = lehrer(); if (!L) return hinweis();
+  if (!bereich()){ $('#ergebnis').innerHTML = '<div class="meldung fehler">Bitte zuerst einen Bereich wählen.</div>'; return; }
+  const f = $('#eigenDatei').files[0];
+  if (!f){ $('#ergebnis').innerHTML = '<div class="meldung fehler">Bitte die HTML-Datei der eigenen Seite auswählen.</div>'; return; }
+  const html = await f.text(), p = Seite.eigeneSeite(html, {});
+  if (p.fehler.length){ $('#ergebnis').innerHTML = `<div class="meldung fehler"><b>Bitte noch korrigieren:</b><ul>${p.fehler.map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>`; return; }
+  if (!confirm(`Eigene Seite „${p.titel}“ (${p.skripte} Script-Blöcke, ${p.zeilen} Zeilen eigener Code) für ${bereich().name} einreichen?`)) return;
+  einreichenSenden($('#eigenEinreichen'), {html, titel:p.titel, kurztext:$('#eigenText').value.trim()});
+});
 hinweis(); setTimeout(hinweis, 800);
 $('#einreichen').addEventListener('click', async () => {
   const L = lehrer(); if (!L) return hinweis();
   if (!bereich()){ $('#ergebnis').innerHTML = '<div class="meldung fehler">Bitte zuerst einen Bereich wählen.</div>'; return; }
   const d = daten($('#ergebnis')); if (!d) return;
   if (!confirm(`„${d.titel}“ für ${bereich().name} einreichen?`)) return;
-  $('#einreichen').disabled = true; $('#ergebnis').innerHTML = '<div class="meldung ok">Wird eingereicht …</div>';
-  try {
-    const r = await fetch('../../api/trainer/einreichen', {method:'POST', headers:{'Content-Type':'application/json', ...(L.rolle === 'admin' ? {Authorization:L.token} : {'X-Lehrer-Token':L.token})},
-      body:JSON.stringify({json:JSON.stringify(d), bereich:bereich().id, pfad:bereich().pfad, titel:d.titel, kurztext:d.kurztext || ''})});
-    const j = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(esc(j.message || 'Fehler ' + r.status) + (j.fehler ? '<ul>' + j.fehler.map(x => `<li>${esc(x)}</li>`).join('') + '</ul>' : '') + (j.detail && L.rolle === 'admin' ? `<br><small>Für den Admin: ${esc(j.detail)}</small>` : ''));
-    $('#ergebnis').innerHTML = j.url ? `<div class="meldung ok">✓ Eingereicht! Der Vorschlag liegt jetzt zur Freigabe bereit: <a href="${esc(j.url)}" target="_blank" rel="noopener">Pull Request ansehen</a></div>`
-      : `<div class="meldung ok">✓ Testlauf: Die Seite würde unter <code>${esc(j.pfad)}</code> angelegt.</div>`;
-  } catch (err){ $('#ergebnis').innerHTML = `<div class="meldung fehler">${err.message}</div>`; }
-  $('#einreichen').disabled = false;
+  einreichenSenden($('#einreichen'), {json:JSON.stringify(d), titel:d.titel, kurztext:d.kurztext || ''});
 });
 
 /* ---------- Start: Entwurf laden (alter Entwurf hatte Titel/Kurztext in eigenen Feldern) ---------- */

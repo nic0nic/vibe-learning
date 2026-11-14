@@ -11,6 +11,8 @@
   Modi wechseln, prüfen, im abgeschotteten iframe testen, als Datei oder für ByCS (SCORM-ZIP wie werkzeuge/bycs-pakete.py: scorm.js,
   lib/scorm-manifest.xml, lib/zip.js) herunterladen oder als angemeldete Lehrkraft einreichen
   (POST /api/trainer/einreichen → Pull Request, pb_hooks/einreichen.pb.js; Knopf nur für Lehrkräfte sichtbar).
+  Lehrkräfte können dort auch eine eigene Seite (HTML mit eigenem Code) hochladen: Seite.eigeneSeite prüft die eingebundenen
+  Dateien, der Pull Request wird als „eigener Code“ markiert.
   Die Bibliotheken für die erzeugten Seiten stehen als <script type="application/json" data-einbetten> unten: online leer
   (dann fetch), in standalone/ und bycs/ füllt werkzeuge/einzeldateien.py sie (als JSON-Text), damit alles ohne Server läuft.
   Die Vorschau läuft mit sandbox="allow-scripts" ohne same-origin: eingefügtes HTML kommt nicht an Anmeldedaten.
@@ -304,6 +306,8 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
 #vorschauDlg[open]{display:flex;flex-direction:column}
 #vorschauDlg iframe{flex:1;width:100%;border:0;background:var(--bg)}
 #abgebenDlg{width:min(560px,100%)}
+#eigenBox{margin:6px 0 10px}#eigenBox summary{cursor:pointer;font-weight:600}
+.eigen-zeile{display:flex;flex-direction:column;gap:8px;align-items:flex-start}.eigen-zeile .feld{width:100%}
 [hidden]{display:none!important}
 </style>
 </head>
@@ -363,6 +367,10 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
       <label class="klein" for="bereich">Fach, Jahrgangsstufe und Bereich</label><select class="feld" id="bereich"></select>
       <div class="knoepfe"><button class="btn" type="button" id="download" title="Eine HTML-Datei, läuft per Doppelklick im Browser">Als Datei herunterladen</button><button class="btn" type="button" id="bycs" title="SCORM-Paket für die ByCS-Lernplattform (Aktivität „Lernpaket“): Fortschritt und Ergebnisse landen in Moodle">Für ByCS herunterladen (.zip)</button><button class="btn haupt" type="button" id="einreichen" hidden>Einreichen</button></div>
       <p class="hinweis" id="einreichHinweis"></p>
+      <details id="eigenBox" hidden><summary>Eigene Seite mit eigenem Code einreichen</summary>
+        <p class="hinweis">Für Seiten, die über die Bausteine hinausgehen (z. B. mit dem Skill „vibe-learning-seite-erstellen“ gebaut): die <b>Quellseite</b> (.html) hochladen, nicht die heruntergeladene Einzeldatei. Bereich oben wählen. Der Vorschlag wird als <b>„eigener Code“</b> markiert und vor der Freigabe geprüft.</p>
+        <div class="eigen-zeile"><input type="file" class="feld" id="eigenDatei" accept=".html,.htm,text/html" aria-label="HTML-Datei der eigenen Seite"><input class="feld" id="eigenText" maxlength="300" placeholder="Kurztext für die Übersicht (optional)" aria-label="Kurztext"><button class="btn haupt" type="button" id="eigenEinreichen">Eigene Seite einreichen</button></div>
+      </details>
       <div id="ergebnis"></div>
     </div>
   </dialog>
@@ -611,24 +619,39 @@ const lehrer = () => window.TrainerSync && TrainerSync.lehrer;
 function hinweis(){
   const L = lehrer();   // Einreichen (Pull Request) nur für angemeldete Lehrkräfte sichtbar
   $('#einreichHinweis').innerHTML = L ? `Angemeldet als ${esc(L.name)}. Beim Einreichen entsteht ein Vorschlag (Pull Request) auf GitHub; nach der Freigabe erscheint die Übung im Menü. Dein Name wird dabei nicht übertragen.` : '';
-  $('#einreichHinweis').hidden = !L; $('#einreichen').hidden = !L; $('#einreichen').disabled = !L;
+  $('#einreichHinweis').hidden = !L; $('#einreichen').hidden = !L; $('#einreichen').disabled = !L; $('#eigenBox').hidden = !L;
 }
+// Einreichen an den Server (Pull Request); body = {json …} oder {html …} (eigene Seite)
+async function einreichenSenden(knopf, body){
+  const L = lehrer();
+  knopf.disabled = true; $('#ergebnis').innerHTML = '<div class="meldung ok">Wird eingereicht …</div>';
+  try {
+    const r = await fetch('../../api/trainer/einreichen', {method:'POST', headers:{'Content-Type':'application/json', ...(L.rolle === 'admin' ? {Authorization:L.token} : {'X-Lehrer-Token':L.token})},
+      body:JSON.stringify(Object.assign({bereich:bereich().id, pfad:bereich().pfad}, body))});
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(esc(j.message || 'Fehler ' + r.status) + (j.fehler ? '<ul>' + j.fehler.map(x => `<li>${esc(x)}</li>`).join('') + '</ul>' : '') + (j.detail && L.rolle === 'admin' ? `<br><small>Für den Admin: ${esc(j.detail)}</small>` : ''));
+    $('#ergebnis').innerHTML = j.url ? `<div class="meldung ok">✓ Eingereicht! Der Vorschlag liegt jetzt zur Freigabe bereit${j.eigen ? ' (markiert als eigener Code)' : ''}: <a href="${esc(j.url)}" target="_blank" rel="noopener">Pull Request ansehen</a></div>`
+      : `<div class="meldung ok">✓ Testlauf: Die Seite würde unter <code>${esc(j.pfad)}</code> angelegt${j.eigen ? ' (eigener Code)' : ''}.</div>`;
+  } catch (err){ $('#ergebnis').innerHTML = `<div class="meldung fehler">${err.message}</div>`; }
+  knopf.disabled = false;
+}
+$('#eigenEinreichen').addEventListener('click', async () => {
+  const L = lehrer(); if (!L) return hinweis();
+  if (!bereich()){ $('#ergebnis').innerHTML = '<div class="meldung fehler">Bitte zuerst einen Bereich wählen.</div>'; return; }
+  const f = $('#eigenDatei').files[0];
+  if (!f){ $('#ergebnis').innerHTML = '<div class="meldung fehler">Bitte die HTML-Datei der eigenen Seite auswählen.</div>'; return; }
+  const html = await f.text(), p = Seite.eigeneSeite(html, {});
+  if (p.fehler.length){ $('#ergebnis').innerHTML = `<div class="meldung fehler"><b>Bitte noch korrigieren:</b><ul>${p.fehler.map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>`; return; }
+  if (!confirm(`Eigene Seite „${p.titel}“ (${p.skripte} Script-Blöcke, ${p.zeilen} Zeilen eigener Code) für ${bereich().name} einreichen?`)) return;
+  einreichenSenden($('#eigenEinreichen'), {html, titel:p.titel, kurztext:$('#eigenText').value.trim()});
+});
 hinweis(); setTimeout(hinweis, 800);
 $('#einreichen').addEventListener('click', async () => {
   const L = lehrer(); if (!L) return hinweis();
   if (!bereich()){ $('#ergebnis').innerHTML = '<div class="meldung fehler">Bitte zuerst einen Bereich wählen.</div>'; return; }
   const d = daten($('#ergebnis')); if (!d) return;
   if (!confirm(`„${d.titel}“ für ${bereich().name} einreichen?`)) return;
-  $('#einreichen').disabled = true; $('#ergebnis').innerHTML = '<div class="meldung ok">Wird eingereicht …</div>';
-  try {
-    const r = await fetch('../../api/trainer/einreichen', {method:'POST', headers:{'Content-Type':'application/json', ...(L.rolle === 'admin' ? {Authorization:L.token} : {'X-Lehrer-Token':L.token})},
-      body:JSON.stringify({json:JSON.stringify(d), bereich:bereich().id, pfad:bereich().pfad, titel:d.titel, kurztext:d.kurztext || ''})});
-    const j = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(esc(j.message || 'Fehler ' + r.status) + (j.fehler ? '<ul>' + j.fehler.map(x => `<li>${esc(x)}</li>`).join('') + '</ul>' : '') + (j.detail && L.rolle === 'admin' ? `<br><small>Für den Admin: ${esc(j.detail)}</small>` : ''));
-    $('#ergebnis').innerHTML = j.url ? `<div class="meldung ok">✓ Eingereicht! Der Vorschlag liegt jetzt zur Freigabe bereit: <a href="${esc(j.url)}" target="_blank" rel="noopener">Pull Request ansehen</a></div>`
-      : `<div class="meldung ok">✓ Testlauf: Die Seite würde unter <code>${esc(j.pfad)}</code> angelegt.</div>`;
-  } catch (err){ $('#ergebnis').innerHTML = `<div class="meldung fehler">${err.message}</div>`; }
-  $('#einreichen').disabled = false;
+  einreichenSenden($('#einreichen'), {json:JSON.stringify(d), titel:d.titel, kurztext:d.kurztext || ''});
 });
 
 /* ---------- Start: Entwurf laden (alter Entwurf hatte Titel/Kurztext in eigenen Feldern) ---------- */

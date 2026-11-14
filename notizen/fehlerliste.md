@@ -30,6 +30,9 @@ Gesammelt im Thread „Aufbau der Seite“. Umgesetzt wird erst, wenn die Lehrkr
 
 ### Version vom 14.11.
 
+69. **Eigene Seiten einreichen, als „eigener Code“ markiert** (gewünscht 14.11.)
+    Übung erstellen → Herunterladen / Einreichen: für angemeldete Lehrkräfte „Eigene Seite mit eigenem Code einreichen“ (Quellseite .html hochladen, z. B. aus dem Skill vibe-learning-seite-erstellen). `Seite.eigeneSeite` (lib/seite.js) prüft nur die eingebundenen Dateien (nur Bausteine aus pb_public, keine externen, keine Einzeldatei) und passt Pfade und data-trainer an den Bereich an. pb_hooks/einreichen.pb.js nimmt `html` statt `json`; der Pull Request heißt „⚠️ Eigener Code – Neue Übung: …“, hat oben eine Warnung (Script-Blöcke, Zeilen) und bekommt das Label `eigener-code` (falls das Token es darf). Getestet mit VIBE_GITHUB_DRYRUN, nicht gegen GitHub.
+
 68. **IT: Bereich Grundlagen mit Zahlensystemen (Jgst. 6)** (gewünscht 14.11.)
     Neuer Bereich `IT/grundlagen` (erster Reiter in IT), Seite `zahlensysteme.html` (Tool `zahlensysteme`): Einführung (Stellenwerte im Dezimalsystem, Strom an/aus), Übung Dezimal, Binärsystem mit Bits zum Anklicken (Lampen, Summe live), Merkkästen zum Umrechnen (Werte der Einsen addieren; größten passenden Stellenwert abziehen), Übung Binär, Hexadezimalsystem (A–F, 16er-Stelle, 4 Bit = 1 Hex-Ziffer, Farben in HTML), Übung Hex, Endlos-Modus mit vier Stufen: Auswählen, Auswählen auf Zeit, Eintippen, Eintippen auf Zeit (zufällig dezimal↔binär bis 63, dezimal↔hex und binär↔hex bis 255; Ablenker ±1, ±2, ein Bit, Ziffern vertauscht; Eingabe mit führenden Nullen, Kleinbuchstaben, 0x).
     - `lib/aufgaben.js` Training: je Stufe eigene `antwort` und `zeit`, eigene Aufgaben über `stufe.neu({mc})` (nur Seiten mit Code). `lib/seite.js` und Skill (pruefe.py, typen.md) prüfen `antwort`/`zeit` je Stufe auch im JSON.

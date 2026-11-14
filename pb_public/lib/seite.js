@@ -28,6 +28,9 @@
  *       HTML in Texten nur nach Erlaubtliste (Seite.ERLAUBT): Tags wie p, b, ul, table … mit höchstens class
  *       (td/th auch colspan, rowspan); jedes andere „<“ + Buchstabe, „</“, „<!“ oder „<?“ wird abgelehnt.
  *   Seite.toolId(titel, zufall)     → id für katalog.js (a–z, 0–9, -, höchstens 20 Zeichen)
+ *   Seite.eigeneSeite(html, {pfad, toolId}) → {fehler, html, titel, skripte, zeilen}: eigene Seite (HTML mit eigenem Code)
+ *       prüfen (nur Bausteine aus pb_public, keine externen Dateien, keine Einzeldatei) und für den Bereich anpassen
+ *       (relative Pfade, data-trainer). Den Code selbst prüft niemand automatisch: Einreichen markiert den Pull Request.
  *   Seite.seiteHTML(json, opt)      → komplette HTML-Seite
  *       opt = {pfad: 'BWR/9II/finanzierung', toolId, einzeln: false, design (statt json.design), lib: {aufgabenJs, aufgabenCss, bwrCss, formelJs}}
  *       einzeln: true → ohne Menü und Server, Bibliotheken eingebettet (Vorschau, Download)
@@ -292,7 +295,42 @@ Aufgaben.sequenz({el:'#app', key:${JSON.stringify(id)}, schritte:DATEN.schritte}
 `;
   }
 
-  const Seite = {TYPEN, ERLAUBT, normalisiere, ohneDanach, pruefe, toolId, seiteHTML, MAX};
+  // Eigene Seite (HTML mit eigenem Code, z. B. aus dem Skill vibe-learning-seite-erstellen) für einen Bereich vorbereiten:
+  // Bausteine nur relativ aus pb_public (katalog.js, nav.js, sync.js, seite.css, lib/…, BWR/bwr.css), Pfade an die Tiefe des
+  // Bereichs anpassen, data-trainer = toolId. Der Code selbst wird nicht geprüft – deshalb markiert der Pull Request ihn.
+  const MAX_EIGEN = 400000;
+  const BAUSTEIN = /^(?:\.\.\/)+(?:katalog\.js|nav\.js|sync\.js|seite\.css|lib\/[a-z0-9.-]+\.(?:js|css)|BWR\/bwr\.css)$/;
+  function eigeneSeite(html, opt) {
+    opt = opt || {};
+    const fehler = [];
+    html = String(html || '');
+    if (html.length > MAX_EIGEN) fehler.push(`Die Seite ist zu groß (höchstens ${MAX_EIGEN / 1000} KB).`);
+    if (/PF_EINZELDATEI/.test(html)) fehler.push('Das ist eine heruntergeladene Einzeldatei (alles eingebettet). Bitte die Quellseite einreichen, die die Bausteine über ../../lib/… einbindet.');
+    const t = html.match(/<title>([\s\S]*?)<\/title>/);
+    const titel = t ? t[1].trim().replace(/\s*[–-]\s*vibe learning$/, '').replace(/&amp;/g, '&').slice(0, 120) : '';
+    if (!titel) fehler.push('<title> fehlt.');
+    ['katalog.js', 'nav.js', 'sync.js'].forEach(d => { if (!new RegExp(`<script\\s+src="(?:\\.\\./)+${d.replace('.', '\\.')}"`).test(html)) fehler.push(`<script src="../../${d}"></script> fehlt.`); });
+    const extern = [];
+    html.replace(/<script\b[^>]*\bsrc="([^"]*)"|<link\b[^>]*\bhref="([^"]*)"/gi, (m, src, href) => {
+      const u = src || href;
+      if (href && !/rel="stylesheet"/i.test(m)) return m;
+      if (!BAUSTEIN.test(u)) extern.push(u);
+      return m;
+    });
+    if (extern.length) fehler.push('Nur Bausteine von vibe learning einbinden, keine anderen oder externen Dateien: ' + extern.slice(0, 5).join(', '));
+    if (/<(?:iframe|object|embed)\b/i.test(html)) fehler.push('iframe, object und embed sind nicht erlaubt.');
+    const skripte = [];
+    html.replace(/<script\b(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi, (m, code) => { skripte.push(code); return m; });
+    const zeilen = skripte.reduce((n, c) => n + c.split('\n').filter(z => z.trim()).length, 0);
+    if (opt.pfad != null) {
+      const hoch = '../'.repeat(String(opt.pfad).split('/').length);
+      html = html.replace(/((?:src|href)=")(?:\.\.\/)+(?=(?:katalog\.js|nav\.js|sync\.js|seite\.css|lib\/|BWR\/))/g, `$1${hoch}`);
+    }
+    if (opt.toolId) html = /data-trainer="[^"]*"/.test(html) ? html.replace(/data-trainer="[^"]*"/, `data-trainer="${opt.toolId}"`) : html.replace(/<html\b/, `<html data-trainer="${opt.toolId}"`);
+    return {fehler, html, titel, skripte: skripte.length, zeilen};
+  }
+
+  const Seite = {TYPEN, ERLAUBT, normalisiere, ohneDanach, pruefe, toolId, seiteHTML, eigeneSeite, MAX, MAX_EIGEN};
   if (typeof module !== 'undefined' && module.exports) module.exports = Seite;
   else window.Seite = Seite;
 })();

@@ -182,6 +182,9 @@ API
       HTML in Texten nur nach Erlaubtliste (Seite.ERLAUBT): Tags wie p, b, ul, table … mit höchstens class
       (td/th auch colspan, rowspan); jedes andere „<“ + Buchstabe, „</“, „<!“ oder „<?“ wird abgelehnt.
   Seite.toolId(titel, zufall)     → id für katalog.js (a–z, 0–9, -, höchstens 20 Zeichen)
+  Seite.eigeneSeite(html, {pfad, toolId}) → {fehler, html, titel, skripte, zeilen}: eigene Seite (HTML mit eigenem Code)
+      prüfen (nur Bausteine aus pb_public, keine externen Dateien, keine Einzeldatei) und für den Bereich anpassen
+      (relative Pfade, data-trainer). Den Code selbst prüft niemand automatisch: Einreichen markiert den Pull Request.
   Seite.seiteHTML(json, opt)      → komplette HTML-Seite
       opt = {pfad: 'BWR/9II/finanzierung', toolId, einzeln: false, design (statt json.design), lib: {aufgabenJs, aufgabenCss, bwrCss, formelJs}}
       einzeln: true → ohne Menü und Server, Bibliotheken eingebettet (Vorschau, Download)
