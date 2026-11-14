@@ -248,13 +248,15 @@ dialog.tr-dialog{width:min(720px,calc(100vw - 24px));max-height:calc(100vh - 24p
 .kasten h2{font-size:16px;margin:0 0 8px}
 #json{width:100%;min-height:62vh;font:13px/1.45 var(--mono)}
 /* JSON-Editor (vorlage-json.js) */
-:root{--j-key:#4f73a3;--j-str:#4e7d39;--j-tag:#a3434c;--j-kw:#8a5f84;--j-num:#b0631f;--j-atom:#8a5f84;--j-b0:#b07d1a;--j-b1:#8a5f84;--j-b2:#2f7f8c;--j-sel:#d8dee9;--j-akt:color-mix(in srgb,var(--accent) 7%,transparent)}
-[data-theme=dark]{--j-key:#88c0d0;--j-str:#a3be8c;--j-tag:#d08770;--j-kw:#b48ead;--j-num:#d08770;--j-atom:#b48ead;--j-b0:#ebcb8b;--j-b1:#b48ead;--j-b2:#88c0d0;--j-sel:#434c5e;--j-akt:rgba(255,255,255,.04)}
+:root{--j-key:#4f73a3;--j-str:#4e7d39;--j-tag:#a3434c;--j-kw:#8a5f84;--j-num:#b0631f;--j-atom:#8a5f84;--j-b0:#b07d1a;--j-b1:#8a5f84;--j-b2:#2f7f8c;--j-sel:color-mix(in srgb,var(--accent) 36%,var(--panel2));--j-sel-blass:color-mix(in srgb,var(--accent) 22%,var(--panel2));--j-akt:color-mix(in srgb,var(--accent) 7%,transparent)}
+[data-theme=dark]{--j-key:#88c0d0;--j-str:#a3be8c;--j-tag:#d08770;--j-kw:#b48ead;--j-num:#d08770;--j-atom:#b48ead;--j-b0:#ebcb8b;--j-b1:#b48ead;--j-b2:#88c0d0;--j-sel:color-mix(in srgb,var(--accent) 38%,var(--panel2));--j-sel-blass:color-mix(in srgb,var(--accent) 20%,var(--panel2));--j-akt:rgba(255,255,255,.04)}
 #modusJson .CodeMirror{height:62vh;min-height:300px;font:13px/1.5 var(--mono);background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:8px;resize:vertical;overflow:hidden}
 .cm-s-vljson .CodeMirror-gutters{background:var(--panel);border-right:1px solid var(--border)}
 .cm-s-vljson .CodeMirror-linenumber{color:var(--muted)}
 .cm-s-vljson .CodeMirror-cursor{border-left:2px solid var(--text)}
-.cm-s-vljson .CodeMirror-selected,.cm-s-vljson.CodeMirror-focused .CodeMirror-selected{background:var(--j-sel)}
+.cm-s-vljson .CodeMirror-selected{background:var(--j-sel-blass)}
+.cm-s-vljson.CodeMirror-focused .CodeMirror-selected{background:var(--j-sel)}
+.cm-s-vljson .CodeMirror-line::selection,.cm-s-vljson .CodeMirror-line>span::selection,.cm-s-vljson .CodeMirror-line>span>span::selection{background:var(--j-sel)}
 .cm-s-vljson .CodeMirror-activeline-background{background:var(--j-akt)}
 .cm-s-vljson .cm-property{color:var(--j-key);font-weight:600}
 .cm-s-vljson .cm-string{color:var(--j-str)}
