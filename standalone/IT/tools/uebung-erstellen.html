@@ -1811,6 +1811,8 @@ html[data-theme=dark] .pf-item{--bc:#88c0d0}
  * Ein Design = CSS (nur unter html[data-design="<id>"] gültig, überschreibt die Farbvariablen --bg, --panel, --text …),
  * optional eine Flammen-Vorlage (HTML, {n} = Stufe; lib/aufgaben.js nutzt sie über window.PF_FLAMME) und
  * modus 'dunkel' | 'hell' (fest – dann kein Hell/Dunkel-Knopf) oder frei (weglassen).
+ * Titelkarte nutzt den Hell/Dunkel-Knopf für zwei Hintergründe (hell = Punkte, dunkel = Raster); wechsel = Text eines
+ * eigenen Knopfs für Seiten ohne diesen Knopf (Einzeldatei, ByCS-Paket).
  * Genutzt von lib/seite.js (Aufgaben-JSON mit "design": "<id>" → CSS eingebettet), dem Editor (Auswahl neben „Vorschau“)
  * und nav.js/sync.js (Einstellung für Angemeldete, localStorage pf-design: lädt diese Datei nach, experimentell –
  * handgebaute Seiten wie Excel/SQL haben eigenes CSS und sehen dann nur teilweise anders aus).
@@ -1880,9 +1882,10 @@ ${S} a{color:var(--accent)}
 
   /* ---------- gemeinsame Bausteine ---------- */
   // Farbvariablen + fester Modus (Hell/Dunkel-Knopf weg) + weniger Bewegung, wenn gewünscht
-  const grund = (S, v, dunkel) => `
+  // knopf: true = Hell/Dunkel-Knopf bleibt (das Design nutzt ihn selbst, z. B. Titelkarte: Punkte ↔ Raster)
+  const grund = (S, v, dunkel, knopf) => `
 ${S}{${Object.keys(v).map(k => `--${k}:${v[k]}`).join(';')};color-scheme:${dunkel ? 'dark' : 'light'}}
-${S} #pfTheme,${S} #themeBtn{display:none!important}
+${knopf ? '' : `${S} #pfTheme,${S} #themeBtn{display:none!important}`}
 @media (prefers-reduced-motion:reduce){${S} *,${S} *::before,${S} *::after{animation:none!important;transition:none!important}}`;
   // eine Schrift für alles außer Code und Code-Editoren (:where → schwach, Überschriften o. Ä. können mit !important eine andere setzen)
   const schrift = (S, stapel) => `
@@ -1960,9 +1963,10 @@ ${grund(S, {bg: f.bg, panel: '#fff', panel2: '#fdf3e4', text: '#141414', muted: 
     'on-color': '#fff', err: '#c8193c', ok: '#2f7d4f', 'plus-bg': '#dcf1e3', 'minus-bg': '#fbdde2', 'ok-bg': '#dcf1e3', 'err-bg': '#fbdde2',
     slot: '#fdf3e4', 'slot-border': '#cdbba6', marke: f.akzent, 'flame-off': '#fff', 'flame-num-off': '#141414',
     streifen: 'repeating-linear-gradient(180deg,#fff 0 24px,#fdf3e4 24px 48px)',
-    geo: '"PF Jost","Futura","Century Gothic","Avenir Next",system-ui,sans-serif'})}
+    geo: '"PF Jost","Futura","Century Gothic","Avenir Next",system-ui,sans-serif'}, false, true)}
 ${schrift(S, 'var(--geo)')}
-${S} body{background-color:var(--bg);background-image:linear-gradient(90deg,${f.linie} 1.5px,transparent 1.5px),linear-gradient(${f.linie} 1.5px,transparent 1.5px);background-size:26px 26px;background-position:-1px -1px}
+${S} body{background-color:#fbf5e1;background-image:radial-gradient(circle,${f.bg} 4px,transparent 4.6px),radial-gradient(circle,${f.bg} 4px,transparent 4.6px);background-size:28px 28px;background-position:0 0,14px 14px}
+${S}[data-theme=dark] body{background-color:var(--bg);background-image:linear-gradient(90deg,${f.linie} 1.5px,transparent 1.5px),linear-gradient(${f.linie} 1.5px,transparent 1.5px);background-size:26px 26px;background-position:-1px -1px}
 ${S} .wrap>.bar{position:relative;max-width:760px;margin:26px auto 26px;padding:30px 28px 26px;text-align:center;background:var(--streifen);border-radius:10px;box-shadow:0 12px 30px rgba(${f.schatten},.35)}
 ${S} .wrap>.bar::before{content:"Übung";display:block;font:800 13px/1 var(--geo)!important;text-transform:uppercase;letter-spacing:.08em;margin-bottom:22px}
 ${S} .wrap>.bar::after{content:"";position:absolute;left:-26px;top:-18px;width:60px;height:70px;transform:rotate(-12deg);background:${MARKE} center/100% 100%;
@@ -1999,6 +2003,8 @@ ${S} .tr-balken{background:var(--accent)!important}${S} .tr-balken.knapp{backgro
 ${S} .tr-frage{font-family:var(--geo)!important;font-weight:800}
 ${flamme(S, {aus: '#fff', rand: '#141414', breite: 1.4, hover: '#fde3d6', an: f.akzent, zahl: '#141414', ruhig: true, glanz: 'drop-shadow(0 2px 3px rgba(${f.schatten},.35))'})}
 ${S} .af-flamme text,${S} .flame text{font:800 14px var(--geo)!important}
+${S} .pf-wechsel{position:fixed;top:12px;right:12px;z-index:90;width:40px;height:40px;border-radius:50%;border:0;background:#fff;color:var(--text);font:20px/1 system-ui,sans-serif;cursor:pointer;box-shadow:0 3px 10px rgba(${f.schatten},.35)}
+${S} .pf-wechsel:hover{transform:scale(1.06)}
 @media (max-width:600px){${S} .wrap>.bar{margin-top:30px;padding:26px 16px 20px}${S} .wrap>.bar::after{left:-6px;top:-22px;transform:rotate(-12deg) scale(.75)}}
 `;
   const TK = {
@@ -2253,8 +2259,8 @@ ${S} .af-flamme.on,${S} .flame.on{animation:pf-note 1.2s ease-in-out infinite al
   };
   Object.keys(TK).forEach(k => {
     const f = TK[k];
-    D['titelkarte-' + k] = {name: 'Titelkarte ' + f.name, gruppe: 'Titelkarte', kurz: f.name, farbe: f.bg, modus: 'hell', css: TITELKARTE(sel('titelkarte-' + k), f),
-      beschreibung: `Kapitelkarte: Raster auf ${f.name}, weiße gestreifte Karte, fette Versalien, Briefmarke. Immer hell.`};
+    D['titelkarte-' + k] = {name: 'Titelkarte ' + f.name, gruppe: 'Titelkarte', kurz: f.name, farbe: f.bg, wechsel: 'Hintergrund wechseln: Punkte oder Raster', css: TITELKARTE(sel('titelkarte-' + k), f),
+      beschreibung: `Kapitelkarte: weiße gestreifte Karte, fette Versalien, Briefmarke. Hintergrund ${f.name}: Punkte auf Cremeweiß oder Raster – der Hell/Dunkel-Knopf wechselt.`};
   });
   Object.assign(D, {
     secondhand: {name: 'Secondhand', beschreibung: 'Braun-beige wie im Secondhandladen: Sakko-Karo, Karten als Preisetiketten. Immer hell.', modus: 'hell', css: SECONDHAND},
@@ -2265,13 +2271,19 @@ ${S} .af-flamme.on,${S} .flame.on{animation:pf-note 1.2s ease-in-out infinite al
     musik: {name: 'Musik', beschreibung: 'Notenpapier, Knöpfe als Klaviertasten, Noten als Stufen. Immer hell.', modus: 'hell', flamme: FL_MUSIK, css: MUSIK}
   });
 
+  // Seiten ohne Hell/Dunkel-Knopf (Einzeldatei, ByCS): Designs mit wechsel bringen einen eigenen Knopf mit
+  // (wechselt data-theme wie der Knopf der Plattform, gemerkt in wenn-theme)
+  const WECHSEL_JS = text => `addEventListener('load',function(){if(document.querySelector('#themeBtn,#pfTheme'))return;`
+    + `var b=document.createElement('button');b.type='button';b.className='pf-wechsel';b.title=${JSON.stringify(text)};b.setAttribute('aria-label',${JSON.stringify(text)});b.textContent='◐';`
+    + `b.onclick=function(){var r=document.documentElement,t=r.dataset.theme==='dark'?'light':'dark';r.dataset.theme=t;try{localStorage.setItem('wenn-theme',t);}catch(e){}};document.body.appendChild(b);});`;
   const hole = id => id && id !== 'standard' && D[id] ? D[id] : null;
   const liste = () => Object.keys(D).map(id => ({id, name: D[id].name, beschreibung: D[id].beschreibung, modus: D[id].modus || null,
     gruppe: D[id].gruppe || null, kurz: D[id].kurz || D[id].name, farbe: D[id].farbe || null}));
   function kopf(id) {
     const d = hole(id); if (!d) return '';
     const js = `document.documentElement.dataset.design=${JSON.stringify(id)};` + (d.flamme ? `window.PF_FLAMME=${JSON.stringify(d.flamme)};` : '')
-      + (d.modus ? `document.documentElement.dataset.theme=${JSON.stringify(d.modus === 'dunkel' ? 'dark' : 'light')};` : '');
+      + (d.modus ? `document.documentElement.dataset.theme=${JSON.stringify(d.modus === 'dunkel' ? 'dark' : 'light')};` : '')
+      + (d.wechsel ? WECHSEL_JS(d.wechsel) : '');
     return `<style id="pf-design">${d.css.replace(/<\/style/gi, '<\\/style')}</style>\n<script>${js}<\/script>`;
   }
   function anwenden(id) {
