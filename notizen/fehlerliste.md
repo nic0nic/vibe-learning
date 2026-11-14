@@ -23,19 +23,24 @@ Gesammelt im Thread „Aufbau der Seite“. Umgesetzt wird erst, wenn die Lehrkr
     `nav.js`: Läuft die Übung in einem iframe gleichen Ursprungs (Moodle-Player), gibt es einen zweiten Knopf „Großansicht“. Er legt das iframe per CSS über das ganze Fenster (fixed, z-index, Scrollen der Moodle-Seite aus); geht auch, wo Vollbild nicht klappt (iPad, Apps). Bleibt für die Sitzung an (sessionStorage `pf-gross`), Esc oder Knopf beendet und stellt den alten Stil wieder her. Auf der Webseite selbst kein Knopf (dort wirkungslos).
     Getestet in Chromium (iPad-Größe 820×1180) im nachgebauten Moodle-Player: an, nach Neuladen weiter an, Esc, an/aus, Webseite ohne Knopf. Nicht auf echtem iPad/ByCS.
 
-62. **Weitere Designs** (vorgeschlagen 13.11., Unterbau steht: `lib/designs.js`, siehe Nr. 63)
-    Je Design: Farben/Muster in CSS, eigene Flamme, ggf. fester Hell/Dunkel-Modus. Schriften nur eingebettet (keine Google Fonts: Datenschutz, offline, ByCS).
-    1. Comic: dicke Konturen, Rasterpunkte, Feedback als Sprechblase, „ZACK!“ bei richtig (Comic-Schrift einbetten, OFL).
-    2. Titelkarte (Wes-Anderson-Pastell, symmetrisch, zentrierte Versalien in Serifenschrift, Rahmenlinien; Hintergrund wählbar: Rosa, Mint, Senf, Himmelblau, Bordeaux).
-    3. Secondhand (Thrift Store): braun/beige, Sakko-Karo mit dünnen blauen und roten Linien, Etiketten als Karten.
-    4. Trattoria: rot-weiß karierte Tischdecke, Aufgaben als Speisekarte, „Perfetto!“.
-    5. Chemielabor: Laborblatt, Reagenzglas als Flamme, Zeitbalken als Flüssigkeit im Messzylinder.
-    6. Videothek/Kino: Filmstreifen-Ränder, Filmklappe als Flamme, DVD-Hüllen.
-    7. Candy Factory: Pastell, Zuckerstangen-Streifen, Bonbons als Flammen.
-    8. Musik: Notenlinien, Noten als Flammen; Töne bei Antworten als eigene Option für alle Designs (Standard aus, Web Audio).
-    Verworfen (keine eindeutige Bildsprache): Wald (nur Farbvariante), Australien (Klischees, Punktmalerei heikel), Fahrradladen.
+64. **Töne bei Antworten** (aus Nr. 62, Design Musik)
+    Eigene Option für alle Designs (Standard aus, Web Audio): kurzer Ton bei richtig/falsch. Braucht einen Schalter auf der Seite (auch in Einzeldateien und ByCS), deshalb getrennt von den Designs.
 
 ## Erledigt
+
+### Version vom 14.11.
+
+62. **Weitere Designs** (vorgeschlagen 13.11., umgesetzt 14.11.)
+    In `lib/designs.js` 12 neue Einträge (gemeinsame Bausteine `grund`, `schrift`, `flamme`, `eigene`, `ausruf`). Eigene Flammenform nur, wo sie passt; sonst bleibt die Flamme und wird im Stil gezeichnet.
+    - Comic (`comic`): Rasterpunkte, dicke Konturen mit hartem Schatten, Rückmeldung als Sprechblase mit „ZACK!“, Flamme mit dicker Kontur. Schriften eingebettet (Bangers, Comic Neue; OFL, ca. 80 KB, nur in Seiten mit diesem Design).
+    - Titelkarte (`titelkarte-rosa`, `-mint`, `-senf`, `-himmelblau`, `-bordeaux`): symmetrisch, Serifen-Versalien, doppelte Rahmenlinien; Bordeaux dunkel, die anderen hell. Flamme als feine Kontur.
+    - Secondhand (`secondhand`): Sakko-Karo mit blauen und roten Linien, Karten/Antworten als Preisetiketten mit Loch, Knöpfe mit Steppnaht, Zeitbalken als Maßband, Flamme gesteppt.
+    - Trattoria (`trattoria`): karierte Tischdecke, Speisekarte (N°, gepunktete Linien, Ornamente), „Perfetto!“.
+    - Chemielabor (`chemielabor`): Millimeterpapier, Laborblatt, Reagenzgläser als Stufen, Zeitbalken als Messzylinder.
+    - Videothek/Kino (`kino`): Filmstreifen an beiden Rändern, Antworten als DVD-Hüllen, Filmklappen als Stufen (klappen, wenn aktiv). Immer dunkel.
+    - Candy Factory (`candy`): Zuckerstangen-Rahmen, laufender Zuckerstangen-Zeitbalken, Lollipops als Stufen.
+    - Musik (`musik`): Notenpapier, Knöpfe als Klaviertasten, Noten als Stufen.
+    Alle mit festem Hell/Dunkel-Modus. Skill (SKILL.md, pruefe.py) ergänzt. Getestet in Chromium mit einer Testübung (Info, MC, Zahlen, Zuordnen, Chat, Training mit Stufen, Vokabel-MC) und als Konto-Einstellung auf einer Excel-Seite; nicht in Firefox/Safari, nicht auf dem Handy.
 
 ### Version vom 13.11.
 
