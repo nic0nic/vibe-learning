@@ -270,7 +270,10 @@ API
       Eigene Aufgaben (nur in Seiten mit eigenem Code, nicht im JSON): stufe.neu({mc}) → {frage (HTML), loesung (Text),
       optionen (bei mc: [{t, ok}], genau eine ok), pruefe(text) → 'ok' | 'fast' | 'falsch' (optional, sonst Vergleich mit loesung)}.
       Vorbild: IT/grundlagen/zahlensysteme.html
-      Gespeichert: <key>-training {stufe, best:{stufe: n}}. Meldet je Runde/Serie TrainerSync.event (modus 'endlos'),
+      training.variante() → Text (optional, nur mit Code): Bestleistung getrennt je Variante (z. B. „Binär + Dezimal“),
+      '' = Standard. Ändert die Seite die Variante, schickt sie das Ereignis 'af-variante' an das .af-training-Element:
+      das Training kehrt zum Startbild zurück (eine laufende Serie zählt dann nicht).
+      Gespeichert: <key>-training {stufe, best:{stufe: n, "stufe:variante": n}}. Meldet je Runde/Serie TrainerSync.event (modus 'endlos'),
       fertig() nach der ersten Runde (bzw. ab training.ziel richtigen) oder einer Serie ab 10 (bzw. ziel).
       In Aufgaben.sequenz: schritt.training statt schritt.aufgaben.
   Aufgaben.mc.html(a, auswahl:Set, geprueft, reihenfolge?) / Aufgaben.mc.pruefen(a, auswahl) → {ok, gruende}

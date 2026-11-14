@@ -1428,7 +1428,10 @@ main{max-width:1020px;margin:0 auto;padding:18px 16px}
  *       Eigene Aufgaben (nur in Seiten mit eigenem Code, nicht im JSON): stufe.neu({mc}) → {frage (HTML), loesung (Text),
  *       optionen (bei mc: [{t, ok}], genau eine ok), pruefe(text) → 'ok' | 'fast' | 'falsch' (optional, sonst Vergleich mit loesung)}.
  *       Vorbild: IT/grundlagen/zahlensysteme.html
- *       Gespeichert: <key>-training {stufe, best:{stufe: n}}. Meldet je Runde/Serie TrainerSync.event (modus 'endlos'),
+ *       training.variante() → Text (optional, nur mit Code): Bestleistung getrennt je Variante (z. B. „Binär + Dezimal“),
+ *       '' = Standard. Ändert die Seite die Variante, schickt sie das Ereignis 'af-variante' an das .af-training-Element:
+ *       das Training kehrt zum Startbild zurück (eine laufende Serie zählt dann nicht).
+ *       Gespeichert: <key>-training {stufe, best:{stufe: n, "stufe:variante": n}}. Meldet je Runde/Serie TrainerSync.event (modus 'endlos'),
  *       fertig() nach der ersten Runde (bzw. ab training.ziel richtigen) oder einer Serie ab 10 (bzw. ziel).
  *       In Aufgaben.sequenz: schritt.training statt schritt.aufgaben.
  *   Aufgaben.mc.html(a, auswahl:Set, geprueft, reihenfolge?) / Aufgaben.mc.pruefen(a, auswahl) → {ok, gruende}
@@ -2171,11 +2174,14 @@ function training(cfg){
     + '<div class="tr"><div class="af-kopf"><nav class="af-flammen" aria-label="Stufen"></nav><span class="tr-info"></span></div><div class="tr-karte" aria-live="polite"></div></div>';
   root.classList.add('af-training');
   const $ = s => root.querySelector(s), karte = $('.tr-karte'), lebt = () => root.isConnected;
-  const best = () => stand.best[stufe] || 0;
+  const variante = () => typeof T.variante === 'function' ? String(T.variante() || '') : '';
+  const bestKey = () => { const v = variante(); return v ? stufe + ':' + v : stufe; };
+  const best = () => stand.best[bestKey()] || 0;
   const zeitText = s => String(Math.round(s * 100) / 100).replace('.', ',') + ' s';
   function kopf(){
     $('.af-flammen').innerHTML = ST.length > 1 ? ST.map((x, i) => `<button class="af-flamme${i === stufe ? ' on' : ''}" type="button" data-trstufe="${i}" title="Stufe ${i + 1}${x.name ? ': ' + esc(x.name) : ''}" aria-label="Stufe ${i + 1}${x.name ? ': ' + esc(x.name) : ''}" aria-pressed="${i === stufe}">${FLAMME(i + 1)}</button>`).join('') : '';
-    $('.tr-info').innerHTML = phase === 'start' || phase === 'ende' ? `Bestleistung: <b>${best()}</b>${endlos ? '' : ' von ' + anzahl}`
+    const v = variante() ? ` <span class="muted">(${esc(variante())})</span>` : '';
+    $('.tr-info').innerHTML = phase === 'start' || phase === 'ende' ? `Bestleistung${v}: <b>${best()}</b>${endlos ? '' : ' von ' + anzahl}`
       : endlos ? `🔥 Serie: <b>${richtige}</b> <span class="muted">· Bestleistung ${best()}</span>` : `Aufgabe ${nr} von ${anzahl} <span class="muted">· ✓ ${richtige}</span>`;
   }
   function halt(){ cancelAnimationFrame(raf); clearTimeout(warte); }
@@ -2242,8 +2248,8 @@ function training(cfg){
   function ende(){
     halt(); phase = 'ende';
     const alt = best(), neu = richtige > alt;
-    if (neu){ stand.best[stufe] = richtige; speichern(); }
-    const titel = (cfg.titel || 'Training') + (ST[stufe].name ? ' · ' + ST[stufe].name : '');
+    if (neu){ stand.best[bestKey()] = richtige; speichern(); }
+    const titel = (cfg.titel || 'Training') + (ST[stufe].name ? ' · ' + ST[stufe].name : '') + (variante() ? ' · ' + variante() : '');
     if (window.TrainerSync) TrainerSync.event({modus:'endlos', stufe:stufe + 1, aufgabe:'training', titel:`${titel}: ${endlos ? 'Serie ' + richtige : richtige + ' von ' + anzahl}`, gesamt:0, erstmals:true});
     const liste = fehler.length ? `<details class="tr-fehler"${endlos ? ' open' : ''}><summary>${endlos ? 'Daran lag es' : `Fehler (${fehler.length})`}</summary><table><tr><th>Aufgabe</th><th>deine Antwort</th><th>richtig</th></tr>${fehler.slice(-12).map(f => `<tr><td>${f.frage}</td><td>${f.zeit ? '⏱' : f.eingabe ? esc(f.eingabe) : '–'}</td><td><b>${esc(f.loesung)}</b></td></tr>`).join('')}</table></details>` : '';
     karte.innerHTML = `<h2 class="tr-ergebnis">${endlos ? `Serie: ${richtige}` : `${richtige} von ${anzahl} richtig`}</h2>`
@@ -2269,6 +2275,7 @@ function training(cfg){
     if (mc && phase === 'laeuft' && /^[1-4]$/.test(e.key) && akt.optionen[+e.key - 1]){ const b = root.querySelector(`[data-tropt="${+e.key - 1}"]`); if (b && !b.disabled){ e.preventDefault(); antwort(null, +e.key - 1); } }
   }
   document.addEventListener('keydown', taste);
+  root.addEventListener('af-variante', startBild);
   startBild();
   return {stop:halt, start:starte};
 }

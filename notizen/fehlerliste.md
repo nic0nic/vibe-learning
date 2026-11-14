@@ -35,6 +35,7 @@ Gesammelt im Thread „Aufbau der Seite“. Umgesetzt wird erst, wenn die Lehrkr
     - `lib/aufgaben.js` Training: je Stufe eigene `antwort` und `zeit`, eigene Aufgaben über `stufe.neu({mc})` (nur Seiten mit Code). `lib/seite.js` und Skill (pruefe.py, typen.md) prüfen `antwort`/`zeit` je Stufe auch im JSON.
     - `Englisch/englisch.css` wird `lib/basis.css` (für handgebaute Seiten aller Fächer, gleich mit BASIS_CSS in lib/seite.js).
     - Endlos-Modus: Schalter Dezimal / Binär / Hexadezimal (mind. zwei an, gemerkt in `zahlensysteme-systeme`); es kommen nur Umrechnungen zwischen eingeschalteten Systemen.
+    - Bestleistung je Kombination getrennt: `training.variante()` in lib/aufgaben.js (Ereignis `af-variante` setzt aufs Startbild zurück); alle drei Systeme = bisherige Bestleistung.
     Getestet in Chromium (Server und Einzeldatei): Bits, Übungen richtig/falsch, alle vier Endlos-Stufen (je 6 richtig, Zeitbalken nur in 2 und 4), Fehler beendet Serie, 300 erzeugte MC-Aufgaben mit 4 verschiedenen Antworten; Vokabel-Demo und Vokabeltrainer weiter in Ordnung.
 
 67. **Design im Kontomenü mit Untermenü** (gewünscht 14.11.)
