@@ -9,7 +9,7 @@
  * Im Browser: window.Designs, in Node/Hook: require(…/lib/designs.js).
  *
  * API
- *   Designs.liste()          → [{id, name, beschreibung, modus}]
+ *   Designs.liste()          → [{id, name, beschreibung, modus, gruppe, kurz, farbe}]  (gruppe: Varianten wie „Titelkarte“, kurz = Name in der Gruppe, farbe = Hintergrund)
  *   Designs.hole(id)         → Design oder null ('standard' = kein Design)
  *   Designs.kopf(id)         → HTML für <head>: <style> + <script> (data-design, Flamme, feste Hell/Dunkel-Wahl)
  *   Designs.anwenden(id)     → im laufenden Dokument einschalten (für die Einstellung)
@@ -427,7 +427,7 @@ ${S} .af-flamme.on,${S} .flame.on{animation:pf-note 1.2s ease-in-out infinite al
   };
   Object.keys(TK).forEach(k => {
     const f = TK[k];
-    D['titelkarte-' + k] = {name: 'Titelkarte ' + f.name, beschreibung: `Pastell wie eine Filmtitelkarte: symmetrisch, Versalien in Serifenschrift, Rahmenlinien. Hintergrund ${f.name}. Immer ${f.dunkel ? 'dunkel' : 'hell'}.`,
+    D['titelkarte-' + k] = {name: 'Titelkarte ' + f.name, gruppe: 'Titelkarte', kurz: f.name, farbe: f.bg, beschreibung: `Pastell wie eine Filmtitelkarte: symmetrisch, Versalien in Serifenschrift, Rahmenlinien. Hintergrund ${f.name}. Immer ${f.dunkel ? 'dunkel' : 'hell'}.`,
       modus: f.dunkel ? 'dunkel' : 'hell', css: TITELKARTE(sel('titelkarte-' + k), f)};
   });
   Object.assign(D, {
@@ -440,7 +440,8 @@ ${S} .af-flamme.on,${S} .flame.on{animation:pf-note 1.2s ease-in-out infinite al
   });
 
   const hole = id => id && id !== 'standard' && D[id] ? D[id] : null;
-  const liste = () => Object.keys(D).map(id => ({id, name: D[id].name, beschreibung: D[id].beschreibung, modus: D[id].modus || null}));
+  const liste = () => Object.keys(D).map(id => ({id, name: D[id].name, beschreibung: D[id].beschreibung, modus: D[id].modus || null,
+    gruppe: D[id].gruppe || null, kurz: D[id].kurz || D[id].name, farbe: D[id].farbe || null}));
   function kopf(id) {
     const d = hole(id); if (!d) return '';
     const js = `document.documentElement.dataset.design=${JSON.stringify(id)};` + (d.flamme ? `window.PF_FLAMME=${JSON.stringify(d.flamme)};` : '')

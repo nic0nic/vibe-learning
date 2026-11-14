@@ -127,7 +127,23 @@ dialog.kp-dialog:not([open]){display:none}
 .kp-suche{flex:1 1 220px;max-width:380px}
 .kp-zahl{color:var(--muted);font-size:13px;margin-left:auto}
 .design-wahl{display:inline-flex;align-items:center;gap:6px;font:600 13px system-ui,sans-serif;color:var(--muted)}
-.design-wahl select{padding:5px 6px}
+.design-wahl{position:relative}
+.design-wahl select{display:none}
+.dw-knopf{display:inline-flex;align-items:center;gap:6px;font:14px system-ui,sans-serif;padding:5px 8px;cursor:pointer;min-width:150px;justify-content:space-between}
+.dw-knopf::after{content:"▾";color:var(--muted);font-size:12px}
+.dw-menue{position:absolute;z-index:80;top:calc(100% + 4px);left:0;min-width:190px;margin:0;padding:4px;list-style:none;background:var(--panel);border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.18);font:14px system-ui,sans-serif;color:var(--text)}
+.dw-menue[hidden]{display:none}
+.dw-menue .dw-menue{top:-5px;left:calc(100% + 4px)}
+.dw-menue .dw-menue.links{left:auto;right:calc(100% + 4px)}
+.dw-menue .dw-menue.innen{position:static;margin:2px 0 4px 18px;box-shadow:none;min-width:0}
+.dw-menue li{position:relative}
+.dw-punkt{display:flex;align-items:center;gap:8px;width:100%;text-align:left;font:inherit;color:inherit;background:none;border:0;border-radius:7px;padding:6px 10px;cursor:pointer;white-space:nowrap}
+.dw-punkt:hover,.dw-punkt:focus-visible,.dw-punkt.offen{background:var(--panel2);outline:none}
+.dw-punkt[aria-checked=true]{font-weight:700}
+.dw-punkt[aria-checked=true]::before{content:"✓";width:12px;color:var(--accent)}
+.dw-punkt[aria-checked=false]::before{content:"";width:12px}
+.dw-punkt .dw-pfeil{margin-left:auto;padding-left:14px;color:var(--muted)}
+.dw-farbe{width:14px;height:14px;border-radius:4px;border:1px solid rgba(0,0,0,.25);flex:none}
 .kp-hilfe{margin:8px 16px 0}
 .kp-spalten{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0 14px;padding:8px 16px;overflow:auto}
 @media (max-width:1050px){.kp-spalten{grid-template-columns:repeat(2,minmax(0,1fr))}}
@@ -307,7 +323,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <button class="btn" id="speichern" type="button" title="Als .json speichern, um später weiterzuarbeiten">Speichern</button>
     <input type="file" id="datei" accept=".json,application/json" hidden>
     <span class="spacer"></span>
-    <label class="design-wahl" title="Optik der heruntergeladenen Übung (Datei, ByCS) – auch in der Vorschau">Design <select class="feld" id="design" aria-label="Design"></select></label>
+    <span class="design-wahl" title="Optik der heruntergeladenen Übung (Datei, ByCS) – auch in der Vorschau">Design <select class="feld" id="design" aria-label="Design" tabindex="-1"></select><button class="feld dw-knopf" id="designKnopf" type="button" aria-haspopup="menu" aria-expanded="false"></button><ul class="dw-menue" id="designMenue" role="menu" hidden></ul></span>
     <button class="btn" id="vorschau" type="button">▶ Vorschau</button>
     <button class="btn haupt" id="abgeben" type="button">Herunterladen / Einreichen</button>
   </div>
@@ -385,8 +401,72 @@ $('#bereich').addEventListener('change', () => { entwurf.bereich = $('#bereich')
 
 /* ---------- Editor ---------- */
 let modus = 'editor';
-function kopfFelder(d){ $('#titel').value = d.titel || ''; $('#kurztext').value = d.kurztext || ''; $('#design').value = d.design && Designs.hole(d.design) ? d.design : 'standard'; }
+function kopfFelder(d){ $('#titel').value = d.titel || ''; $('#kurztext').value = d.kurztext || ''; $('#design').value = d.design && Designs.hole(d.design) ? d.design : 'standard'; designAnzeige(); }
 $('#design').innerHTML = Designs.liste().map(x => `<option value="${x.id}" title="${esc(x.beschreibung)}">${esc(x.name)}</option>`).join('');
+
+/* Design-Menü: das versteckte <select id="design"> hält den Wert; Varianten (gruppe, z. B. Titelkarte) als Untermenü mit Farben */
+const DW = {knopf: $('#designKnopf'), menue: $('#designMenue')};
+function designAnzeige(){
+  const id = $('#design').value, d = Designs.liste().find(x => x.id === id) || {name: 'Standard'};
+  DW.knopf.innerHTML = (d.farbe ? `<span class="dw-farbe" style="background:${d.farbe}"></span>` : '') + `<span>${esc(d.name)}</span>`;
+  DW.knopf.title = d.beschreibung || '';
+}
+function designMenueBauen(){
+  const akt = $('#design').value, punkt = (x, text) => `<li role="none"><button class="dw-punkt" type="button" role="menuitemradio" aria-checked="${x.id === akt}" data-id="${x.id}" title="${esc(x.beschreibung)}">${x.farbe ? `<span class="dw-farbe" style="background:${x.farbe}"></span>` : ''}${esc(text)}</button></li>`;
+  const gesehen = new Set(); let h = '';
+  Designs.liste().forEach(x => {
+    if (!x.gruppe) { h += punkt(x, x.name); return; }
+    if (gesehen.has(x.gruppe)) return; gesehen.add(x.gruppe);
+    const teile = Designs.liste().filter(y => y.gruppe === x.gruppe), drin = teile.some(y => y.id === akt);
+    h += `<li role="none"><button class="dw-punkt dw-gruppe" type="button" role="menuitem" aria-haspopup="menu" aria-expanded="false" aria-checked="${drin}">${esc(x.gruppe)}<span class="dw-pfeil">›</span></button>`
+      + `<ul class="dw-menue" role="menu" aria-label="${esc(x.gruppe)}" hidden>${teile.map(y => punkt(y, y.kurz)).join('')}</ul></li>`;
+  });
+  DW.menue.innerHTML = h;
+}
+const dwPunkte = ul => [...ul.querySelectorAll(':scope > li > .dw-punkt')];
+function dwUnter(knopf, auf){
+  const ul = knopf.nextElementSibling; if (!ul) return;
+  DW.menue.querySelectorAll('.dw-gruppe').forEach(g => { if (g !== knopf) { g.classList.remove('offen'); g.setAttribute('aria-expanded', 'false'); g.nextElementSibling.hidden = true; } });
+  knopf.classList.toggle('offen', auf); knopf.setAttribute('aria-expanded', String(auf)); ul.hidden = !auf;
+  if (auf) {   // rechts daneben, sonst links daneben, sonst eingerückt im Menü (schmaler Bildschirm)
+    ul.classList.remove('links', 'innen');
+    if (ul.getBoundingClientRect().right > innerWidth - 8) { ul.classList.add('links'); if (ul.getBoundingClientRect().left < 8) { ul.classList.remove('links'); ul.classList.add('innen'); } }
+  }
+}
+function designMenue(auf, fokus){
+  if (auf) { designMenueBauen(); DW.menue.hidden = false; DW.knopf.setAttribute('aria-expanded', 'true');
+    const r = DW.menue.getBoundingClientRect(); DW.menue.style.left = r.right > innerWidth - 8 ? `${innerWidth - 8 - r.right}px` : '';
+    const ziel = DW.menue.querySelector('.dw-punkt[aria-checked=true]') || dwPunkte(DW.menue)[0];
+    if (ziel && ziel.classList.contains('dw-gruppe')) dwUnter(ziel, true);
+    if (fokus) (DW.menue.querySelector('[role=menuitemradio][aria-checked=true]') || ziel).focus();
+  } else { DW.menue.hidden = true; DW.knopf.setAttribute('aria-expanded', 'false'); if (fokus) DW.knopf.focus(); }
+}
+DW.knopf.addEventListener('click', e => { e.preventDefault(); designMenue(DW.menue.hidden, e.detail === 0); });
+DW.knopf.addEventListener('keydown', e => { if (e.key === 'ArrowDown') { e.preventDefault(); designMenue(true, true); } });
+DW.menue.addEventListener('click', e => {
+  e.preventDefault();
+  const b = e.target.closest('.dw-punkt'); if (!b) return;
+  if (b.classList.contains('dw-gruppe')) { dwUnter(b, true);   // nur öffnen: Hover hat es oft schon geöffnet
+    if (e.detail === 0) b.nextElementSibling.querySelector('.dw-punkt').focus(); return; }
+  $('#design').value = b.dataset.id; designAnzeige(); designMenue(false, true);
+  $('#design').dispatchEvent(new Event('change'));
+});
+DW.menue.addEventListener('mouseover', e => {
+  const b = e.target.closest('.dw-punkt'); if (!b || matchMedia('(hover: none)').matches) return;
+  if (b.classList.contains('dw-gruppe')) dwUnter(b, true);
+  else if (b.closest('ul') === DW.menue) DW.menue.querySelectorAll('.dw-gruppe.offen').forEach(g => dwUnter(g, false));
+});
+DW.menue.addEventListener('keydown', e => {
+  const b = e.target.closest('.dw-punkt'); if (!b) return;
+  const ul = b.closest('ul'), liste = dwPunkte(ul), i = liste.indexOf(b);
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); liste[(i + (e.key === 'ArrowDown' ? 1 : liste.length - 1)) % liste.length].focus(); }
+  else if (e.key === 'ArrowRight' && b.classList.contains('dw-gruppe')) { e.preventDefault(); dwUnter(b, true); b.nextElementSibling.querySelector('.dw-punkt').focus(); }
+  else if ((e.key === 'ArrowLeft' || e.key === 'Escape') && ul !== DW.menue) { e.preventDefault(); const g = ul.previousElementSibling; dwUnter(g, false); g.focus(); }
+  else if (e.key === 'Escape') { e.preventDefault(); designMenue(false, true); }
+  else if (e.key === 'Tab') designMenue(false);
+});
+document.addEventListener('pointerdown', e => { if (!DW.menue.hidden && !e.target.closest('.design-wahl')) designMenue(false); });
+designAnzeige();
 function knoepfe(){ $('#rueck').disabled = modus !== 'editor' || !Baukasten.kannRueck(); $('#vor').disabled = modus !== 'editor' || !Baukasten.kannVor(); }
 Baukasten.start({leiste:$('#leiste'), mitte:$('#mitte'), panel:$('#panel'), fehler:$('#fehler'),
   geaendert(d){ if (modus !== 'editor') return; entwurf.json = JSON.stringify(d, null, 2); merken(); knoepfe(); }});
