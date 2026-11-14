@@ -66,6 +66,9 @@ label.klein{display:block;font-size:12.5px;color:var(--muted);margin:10px 0 3px}
 .hk{display:inline-flex;align-items:center;gap:5px;font-size:13.5px;margin:6px 10px 2px 0;white-space:nowrap;cursor:pointer}
 .hinweis{font-size:13px;color:var(--muted);margin:6px 0}
 .hinweis.warn{color:var(--err);font-weight:600}
+.lizenz{border:1px solid var(--line, #8884);border-radius:8px;padding:8px 12px;margin:10px 0}
+.lizenz label{display:flex;gap:8px;align-items:flex-start;font-size:13px;cursor:pointer}
+.lizenz input{margin-top:3px;flex:none}
 .meldung{border-radius:8px;padding:8px 12px;font-size:14px;margin-top:10px}
 .meldung.ok{background:color-mix(in srgb,#a3be8c 30%,var(--panel))}
 .meldung.fehler{background:color-mix(in srgb,#bf616a 22%,var(--panel))}
@@ -365,6 +368,10 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="dlg-kopf"><h2>Herunterladen oder einreichen</h2><button class="btn" type="button" data-zu>Schließen</button></div>
     <div class="dlg-inhalt">
       <label class="klein" for="bereich">Fach, Jahrgangsstufe und Bereich</label><select class="feld" id="bereich"></select>
+      <div class="lizenz" id="lizenzBox" hidden>
+        <p class="hinweis">Mit dem Einreichen wird die Übung unter der <b>MIT-Lizenz</b> veröffentlicht – wie die ganze Plattform: Alle dürfen sie frei nutzen, verändern und weitergeben. Eingereichte Übungen werden <b>vom Admin geprüft und freigeschaltet</b>; erst danach sind sie ggf. im Menü verfügbar.</p>
+        <label><input type="checkbox" id="lizenzOk"> <span>Mir ist bewusst, dass ich keine Inhalte einreiche, die unter fremdem Urheberrecht stehen (z. B. Texte, Bilder oder Aufgaben aus Schulbüchern oder dem Internet). Ich bin einverstanden, dass meine Inhalte unter der MIT-Lizenz veröffentlicht werden.</span></label>
+      </div>
       <div class="knoepfe"><button class="btn" type="button" id="download" title="Eine HTML-Datei, läuft per Doppelklick im Browser">Als Datei herunterladen</button><button class="btn" type="button" id="bycs" title="SCORM-Paket für die ByCS-Lernplattform (Aktivität „Lernpaket“): Fortschritt und Ergebnisse landen in Moodle">Für ByCS herunterladen (.zip)</button><button class="btn haupt" type="button" id="einreichen" hidden>Einreichen</button></div>
       <p class="hinweis" id="einreichHinweis"></p>
       <details id="eigenBox" hidden><summary>Eigene Seite mit eigenem Code einreichen</summary>
@@ -618,8 +625,15 @@ $('#bycs').addEventListener('click', async () => {
 const lehrer = () => window.TrainerSync && TrainerSync.lehrer;
 function hinweis(){
   const L = lehrer();   // Einreichen (Pull Request) nur für angemeldete Lehrkräfte sichtbar
-  $('#einreichHinweis').innerHTML = L ? `Angemeldet als ${esc(L.name)}. Beim Einreichen entsteht ein Vorschlag (Pull Request) auf GitHub; nach der Freigabe erscheint die Übung im Menü. Dein Name wird dabei nicht übertragen.` : '';
-  $('#einreichHinweis').hidden = !L; $('#einreichen').hidden = !L; $('#einreichen').disabled = !L; $('#eigenBox').hidden = !L;
+  $('#einreichHinweis').innerHTML = L ? `Angemeldet als ${esc(L.name)}. Beim Einreichen entsteht ein Vorschlag (Pull Request) auf GitHub. Dein Name wird dabei nicht übertragen.` : '';
+  $('#einreichHinweis').hidden = !L; $('#einreichen').hidden = !L; $('#eigenBox').hidden = !L; $('#lizenzBox').hidden = !L;
+  $('#einreichen').disabled = $('#eigenEinreichen').disabled = !L || !$('#lizenzOk').checked;   // erst nach Bestätigung der Lizenz
+}
+$('#lizenzOk').addEventListener('change', hinweis);
+function lizenzFehlt(){
+  if ($('#lizenzOk').checked) return false;
+  $('#ergebnis').innerHTML = '<div class="meldung fehler">Bitte zuerst bestätigen, dass keine fremden Inhalte enthalten sind und die Übung unter der MIT-Lizenz veröffentlicht werden darf.</div>';
+  return true;
 }
 // Einreichen an den Server (Pull Request); body = {json …} oder {html …} (eigene Seite)
 async function einreichenSenden(knopf, body){
@@ -627,16 +641,17 @@ async function einreichenSenden(knopf, body){
   knopf.disabled = true; $('#ergebnis').innerHTML = '<div class="meldung ok">Wird eingereicht …</div>';
   try {
     const r = await fetch('../../api/trainer/einreichen', {method:'POST', headers:{'Content-Type':'application/json', ...(L.rolle === 'admin' ? {Authorization:L.token} : {'X-Lehrer-Token':L.token})},
-      body:JSON.stringify(Object.assign({bereich:bereich().id, pfad:bereich().pfad}, body))});
+      body:JSON.stringify(Object.assign({bereich:bereich().id, pfad:bereich().pfad, lizenz:$('#lizenzOk').checked}, body))});
     const j = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(esc(j.message || 'Fehler ' + r.status) + (j.fehler ? '<ul>' + j.fehler.map(x => `<li>${esc(x)}</li>`).join('') + '</ul>' : '') + (j.detail && L.rolle === 'admin' ? `<br><small>Für den Admin: ${esc(j.detail)}</small>` : ''));
-    $('#ergebnis').innerHTML = j.url ? `<div class="meldung ok">✓ Eingereicht! Der Vorschlag liegt jetzt zur Freigabe bereit${j.eigen ? ' (markiert als eigener Code)' : ''}: <a href="${esc(j.url)}" target="_blank" rel="noopener">Pull Request ansehen</a></div>`
+    $('#ergebnis').innerHTML = j.url ? `<div class="meldung ok">✓ Eingereicht! Der Vorschlag liegt jetzt beim Admin zur Prüfung${j.eigen ? ' (markiert als eigener Code)' : ''}. Nach der Freigabe ist die Übung ggf. im Menü verfügbar. <a href="${esc(j.url)}" target="_blank" rel="noopener">Pull Request ansehen</a></div>`
       : `<div class="meldung ok">✓ Testlauf: Die Seite würde unter <code>${esc(j.pfad)}</code> angelegt${j.eigen ? ' (eigener Code)' : ''}.</div>`;
   } catch (err){ $('#ergebnis').innerHTML = `<div class="meldung fehler">${err.message}</div>`; }
-  knopf.disabled = false;
+  hinweis();
 }
 $('#eigenEinreichen').addEventListener('click', async () => {
   const L = lehrer(); if (!L) return hinweis();
+  if (lizenzFehlt()) return;
   if (!bereich()){ $('#ergebnis').innerHTML = '<div class="meldung fehler">Bitte zuerst einen Bereich wählen.</div>'; return; }
   const f = $('#eigenDatei').files[0];
   if (!f){ $('#ergebnis').innerHTML = '<div class="meldung fehler">Bitte die HTML-Datei der eigenen Seite auswählen.</div>'; return; }
@@ -648,6 +663,7 @@ $('#eigenEinreichen').addEventListener('click', async () => {
 hinweis(); setTimeout(hinweis, 800);
 $('#einreichen').addEventListener('click', async () => {
   const L = lehrer(); if (!L) return hinweis();
+  if (lizenzFehlt()) return;
   if (!bereich()){ $('#ergebnis').innerHTML = '<div class="meldung fehler">Bitte zuerst einen Bereich wählen.</div>'; return; }
   const d = daten($('#ergebnis')); if (!d) return;
   if (!confirm(`„${d.titel}“ für ${bereich().name} einreichen?`)) return;

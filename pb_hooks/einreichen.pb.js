@@ -9,6 +9,7 @@
 //   VIBE_GITHUB_TOKEN   fine-grained Token, nur für das Repo, Rechte: Contents + Pull requests (Lesen und Schreiben)
 //   VIBE_GITHUB_REPO    Standard nic0nic/vibe-learning
 //   VIBE_GITHUB_DRYRUN  1 = nichts an GitHub schicken, nur die erzeugten Dateien zurückgeben (zum Testen)
+// body.lizenz muss true sein (Häkchen: keine fremden Inhalte, Veröffentlichung unter MIT-Lizenz).
 // Höchstens 10 Einreichungen pro Lehrkraft und Tag (Zähler im Speicher, zurückgesetzt beim Neustart).
 
 routerAdd("POST", "/api/trainer/einreichen", (e) => {
@@ -18,6 +19,8 @@ routerAdd("POST", "/api/trainer/einreichen", (e) => {
   if (!a) return e.json(401, { message: "Nur für angemeldete Lehrkräfte." });
 
   const body = e.requestInfo().body || {};
+  // Häkchen im Formular: keine fremden Inhalte, Veröffentlichung unter der MIT-Lizenz
+  if (body.lizenz !== true) return e.json(400, { message: "Bitte bestätigen, dass keine fremden Inhalte enthalten sind und die Übung unter der MIT-Lizenz veröffentlicht werden darf." });
   // eigen: eigene Seite (HTML mit eigenem Code) statt Aufgaben-JSON – der Pull Request wird als „eigener Code“ markiert
   const eigen = body.html != null;
   let daten, pruef = null;
@@ -97,7 +100,7 @@ routerAdd("POST", "/api/trainer/einreichen", (e) => {
         + `(${pruef.skripte} Script-Blöcke, ${pruef.zeilen} Zeilen). Geprüft wurde nur, dass sie ausschließlich Bausteine von vibe learning einbindet – `
         + `den Code vor dem Mergen lesen und die Seite ausprobieren.\n\n` : "";
     const pr = gh("POST", "/pulls", { title: `${eigen ? "⚠️ Eigener Code – " : ""}Neue Übung: ${daten.titel}`, head: zweig, base: "main",
-      body: warnung + `Eingereicht über vl.nimals.de/IT/tools/uebung-erstellen.html${eigen ? " (eigene Seite)" : ""}.\n\n- **Bereich:** ${pfad}\n- **Datei:** \`${seitePfad}\`\n- **Kurztext:** ${daten.kurztext || "–"}\n`
+      body: warnung + `Eingereicht über vl.nimals.de/IT/tools/uebung-erstellen.html${eigen ? " (eigene Seite)" : ""}.\n\n- **Bereich:** ${pfad}\n- **Datei:** \`${seitePfad}\`\n- **Kurztext:** ${daten.kurztext || "–"}\n- **Lizenz:** MIT – bestätigt: keine Inhalte unter fremdem Urheberrecht, einverstanden mit der Veröffentlichung\n`
         + (eigen ? `- **Eigener Code:** ja\n\n` : `- **Schritte:** ${Seite.normalisiere(daten).schritte.length}, Aufgaben: ${Object.keys(typen).map(k => k + " " + typen[k]).join(", ") || "keine"}\n\n`)
         + `Nach dem Mergen: \`python3 werkzeuge/einzeldateien.py\` und \`python3 werkzeuge/bycs-pakete.py\` laufen lassen und mit \`git push origin main:live\` freigeben.` });
     if (eigen) { try { gh("POST", `/issues/${pr.number}/labels`, { labels: ["eigener-code"] }); } catch (err) {} }   // Label: schön, aber nicht nötig
