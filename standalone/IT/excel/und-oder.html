@@ -54,6 +54,11 @@ window.KATALOG = {
   faecher: [
     {id: 'IT', titel: 'IT', text: 'Informationstechnologie: Tabellenkalkulation, Programmieren, Webseiten, Datenbanken, Tippen und Werkzeuge.',
       bereiche: [
+        {id: 'grundlagen', titel: 'Grundlagen', farbe: '#ebcb8b', farbeHell: '#8a6d1f', text: 'Wie Computer Informationen darstellen: Zahlensysteme und mehr.',
+          tools: [
+            {id: 'zahlensysteme', stufen: ['Auswählen', 'Auswählen auf Zeit', 'Eintippen', 'Eintippen auf Zeit'], datei: 'zahlensysteme.html', titel: 'Zahlensysteme', text: 'Dezimal, binär und hexadezimal: Stellenwerte verstehen, Bits schalten, umrechnen – mit Endlos-Modus in vier Stufen (auswählen oder eintippen, mit oder ohne Zeit).'}
+          ]
+        },
         {
           id: 'excel', titel: 'Excel', farbe: '#a3be8c', farbeHell: '#5e8a45',
           text: 'Tabellenkalkulation: Funktionen, Bedingungen und Verknüpfungen.',
@@ -1443,6 +1448,11 @@ details.help p,details.help ul{margin:8px 0}
  *       Feste Runde (anzahl) → Ergebnis + Bestleistung; ohne anzahl endlos: ein Fehler beendet die Serie.
  *       zeit {start, schritt, min}: Balken läuft ab, Zeit je Aufgabe = max(min, start + richtige · schritt).
  *       versuche:true → falsche Eingabe darf korrigiert werden (sonst sofort Fehler, Lösung kurz sichtbar).
+ *       Je Stufe (training.stufen) auch eigene antwort ('mc' | 'eingabe') und zeit (null = ohne Zeit), z. B. vier Stufen
+ *       „Auswählen“, „Auswählen auf Zeit“, „Eintippen“, „Eintippen auf Zeit“ mit denselben Aufgaben.
+ *       Eigene Aufgaben (nur in Seiten mit eigenem Code, nicht im JSON): stufe.neu({mc}) → {frage (HTML), loesung (Text),
+ *       optionen (bei mc: [{t, ok}], genau eine ok), pruefe(text) → 'ok' | 'fast' | 'falsch' (optional, sonst Vergleich mit loesung)}.
+ *       Vorbild: IT/grundlagen/zahlensysteme.html
  *       Gespeichert: <key>-training {stufe, best:{stufe: n}}. Meldet je Runde/Serie TrainerSync.event (modus 'endlos'),
  *       fertig() nach der ersten Runde (bzw. ab training.ziel richtigen) oder einer Serie ab 10 (bzw. ziel).
  *       In Aufgaben.sequenz: schritt.training statt schritt.aufgaben.
@@ -2130,7 +2140,12 @@ function zahlAblenker(l, falsch, runden){
 }
 // Aufgabengeber einer Stufe → () => {frage (HTML), loesung (Text), optionen (MC: [{t, ok}]), pruefe(text) → 'ok' | 'fast' | 'falsch', zahl}
 function trGeber(st, T){
-  const mc = T.antwort === 'mc';
+  const mc = (st.antwort || T.antwort) === 'mc';
+  if (typeof st.neu === 'function') return () => {
+    const a = st.neu({mc});
+    if (!a.pruefe) a.pruefe = s => alternativen(a.loesung).some(n => norm(n) === norm(s)) ? 'ok' : 'falsch';
+    return a;
+  };
   if (Array.isArray(st.szenarien) && st.szenarien.length){
     if (!window.Formel) throw new Error('aufgaben.js: Training mit Szenarien braucht lib/formel.js');
     return () => {
@@ -2170,8 +2185,11 @@ function training(cfg){
   let stand = {}; try { stand = JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) {}
   if (!stand.best) stand.best = {};
   const speichern = () => { try { localStorage.setItem(KEY, JSON.stringify(stand)); } catch (e) {} if (window.TrainerSync) TrainerSync.changed(); };
-  const mc = T.antwort === 'mc', anzahl = T.anzahl > 0 ? Math.round(T.anzahl) : 0, endlos = !anzahl;
-  const Z = T.zeit && T.zeit.start > 0 ? {start:+T.zeit.start, schritt:+T.zeit.schritt || 0, min:T.zeit.min > 0 ? +T.zeit.min : 0.5} : null;
+  const anzahl = T.anzahl > 0 ? Math.round(T.anzahl) : 0, endlos = !anzahl;
+  // Antwortform und Zeit: je Stufe, sonst vom Training
+  const zeitVon = z => z && z.start > 0 ? {start:+z.start, schritt:+z.schritt || 0, min:z.min > 0 ? +z.min : 0.5} : null;
+  let mc = false, Z = null;
+  const modusVon = i => { const st = ST[i]; mc = (st.antwort || T.antwort) === 'mc'; Z = zeitVon('zeit' in st ? st.zeit : T.zeit); };
   let stufe = Math.min(Math.max(stand.stufe || 0, 0), ST.length - 1), gib = null, phase = 'start', akt = null, richtige = 0, nr = 0, fehler = [];
   let raf = 0, warte = 0, t0 = 0, dauer = 0;
   root.innerHTML = '<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><linearGradient id="af-fg" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#d9230f"/><stop offset=".55" stop-color="#ff7a00"/><stop offset="1" stop-color="#ffd23f"/></linearGradient></defs></svg>'
@@ -2187,7 +2205,7 @@ function training(cfg){
   }
   function halt(){ cancelAnimationFrame(raf); clearTimeout(warte); }
   function startBild(){
-    halt(); phase = 'start';
+    halt(); phase = 'start'; modusVon(stufe);
     try { gib = trGeber(ST[stufe], T); } catch (e) { karte.innerHTML = `<p class="af-fb falsch">${esc(e.message)}</p>`; return; }
     const name = ST[stufe].name ? `<h2 class="tr-titel">${ST.length > 1 ? `Stufe ${stufe + 1}: ` : ''}${esc(ST[stufe].name)}</h2>` : '';
     const zeit = Z ? `Für jede Aufgabe hast du <b>${zeitText(Z.start)}</b>${Z.schritt < 0 ? `, nach jeder richtigen Antwort ${zeitText(-Z.schritt)} weniger (mindestens ${zeitText(Z.min)})` : Z.schritt > 0 ? `, nach jeder richtigen Antwort ${zeitText(Z.schritt)} mehr` : ''}.` : 'Ohne Zeitdruck.';

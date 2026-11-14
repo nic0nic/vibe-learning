@@ -167,6 +167,7 @@ Aufgaben-JSON (reine Daten, kein JavaScript; Aufgabentypen wie in lib/aufgaben.j
     "training": {"antwort": "eingabe" | "mc", "anzahl": 20 (weglassen = endlos: Serie + Bestleistung),
       "zeit": {"start": 5, "schritt": -0.1, "min": 1.5} (weglassen = ohne Zeit), "versuche": true (korrigieren erlaubt), "ziel": 15,
       "szenarien": [Szenario, …] oder "woerterbuch": {…} – oder "stufen": [{"name": "bis 20", "szenarien": […]}, {"name": "Lektion 2", "woerterbuch": {…}}]}
+      Eine Stufe kann eigene "antwort" und "zeit" haben (z. B. Stufe 1 auswählen, Stufe 2 auswählen auf Zeit, Stufe 3 eintippen …).
     Szenario (Zahlen, Format in lib/formel.js): {"frage": "{a} + {b} =", "werte": {"a": [1, 10], "b": [1, 10]}, "loesung": "a + b",
       "bedingung": "b <= a", "runden": 2, "einheit": "€", "falsch": ["a - b"]}
     Wörterbuch: {"sprachen": ["Englisch", "Deutsch"], "richtung": "a-b" | "b-a" | "beide", "tippfehler": false,
@@ -264,6 +265,11 @@ API
       Feste Runde (anzahl) → Ergebnis + Bestleistung; ohne anzahl endlos: ein Fehler beendet die Serie.
       zeit {start, schritt, min}: Balken läuft ab, Zeit je Aufgabe = max(min, start + richtige · schritt).
       versuche:true → falsche Eingabe darf korrigiert werden (sonst sofort Fehler, Lösung kurz sichtbar).
+      Je Stufe (training.stufen) auch eigene antwort ('mc' | 'eingabe') und zeit (null = ohne Zeit), z. B. vier Stufen
+      „Auswählen“, „Auswählen auf Zeit“, „Eintippen“, „Eintippen auf Zeit“ mit denselben Aufgaben.
+      Eigene Aufgaben (nur in Seiten mit eigenem Code, nicht im JSON): stufe.neu({mc}) → {frage (HTML), loesung (Text),
+      optionen (bei mc: [{t, ok}], genau eine ok), pruefe(text) → 'ok' | 'fast' | 'falsch' (optional, sonst Vergleich mit loesung)}.
+      Vorbild: IT/grundlagen/zahlensysteme.html
       Gespeichert: <key>-training {stufe, best:{stufe: n}}. Meldet je Runde/Serie TrainerSync.event (modus 'endlos'),
       fertig() nach der ersten Runde (bzw. ab training.ziel richtigen) oder einer Serie ab 10 (bzw. ziel).
       In Aufgaben.sequenz: schritt.training statt schritt.aufgaben.

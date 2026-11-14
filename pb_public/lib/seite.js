@@ -13,6 +13,7 @@
  *     "training": {"antwort": "eingabe" | "mc", "anzahl": 20 (weglassen = endlos: Serie + Bestleistung),
  *       "zeit": {"start": 5, "schritt": -0.1, "min": 1.5} (weglassen = ohne Zeit), "versuche": true (korrigieren erlaubt), "ziel": 15,
  *       "szenarien": [Szenario, …] oder "woerterbuch": {…} – oder "stufen": [{"name": "bis 20", "szenarien": […]}, {"name": "Lektion 2", "woerterbuch": {…}}]}
+ *       Eine Stufe kann eigene "antwort" und "zeit" haben (z. B. Stufe 1 auswählen, Stufe 2 auswählen auf Zeit, Stufe 3 eintippen …).
  *     Szenario (Zahlen, Format in lib/formel.js): {"frage": "{a} + {b} =", "werte": {"a": [1, 10], "b": [1, 10]}, "loesung": "a + b",
  *       "bedingung": "b <= a", "runden": 2, "einheit": "€", "falsch": ["a - b"]}
  *     Wörterbuch: {"sprachen": ["Englisch", "Deutsch"], "richtung": "a-b" | "b-a" | "beide", "tippfehler": false,
@@ -173,20 +174,20 @@
     if (t.antwort != null && !['eingabe', 'mc'].includes(t.antwort)) f.push(`${wo}: „antwort“ ist "eingabe" (eintippen) oder "mc" (Auswahl)`);
     if (t.anzahl != null && !(Number.isInteger(t.anzahl) && t.anzahl > 0 && t.anzahl <= 500)) f.push(`${wo}: „anzahl“ = Aufgaben pro Runde (1 bis 500) – oder weglassen für endlos`);
     if (t.ziel != null && !(Number.isInteger(t.ziel) && t.ziel >= 0)) f.push(`${wo}: „ziel“ = so viele richtige zählen den Schritt als erledigt (ganze Zahl)`);
-    if (t.zeit != null) {
-      const z = t.zeit;
-      if (!z || typeof z !== 'object' || !(z.start > 0)) f.push(`${wo}: Zeit: „start“ = Sekunden für die erste Aufgabe (größer als 0)`);
-      else {
-        if (z.schritt != null && typeof z.schritt !== 'number') f.push(`${wo}: Zeit: „schritt“ = Sekunden mehr/weniger je richtiger Antwort, z. B. -0.1`);
-        if (z.min != null && !(z.min > 0)) f.push(`${wo}: Zeit: „min“ = kürzeste Zeit in Sekunden (größer als 0)`);
-        if (z.min > z.start) f.push(`${wo}: Zeit: „min“ ist größer als „start“`);
-      }
-    }
+    const zeit = (z, wo) => {
+      if (!z || typeof z !== 'object' || !(z.start > 0)) return f.push(`${wo}: Zeit: „start“ = Sekunden für die erste Aufgabe (größer als 0)`);
+      if (z.schritt != null && typeof z.schritt !== 'number') f.push(`${wo}: Zeit: „schritt“ = Sekunden mehr/weniger je richtiger Antwort, z. B. -0.1`);
+      if (z.min != null && !(z.min > 0)) f.push(`${wo}: Zeit: „min“ = kürzeste Zeit in Sekunden (größer als 0)`);
+      if (z.min > z.start) f.push(`${wo}: Zeit: „min“ ist größer als „start“`);
+    };
+    if (t.zeit != null) zeit(t.zeit, wo);
     const stufen = Array.isArray(t.stufen) ? t.stufen : null;
     if (t.stufen != null && (!stufen || !stufen.length)) f.push(`${wo}: „stufen“ muss eine Liste mit mindestens einer Stufe sein`);
     (stufen && stufen.length ? stufen : [t]).forEach((s, k) => {
       const ws = stufen ? `${wo}, Stufe ${k + 1}${s && s.name ? ` („${s.name}“)` : ''}` : wo;
       if (!s || typeof s !== 'object') return f.push(`${ws}: Stufe muss ein Objekt sein`);
+      if (stufen && s.antwort != null && !['eingabe', 'mc'].includes(s.antwort)) f.push(`${ws}: „antwort“ ist "eingabe" (eintippen) oder "mc" (Auswahl)`);
+      if (stufen && s.zeit != null) zeit(s.zeit, ws);
       const sz = Array.isArray(s.szenarien) && s.szenarien.length, wb = s.woerterbuch && typeof s.woerterbuch === 'object';
       if (!sz && !wb) return f.push(`${ws}: Es fehlen Aufgaben – „szenarien“ (Zahlen) oder „woerterbuch“ (Vokabeln)`);
       if (sz && wb) f.push(`${ws}: Entweder „szenarien“ oder „woerterbuch“, nicht beides`);
@@ -195,7 +196,7 @@
         const w = s.woerterbuch, E = Array.isArray(w.eintraege) ? w.eintraege : null;
         if (!E || !E.length) f.push(`${ws}: Das Wörterbuch hat keine Einträge („eintraege“: [["house", "Haus"], …])`);
         else E.forEach((x, i) => { if (!Array.isArray(x) || x.length < 2 || !istText(x[0]) || !istText(x[1])) f.push(`${ws}, Eintrag ${i + 1}: braucht zwei Seiten, z. B. ["house", "Haus"]`); });
-        if (E && t.antwort === 'mc' && E.length < 4) f.push(`${ws}: Für Multiple Choice braucht das Wörterbuch mindestens 4 Einträge (für die falschen Antworten)`);
+        if (E && (s.antwort || t.antwort) === 'mc' && E.length < 4) f.push(`${ws}: Für Multiple Choice braucht das Wörterbuch mindestens 4 Einträge (für die falschen Antworten)`);
         if (w.richtung != null && !['a-b', 'b-a', 'beide'].includes(w.richtung)) f.push(`${ws}: „richtung“ ist "a-b", "b-a" oder "beide"`);
         if (w.sprachen != null && !(Array.isArray(w.sprachen) && w.sprachen.length === 2)) f.push(`${ws}: „sprachen“ braucht zwei Namen, z. B. ["Englisch", "Deutsch"]`);
       }
@@ -233,6 +234,7 @@
   }
 
   const esc = s => String(s).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+  // gleich halten mit lib/basis.css (dieselben Regeln als Datei für handgebaute Seiten)
   const BASIS_CSS = ':root{--bg:#e5e9f0;--panel:#f6f8fb;--panel2:#eceff4;--text:#2e3440;--muted:#5b6578;--border:#cdd3de;--accent:#5e81ac;--err:#a8434d;--ok:#5e8a45;--mono:ui-monospace,Consolas,"Liberation Mono",monospace}'
     + '[data-theme=dark]{--bg:#2e3440;--panel:#3b4252;--panel2:#434c5e;--text:#eceff4;--muted:#a9b3c4;--border:#4c566a;--accent:#88c0d0;--err:#d4848b;--ok:#a3be8c}'
     + '*{box-sizing:border-box}html,body{margin:0}body{background:var(--bg);color:var(--text);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}'

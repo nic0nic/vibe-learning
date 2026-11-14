@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="de" data-trainer="zahlensysteme">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zahlensysteme – vibe learning</title>
+<!--
+  Zahlensysteme für die 6. Jahrgangsstufe: Dezimal-, Binär- und Hexadezimalsystem mit Stellenwerten erklären,
+  Bits zum Anklicken (Lichtschalter-Modell), Übungen zum Umrechnen (lib/aufgaben.js) und Endlos-Modus
+  (Aufgaben.training) mit vier Stufen derselben Aufgaben: Auswählen, Auswählen auf Zeit, Eintippen, Eintippen auf Zeit.
+  Endlos-Aufgaben: zufällig dezimal ↔ binär (1–63), dezimal ↔ hexadezimal (1–255), binär ↔ hexadezimal (1–255).
+  Gespeichert: zahlensysteme-stand = {schritt, erledigt}, zahlensysteme-endlos-training = {stufe, best}.
+-->
+<script src="../../katalog.js"></script>
+<script src="../../nav.js"></script>
+<script src="../../sync.js"></script>
+<script>
+(function(){var t=null;try{t=localStorage.getItem('wenn-theme');}catch(e){}
+document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');})();
+</script>
+<link rel="stylesheet" href="../../lib/basis.css">
+<link rel="stylesheet" href="../../lib/aufgaben.css">
+<script src="../../lib/aufgaben.js"></script>
+<style>
+.wrap{max-width:900px}
+.info{border-left:4px solid var(--accent);padding:2px 0 2px 12px;margin:0 0 12px}
+table.stellen{border-collapse:collapse;margin:8px 0 12px;font:15px var(--mono)}
+table.stellen td,table.stellen th{border:1px solid var(--border);padding:5px 10px;text-align:center}
+table.stellen th{background:var(--panel2);font:600 13px system-ui,sans-serif}
+table.stellen .summe{text-align:left;border:0;padding-left:12px;font-family:system-ui,sans-serif}
+.z{font-family:var(--mono);font-weight:700}
+sub{font-size:.7em}
+.merk{border:2px solid var(--accent);border-radius:12px;padding:8px 14px;margin:10px 0;background:var(--panel)}
+.merk .mt{font-weight:800;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent-text,var(--accent));margin-bottom:2px}
+.merk p{margin:4px 0}
+/* Bits zum Anklicken */
+.bits{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 6px}
+.bit{display:flex;flex-direction:column;align-items:center;gap:4px;width:62px;padding:8px 0 6px;border:2px solid var(--border);border-radius:10px;background:var(--panel2);color:var(--text);cursor:pointer;font:inherit}
+.bit .lampe{width:26px;height:26px;border-radius:50%;background:var(--border);transition:background .15s,box-shadow .15s}
+.bit.an{border-color:#d9a400}
+.bit.an .lampe{background:#ffd23f;box-shadow:0 0 12px rgba(255,190,0,.9)}
+.bit .w{font:700 12px var(--mono);color:var(--muted)}
+.bit .b{font:800 20px var(--mono)}
+.bitsumme{font:600 17px system-ui,sans-serif;margin:6px 0 2px}
+.bitsumme .z{font-size:20px}
+@media (max-width:560px){.bit{width:calc(25% - 5px)}}
+.hex16 td{min-width:34px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="bar"><div class="brand">Zahlen<span>systeme</span></div><div class="muted">Dezimal, binär und hexadezimal – verstehen und umrechnen</div></div>
+  <div id="app"></div>
+</div>
+<script>
+'use strict';
+const S = (z, b) => `<span class="z">${z}</span><sub>${b}</sub>`;   // Zahl mit Basis, z. B. 1011₂
+
+/* ---------- Bits zum Anklicken (Schritt „Binär“) ---------- */
+function bitsBauen(el){
+  const box = el.querySelector('.bitbox'); if (!box) return;
+  const W = [128, 64, 32, 16, 8, 4, 2, 1], an = new Set();
+  box.innerHTML = `<div class="bits">${W.map(w => `<button class="bit" type="button" data-w="${w}" aria-pressed="false" aria-label="Stelle ${w}"><span class="w">${w}</span><span class="lampe"></span><span class="b">0</span></button>`).join('')}</div><p class="bitsumme" aria-live="polite"></p>`;
+  const zeigen = () => {
+    box.querySelectorAll('.bit').forEach(b => { const on = an.has(+b.dataset.w); b.classList.toggle('an', on); b.setAttribute('aria-pressed', on); b.querySelector('.b').textContent = on ? 1 : 0; });
+    const teile = W.filter(w => an.has(w)), wert = teile.reduce((a, b) => a + b, 0);
+    const bin = W.map(w => an.has(w) ? 1 : 0).join('').replace(/^0+(?=.)/, '');
+    box.querySelector('.bitsumme').innerHTML = `${S(bin, 2)} = ${teile.length ? teile.join(' + ') + ' = ' : ''}<span class="z">${wert}</span><sub>10</sub>`;
+  };
+  box.addEventListener('click', e => { const b = e.target.closest('.bit'); if (!b) return; const w = +b.dataset.w; an.has(w) ? an.delete(w) : an.add(w); zeigen(); });
+  [8, 2, 1].forEach(w => an.add(w)); zeigen();
+}
+
+/* ---------- Endlos: Aufgaben zum Umrechnen ---------- */
+const BASIS = {2: 'Binär', 10: 'Dezimal', 16: 'Hexadezimal'};
+const text = (v, b) => v.toString(b).toUpperCase();
+const zufall = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+const ARTEN = [[10, 2, 63], [2, 10, 63], [10, 16, 255], [16, 10, 255], [2, 16, 255], [16, 2, 255]];   // von, nach, größte Zahl
+function ablenker(v, max){   // typische Fehler: ±1, ±2, ein Bit falsch, Hex-Ziffern vertauscht, ±16
+  const k = [v + 1, v - 1, v + 2, v - 2, v + 16, v - 16];
+  for (let i = 0; (1 << i) <= max; i++) k.push(v ^ (1 << i));
+  if (v >= 16) { const h = v.toString(16).padStart(2, '0'); k.push(parseInt(h[1] + h[0], 16)); }
+  const aus = [];
+  Aufgaben.mischen(k).forEach(x => { if (x > 0 && x <= max && x !== v && !aus.includes(x) && aus.length < 3) aus.push(x); });
+  return aus;
+}
+let zuletzt = '';
+function neueAufgabe({mc}){
+  let art, v;
+  do { art = ARTEN[zufall(0, ARTEN.length - 1)]; v = zufall(art[0] === 2 || art[1] === 2 ? 2 : 1, art[2]); } while (art + v === zuletzt);
+  zuletzt = art + v;
+  const [von, nach, max] = art, loesung = text(v, nach);
+  return {
+    frage: `<span class="tr-sprache">${BASIS[von]} → ${BASIS[nach]}</span><span class="tr-wort">${text(v, von)}<sub>${von}</sub> = ?<sub>${nach}</sub></span>`,
+    loesung,
+    optionen: mc ? Aufgaben.mischen([{t:loesung, ok:true}, ...ablenker(v, max).map(x => ({t:text(x, nach), ok:false}))]) : null,
+    pruefe(eingabe){
+      const t = String(eingabe).replace(/\s+/g, '').replace(/^0x/i, '').replace(/[₀-₉]/g, '').toUpperCase();
+      const erlaubt = {2: /^[01]+$/, 10: /^\d+$/, 16: /^[0-9A-F]+$/}[nach];
+      return erlaubt.test(t) && parseInt(t, nach) === v ? 'ok' : 'falsch';
+    }
+  };
+}
+
+/* ---------- Ablauf ---------- */
+Aufgaben.sequenz({el:'#app', key:'zahlensysteme', schritte:[
+  {id:'info', kurz:'Einführung', html:`<h2>Zahlen kann man verschieden aufschreiben</h2>
+    <p>Wir schreiben Zahlen im <b>Dezimalsystem</b> (Zehnersystem): Es gibt <b>zehn Ziffern</b> von 0 bis 9. Wichtig ist, <b>an welcher Stelle</b> eine Ziffer steht. Jede Stelle ist <b>10-mal so viel wert</b> wie die Stelle rechts daneben.</p>
+    <table class="stellen"><tr><th>Tausender<br>1000</th><th>Hunderter<br>100</th><th>Zehner<br>10</th><th>Einer<br>1</th><td class="summe"></td></tr>
+      <tr><td>0</td><td>3</td><td>5</td><td>2</td><td class="summe">352 = 3 · 100 + 5 · 10 + 2 · 1</td></tr></table>
+    <div class="info"><p>Ein Computer kennt nur zwei Zustände: <b>Strom an</b> oder <b>Strom aus</b> – wie ein Lichtschalter. Deshalb rechnet er im <b>Binärsystem</b> (Zweiersystem) mit nur zwei Ziffern: <b>1</b> und <b>0</b>.</p></div>
+    <p>Damit man weiß, in welchem System eine Zahl steht, schreibt man die <b>Basis</b> klein darunter: ${S('11', 10)} ist elf, ${S('11', 2)} ist drei.</p>`},
+  {id:'dez', kurz:'1 Dezimal', erinnerung:'<p>Jede Stelle ist 10-mal so viel wert wie die rechts daneben: Einer, Zehner, Hunderter, Tausender.</p>', aufgaben:[
+    {typ:'mc', nr:'1.1', frage:'Wie viele verschiedene Ziffern hat das Dezimalsystem?', options:['10 (von 0 bis 9)', '9 (von 1 bis 9)', '2 (0 und 1)', '16'], correct:[0], why:{1:'Die 0 ist auch eine Ziffer.', 2:'Das ist das Binärsystem.', 3:'Das ist das Hexadezimalsystem.'}},
+    {typ:'zahlen', nr:'1.2', frage:'Zerlege 4 607 in seine Stellen.', felder:[{t:'Tausender', l:4}, {t:'Hunderter', l:6}, {t:'Zehner', l:0}, {t:'Einer', l:7}]},
+    {typ:'mc', nr:'1.3', frage:'Was ist die 2 in 250 wert?', options:['200', '20', '2', '2000'], correct:[0], why:{1:'Die 2 steht an der Hunderterstelle.'}}]},
+  {id:'bin', kurz:'Binär', html:`<h2>Das Binärsystem</h2>
+    <p>Im Binärsystem gibt es nur die Ziffern <b>0</b> und <b>1</b>. Eine Stelle heißt <b>Bit</b>. Jede Stelle ist <b>doppelt so viel wert</b> wie die rechts daneben: 1, 2, 4, 8, 16, 32, 64, 128.</p>
+    <p><b>Probiere es aus:</b> Klicke auf die Lampen. Eine leuchtende Lampe ist eine 1, sie zählt mit ihrem Wert. Welche Zahlen kannst du bauen? Was ist die größte?</p>
+    <div class="bitbox"></div>
+    <div class="merk"><div class="mt">Binär → dezimal</div><p>Die Werte der Stellen mit einer 1 zusammenzählen:</p>
+      <p>${S('1011', 2)} = 8 + 0 + 2 + 1 = ${S('11', 10)}</p></div>
+    <div class="merk"><div class="mt">Dezimal → binär</div><p>Den größten Stellenwert suchen, der hineinpasst, abziehen, mit dem Rest weitermachen. Jeder benutzte Stellenwert bekommt eine 1, die anderen eine 0:</p>
+      <p>${S('13', 10)}: 13 − 8 = 5, 5 − 4 = 1, 1 − 1 = 0 → 8, 4 und 1 sind dabei, die 2 nicht → ${S('1101', 2)}</p></div>
+    <p class="muted">8 Bit zusammen heißen <b>1 Byte</b>. Mit einem Byte kann man die Zahlen von 0 bis 255 darstellen.</p>`,
+   nach: bitsBauen},
+  {id:'binueb', kurz:'2 Binär', erinnerung:'<p>Stellenwerte im Binärsystem: … 32 · 16 · 8 · 4 · 2 · 1. Binär → dezimal: Werte der Einsen zusammenzählen.</p>', aufgaben:[
+    {typ:'zahlen', nr:'2.1', frage:'Rechne ins Dezimalsystem um.', felder:[{t:S('101', 2), l:5, h:'4 + 0 + 1'}, {t:S('1100', 2), l:12, h:'8 + 4 + 0 + 0'}, {t:S('10011', 2), l:19, h:'16 + 0 + 0 + 2 + 1'}]},
+    {typ:'zahlen', nr:'2.2', frage:'Rechne ins Binärsystem um (nur 0 und 1 eintippen).', felder:[{t:S('6', 10), l:110, e:'₂', h:'6 = 4 + 2'}, {t:S('9', 10), l:1001, e:'₂', h:'9 = 8 + 1'}, {t:S('20', 10), l:10100, e:'₂', h:'20 = 16 + 4'}]},
+    {typ:'mc', nr:'2.3', frage:'Welche Zahl ist die größte, die man mit 4 Bit darstellen kann?', options:[`${S('1111', 2)} = 15`, `${S('1111', 2)} = 1111`, `${S('10000', 2)} = 16`, `${S('1000', 2)} = 8`], html:true, correct:[0], why:{1:'1111 ist binär geschrieben: 8 + 4 + 2 + 1.', 2:'10000 hat schon 5 Stellen.', 3:'Bei 1111 sind mehr Bits an.'}}]},
+  {id:'hex', kurz:'Hexadezimal', html:`<h2>Das Hexadezimalsystem</h2>
+    <p>Lange Binärzahlen sind schwer zu lesen. Deshalb gibt es das <b>Hexadezimalsystem</b> (Sechzehnersystem) mit <b>16 Ziffern</b>. Nach der 9 geht es mit Buchstaben weiter:</p>
+    <table class="stellen hex16"><tr><th>hex</th><td>0</td><td>…</td><td>9</td><td>A</td><td>B</td><td>C</td><td>D</td><td>E</td><td>F</td></tr>
+      <tr><th>dezimal</th><td>0</td><td>…</td><td>9</td><td>10</td><td>11</td><td>12</td><td>13</td><td>14</td><td>15</td></tr></table>
+    <p>Jede Stelle ist <b>16-mal so viel wert</b> wie die rechts daneben: 1, 16, 256 …</p>
+    <div class="merk"><div class="mt">Hexadezimal → dezimal</div><p>${S('2F', 16)} = 2 · 16 + 15 · 1 = 32 + 15 = ${S('47', 10)}</p></div>
+    <div class="merk"><div class="mt">Dezimal → hexadezimal</div><p>Wie oft passt 16 hinein? Das ist die linke Ziffer, der Rest die rechte: ${S('30', 10)}: 30 = 1 · 16 + 14 → 1 und E → ${S('1E', 16)}</p></div>
+    <div class="info"><p><b>Der Trick:</b> Eine Hex-Ziffer steht genau für <b>4 Bit</b> (0000 bis 1111). So kann man Binärzahlen leicht umschreiben: ${S('1010 1111', 2)} → A und F → ${S('AF', 16)}</p></div>
+    <p class="muted">Hexadezimalzahlen findest du z. B. bei Farben auf Webseiten: <span class="z">#FF0000</span> ist Rot (FF = 255 Teile Rot, 00 Grün, 00 Blau).</p>`},
+  {id:'hexueb', kurz:'3 Hex', erinnerung:'<p>A = 10, B = 11, C = 12, D = 13, E = 14, F = 15. Stellenwerte: 16 · 1. Eine Hex-Ziffer = 4 Bit.</p>', aufgaben:[
+    {typ:'mc', nr:'3.1', frage:'Welchen Wert hat die Hex-Ziffer C?', options:['12', '13', '11', '3'], correct:[0], why:{1:'D ist 13.', 2:'B ist 11.', 3:'Zähle ab A = 10 weiter.'}},
+    {typ:'zahlen', nr:'3.2', frage:'Rechne ins Dezimalsystem um.', felder:[{t:S('1A', 16), l:26, h:'1 · 16 + 10'}, {t:S('2F', 16), l:47, h:'2 · 16 + 15'}, {t:S('FF', 16), l:255, h:'15 · 16 + 15'}]},
+    {typ:'mc', nr:'3.3', frage:`Wie schreibt man ${S('30', 10)} hexadezimal?`, html:true, options:['1E', '1D', '30', 'E1'], correct:[0], why:{1:'1D wäre 16 + 13 = 29.', 2:'Das ist die Dezimalzahl.', 3:'Die Reihenfolge stimmt nicht: zuerst die 16er.'}},
+    {typ:'zuordnen', nr:'3.4', frage:'Je 4 Bit sind eine Hex-Ziffer: Ordne zu.', felder:[['a', 'A'], ['f', 'F'], ['s', '7'], ['c', 'C']],
+      karten:[{t:'1010', z:'a'}, {t:'1111', z:'f'}, {t:'0111', z:'s'}, {t:'1100', z:'c'}]}]},
+  {id:'endlos', kurz:'Endlos', titel:'Umrechnen', html:'<h2>Endlos umrechnen</h2><p>Zufällige Aufgaben zwischen dezimal, binär und hexadezimal. Wähle oben die Stufe: <b>1</b> Auswählen · <b>2</b> Auswählen auf Zeit · <b>3</b> Eintippen · <b>4</b> Eintippen auf Zeit. Ein Fehler beendet die Serie.</p>',
+   training:{stufen:[
+     {name:'Auswählen', antwort:'mc', neu:neueAufgabe},
+     {name:'Auswählen auf Zeit', antwort:'mc', zeit:{start:12, schritt:-0.2, min:5}, neu:neueAufgabe},
+     {name:'Eintippen', antwort:'eingabe', neu:neueAufgabe},
+     {name:'Eintippen auf Zeit', antwort:'eingabe', zeit:{start:20, schritt:-0.25, min:8}, neu:neueAufgabe}]}}
+]});
+</script>
+</body>
+</html>

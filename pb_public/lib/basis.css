@@ -1,5 +1,6 @@
-/* englisch.css – Grundaussehen der Englisch-Seiten (Farben, Karte, Knöpfe, Felder; hell und dunkel)
- * wie die mit lib/seite.js erzeugten Seiten (BASIS_CSS dort). Eingebunden mit ../../englisch.css (Seiten in Englisch/<Stufe>/<Bereich>/) bzw. englisch.css (Englisch/).
+/* basis.css – Grundaussehen einfacher Übungsseiten ohne eigene Fach-/Bereichs-CSS (Farben hell/dunkel, .wrap, .bar, .brand,
+ * .karte, .btn, .feld, .muted). Gleicher Inhalt wie BASIS_CSS in lib/seite.js (dort als Text für Einzeldateien) – beide gleich halten.
+ * Genutzt z. B. von Englisch/vokabeltrainer.html und IT/grundlagen/zahlensysteme.html.
  */
 :root{--bg:#e5e9f0;--panel:#f6f8fb;--panel2:#eceff4;--text:#2e3440;--muted:#5b6578;--border:#cdd3de;--accent:#5e81ac;--err:#a8434d;--ok:#5e8a45;--mono:ui-monospace,Consolas,"Liberation Mono",monospace}
 [data-theme=dark]{--bg:#2e3440;--panel:#3b4252;--panel2:#434c5e;--text:#eceff4;--muted:#a9b3c4;--border:#4c566a;--accent:#88c0d0;--err:#d4848b;--ok:#a3be8c}
