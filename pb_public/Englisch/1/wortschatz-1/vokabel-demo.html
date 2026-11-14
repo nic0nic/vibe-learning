@@ -1,0 +1,1032 @@
+<!doctype html>
+<html lang="de" data-trainer="vokabel-demo">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vokabel-Demo – vibe learning</title>
+<!--
+  Erzeugt mit lib/seite.js aus Aufgaben-JSON (Übung erstellen, eingereicht).
+  Inhalt bearbeiten: nur DATEN unten ändern (Format: Kopfkommentar von lib/seite.js, Aufgabentypen: lib/aufgaben.js).
+  Gespeichert: vokabel-demo-stand = {schritt, erledigt}.
+-->
+<script src="../../../katalog.js"></script>
+<script src="../../../nav.js"></script>
+<script src="../../../sync.js"></script>
+<script>
+(function(){var t=null;try{t=localStorage.getItem('wenn-theme');}catch(e){}document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');})();
+</script>
+<style>:root{--bg:#e5e9f0;--panel:#f6f8fb;--panel2:#eceff4;--text:#2e3440;--muted:#5b6578;--border:#cdd3de;--accent:#5e81ac;--err:#a8434d;--ok:#5e8a45;--mono:ui-monospace,Consolas,"Liberation Mono",monospace}[data-theme=dark]{--bg:#2e3440;--panel:#3b4252;--panel2:#434c5e;--text:#eceff4;--muted:#a9b3c4;--border:#4c566a;--accent:#88c0d0;--err:#d4848b;--ok:#a3be8c}*{box-sizing:border-box}html,body{margin:0}body{background:var(--bg);color:var(--text);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}.wrap{width:min(1000px,100%);margin:0 auto;padding:14px 16px 24px}.bar{margin-bottom:12px}.brand{font:800 20px var(--mono)}.brand span{color:var(--accent-text,var(--accent))}.karte{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px 16px}.karte h2{font-size:18px;margin:0 0 6px}.karte p{margin:0 0 8px}.btn{font:600 14px system-ui,sans-serif;background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:7px 12px;cursor:pointer}.btn.on,.btn.haupt{background:var(--accent);border-color:var(--accent);color:#fff}[data-theme=dark] .btn.on,[data-theme=dark] .btn.haupt{color:#2e3440}.btn:disabled{opacity:.45}.btn.klein{font-size:13px;padding:4px 9px}.feld{font:14px system-ui,sans-serif;background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 8px}.muted{color:var(--muted)}</style>
+<link rel="stylesheet" href="../../../lib/aufgaben.css">
+<script src="../../../lib/aufgaben.js"></script>
+<script src="../../../lib/formel.js"></script>
+<style>.info{border-left:4px solid var(--accent);padding:2px 0 2px 12px;margin:0 0 12px}.wrap{max-width:1000px}table{border-collapse:collapse}td,th{border:1px solid var(--border);padding:4px 8px}</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="bar"><div class="brand">Vokabel-Demo</div><div class="muted">50 Grundwörter: anklicken, schreiben, gemischt auf Zeit</div></div>
+  <div id="app"></div>
+</div>
+<script>
+'use strict';
+const DATEN = {
+ "titel": "Vokabel-Demo",
+ "kurztext": "50 Grundwörter: anklicken, schreiben, gemischt auf Zeit",
+ "schritte": [
+  {
+   "kurz": "Wörter",
+   "titel": "Die 50 Wörter",
+   "html": "<h2>Die 50 Wörter<\/h2><div class=\"info\"><p>Lies dir die Wörter in Ruhe durch. Dann übst du sie in drei Schritten: <b>anklicken<\/b>, <b>schreiben<\/b> und am Ende <b>gemischt auf Zeit<\/b>. Bei den Übungen wählst du das Thema über die Stufen oben.<\/p><\/div><h3>Familie<\/h3><table><thead><tr><th>Englisch<\/th><th>Deutsch<\/th><\/tr><\/thead><tbody><tr><td><b>mother<\/b><\/td><td>Mutter<\/td><\/tr><tr><td><b>father<\/b><\/td><td>Vater<\/td><\/tr><tr><td><b>sister<\/b><\/td><td>Schwester<\/td><\/tr><tr><td><b>brother<\/b><\/td><td>Bruder<\/td><\/tr><tr><td><b>friend<\/b><\/td><td>Freund / Freundin<\/td><\/tr><tr><td><b>family<\/b><\/td><td>Familie<\/td><\/tr><tr><td><b>boy<\/b><\/td><td>Junge<\/td><\/tr><tr><td><b>girl<\/b><\/td><td>Mädchen<\/td><\/tr><tr><td><b>teacher<\/b><\/td><td>Lehrer / Lehrerin<\/td><\/tr><tr><td><b>baby<\/b><\/td><td>Baby<\/td><\/tr><\/tbody><\/table><h3>Schule<\/h3><table><thead><tr><th>Englisch<\/th><th>Deutsch<\/th><\/tr><\/thead><tbody><tr><td><b>school<\/b><\/td><td>Schule<\/td><\/tr><tr><td><b>book<\/b><\/td><td>Buch<\/td><\/tr><tr><td><b>pen<\/b><\/td><td>Stift / Kuli / Kugelschreiber / Füller<\/td><\/tr><tr><td><b>pencil<\/b><\/td><td>Bleistift<\/td><\/tr><tr><td><b>bag<\/b><\/td><td>Tasche / Schultasche<\/td><\/tr><tr><td><b>desk<\/b><\/td><td>Pult / Schreibtisch / Tisch<\/td><\/tr><tr><td><b>chair<\/b><\/td><td>Stuhl<\/td><\/tr><tr><td><b>ruler<\/b><\/td><td>Lineal<\/td><\/tr><tr><td><b>rubber / eraser<\/b><\/td><td>Radiergummi / Radierer<\/td><\/tr><tr><td><b>classroom<\/b><\/td><td>Klassenzimmer<\/td><\/tr><\/tbody><\/table><h3>Tiere<\/h3><table><thead><tr><th>Englisch<\/th><th>Deutsch<\/th><\/tr><\/thead><tbody><tr><td><b>dog<\/b><\/td><td>Hund<\/td><\/tr><tr><td><b>cat<\/b><\/td><td>Katze<\/td><\/tr><tr><td><b>bird<\/b><\/td><td>Vogel<\/td><\/tr><tr><td><b>fish<\/b><\/td><td>Fisch<\/td><\/tr><tr><td><b>horse<\/b><\/td><td>Pferd<\/td><\/tr><tr><td><b>mouse<\/b><\/td><td>Maus<\/td><\/tr><tr><td><b>rabbit<\/b><\/td><td>Kaninchen / Hase<\/td><\/tr><tr><td><b>cow<\/b><\/td><td>Kuh<\/td><\/tr><tr><td><b>pig<\/b><\/td><td>Schwein<\/td><\/tr><tr><td><b>duck<\/b><\/td><td>Ente<\/td><\/tr><\/tbody><\/table><h3>Essen<\/h3><table><thead><tr><th>Englisch<\/th><th>Deutsch<\/th><\/tr><\/thead><tbody><tr><td><b>apple<\/b><\/td><td>Apfel<\/td><\/tr><tr><td><b>bread<\/b><\/td><td>Brot<\/td><\/tr><tr><td><b>milk<\/b><\/td><td>Milch<\/td><\/tr><tr><td><b>water<\/b><\/td><td>Wasser<\/td><\/tr><tr><td><b>cheese<\/b><\/td><td>Käse<\/td><\/tr><tr><td><b>egg<\/b><\/td><td>Ei<\/td><\/tr><tr><td><b>banana<\/b><\/td><td>Banane<\/td><\/tr><tr><td><b>cake<\/b><\/td><td>Kuchen<\/td><\/tr><tr><td><b>juice<\/b><\/td><td>Saft<\/td><\/tr><tr><td><b>tea<\/b><\/td><td>Tee<\/td><\/tr><\/tbody><\/table><h3>Farben und Zahlen<\/h3><table><thead><tr><th>Englisch<\/th><th>Deutsch<\/th><\/tr><\/thead><tbody><tr><td><b>red<\/b><\/td><td>rot<\/td><\/tr><tr><td><b>blue<\/b><\/td><td>blau<\/td><\/tr><tr><td><b>green<\/b><\/td><td>grün<\/td><\/tr><tr><td><b>yellow<\/b><\/td><td>gelb<\/td><\/tr><tr><td><b>black<\/b><\/td><td>schwarz<\/td><\/tr><tr><td><b>white<\/b><\/td><td>weiß<\/td><\/tr><tr><td><b>one<\/b><\/td><td>eins<\/td><\/tr><tr><td><b>two<\/b><\/td><td>zwei<\/td><\/tr><tr><td><b>three<\/b><\/td><td>drei<\/td><\/tr><tr><td><b>ten<\/b><\/td><td>zehn<\/td><\/tr><\/tbody><\/table>",
+   "id": "s1"
+  },
+  {
+   "kurz": "Anklicken",
+   "titel": "Was heißt das auf Deutsch?",
+   "html": "<p>Wähle die richtige Übersetzung (auch mit den Tasten 1–4). Eine Runde hat 10 Wörter.<\/p>",
+   "training": {
+    "antwort": "mc",
+    "anzahl": 10,
+    "stufen": [
+     {
+      "name": "Familie",
+      "woerterbuch": {
+       "sprachen": [
+        "Englisch",
+        "Deutsch"
+       ],
+       "richtung": "a-b",
+       "eintraege": [
+        [
+         "mother",
+         "Mutter"
+        ],
+        [
+         "father",
+         "Vater"
+        ],
+        [
+         "sister",
+         "Schwester"
+        ],
+        [
+         "brother",
+         "Bruder"
+        ],
+        [
+         "friend",
+         "Freund|Freundin"
+        ],
+        [
+         "family",
+         "Familie"
+        ],
+        [
+         "boy",
+         "Junge"
+        ],
+        [
+         "girl",
+         "Mädchen"
+        ],
+        [
+         "teacher",
+         "Lehrer|Lehrerin"
+        ],
+        [
+         "baby",
+         "Baby"
+        ]
+       ]
+      }
+     },
+     {
+      "name": "Schule",
+      "woerterbuch": {
+       "sprachen": [
+        "Englisch",
+        "Deutsch"
+       ],
+       "richtung": "a-b",
+       "eintraege": [
+        [
+         "school",
+         "Schule"
+        ],
+        [
+         "book",
+         "Buch"
+        ],
+        [
+         "pen",
+         "Stift|Kuli|Kugelschreiber|Füller"
+        ],
+        [
+         "pencil",
+         "Bleistift"
+        ],
+        [
+         "bag",
+         "Tasche|Schultasche"
+        ],
+        [
+         "desk",
+         "Pult|Schreibtisch|Tisch"
+        ],
+        [
+         "chair",
+         "Stuhl"
+        ],
+        [
+         "ruler",
+         "Lineal"
+        ],
+        [
+         "rubber|eraser",
+         "Radiergummi|Radierer"
+        ],
+        [
+         "classroom",
+         "Klassenzimmer"
+        ]
+       ]
+      }
+     },
+     {
+      "name": "Tiere",
+      "woerterbuch": {
+       "sprachen": [
+        "Englisch",
+        "Deutsch"
+       ],
+       "richtung": "a-b",
+       "eintraege": [
+        [
+         "dog",
+         "Hund"
+        ],
+        [
+         "cat",
+         "Katze"
+        ],
+        [
+         "bird",
+         "Vogel"
+        ],
+        [
+         "fish",
+         "Fisch"
+        ],
+        [
+         "horse",
+         "Pferd"
+        ],
+        [
+         "mouse",
+         "Maus"
+        ],
+        [
+         "rabbit",
+         "Kaninchen|Hase"
+        ],
+        [
+         "cow",
+         "Kuh"
+        ],
+        [
+         "pig",
+         "Schwein"
+        ],
+        [
+         "duck",
+         "Ente"
+        ]
+       ]
+      }
+     },
+     {
+      "name": "Essen",
+      "woerterbuch": {
+       "sprachen": [
+        "Englisch",
+        "Deutsch"
+       ],
+       "richtung": "a-b",
+       "eintraege": [
+        [
+         "apple",
+         "Apfel"
+        ],
+        [
+         "bread",
+         "Brot"
+        ],
+        [
+         "milk",
+         "Milch"
+        ],
+        [
+         "water",
+         "Wasser"
+        ],
+        [
+         "cheese",
+         "Käse"
+        ],
+        [
+         "egg",
+         "Ei"
+        ],
+        [
+         "banana",
+         "Banane"
+        ],
+        [
+         "cake",
+         "Kuchen"
+        ],
+        [
+         "juice",
+         "Saft"
+        ],
+        [
+         "tea",
+         "Tee"
+        ]
+       ]
+      }
+     },
+     {
+      "name": "Farben und Zahlen",
+      "woerterbuch": {
+       "sprachen": [
+        "Englisch",
+        "Deutsch"
+       ],
+       "richtung": "a-b",
+       "eintraege": [
+        [
+         "red",
+         "rot"
+        ],
+        [
+         "blue",
+         "blau"
+        ],
+        [
+         "green",
+         "grün"
+        ],
+        [
+         "yellow",
+         "gelb"
+        ],
+        [
+         "black",
+         "schwarz"
+        ],
+        [
+         "white",
+         "weiß"
+        ],
+        [
+         "one",
+         "eins"
+        ],
+        [
+         "two",
+         "zwei"
+        ],
+        [
+         "three",
+         "drei"
+        ],
+        [
+         "ten",
+         "zehn"
+        ]
+       ]
+      }
+     }
+    ]
+   },
+   "id": "s2"
+  },
+  {
+   "kurz": "Schreiben",
+   "titel": "Schreib das englische Wort",
+   "html": "<p>Schreib das englische Wort. Kleine Tippfehler zählen als fast richtig.<\/p>",
+   "training": {
+    "antwort": "eingabe",
+    "anzahl": 10,
+    "versuche": true,
+    "stufen": [
+     {
+      "name": "Familie",
+      "woerterbuch": {
+       "sprachen": [
+        "Englisch",
+        "Deutsch"
+       ],
+       "richtung": "b-a",
+       "eintraege": [
+        [
+         "mother",
+         "Mutter"
+        ],
+        [
+         "father",
+         "Vater"
+        ],
+        [
+         "sister",
+         "Schwester"
+        ],
+        [
+         "brother",
+         "Bruder"
+        ],
+        [
+         "friend",
+         "Freund|Freundin"
+        ],
+        [
+         "family",
+         "Familie"
+        ],
+        [
+         "boy",
+         "Junge"
+        ],
+        [
+         "girl",
+         "Mädchen"
+        ],
+        [
+         "teacher",
+         "Lehrer|Lehrerin"
+        ],
+        [
+         "baby",
+         "Baby"
+        ]
+       ],
+       "tippfehler": true
+      }
+     },
+     {
+      "name": "Schule",
+      "woerterbuch": {
+       "sprachen": [
+        "Englisch",
+        "Deutsch"
+       ],
+       "richtung": "b-a",
+       "eintraege": [
+        [
+         "school",
+         "Schule"
+        ],
+        [
+         "book",
+         "Buch"
+        ],
+        [
+         "pen",
+         "Stift|Kuli|Kugelschreiber|Füller"
+        ],
+        [
+         "pencil",
+         "Bleistift"
+        ],
+        [
+         "bag",
+         "Tasche|Schultasche"
+        ],
+        [
+         "desk",
+         "Pult|Schreibtisch|Tisch"
+        ],
+        [
+         "chair",
+         "Stuhl"
+        ],
+        [
+         "ruler",
+         "Lineal"
+        ],
+        [
+         "rubber|eraser",
+         "Radiergummi|Radierer"
+        ],
+        [
+         "classroom",
+         "Klassenzimmer"
+        ]
+       ],
+       "tippfehler": true
+      }
+     },
+     {
+      "name": "Tiere",
+      "woerterbuch": {
+       "sprachen": [
+        "Englisch",
+        "Deutsch"
+       ],
+       "richtung": "b-a",
+       "eintraege": [
+        [
+         "dog",
+         "Hund"
+        ],
+        [
+         "cat",
+         "Katze"
+        ],
+        [
+         "bird",
+         "Vogel"
+        ],
+        [
+         "fish",
+         "Fisch"
+        ],
+        [
+         "horse",
+         "Pferd"
+        ],
+        [
+         "mouse",
+         "Maus"
+        ],
+        [
+         "rabbit",
+         "Kaninchen|Hase"
+        ],
+        [
+         "cow",
+         "Kuh"
+        ],
+        [
+         "pig",
+         "Schwein"
+        ],
+        [
+         "duck",
+         "Ente"
+        ]
+       ],
+       "tippfehler": true
+      }
+     },
+     {
+      "name": "Essen",
+      "woerterbuch": {
+       "sprachen": [
+        "Englisch",
+        "Deutsch"
+       ],
+       "richtung": "b-a",
+       "eintraege": [
+        [
+         "apple",
+         "Apfel"
+        ],
+        [
+         "bread",
+         "Brot"
+        ],
+        [
+         "milk",
+         "Milch"
+        ],
+        [
+         "water",
+         "Wasser"
+        ],
+        [
+         "cheese",
+         "Käse"
+        ],
+        [
+         "egg",
+         "Ei"
+        ],
+        [
+         "banana",
+         "Banane"
+        ],
+        [
+         "cake",
+         "Kuchen"
+        ],
+        [
+         "juice",
+         "Saft"
+        ],
+        [
+         "tea",
+         "Tee"
+        ]
+       ],
+       "tippfehler": true
+      }
+     },
+     {
+      "name": "Farben und Zahlen",
+      "woerterbuch": {
+       "sprachen": [
+        "Englisch",
+        "Deutsch"
+       ],
+       "richtung": "b-a",
+       "eintraege": [
+        [
+         "red",
+         "rot"
+        ],
+        [
+         "blue",
+         "blau"
+        ],
+        [
+         "green",
+         "grün"
+        ],
+        [
+         "yellow",
+         "gelb"
+        ],
+        [
+         "black",
+         "schwarz"
+        ],
+        [
+         "white",
+         "weiß"
+        ],
+        [
+         "one",
+         "eins"
+        ],
+        [
+         "two",
+         "zwei"
+        ],
+        [
+         "three",
+         "drei"
+        ],
+        [
+         "ten",
+         "zehn"
+        ]
+       ],
+       "tippfehler": true
+      }
+     },
+     {
+      "name": "Alle 50",
+      "woerterbuch": {
+       "sprachen": [
+        "Englisch",
+        "Deutsch"
+       ],
+       "richtung": "b-a",
+       "eintraege": [
+        [
+         "mother",
+         "Mutter"
+        ],
+        [
+         "father",
+         "Vater"
+        ],
+        [
+         "sister",
+         "Schwester"
+        ],
+        [
+         "brother",
+         "Bruder"
+        ],
+        [
+         "friend",
+         "Freund|Freundin"
+        ],
+        [
+         "family",
+         "Familie"
+        ],
+        [
+         "boy",
+         "Junge"
+        ],
+        [
+         "girl",
+         "Mädchen"
+        ],
+        [
+         "teacher",
+         "Lehrer|Lehrerin"
+        ],
+        [
+         "baby",
+         "Baby"
+        ],
+        [
+         "school",
+         "Schule"
+        ],
+        [
+         "book",
+         "Buch"
+        ],
+        [
+         "pen",
+         "Stift|Kuli|Kugelschreiber|Füller"
+        ],
+        [
+         "pencil",
+         "Bleistift"
+        ],
+        [
+         "bag",
+         "Tasche|Schultasche"
+        ],
+        [
+         "desk",
+         "Pult|Schreibtisch|Tisch"
+        ],
+        [
+         "chair",
+         "Stuhl"
+        ],
+        [
+         "ruler",
+         "Lineal"
+        ],
+        [
+         "rubber|eraser",
+         "Radiergummi|Radierer"
+        ],
+        [
+         "classroom",
+         "Klassenzimmer"
+        ],
+        [
+         "dog",
+         "Hund"
+        ],
+        [
+         "cat",
+         "Katze"
+        ],
+        [
+         "bird",
+         "Vogel"
+        ],
+        [
+         "fish",
+         "Fisch"
+        ],
+        [
+         "horse",
+         "Pferd"
+        ],
+        [
+         "mouse",
+         "Maus"
+        ],
+        [
+         "rabbit",
+         "Kaninchen|Hase"
+        ],
+        [
+         "cow",
+         "Kuh"
+        ],
+        [
+         "pig",
+         "Schwein"
+        ],
+        [
+         "duck",
+         "Ente"
+        ],
+        [
+         "apple",
+         "Apfel"
+        ],
+        [
+         "bread",
+         "Brot"
+        ],
+        [
+         "milk",
+         "Milch"
+        ],
+        [
+         "water",
+         "Wasser"
+        ],
+        [
+         "cheese",
+         "Käse"
+        ],
+        [
+         "egg",
+         "Ei"
+        ],
+        [
+         "banana",
+         "Banane"
+        ],
+        [
+         "cake",
+         "Kuchen"
+        ],
+        [
+         "juice",
+         "Saft"
+        ],
+        [
+         "tea",
+         "Tee"
+        ],
+        [
+         "red",
+         "rot"
+        ],
+        [
+         "blue",
+         "blau"
+        ],
+        [
+         "green",
+         "grün"
+        ],
+        [
+         "yellow",
+         "gelb"
+        ],
+        [
+         "black",
+         "schwarz"
+        ],
+        [
+         "white",
+         "weiß"
+        ],
+        [
+         "one",
+         "eins"
+        ],
+        [
+         "two",
+         "zwei"
+        ],
+        [
+         "three",
+         "drei"
+        ],
+        [
+         "ten",
+         "zehn"
+        ]
+       ],
+       "tippfehler": true
+      }
+     }
+    ]
+   },
+   "id": "s3"
+  },
+  {
+   "kurz": "Auf Zeit",
+   "titel": "Alle 50 gemischt – wie weit kommst du?",
+   "html": "<p>Englisch und Deutsch gemischt, die Zeit wird immer knapper. Ein Fehler beendet die Serie – schaffst du eine neue Bestleistung?<\/p>",
+   "training": {
+    "antwort": "mc",
+    "zeit": {
+     "start": 6,
+     "schritt": -0.1,
+     "min": 2.5
+    },
+    "woerterbuch": {
+     "sprachen": [
+      "Englisch",
+      "Deutsch"
+     ],
+     "richtung": "beide",
+     "eintraege": [
+      [
+       "mother",
+       "Mutter"
+      ],
+      [
+       "father",
+       "Vater"
+      ],
+      [
+       "sister",
+       "Schwester"
+      ],
+      [
+       "brother",
+       "Bruder"
+      ],
+      [
+       "friend",
+       "Freund|Freundin"
+      ],
+      [
+       "family",
+       "Familie"
+      ],
+      [
+       "boy",
+       "Junge"
+      ],
+      [
+       "girl",
+       "Mädchen"
+      ],
+      [
+       "teacher",
+       "Lehrer|Lehrerin"
+      ],
+      [
+       "baby",
+       "Baby"
+      ],
+      [
+       "school",
+       "Schule"
+      ],
+      [
+       "book",
+       "Buch"
+      ],
+      [
+       "pen",
+       "Stift|Kuli|Kugelschreiber|Füller"
+      ],
+      [
+       "pencil",
+       "Bleistift"
+      ],
+      [
+       "bag",
+       "Tasche|Schultasche"
+      ],
+      [
+       "desk",
+       "Pult|Schreibtisch|Tisch"
+      ],
+      [
+       "chair",
+       "Stuhl"
+      ],
+      [
+       "ruler",
+       "Lineal"
+      ],
+      [
+       "rubber|eraser",
+       "Radiergummi|Radierer"
+      ],
+      [
+       "classroom",
+       "Klassenzimmer"
+      ],
+      [
+       "dog",
+       "Hund"
+      ],
+      [
+       "cat",
+       "Katze"
+      ],
+      [
+       "bird",
+       "Vogel"
+      ],
+      [
+       "fish",
+       "Fisch"
+      ],
+      [
+       "horse",
+       "Pferd"
+      ],
+      [
+       "mouse",
+       "Maus"
+      ],
+      [
+       "rabbit",
+       "Kaninchen|Hase"
+      ],
+      [
+       "cow",
+       "Kuh"
+      ],
+      [
+       "pig",
+       "Schwein"
+      ],
+      [
+       "duck",
+       "Ente"
+      ],
+      [
+       "apple",
+       "Apfel"
+      ],
+      [
+       "bread",
+       "Brot"
+      ],
+      [
+       "milk",
+       "Milch"
+      ],
+      [
+       "water",
+       "Wasser"
+      ],
+      [
+       "cheese",
+       "Käse"
+      ],
+      [
+       "egg",
+       "Ei"
+      ],
+      [
+       "banana",
+       "Banane"
+      ],
+      [
+       "cake",
+       "Kuchen"
+      ],
+      [
+       "juice",
+       "Saft"
+      ],
+      [
+       "tea",
+       "Tee"
+      ],
+      [
+       "red",
+       "rot"
+      ],
+      [
+       "blue",
+       "blau"
+      ],
+      [
+       "green",
+       "grün"
+      ],
+      [
+       "yellow",
+       "gelb"
+      ],
+      [
+       "black",
+       "schwarz"
+      ],
+      [
+       "white",
+       "weiß"
+      ],
+      [
+       "one",
+       "eins"
+      ],
+      [
+       "two",
+       "zwei"
+      ],
+      [
+       "three",
+       "drei"
+      ],
+      [
+       "ten",
+       "zehn"
+      ]
+     ]
+    }
+   },
+   "id": "s4"
+  }
+ ]
+};
+Aufgaben.sequenz({el:'#app', key:"vokabel-demo", schritte:DATEN.schritte});
+</script>
+</body>
+</html>

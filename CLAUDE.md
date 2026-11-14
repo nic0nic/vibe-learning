@@ -1,6 +1,6 @@
 # vibe learning – Hinweise für Claude
 
-Übungsplattform für den Unterricht (Realschule): IT und BWR (Jahrgangsstufe 9). Statische Seiten in `pb_public/<Fach>/…` (`IT/excel/…`, `BWR/9II/anlagen/…`, Aufbau in `katalog.js`), PocketBase (≥ 0.23, getestet 0.40.5) als Backend. Jede Seite muss auch ohne Server per Doppelklick laufen.
+Übungsplattform für den Unterricht (Realschule): IT, BWR (Jahrgangsstufen 7 und 9) und Englisch (Jahrgangsstufen 1–5). Statische Seiten in `pb_public/<Fach>/…` (`IT/excel/…`, `BWR/9II/anlagen/…`, Aufbau in `katalog.js`), PocketBase (≥ 0.23, getestet 0.40.5) als Backend. Jede Seite muss auch ohne Server per Doppelklick laufen.
 
 Ausnahme: **pockettype** (Tipptrainer, eigenes Repo github.com/nic0nic/pockettype, GPL-3.0, basiert auf Monkeytype). Die fertig gebauten Dateien liegen in `pb_public/IT/tippen/` (Seite `pockettype.html`) und werden hier nie von Hand geändert, nur `IT/tippen/index.html` (Bereichsseite) gehört zu vibe learning. Neu bauen im pockettype-Repo mit `scripts/pockettype/nach-vibe-learning.sh ../vibe-learning`. pockettype läuft nur mit Server, es gibt keine Einzeldatei in `standalone/`. Server-Teil: `pb_hooks/tippen.pb.js`.
 

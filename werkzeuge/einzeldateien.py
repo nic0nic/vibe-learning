@@ -20,7 +20,7 @@ import json, os, pathlib, re, shutil, sys
 WURZEL = pathlib.Path(__file__).resolve().parent.parent
 PUBLIC = WURZEL / "pb_public"
 ZIEL = WURZEL / "standalone"
-FAECHER = ("IT", "BWR")                 # Ordner in pb_public, siehe katalog.js
+FAECHER = ("IT", "BWR", "Englisch")     # Ordner in pb_public, siehe katalog.js
 OHNE = ("IT/tippen",)                    # Ordner ohne Einzeldateien
 
 # Ein Durchgang für beide, damit Text in schon eingebetteten Dateien (z. B. Beispiele

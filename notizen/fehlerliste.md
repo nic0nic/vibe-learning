@@ -30,6 +30,10 @@ Gesammelt im Thread „Aufbau der Seite“. Umgesetzt wird erst, wenn die Lehrkr
 
 ### Version vom 14.11.
 
+65. **Fach Englisch mit Vokabel-Demo** (gewünscht 14.11.)
+    Neues Fach `Englisch` mit den Jahrgangsstufen 1–5 (`pb_public/Englisch/1` … `/5`, Übersichtsseiten, katalog.js). Stufen 2–5 noch ohne Bereiche. In Stufe 1 Bereich „Wortschatz“ (`wortschatz-1`) mit „Vokabel-Demo“ (`vokabel-demo`): 50 Grundwörter in fünf Themen (Familie, Schule, Tiere, Essen, Farben und Zahlen), erzeugt mit lib/seite.js aus Aufgaben-JSON: Wortliste, Anklicken (Englisch → Deutsch, Runden zu 10, Thema über die Stufen), Schreiben (Deutsch → Englisch, Tippfehler zählen, auch „Alle 50“), gemischt auf Zeit (endlos, Bestleistung). `werkzeuge/einzeldateien.py` kennt das Fach (Einzeldatei und ByCS-Paket).
+    Getestet in Chromium: Fach-, Stufen- und Bereichsseiten, alle Übungsteile auf dem Server und als Einzeldatei; nicht mit PocketBase (Speichern, Lehrerbereich).
+
 62. **Weitere Designs** (vorgeschlagen 13.11., umgesetzt 14.11.)
     In `lib/designs.js` 12 neue Einträge (gemeinsame Bausteine `grund`, `schrift`, `flamme`, `eigene`, `ausruf`). Eigene Flammenform nur, wo sie passt; sonst bleibt die Flamme und wird im Stil gezeichnet.
     - Comic (`comic`): Rasterpunkte, dicke Konturen mit hartem Schatten, Rückmeldung als Sprechblase mit „ZACK!“, Flamme mit dicker Kontur. Schriften eingebettet (Bangers, Comic Neue; OFL, ca. 80 KB, nur in Seiten mit diesem Design).
