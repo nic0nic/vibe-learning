@@ -92,6 +92,9 @@ Aufbau:   Fach → (Jahrgangsstufe) → Bereich → Tool. Ordner in pb_public: <
 Fach:     id      = Ordnername (z. B. IT, BWR), titel = Anzeige im Fach-Menü, text = Untertitel der Startseite
           bereiche = [Bereich] oder stufen = [{id (Ordner, z. B. 9II), titel (Fach-Menü), kurz (oben in der
           Leiste, z. B. 9), text, bereiche}] für Fächer mit Jahrgangsstufen
+          tools = optional bei Fächern mit Stufen: Tools für alle Jahrgangsstufen (Datei direkt in <Fach>/, z. B.
+          Englisch/vokabeltrainer.html), im Fach-Menü unter den Stufen und auf der Fachseite; farbe/farbeHell wie beim Bereich.
+          Intern ein eigener Bereich (id = Fach klein, fachweit: true, pfad = Fach) ohne Eintrag in KATALOG.gruppen
 Bereich:  id      = Name des Unterordners (nur a–z, 0–9, -), über alle Fächer eindeutig
           titel   = Text in der Menüleiste
           farbe   = Akzentfarbe im dunklen Design (Nord-Farben, nordtheme.com),

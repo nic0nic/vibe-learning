@@ -93,6 +93,7 @@ html[data-theme=dark] .pf-item{--bc:#88c0d0}
 .pf-sub>a::after{content:"";width:6px;height:6px;border:solid currentColor;border-width:0 2px 2px 0;transform:rotate(-45deg);opacity:.5;flex:none}
 .pf-drop2{display:none;position:absolute;left:100%;top:-7px;min-width:250px;background:var(--panel,#f6f8fb);border:1px solid var(--border,#cdd3de);border-radius:12px;box-shadow:0 14px 30px rgba(0,0,0,.18);padding:6px;list-style:none;margin:0}
 .pf-sub.links>.pf-drop2{left:auto;right:100%}
+.pf-drop2 li:not(.pf-fachtool)+.pf-fachtool{border-top:1px solid var(--border,#cdd3de);margin-top:4px;padding-top:4px}
 .pf-sub:hover>.pf-drop2,.pf-sub:focus-within>.pf-drop2,.pf-sub.open>.pf-drop2{display:block}
 .pf-drop .pf-leer{padding:8px 10px;color:var(--muted,#5b6578);font-style:italic}
 .pf-right{margin-left:auto;display:flex;align-items:center;gap:10px}
@@ -231,14 +232,16 @@ html[data-theme=dark] .pf-item{--bc:#88c0d0}
     });
     return out;
   }
-  const toolLi = (b, t) => `<li${t.bedingt ? ` class="pf-bedingt" data-tool="${esc(t.id)}"` : ''}><a href="${toolUrl(b, t)}"${t.id === TOOL ? ' aria-current="page"' : ''}>${esc(t.titel)}</a></li>`;
+  // Tools eines Fachs für alle Jahrgangsstufen (katalog.js Fach.tools) → [[Bereich, Tool]]
+  const fachTools = f => K.bereiche.filter(b => b.fachweit && b.gruppe.fach === f).flatMap(b => b.tools.map(t => [b, t]));
+  const toolLi = (b, t, extra) => `<li${t.bedingt ? ` class="pf-bedingt" data-tool="${esc(t.id)}"` : extra || ''}><a href="${toolUrl(b, t)}"${t.id === TOOL ? ' aria-current="page"' : ''}>${esc(t.titel)}</a></li>`;
 
   // Fach-Menü: Fächer ohne Stufen direkt, Fächer mit Jahrgangsstufen als Untermenü (wie gruppe bei Tools)
   function fachMenue(){
     const eintrag = (g, text) => `<li><a href="${gruppeUrl(g)}"${g === GRUPPE ? ' aria-current="page"' : ''}>${esc(text)}</a></li>`;
     return `<li class="pf-item pf-fach"><a href="${gruppeUrl(GRUPPE)}" aria-haspopup="true" title="Fach wechseln"><small>Fach</small> ${esc(GRUPPE.titel)}</a>
       <ul class="pf-drop">${K.faecher.map(f => f.stufen
-        ? `<li class="pf-sub"><a href="${fachUrl(f)}"${GRUPPE.fach === f ? ' aria-current="true"' : ''} aria-haspopup="true">${esc(f.titel)}</a><ul class="pf-drop2">${f.stufen.map(st => eintrag(K.gruppen.find(g => g.stufe === st), st.titel)).join('')}</ul></li>`
+        ? `<li class="pf-sub"><a href="${fachUrl(f)}"${GRUPPE.fach === f ? ' aria-current="true"' : ''} aria-haspopup="true">${esc(f.titel)}</a><ul class="pf-drop2">${f.stufen.map(st => eintrag(K.gruppen.find(g => g.stufe === st), st.titel)).join('')}${fachTools(f).map(([b, t]) => toolLi(b, t, ' class="pf-fachtool"')).join('')}</ul></li>`
         : eintrag(K.gruppen.find(g => g.fach === f), f.titel)).join('')}</ul></li>`;
   }
 
@@ -356,7 +359,8 @@ html[data-theme=dark] .pf-item{--bc:#88c0d0}
     if (fach && FACHSEITE){
       document.title = FACHSEITE.titel + ' – ' + K.name;
       fach.innerHTML = `<h1>${esc(FACHSEITE.titel)}</h1><p class="pf-lead">${esc(FACHSEITE.text)} Wähle die Jahrgangsstufe.</p><div class="pf-grid">`
-        + K.gruppen.filter(g => g.fach === FACHSEITE).map(g => `<a class="pf-tile" href="${gruppeUrl(g)}"><b>${esc(g.stufe.titel)}</b><span>${esc(g.text)}</span></a>`).join('') + '</div>';
+        + K.gruppen.filter(g => g.fach === FACHSEITE).map(g => `<a class="pf-tile" href="${gruppeUrl(g)}"><b>${esc(g.stufe.titel)}</b><span>${esc(g.text)}</span></a>`).join('') + '</div>'
+        + (fachTools(FACHSEITE).length ? `<section class="pf-sec pf-fachtools"><h2>Für alle Jahrgangsstufen</h2><div class="pf-grid">${fachTools(FACHSEITE).map(([b, t]) => `<a class="pf-tile" href="${toolUrl(b, t)}"><b>${esc(t.titel)}</b><span>${esc(t.text)}</span></a>`).join('')}</div></section>` : '');
     }
     const be = document.getElementById('pf-bereich');
     const b = BER;

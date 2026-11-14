@@ -8,6 +8,9 @@
  * Fach:     id      = Ordnername (z. B. IT, BWR), titel = Anzeige im Fach-Menü, text = Untertitel der Startseite
  *           bereiche = [Bereich] oder stufen = [{id (Ordner, z. B. 9II), titel (Fach-Menü), kurz (oben in der
  *           Leiste, z. B. 9), text, bereiche}] für Fächer mit Jahrgangsstufen
+ *           tools = optional bei Fächern mit Stufen: Tools für alle Jahrgangsstufen (Datei direkt in <Fach>/, z. B.
+ *           Englisch/vokabeltrainer.html), im Fach-Menü unter den Stufen und auf der Fachseite; farbe/farbeHell wie beim Bereich.
+ *           Intern ein eigener Bereich (id = Fach klein, fachweit: true, pfad = Fach) ohne Eintrag in KATALOG.gruppen
  * Bereich:  id      = Name des Unterordners (nur a–z, 0–9, -), über alle Fächer eindeutig
  *           titel   = Text in der Menüleiste
  *           farbe   = Akzentfarbe im dunklen Design (Nord-Farben, nordtheme.com),
@@ -127,14 +130,16 @@ window.KATALOG = {
         }
       ]
     },
-    {id: 'Englisch', titel: 'Englisch', text: 'Englisch: Wortschatz und mehr.',
+    {id: 'Englisch', titel: 'Englisch', text: 'Englisch: Wortschatz und mehr.', farbe: '#d08770', farbeHell: '#a65a32',
+      tools: [
+        {id: 'vokabeltrainer', datei: 'vokabeltrainer.html', titel: 'Vokabeltrainer', text: 'Eigene Vokabeln eintragen oder einfügen, Modus wählen (Richtung, schreiben oder auswählen, einmal alle oder endlos, mit oder ohne Zeit) und los geht’s.'}
+      ],
       stufen: [
         {id: '1', titel: 'Jahrgangsstufe 1', kurz: '1', text: 'Englisch, Jahrgangsstufe 1.',
           bereiche: [
             {id: 'wortschatz-1', titel: 'Wortschatz', farbe: '#d08770', farbeHell: '#a65a32', text: 'Vokabeln üben: anklicken, schreiben, auf Zeit.',
               tools: [
-                {id: 'vokabel-demo', datei: 'vokabel-demo.html', titel: 'Vokabel-Demo', text: '50 Grundwörter in fünf Themen (Familie, Schule, Tiere, Essen, Farben und Zahlen): erst anklicken, dann schreiben, dann gemischt auf Zeit.'},
-                {id: 'vokabeltrainer', datei: 'vokabeltrainer.html', titel: 'Vokabeltrainer', text: 'Eigene Vokabeln eintragen oder einfügen, Modus wählen (Richtung, schreiben oder auswählen, einmal alle oder endlos, mit oder ohne Zeit) und los geht’s.'}
+                {id: 'vokabel-demo', datei: 'vokabel-demo.html', titel: 'Vokabel-Demo', text: '50 Grundwörter in fünf Themen (Familie, Schule, Tiere, Essen, Farben und Zahlen): erst anklicken, dann schreiben, dann gemischt auf Zeit.'}
               ]}
           ]
         },
@@ -164,6 +169,13 @@ window.KATALOG.einreichungen = /* EINREICHUNGEN-ANFANG */ [] /* EINREICHUNGEN-EN
     ? f.stufen.map(s => ({pfad: f.id + '/' + s.id, fach: f, stufe: s, titel: f.titel + ' ' + (s.kurz || s.titel), text: s.text || f.text, bereiche: s.bereiche}))
     : [{pfad: f.id, fach: f, stufe: null, titel: f.titel, text: f.text, bereiche: f.bereiche}]).forEach(g => K.gruppen.push(g)));
   K.bereiche = [].concat(...K.gruppen.map(g => g.bereiche.map(b => Object.assign(b, {pfad: g.pfad + '/' + b.id, gruppe: g}))));
+  // Tools eines Fachs für alle Jahrgangsstufen (Fach.tools): eigener Bereich mit Ordner = Fach
+  K.faecher.forEach(f => {
+    if (!f.stufen || !f.tools || !f.tools.length) return;
+    const g = {pfad: f.id, fach: f, stufe: null, titel: f.titel, text: f.text, bereiche: []};
+    K.bereiche.push({id: f.id.toLowerCase(), titel: f.titel, text: f.text, farbe: f.farbe, farbeHell: f.farbeHell, farbeSchrift: f.farbeSchrift,
+      tools: f.tools, pfad: f.id, gruppe: g, fachweit: true});
+  });
   (K.einreichungen || []).forEach(e => {
     const b = K.bereiche.find(x => x.id === e.bereich);
     if (b && e.tool && !b.tools.some(t => t.id === e.tool.id)) b.tools.push(e.tool);
