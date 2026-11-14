@@ -795,8 +795,22 @@ html[data-theme=dark] .pf-item{--bc:#88c0d0}
 .ts-dd{display:none;position:absolute;right:0;top:calc(100% + 6px);min-width:240px;z-index:70;background:var(--panel,#f6f8fb);color:var(--text,#2e3440);border:1px solid var(--border,#cdd3de);border-radius:12px;box-shadow:0 14px 30px rgba(0,0,0,.18);padding:6px;font:14px/1.4 system-ui,sans-serif}
 .ts-wrap.open .ts-dd{display:block}
 .ts-einst{padding:8px 10px;border-bottom:1px solid var(--border,#cdd3de);margin-bottom:4px}
-.ts-einst label{display:flex;align-items:center;justify-content:space-between;gap:8px;font-weight:600}
-.ts-einst select{font:inherit;background:var(--panel2,#eceff4);color:inherit;border:1px solid var(--border,#cdd3de);border-radius:6px;padding:3px 6px}
+.ts-dd .ts-dw{display:flex;align-items:center;gap:8px;font-weight:600;padding:6px 8px;margin:-6px -8px 0;width:calc(100% + 16px)}
+.ts-dw .ts-akt{margin-left:auto;font-weight:400;color:var(--muted,#5b6578);display:flex;align-items:center;gap:6px}
+.ts-pfeil{color:var(--muted,#5b6578)}
+.ts-dwm{display:none;position:absolute;right:calc(100% + 4px);top:0;min-width:200px;margin:0;padding:6px;list-style:none;background:var(--panel,#f6f8fb);border:1px solid var(--border,#cdd3de);border-radius:12px;box-shadow:0 14px 30px rgba(0,0,0,.18)}
+.ts-dwm.auf{display:block}
+.ts-dwm li{position:relative}
+.ts-dwm .ts-dwm{top:-7px}
+.ts-dd .ts-dwm button{display:flex;align-items:center;gap:8px;white-space:nowrap;padding:7px 10px}
+.ts-dwm button[aria-checked=true]{font-weight:700}
+.ts-dwm button[aria-checked=true]::before{content:"✓";width:12px;color:var(--accent,#5e81ac)}
+.ts-dwm button[aria-checked=false]::before{content:"";width:12px}
+.ts-dwm .ts-pfeil{margin-left:auto;padding-left:14px}
+.ts-dd .ts-dwm button.offen{background:var(--panel2,#eceff4)}
+.ts-farbe{width:14px;height:14px;border-radius:4px;border:1px solid rgba(0,0,0,.25);flex:none}
+.ts-einst{position:relative}
+@media (max-width:760px){.ts-dwm{position:static;box-shadow:none;border:0;border-left:2px solid var(--border,#cdd3de);border-radius:0;margin:4px 0 0 8px;padding:2px 0 2px 6px;min-width:0}.ts-dwm .ts-dwm{margin-left:12px}}
 .ts-einst small{display:block;margin-top:4px;color:var(--muted,#5b6578);font-size:12px;line-height:1.35}
 .ts-dd .ts-info{padding:8px 10px;color:var(--muted,#5b6578);border-bottom:1px solid var(--border,#cdd3de);margin-bottom:4px}
 .ts-dd .ts-info b{color:var(--text,#2e3440)}
@@ -817,20 +831,58 @@ html[data-theme=dark] .pf-item{--bc:#88c0d0}
   }
 
   // Einstellung „Design“ (lib/designs.js, nur für Angemeldete, gilt auf diesem Gerät; nav.js schaltet es ein)
-  const DESIGN_HTML = `<div class="ts-einst"><label>Design <select class="ts-design" aria-label="Design"><option value="standard">Standard</option></select></label>
+  // Untermenü mit allen Designs; Varianten mit gruppe (z. B. Titelkarte) als weiteres Untermenü mit Farbfeldern
+  const DESIGN_HTML = `<div class="ts-einst"><button class="ts-dw" type="button" aria-haspopup="menu" aria-expanded="false">Design <span class="ts-akt">Standard</span><span class="ts-pfeil">›</span></button>
+    <ul class="ts-dwm" role="menu" aria-label="Design"></ul>
     <small>Experimentell – nicht alle Übungen sind dafür gebaut. Gilt auf diesem Gerät.</small></div>`;
+  const designZu = () => { if (!menuEl) return; menuEl.querySelectorAll('.ts-dwm.auf').forEach(u => u.classList.remove('auf'));
+    menuEl.querySelectorAll('.ts-dw,.ts-gruppe').forEach(b => { b.setAttribute('aria-expanded', 'false'); b.classList.remove('offen'); }); };
   function designWahl(){
-    const sel = menuEl && menuEl.querySelector('.ts-design'); if (!sel) return;
+    const knopf = menuEl && menuEl.querySelector('.ts-dw'); if (!knopf) return;
+    const menue = menuEl.querySelector('.ts-einst > .ts-dwm');
+    const farbe = d => d.farbe ? `<span class="ts-farbe" style="background:${escH(d.farbe)}"></span>` : '';
+    let akt = 'standard'; try { akt = localStorage.getItem('pf-design') || 'standard'; } catch (e) {}
     const fuellen = () => {
       if (!window.Designs) return;
-      let akt = 'standard'; try { akt = localStorage.getItem('pf-design') || 'standard'; } catch (e) {}
-      sel.innerHTML = Designs.liste().map(d => `<option value="${escH(d.id)}"${d.id === akt ? ' selected' : ''}>${escH(d.name)}</option>`).join('');
+      const L = Designs.liste(), d = L.find(x => x.id === akt) || L[0];
+      knopf.querySelector('.ts-akt').innerHTML = farbe(d) + escH(d.name);
+      const punkt = (x, text) => `<li role="none"><button type="button" role="menuitemradio" aria-checked="${x.id === akt}" data-design="${escH(x.id)}" title="${escH(x.beschreibung)}">${farbe(x)}${escH(text)}</button></li>`;
+      const gesehen = new Set();
+      menue.innerHTML = L.map(x => {
+        if (!x.gruppe) return punkt(x, x.name);
+        if (gesehen.has(x.gruppe)) return ''; gesehen.add(x.gruppe);
+        const teile = L.filter(y => y.gruppe === x.gruppe);
+        return `<li role="none"><button type="button" class="ts-gruppe" role="menuitem" aria-haspopup="menu" aria-expanded="false" aria-checked="${teile.some(y => y.id === akt)}">${escH(x.gruppe)}<span class="ts-pfeil">›</span></button>`
+          + `<ul class="ts-dwm" role="menu" aria-label="${escH(x.gruppe)}">${teile.map(y => punkt(y, y.kurz)).join('')}</ul></li>`;
+      }).join('');
     };
     if (window.Designs) fuellen();
     else { const s = document.createElement('script'); s.src = BASE + 'lib/designs.js'; s.onload = fuellen; document.head.appendChild(s); }
-    sel.addEventListener('change', () => {
-      try { if (sel.value === 'standard') localStorage.removeItem('pf-design'); else localStorage.setItem('pf-design', sel.value); } catch (e) {}
+    const schmal = () => matchMedia('(max-width:760px)').matches, hover = () => matchMedia('(hover: hover)').matches && !schmal();
+    const gruppe = (g, auf) => {
+      menue.querySelectorAll('.ts-gruppe').forEach(x => { const an = x === g && auf; x.classList.toggle('offen', an); x.setAttribute('aria-expanded', String(an)); x.nextElementSibling.classList.toggle('auf', an); });
+    };
+    const oeffne = auf => { menue.classList.toggle('auf', auf); knopf.setAttribute('aria-expanded', String(auf)); if (!auf) gruppe(null, false); };
+    knopf.addEventListener('click', e => { e.stopPropagation(); oeffne(!menue.classList.contains('auf')); });
+    knopf.addEventListener('mouseenter', () => { if (hover()) oeffne(true); });
+    menuEl.querySelector('.ts-einst').addEventListener('mouseleave', () => { if (hover()) oeffne(false); });
+    menue.addEventListener('mouseover', e => {
+      if (!hover()) return;
+      const b = e.target.closest('button'); if (!b) return;
+      if (b.classList.contains('ts-gruppe')) gruppe(b, true);
+      else if (b.closest('.ts-dwm') === menue) gruppe(null, false);
+    });
+    menue.addEventListener('click', e => {
+      e.stopPropagation();
+      const b = e.target.closest('button'); if (!b) return;
+      if (b.classList.contains('ts-gruppe')) { gruppe(b, schmal() ? !b.classList.contains('offen') : true); return; }
+      const id = b.dataset.design;
+      try { if (id === 'standard') localStorage.removeItem('pf-design'); else localStorage.setItem('pf-design', id); } catch (e) {}
       location.reload();
+    });
+    menuEl.addEventListener('keydown', e => {
+      if (e.key !== 'Escape' || !menue.classList.contains('auf')) return;
+      e.stopPropagation(); oeffne(false); knopf.focus();
     });
   }
   // Menü oben rechts: angemeldet (Dropdown mit Abmelden) oder Gast (Klick öffnet die Anmeldung)
@@ -857,11 +909,12 @@ html[data-theme=dark] .pf-item{--bc:#88c0d0}
     menuEl.querySelector('.ts-badge').addEventListener('click', () => {
       if (!aktiv && !L){ showLogin(); return; }
       menuEl.classList.toggle('open');
+      if (!menuEl.classList.contains('open')) designZu();
     });
     const ab = menuEl.querySelector('[data-a="ab"]');
     if (ab) ab.addEventListener('click', abmelden);
     designWahl();
-    document.addEventListener('click', e => { if (menuEl && !menuEl.contains(e.target)) menuEl.classList.remove('open'); });
+    document.addEventListener('click', e => { if (menuEl && !menuEl.contains(e.target)) { menuEl.classList.remove('open'); designZu(); } });
   }
 
   function showLogin(msg){
