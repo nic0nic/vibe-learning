@@ -9,7 +9,8 @@
   Bits zum Anklicken (Lichtschalter-Modell), Übungen zum Umrechnen (lib/aufgaben.js) und Endlos-Modus
   (Aufgaben.training) mit vier Stufen derselben Aufgaben: Auswählen, Auswählen auf Zeit, Eintippen, Eintippen auf Zeit.
   Endlos-Aufgaben: zufällig dezimal ↔ binär (1–63), dezimal ↔ hexadezimal (1–255), binär ↔ hexadezimal (1–255).
-  Gespeichert: zahlensysteme-stand = {schritt, erledigt}, zahlensysteme-endlos-training = {stufe, best}.
+  Gespeichert: zahlensysteme-stand = {schritt, erledigt}, zahlensysteme-endlos-training = {stufe, best},
+  zahlensysteme-systeme = eingeschaltete Basen im Endlosmodus (mind. zwei).
 -->
 <script src="../../katalog.js"></script>
 <script src="../../nav.js"></script>
@@ -45,6 +46,17 @@ sub{font-size:.7em}
 .bitsumme .z{font-size:20px}
 @media (max-width:560px){.bit{width:calc(25% - 5px)}}
 .hex16 td{min-width:34px}
+/* Schalter für die Zahlensysteme im Endlosmodus */
+.systeme{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:4px 0 14px}
+.systeme .lbl{font-weight:600;margin-right:2px}
+.sys{display:inline-flex;align-items:center;gap:8px;font:600 15px system-ui,sans-serif;background:var(--panel);color:var(--text);border:2px solid var(--border);border-radius:999px;padding:5px 14px 5px 6px;cursor:pointer}
+.sys .knopf{position:relative;width:34px;height:20px;border-radius:10px;background:var(--border);transition:background .15s}
+.sys .knopf::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .15s}
+.sys[aria-checked=true]{border-color:var(--accent)}
+.sys[aria-checked=true] .knopf{background:var(--accent)}
+.sys[aria-checked=true] .knopf::after{left:16px}
+.sys:disabled{cursor:not-allowed;opacity:.75}
+.systeme .hinweis{font-size:13px}
 </style>
 </head>
 <body>
@@ -76,6 +88,28 @@ const BASIS = {2: 'Binär', 10: 'Dezimal', 16: 'Hexadezimal'};
 const text = (v, b) => v.toString(b).toUpperCase();
 const zufall = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
 const ARTEN = [[10, 2, 63], [2, 10, 63], [10, 16, 255], [16, 10, 255], [2, 16, 255], [16, 2, 255]];   // von, nach, größte Zahl
+/* Schalter: welche Zahlensysteme vorkommen. Mindestens zwei bleiben an, sonst gibt es nichts umzurechnen. */
+const SYS_KEY = 'zahlensysteme-systeme';
+let systeme = [2, 10, 16];
+try { const g = JSON.parse(localStorage.getItem(SYS_KEY)); if (Array.isArray(g) && g.filter(b => BASIS[b]).length >= 2) systeme = g.filter(b => BASIS[b]); } catch (e) {}
+const arten = () => ARTEN.filter(([von, nach]) => systeme.includes(von) && systeme.includes(nach));
+function systemeBauen(el){
+  const box = el.querySelector('.systeme'); if (!box) return;
+  const zeigen = () => {
+    box.innerHTML = '<span class="lbl">Zahlensysteme:</span>' + [10, 2, 16].map(b => {
+      const an = systeme.includes(b), fest = an && systeme.length <= 2;
+      return `<button type="button" class="sys" role="switch" data-b="${b}" aria-checked="${an}"${fest ? ' disabled title="Mindestens zwei Zahlensysteme bleiben an"' : ''}><span class="knopf"></span>${BASIS[b]}</button>`;
+    }).join('') + (systeme.length <= 2 ? '<span class="muted hinweis">mindestens zwei</span>' : '');
+  };
+  box.addEventListener('click', e => {
+    const k = e.target.closest('.sys'); if (!k || k.disabled) return;
+    const b = +k.dataset.b;
+    systeme = systeme.includes(b) ? systeme.filter(x => x !== b) : [...systeme, b];
+    try { localStorage.setItem(SYS_KEY, JSON.stringify(systeme)); } catch (e) {}
+    zeigen(); box.querySelector(`[data-b="${b}"]`).focus();
+  });
+  zeigen();
+}
 function ablenker(v, max){   // typische Fehler: ±1, ±2, ein Bit falsch, Hex-Ziffern vertauscht, ±16
   const k = [v + 1, v - 1, v + 2, v - 2, v + 16, v - 16];
   for (let i = 0; (1 << i) <= max; i++) k.push(v ^ (1 << i));
@@ -87,7 +121,8 @@ function ablenker(v, max){   // typische Fehler: ±1, ±2, ein Bit falsch, Hex-Z
 let zuletzt = '';
 function neueAufgabe({mc}){
   let art, v;
-  do { art = ARTEN[zufall(0, ARTEN.length - 1)]; v = zufall(art[0] === 2 || art[1] === 2 ? 2 : 1, art[2]); } while (art + v === zuletzt);
+  const A = arten();
+  do { art = A[zufall(0, A.length - 1)]; v = zufall(art[0] === 2 || art[1] === 2 ? 2 : 1, art[2]); } while (art + v === zuletzt);
   zuletzt = art + v;
   const [von, nach, max] = art, loesung = text(v, nach);
   return {
@@ -143,7 +178,8 @@ Aufgaben.sequenz({el:'#app', key:'zahlensysteme', schritte:[
     {typ:'mc', nr:'3.3', frage:`Wie schreibt man ${S('30', 10)} hexadezimal?`, html:true, options:['1E', '1D', '30', 'E1'], correct:[0], why:{1:'1D wäre 16 + 13 = 29.', 2:'Das ist die Dezimalzahl.', 3:'Die Reihenfolge stimmt nicht: zuerst die 16er.'}},
     {typ:'zuordnen', nr:'3.4', frage:'Je 4 Bit sind eine Hex-Ziffer: Ordne zu.', felder:[['a', 'A'], ['f', 'F'], ['s', '7'], ['c', 'C']],
       karten:[{t:'1010', z:'a'}, {t:'1111', z:'f'}, {t:'0111', z:'s'}, {t:'1100', z:'c'}]}]},
-  {id:'endlos', kurz:'Endlos', titel:'Umrechnen', html:'<h2>Endlos umrechnen</h2><p>Zufällige Aufgaben zwischen dezimal, binär und hexadezimal. Wähle oben die Stufe: <b>1</b> Auswählen · <b>2</b> Auswählen auf Zeit · <b>3</b> Eintippen · <b>4</b> Eintippen auf Zeit. Ein Fehler beendet die Serie.</p>',
+  {id:'endlos', kurz:'Endlos', titel:'Umrechnen', html:'<h2>Endlos umrechnen</h2><p>Zufällige Aufgaben zwischen dezimal, binär und hexadezimal. Mit den Schaltern legst du fest, welche Zahlensysteme vorkommen. Wähle die Stufe an den Flammen: <b>1</b> Auswählen · <b>2</b> Auswählen auf Zeit · <b>3</b> Eintippen · <b>4</b> Eintippen auf Zeit. Ein Fehler beendet die Serie.</p><div class="systeme" role="group" aria-label="Zahlensysteme"></div>',
+   nach: systemeBauen,
    training:{stufen:[
      {name:'Auswählen', antwort:'mc', neu:neueAufgabe},
      {name:'Auswählen auf Zeit', antwort:'mc', zeit:{start:12, schritt:-0.2, min:5}, neu:neueAufgabe},
