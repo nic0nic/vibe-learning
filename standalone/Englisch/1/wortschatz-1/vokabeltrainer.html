@@ -1,0 +1,2365 @@
+<!doctype html>
+<html lang="de" data-trainer="vokabeltrainer">
+<head>
+<script>window.PF_EINZELDATEI = true;</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vokabeltrainer – vibe learning</title>
+<!--
+  Vokabeltrainer für Schüler: eigene Vokabelpaare eintragen → Modus wählen → üben.
+  Üben = Aufgaben.training aus lib/aufgaben.js mit einem Wörterbuch aus der eigenen Liste.
+  Gespeichert: vokabeltrainer-liste = {sprachen:[a, b], eintraege:[[a, b], …]} (selbst eingetragen),
+  vokabeltrainer-modus = {richtung, antwort, ablauf, zeit, tippfehler, versuche},
+  vokabeltrainer-<modus>-training = Bestleistung je Modus (von Aufgaben.training).
+  Auswertung: TrainerSync.event aus Aufgaben.training (modus endlos) je Runde/Serie.
+-->
+<script>/* ../../../katalog.js */
+/* Inhaltsverzeichnis der Übungsplattform
+ *
+ * Das ist die einzige Stelle, an der ein neues Tool eingetragen werden muss.
+ * Menüleiste, Startseite, Bereichsseiten, Speichern und Lehrerbereich lesen von hier.
+ *
+ * Aufbau:   Fach → (Jahrgangsstufe) → Bereich → Tool. Ordner in pb_public: <Fach>/<Bereich>/
+ *           bzw. <Fach>/<Stufe>/<Bereich>/, z. B. IT/excel/wenn.html, BWR/9II/anlagen/…
+ * Fach:     id      = Ordnername (z. B. IT, BWR), titel = Anzeige im Fach-Menü, text = Untertitel der Startseite
+ *           bereiche = [Bereich] oder stufen = [{id (Ordner, z. B. 9II), titel (Fach-Menü), kurz (oben in der
+ *           Leiste, z. B. 9), text, bereiche}] für Fächer mit Jahrgangsstufen
+ * Bereich:  id      = Name des Unterordners (nur a–z, 0–9, -), über alle Fächer eindeutig
+ *           titel   = Text in der Menüleiste
+ *           farbe   = Akzentfarbe im dunklen Design (Nord-Farben, nordtheme.com),
+ *           farbeHell = dunklerer Ton derselben Farbe für das helle Design (sonst schlecht lesbar)
+ *           farbeSchrift = optional: hellerer Ton für Schrift im dunklen Design, wenn farbe dort zu wenig Kontrast hat
+ *           Ohne farbe bekommt der Bereich das neutrale Nord-Blau.
+ * Tool:     id      = Kürzel für Speicherstand und Auswertung, über alle Fächer eindeutig (nie mehr ändern,
+ *                     sonst geht der gespeicherte Fortschritt verloren)
+ *           datei   = HTML-Datei im Ordner des Bereichs
+ *           titel, text = Anzeige im Menü und auf den Übersichtsseiten
+ *           bedingt = true: nur sichtbar, wenn der Server es für den angemeldeten Schüler freigibt
+ *                     (z. B. Tipp-Aufgabe, siehe /api/trainer/sichtbar in pb_hooks/tippen.pb.js)
+ *           stufen  = Stufen der Übungen für die Auswertung (lehrer.html): Anzahl oder Liste
+ *                     mit Kurznamen, wenn die Nummern allein missverständlich wären
+ *           gruppe  = optional: Untermenü im Menü (aufklappen beim Darüberfahren) und
+ *                     Zwischenüberschrift auf der Bereichsseite (Tools derselben Gruppe direkt hintereinander)
+ * Bereich mit auswertung: false (z. B. Tools ohne Aufgaben) erscheint nicht im Lehrerbereich.
+ *
+ * In der HTML-Datei eines Tools steht dieselbe id: <html lang="de" data-trainer="…">.
+ * Übersichtsseiten: Bereich <html data-bereich="IT/excel">, Fach bzw. Stufe <html data-gruppe="IT">
+ * bzw. data-gruppe="BWR/9II" mit <div id="pf-start">, Fach mit Stufen <html data-fach="BWR"> mit <div id="pf-fach">.
+ *
+ * Eingereichte Übungen (IT/tools/uebung-erstellen.html → Pull Request) stehen unten zwischen EINREICHUNGEN-ANFANG und -ENDE als
+ * reines JSON: [{"bereich": "<Bereich-id>", "tool": {id, datei, titel, text}}]. Der Server (pb_hooks/einreichen.pb.js)
+ * ergänzt dort; von Hand nur gültiges JSON eintragen. Sie werden an das Ende des Bereichs angehängt.
+ *
+ * Am Ende berechnet: KATALOG.gruppen = [{pfad, fach, stufe, titel, text, bereiche}] (Fach bzw. Fach + Stufe)
+ * und KATALOG.bereiche = alle Bereiche aller Fächer, jeweils mit pfad (Ordner) und gruppe.
+ */
+window.KATALOG = {
+  name: 'vibe learning',
+  untertitel: 'Übungen für den Unterricht. Wähle oben Fach und Bereich aus.',
+  faecher: [
+    {id: 'IT', titel: 'IT', text: 'Informationstechnologie: Tabellenkalkulation, Programmieren, Webseiten, Datenbanken, Tippen und Werkzeuge.',
+      bereiche: [
+        {
+          id: 'excel', titel: 'Excel', farbe: '#a3be8c', farbeHell: '#5e8a45',
+          text: 'Tabellenkalkulation: Funktionen, Bedingungen und Verknüpfungen.',
+          tools: [
+            {id: 'fn',   stufen: 5, datei: 'funktionen_1_6.html', titel: 'SUMME, MIN, MAX …', text: 'SUMME, MITTELWERT, MIN, MAX, ANZAHL und ANZAHL2 – mit Erklärung, Übungen und Endlos-Modus.'},
+            {id: 'wenn', stufen: 9, datei: 'wenn.html',       titel: 'WENN-Funktion',     text: 'Die WENN-Funktion üben – von Bausteinen bis zur eigenen Formel.'},
+            {id: 'wbz', stufen: 6, datei: 'wenn-bezuege.html', titel: 'WENN mit $', text: 'WENN-Formeln auf ganze Spalten übertragen: Grenzwerte mit $ festhalten – Zellen in der Tabelle auswählen wie in Excel.'},
+            {id: 'uo',   stufen: 9, datei: 'und-oder.html',   titel: 'UND / ODER',        text: 'Bedingungen verknüpfen – mit Erarbeitung, Übungen und Endlos-Modus.'},
+            {id: 'uobz', stufen: 6, datei: 'und-oder-bezuege.html', titel: 'UND / ODER mit $', text: 'WENN mit UND/ODER auf ganze Spalten übertragen: Grenzwerte mit $ festhalten – Zellen in der Tabelle auswählen wie in Excel.'},
+            {id: 'bz',   stufen: 6, datei: 'bezuege.html',    titel: 'Zellbezüge $',      text: 'Relative und absolute Bezüge: Formeln übertragen und $-Zeichen richtig setzen.'}
+          ]
+        },
+        {id: 'python',      titel: 'Python', farbe: '#b48ead', farbeHell: '#8a5f84', text: 'Programmieren mit Python.',
+          tools: [
+            {id: 'py', datei: 'editor.html', titel: 'Python-Editor', text: 'Python direkt im Browser schreiben und ausführen – mit Terminal für Ein- und Ausgabe.'},
+            {id: 'pyif', stufen: 3, datei: 'bedingungen.html', titel: 'Bedingte Anweisung', text: 'if, elif und else: 10 Aufgaben mit Erklärung und automatischer Prüfung.'},
+            {id: 'pyfehler', datei: 'fehlersuche.html', titel: 'Fehlersuche', text: 'Syntax-, Laufzeit- und Logikfehler finden und verbessern: In einer Zeile steckt ein Fehler – endlos neue Aufgaben.'}
+          ]
+        },
+        {id: 'html', titel: 'HTML', farbe: '#e8a5c0', farbeHell: '#ad4c7a', text: 'Webseiten gestalten mit HTML und CSS.',
+          tools: [
+            {id: 'htmled', datei: 'editor.html', titel: 'HTML-Editor', text: 'HTML und CSS schreiben und sofort die Vorschau sehen – mit Regelprüfung, Handy-Ansicht und Download der fertigen Seite.'},
+            {id: 'htmlaufbau', gruppe: 'Kurs', stufen: 3, datei: '01-aufbau-webseite.html', titel: '1 Aufbau einer Webseite', text: 'Tags, Elemente, Attribute und das Grundgerüst: 6 Aufgaben an der Webseite der Band Mouse Rat.'},
+            {id: 'htmltext', gruppe: 'Kurs', stufen: 3, datei: '02-text-strukturieren.html', titel: '2 Text strukturieren', text: 'Überschriften, Absätze, Zeilenumbruch, Aufzählung und nummerierte Liste.'},
+            {id: 'htmllinks', gruppe: 'Kurs', stufen: 3, datei: '03-links-bilder.html', titel: '3 Links und Bilder', text: 'Hyperlinks, Sprungmarken und Bilder mit Alternativtext.'},
+            {id: 'htmlcss', gruppe: 'Kurs', stufen: 3, datei: '04-css-grundlagen.html', titel: '4 CSS-Grundlagen', text: 'Stilvorlagen: Regeln aus Selektor, Attribut und Attributwert – Farbe, Schrift, Ausrichtung.'},
+            {id: 'htmlklassen', gruppe: 'Kurs', stufen: 3, datei: '05-klassen-abstaende.html', titel: '5 Klassen und Abstände', text: 'Klassenselektor, Rahmen, Innen- und Außenabstand (Boxmodell).'},
+            {id: 'htmldesign', gruppe: 'Kurs', stufen: 3, datei: '06-design-projekt.html', titel: '6 Design und Projekt', text: 'Gute Gestaltung: Inhalt, Bedienbarkeit, Barrierefreiheit, verschiedene Geräte – dann die eigene Seite entwerfen und herunterladen.'},
+            {id: 'htmlfehler', datei: 'fehlersuche.html', titel: 'Fehlersuche', text: 'Fehler in HTML und CSS finden und verbessern: In einer Zeile steckt ein Fehler – endlos neue Aufgaben.'}
+          ]
+        },
+        {id: 'datenbanken', titel: 'Datenbanken', farbe: '#bf616a', farbeHell: '#a3434c', farbeSchrift: '#e0959b', text: 'Tabellen, Beziehungen und SQL-Abfragen.',
+          tools: [
+            {id: 'sqlfrei', datei: 'filmdatenbank.html', titel: 'Film-Datenbank', text: 'Eigene Abfragen an die Filmdatenbank stellen, ohne Aufgaben – mit Entwurfsansicht oder in SQL.'},
+            {id: 'sql', stufen: 5, datei: 'abfragen.html', titel: 'SQL-Abfragen', text: 'SELECT, FROM, WHERE und ORDER BY an einer Filmdatenbank – mit Erarbeitung (Abfragen ansehen, abändern, Bedingungen ziehen) und Tooltipps, vom Entwurf bis zur eigenen SQL-Abfrage.'},
+            {id: 'sqluo', stufen: ['Access 1', 'Access 2', 'Access 3', 'SQL 1', 'SQL 2', 'SQL 3', 'SQL 4', 'SQL 5'], datei: 'und_oder_datenight.html', titel: 'Datenight: UND / ODER', text: 'Drei Wochen Dates mit immer verrückteren Filmwünschen: Kriterien mit UND und ODER – mit Erarbeitung für Access (Zeilen und Wahrheitstabelle), im Access-Entwurf oder mit Blöcken und SQL.'},
+            {id: 'bericht', datei: 'bericht.html', titel: 'Bericht (Versuch)', text: 'Berichte aus einer Abfrage entwerfen wie in Access: als Liste oder eine Seite je Datensatz, mit Seitenansicht als PDF.'}
+          ]
+        },
+        {id: 'tippen', titel: 'Tippen', farbe: '#8db3ee', farbeHell: '#2b579a', text: 'Schnell und sicher tippen mit zehn Fingern.',
+          tools: [
+            {id: 'tippen', datei: 'pockettype.html', titel: 'pockettype', text: 'Tipptrainer: Wörter und Anschläge pro Minute, Genauigkeit, Bestwerte und Verlauf. Eigenes Projekt auf Basis von Monkeytype (GPL-3.0).'},
+            {id: 'lektionen', datei: 'lektionen.html', titel: 'Lektion üben', text: 'Die 17 Lektionen aus TIPP10 in fester Reihenfolge: von der Grundreihe asdf jklö bis zu Ziffern und Sonderzeichen.'},
+            {id: 'tippaufgabe', bedingt: true, datei: 'aufgabe.html', titel: 'Aufgabe', text: 'Den Text abschreiben, den deine Lehrkraft aufgegeben hat – so oft du willst.'}
+          ]
+        },
+        {id: 'tools', titel: 'Tools', farbe: '#b4bdcc', farbeHell: '#4c566a', auswertung: false, text: 'Werkzeuge für den Unterricht, ohne Aufgaben.',
+          tools: [
+            {id: 'strukto', gruppe: 'Struktogramm', datei: 'struktogramm.html', titel: 'Struktogramm-Editor', text: 'Struktogramme mit der Maus zusammensetzen und als SVG, HTML oder JPG exportieren.'},
+            {id: 'pystrukto', gruppe: 'Struktogramm', datei: 'python-struktogramm.html', titel: 'Python → Struktogramm', text: 'Python-Code eingeben, das Struktogramm entsteht sofort daneben – zum Export oder zum Weiterbearbeiten im Editor.'},
+            {id: 'uebung-erstellen', gruppe: 'Übungen', datei: 'uebung-erstellen.html', titel: 'Übung erstellen', text: 'Eigene Übungen im Baukasten zusammenstellen, testen und als Datei oder als Lernpaket für ByCS herunterladen.'}
+          ]
+        }
+      ]
+    },
+    {id: 'BWR', titel: 'BWR', text: 'Betriebswirtschaftslehre/Rechnungswesen.',
+      stufen: [
+        {id: '7II', titel: 'Jahrgangsstufe 7', kurz: '7', text: 'BWR, Jahrgangsstufe 7 (Wahlpflichtfächergruppe II).',
+          bereiche: [
+            {id: 'aufwand-ertrag', titel: 'Aufwendungen und Erträge', farbe: '#88c0d0', farbeHell: '#3b7f8c', text: 'Aufwands- und Ertragskonten: Einkauf und Verkauf buchen.',
+              tools: [
+                {id: 'chat-uefe', datei: 'lernchat-verkauf-eigener-erzeugnisse.html', titel: 'Lern-Chat: Verkauf eigener Erzeugnisse', text: 'Im Chat Schritt für Schritt den Buchungssatz für einen Verkauf erarbeiten: BK an UEFE, UST.'}
+              ]}
+          ]
+        },
+        {id: '9II', titel: 'Jahrgangsstufe 9', kurz: '9', text: 'BWR, Jahrgangsstufe 9 (Wahlpflichtfächergruppe II).',
+          bereiche: [
+            {id: 'unternehmensfuehrung', titel: 'Unternehmensführung', farbe: '#81a1c1', farbeHell: '#4f73a3', text: 'Übungen zur Unternehmensführung.', tools: []},
+            {id: 'anlagen', titel: 'Anlagen', farbe: '#a3be8c', farbeHell: '#5e8a45', text: 'Übungen zu Anlagen.', tools: []},
+            {id: 'finanzierung', titel: 'Finanzierung', farbe: '#ebcb8b', farbeHell: '#8a6d1f', text: 'Übungen zur Finanzierung.',
+              tools: [
+                {id: 'bilanz', stufen: ['Bilanzposten', 'AV/UV · EK/FK', 'Goldene Regel'], datei: 'bilanz.html', titel: 'Bilanz-Modell', text: 'Wie Buchungen die Bilanz verändern: Aktivtausch, Passivtausch, Aktiv-Passiv-Mehrung und -Minderung – eingeteilt nach Bilanzposten, nach AV/UV und EK/FK oder nach der Goldenen Finanzierungsregel.'},
+                {id: 'bankkredit', datei: 'kredite-bank.html', titel: 'Kredite bei der Bank', text: 'Erarbeitung (Heft Kap. 5): Kreditfähigkeit und Kreditwürdigkeit zuordnen, Sicherheiten nennen, Disagio und Auszahlungsbetrag berechnen.'},
+                {id: 'zins', datei: 'zinsrechnung.html', titel: 'Zinsrechnung', text: 'Von der Prozentrechnung zur Tageszinsformel: Jahreszinsen, Tageszinsen, Zinstage und Umstellen nach K, p und t selbstständig erarbeiten – mit Endlos-Modus (Heft Zinsrechnung).'},
+                {id: 'effzins', datei: 'effektiver-zinssatz.html', titel: 'Effektiver Zinssatz', text: 'Kreditangebote mit Disagio vergleichen: tatsächliche Kreditkosten, effektiven Zinssatz berechnen, Kreditaufnahme buchen – mit Endlos-Modus (Heft Effektiver Zinssatz).'},
+                {id: 'darlehen', datei: 'darlehensarten.html', titel: 'Darlehensarten', text: 'Abzahlungs-, Annuitäten- und Festdarlehen: Tilgungspläne als Formular ausfüllen, Zinskosten vergleichen und das passende Darlehen wählen (Heft Darlehensarten).'},
+                {id: 'kurzkredit', datei: 'kurzfristige-kredite.html', titel: 'Kontokorrent-, Dispo- und Lieferantenkredit', text: 'Erarbeitung zu kurzfristigen Krediten (Heft Kap. 7): Lieferantenkredit auf der Zeitleiste ausprobieren, Merkmale zuordnen, Skonto berechnen und Kosten vergleichen.'}
+              ]},
+            {id: 'kapitalanlage', titel: 'Kapitalanlage', farbe: '#b48ead', farbeHell: '#8a5f84', text: 'Übungen zur Kapitalanlage.', tools: []},
+            {id: 'forderungen', titel: 'Forderungen', farbe: '#bf616a', farbeHell: '#a3434c', farbeSchrift: '#e0959b', text: 'Übungen zu Forderungen.', tools: []}
+          ]
+        }
+      ]
+    },
+    {id: 'Englisch', titel: 'Englisch', text: 'Englisch: Wortschatz und mehr.',
+      stufen: [
+        {id: '1', titel: 'Jahrgangsstufe 1', kurz: '1', text: 'Englisch, Jahrgangsstufe 1.',
+          bereiche: [
+            {id: 'wortschatz-1', titel: 'Wortschatz', farbe: '#d08770', farbeHell: '#a65a32', text: 'Vokabeln üben: anklicken, schreiben, auf Zeit.',
+              tools: [
+                {id: 'vokabel-demo', datei: 'vokabel-demo.html', titel: 'Vokabel-Demo', text: '50 Grundwörter in fünf Themen (Familie, Schule, Tiere, Essen, Farben und Zahlen): erst anklicken, dann schreiben, dann gemischt auf Zeit.'},
+                {id: 'vokabeltrainer', datei: 'vokabeltrainer.html', titel: 'Vokabeltrainer', text: 'Eigene Vokabeln eintragen oder einfügen, Modus wählen (Richtung, schreiben oder auswählen, einmal alle oder endlos, mit oder ohne Zeit) und los geht’s.'}
+              ]}
+          ]
+        },
+        {id: '2', titel: 'Jahrgangsstufe 2', kurz: '2', text: 'Englisch, Jahrgangsstufe 2.',
+          bereiche: []
+        },
+        {id: '3', titel: 'Jahrgangsstufe 3', kurz: '3', text: 'Englisch, Jahrgangsstufe 3.',
+          bereiche: []
+        },
+        {id: '4', titel: 'Jahrgangsstufe 4', kurz: '4', text: 'Englisch, Jahrgangsstufe 4.',
+          bereiche: []
+        },
+        {id: '5', titel: 'Jahrgangsstufe 5', kurz: '5', text: 'Englisch, Jahrgangsstufe 5.',
+          bereiche: []
+        }
+      ]
+    }
+  ]
+};
+
+window.KATALOG.einreichungen = /* EINREICHUNGEN-ANFANG */ [] /* EINREICHUNGEN-ENDE */;
+
+// Gruppen (Fach bzw. Fach + Jahrgangsstufe) und alle Bereiche mit Ordner, für nav.js, sync.js und lehrer.html
+(function (K) {
+  K.gruppen = [];
+  K.faecher.forEach(f => (f.stufen
+    ? f.stufen.map(s => ({pfad: f.id + '/' + s.id, fach: f, stufe: s, titel: f.titel + ' ' + (s.kurz || s.titel), text: s.text || f.text, bereiche: s.bereiche}))
+    : [{pfad: f.id, fach: f, stufe: null, titel: f.titel, text: f.text, bereiche: f.bereiche}]).forEach(g => K.gruppen.push(g)));
+  K.bereiche = [].concat(...K.gruppen.map(g => g.bereiche.map(b => Object.assign(b, {pfad: g.pfad + '/' + b.id, gruppe: g}))));
+  (K.einreichungen || []).forEach(e => {
+    const b = K.bereiche.find(x => x.id === e.bereich);
+    if (b && e.tool && !b.tools.some(t => t.id === e.tool.id)) b.tools.push(e.tool);
+  });
+})(window.KATALOG);
+
+</script>
+<script>/* ../../../nav.js */
+/* Menüleiste der Übungsplattform
+ *
+ * Baut oben auf jeder Seite die Leiste: vorne das Fach-Menü (IT, BWR › Jahrgangsstufe 9 …),
+ * dahinter die Bereiche des gewählten Fachs aus katalog.js.
+ * Fährt man mit der Maus über einen Bereich (am Handy: antippen), klappen
+ * dessen Übungen auf. Außerdem füllt das Skript die Startseite bzw. Fachseite (#pf-start),
+ * die Auswahl der Jahrgangsstufe (#pf-fach) und die Übersichtsseite eines Bereichs (#pf-bereich).
+ * Das zuletzt gewählte Fach merkt sich der Browser (localStorage pf-fach) für die Startseite.
+ *
+ * Fehlt katalog.js oder nav.js, läuft das Tool trotzdem – nur ohne Menüleiste.
+ * Tools mit gruppe (katalog.js) stehen im Menü in einem Untermenü (klappt beim Darüberfahren auf)
+ * und auf der Bereichsseite unter einer Zwischenüberschrift.
+ * Tools mit bedingt: true (katalog.js) sind zunächst ausgeblendet; sync.js blendet sie ein,
+ * wenn der Server sie für den angemeldeten Schüler freigibt (Klasse pf-sichtbar).
+ * In Einzeldateien (werkzeuge/einzeldateien.py, window.PF_EINZELDATEI) zeigt die
+ * Leiste nur Name und Hell/Dunkel-Knopf, weil es keine anderen Seiten gibt.
+ * Rechts in der Leiste sitzt auf jeder Seite ein Vollbild-Knopf (auch in Einzeldateien und ByCS-Paketen).
+ * Läuft die Seite in einem iframe ohne allowfullscreen (z. B. Moodle-Player), wird das iframe-Element
+ * im übergeordneten Fenster bildschirmfüllend, solange es denselben Ursprung hat. Geht beides nicht
+ * (z. B. iPhone), fehlt der Knopf. Browser beenden Vollbild bei jedem Seitenwechsel (dauerhaft: F11).
+ * Läuft die Seite in einem iframe gleichen Ursprungs (ByCS/Moodle-Player), gibt es daneben „Großansicht“:
+ * Das oberste erreichbare iframe-Element wird per CSS über das ganze Fenster gelegt. Geht auch dort, wo
+ * Vollbild nicht klappt (iPad, Apps); bleibt für die Sitzung eingeschaltet (sessionStorage pf-gross), Esc beendet.
+ * Design (lib/designs.js): Haben Angemeldete im Konto-Menü (sync.js) ein anderes Design gewählt (localStorage pf-design),
+ * lädt nav.js designs.js nach und schaltet es ein – außer die Seite bringt selbst ein Design mit (html[data-design]).
+ * Experimentell: handgebaute Seiten (Excel, SQL …) sehen dann nur teilweise anders aus.
+ * Unten auf jeder Seite (außer Einzeldateien) stehen Links zu Impressum und Datenschutz (pb_public/impressum.html, datenschutz.html).
+ */
+(function () {
+  'use strict';
+  const K = window.KATALOG;
+  if (!K) return;
+
+  // Wurzel der Plattform = Ordner, in dem nav.js liegt (funktioniert auch per Doppelklick)
+  const me = document.currentScript && document.currentScript.src;
+  const BASE = me ? me.replace(/[^/]*$/, '') : '';
+  const root = document.documentElement;
+  const TOOL = root.dataset.trainer || '';
+  // Aktueller Bereich: über das Tool oder <html data-bereich="IT/excel">.
+  // Aktuelle Gruppe (Fach bzw. Fach + Jahrgangsstufe): über den Bereich, <html data-gruppe="BWR/9II">
+  // oder <html data-fach="BWR">, sonst die zuletzt gewählte (localStorage pf-fach), sonst die erste.
+  const BER = K.bereiche.find(b => b.tools.some(t => t.id === TOOL)) || K.bereiche.find(b => b.pfad === root.dataset.bereich) || null;
+  const BEREICH = BER ? BER.id : '';
+  // gewähltes Design (Einstellung im Konto-Menü) nachladen; Seiten mit eigenem Design behalten es
+  let wunsch = null; try { wunsch = localStorage.getItem('pf-design'); } catch (e) {}
+  if (wunsch && wunsch !== 'standard' && !root.dataset.design){
+    root.dataset.design = wunsch;
+    const s = document.createElement('script'); s.src = BASE + 'lib/designs.js';
+    s.onload = () => { if (window.Designs) Designs.anwenden(wunsch); };
+    document.head.appendChild(s);
+  }
+  const FACHSEITE = K.faecher.find(f => f.id === root.dataset.fach) || null;
+  let GRUPPE = BER ? BER.gruppe : K.gruppen.find(g => g.pfad === root.dataset.gruppe) || (FACHSEITE && K.gruppen.find(g => g.fach === FACHSEITE));
+  if (GRUPPE){ try { localStorage.setItem('pf-fach', GRUPPE.pfad); } catch (e) {} }
+  else {
+    let zuletzt = null;
+    try { zuletzt = localStorage.getItem('pf-fach'); } catch (e) {}
+    GRUPPE = K.gruppen.find(g => g.pfad === zuletzt) || K.gruppen[0];
+  }
+
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+  const bereichUrl = b => BASE + b.pfad + '/index.html';
+  const toolUrl = (b, t) => BASE + b.pfad + '/' + t.datei;
+  const gruppeUrl = g => BASE + g.pfad + '/index.html';
+  const fachUrl = f => BASE + f.id + '/index.html';
+
+  const CSS = `
+.pf-fuss{max-width:1400px;margin:28px auto 0;padding:14px 16px 22px;text-align:center;font:13px system-ui,sans-serif;color:var(--muted,#5b6578)}
+.pf-fuss a{color:inherit}
+.pf-nav{background:var(--panel,#f6f8fb);color:var(--text,#2e3440);border-bottom:1px solid var(--border,#cdd3de);position:relative;z-index:60;font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.pf-in{max-width:1400px;margin:0 auto;display:flex;align-items:center;gap:6px;padding:0 16px;min-height:50px}
+.pf-brand{font:800 18px ui-monospace,Consolas,"Liberation Mono",monospace;color:inherit;text-decoration:none;margin-right:14px;white-space:nowrap}
+.pf-brand span{color:var(--accent-text,var(--accent,#5e81ac))}
+.pf-menu{display:flex;gap:2px;list-style:none;margin:0;padding:0}
+.pf-item{position:relative;--bc:#5e81ac}
+html[data-theme=dark] .pf-item{--bc:#88c0d0}
+.pf-item>a{display:flex;align-items:center;gap:5px;padding:14px 11px;color:inherit;text-decoration:none;font-weight:600;border-bottom:3px solid transparent;white-space:nowrap}
+.pf-item>a::after{content:"";width:6px;height:6px;border:solid currentColor;border-width:0 2px 2px 0;transform:rotate(45deg) translateY(-2px);opacity:.5}
+.pf-item:hover>a,.pf-item.open>a{color:var(--bc)}
+.pf-item>a[aria-current]{border-bottom-color:var(--bc)}
+.pf-drop{display:none;position:absolute;top:100%;left:0;min-width:280px;background:var(--panel,#f6f8fb);border:1px solid var(--border,#cdd3de);border-radius:0 0 12px 12px;box-shadow:0 14px 30px rgba(0,0,0,.18);padding:6px;list-style:none;margin:0}
+.pf-item:hover .pf-drop,.pf-item:focus-within .pf-drop,.pf-item.open .pf-drop{display:block}
+.pf-drop a{display:block;padding:8px 10px;border-radius:8px;color:inherit;text-decoration:none}
+.pf-drop a:hover,.pf-drop a:focus{background:var(--panel2,#eceff4);outline:none}
+.pf-drop a[aria-current]{color:var(--bc);font-weight:600}
+.pf-drop small{display:block;color:var(--muted,#5b6578);font-size:13px}
+.pf-drop .pf-all{font-size:13px;color:var(--muted,#5b6578);border-top:1px solid var(--border,#cdd3de);border-radius:0 0 8px 8px;margin-top:4px}
+.pf-fach{margin-right:8px}
+.pf-fach>a{border:1px solid var(--border,#cdd3de);border-radius:10px;background:var(--panel2,#eceff4);padding:6px 10px!important;margin:6px 0}
+.pf-fach>a small{font-weight:500;color:var(--muted,#5b6578);margin-right:2px}
+.pf-sub{position:relative}
+.pf-sub>a{display:flex!important;align-items:center;justify-content:space-between;gap:12px}
+.pf-sub>a::after{content:"";width:6px;height:6px;border:solid currentColor;border-width:0 2px 2px 0;transform:rotate(-45deg);opacity:.5;flex:none}
+.pf-drop2{display:none;position:absolute;left:100%;top:-7px;min-width:250px;background:var(--panel,#f6f8fb);border:1px solid var(--border,#cdd3de);border-radius:12px;box-shadow:0 14px 30px rgba(0,0,0,.18);padding:6px;list-style:none;margin:0}
+.pf-sub.links>.pf-drop2{left:auto;right:100%}
+.pf-sub:hover>.pf-drop2,.pf-sub:focus-within>.pf-drop2,.pf-sub.open>.pf-drop2{display:block}
+.pf-drop .pf-leer{padding:8px 10px;color:var(--muted,#5b6578);font-style:italic}
+.pf-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.pf-btn{background:var(--panel2,#eceff4);border:1px solid var(--border,#cdd3de);color:inherit;border-radius:10px;width:38px;height:38px;display:grid;place-items:center;cursor:pointer;font-size:17px;padding:0}
+.pf-burger{display:none}
+.pf-einzeln .pf-menu{display:none!important}
+.pf-bedingt:not(.pf-sichtbar){display:none!important}
+@media (max-width:760px){
+  .pf-burger{display:grid}
+  .pf-menu{display:none;position:absolute;top:100%;left:0;right:0;flex-direction:column;background:var(--panel,#f6f8fb);border-bottom:1px solid var(--border,#cdd3de);box-shadow:0 14px 30px rgba(0,0,0,.18);padding:6px 16px 12px;max-height:80vh;overflow:auto}
+  .pf-nav.open .pf-menu{display:flex}
+  .pf-item>a{padding:10px 0 4px;border:0}
+  .pf-item>a::after{display:none}
+  .pf-drop{display:block;position:static;min-width:0;border:0;box-shadow:none;padding:0 0 4px 10px}
+  .pf-drop2{display:block;position:static;min-width:0;border:0;box-shadow:none;padding:0 0 0 12px}
+  .pf-sub>a::after{display:none}
+}
+.pf-knapp .ts-badge.gast .ts-lang{display:none}
+/* dasselbe, wenn die Leiste zu voll ist (nav.js setzt pf-eng) */
+.pf-eng .pf-burger{display:grid}
+.pf-eng .pf-menu{display:none;position:absolute;top:100%;left:0;right:0;flex-direction:column;background:var(--panel,#f6f8fb);border-bottom:1px solid var(--border,#cdd3de);box-shadow:0 14px 30px rgba(0,0,0,.18);padding:6px 16px 12px;max-height:80vh;overflow:auto}
+.pf-eng.open .pf-menu{display:flex}
+.pf-eng .pf-item>a{padding:10px 0 4px;border:0}
+.pf-eng .pf-item>a::after{display:none}
+.pf-eng .pf-drop{display:block;position:static;min-width:0;border:0;box-shadow:none;padding:0 0 4px 10px}
+.pf-eng .pf-drop2{display:block;position:static;min-width:0;border:0;box-shadow:none;padding:0 0 0 12px}
+.pf-eng .pf-sub>a::after{display:none}
+.pf-fade,.pf-fade *{transition:background-color .35s,color .35s,border-color .35s,fill .35s!important}
+.pf-gesperrt{opacity:.5;cursor:default!important}
+@media print{.pf-nav{display:none}}`;
+
+  // Farben der Bereiche (katalog.js: farbe = dunkles Design, farbeHell = helles Design,
+  // farbeSchrift = optional hellerer Ton für Schrift im dunklen Design).
+  // --accent gilt für die ganze Seite des aktuellen Bereichs, --bc nur für den eigenen Menüpunkt.
+  function akzentCss(){
+    let css = '';
+    K.bereiche.forEach(b => {
+      if (!b.farbe) return;
+      const dunkel = b.farbeSchrift || b.farbe;
+      css += `\n.pf-item[data-b="${b.id}"]{--bc:${b.farbeHell || b.farbe}}\nhtml[data-theme=dark] .pf-item[data-b="${b.id}"]{--bc:${dunkel}}`;
+      if (b.id === BEREICH) css += `\nhtml[data-theme]{--accent:${b.farbeHell || b.farbe};--accent-text:${b.farbeHell || b.farbe}}\nhtml[data-theme=dark]{--accent:${b.farbe};--accent-text:${dunkel}}`;
+    });
+    return css;
+  }
+
+  const SONNE = '☀', MOND = '☾';
+
+  /* ---------- Vollbild ---------- */
+  const VOLL_AN = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg>';
+  const VOLL_AUS = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4v5H4M20 9h-5V4M15 20v-5h5M4 15h5v5"/></svg>';
+  const darfVoll = d => { try { return !!(d.fullscreenEnabled || d.webkitFullscreenEnabled); } catch (e) { return false; } };
+  const vollElement = d => { try { return d.fullscreenElement || d.webkitFullscreenElement || null; } catch (e) { return null; } };
+  // Element, das in Vollbild geht: die Seite selbst oder, im iframe ohne Erlaubnis, das iframe-Element
+  // im nächsthöheren Fenster gleichen Ursprungs, das Vollbild erlaubt
+  function vollZiel(){
+    if (darfVoll(document)) return document.documentElement;
+    let w = window;
+    try {
+      while (w.frameElement){
+        const el = w.frameElement, d = el.ownerDocument;
+        if (darfVoll(d)) return el;
+        w = d.defaultView;
+      }
+    } catch (e) {}                                   // fremder Ursprung
+    return null;
+  }
+  const VOLL = vollZiel();
+  const imVoll = () => !!VOLL && vollElement(VOLL.ownerDocument) === VOLL;
+  function vollUmschalten(){
+    const d = VOLL.ownerDocument;
+    try {
+      if (imVoll()) (d.exitFullscreen || d.webkitExitFullscreen).call(d);
+      else { const r = (VOLL.requestFullscreen || VOLL.webkitRequestFullscreen).call(VOLL); if (r && r.catch) r.catch(() => {}); }
+    } catch (e) {}
+  }
+  function vollKnopf(btn){
+    const an = imVoll();
+    btn.innerHTML = an ? VOLL_AUS : VOLL_AN;
+    btn.setAttribute('aria-label', an ? 'Vollbild beenden' : 'Vollbild');
+    btn.title = an ? 'Vollbild beenden (Esc)' : 'Vollbild – gilt für diese Seite, für alle Seiten F11';
+    btn.setAttribute('aria-pressed', an);
+  }
+
+  /* ---------- Großansicht (nur im iframe): iframe-Element im obersten erreichbaren Fenster über alles legen ---------- */
+  const GROSS_AN = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M20 4l-7 7M10 20H4v-6M4 20l7-7"/></svg>';
+  const GROSS_AUS = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10h-6V4M14 10l7-7M4 14h6v6M10 14l-7 7"/></svg>';
+  const GROSS = (() => {
+    let el = null, w = window;
+    try { while (w.frameElement){ el = w.frameElement; w = el.ownerDocument.defaultView; } } catch (e) {}   // fremder Ursprung: bis hierher
+    return el;
+  })();
+  const GROSS_CSS = {position: 'fixed', top: '0', left: '0', width: '100%', height: '100%', 'max-width': 'none', 'max-height': 'none',
+    margin: '0', border: '0', 'z-index': '2147483000', background: '#fff'};
+  const ss = {
+    get(k){ try { return sessionStorage.getItem(k); } catch (e) { return null; } },
+    set(k, v){ try { if (v == null) sessionStorage.removeItem(k); else sessionStorage.setItem(k, v); } catch (e) {} }
+  };
+  const imGross = () => { try { return !!GROSS && GROSS.dataset.pfGross === '1'; } catch (e) { return false; } };
+  function gross(an){
+    if (!GROSS) return;
+    try {
+      const body = GROSS.ownerDocument.body;
+      if (an && !imGross()){
+        GROSS.dataset.pfGrossStil = GROSS.getAttribute('style') || '';
+        GROSS.dataset.pfGrossBody = body.style.overflow || '';
+        Object.keys(GROSS_CSS).forEach(k => GROSS.style.setProperty(k, GROSS_CSS[k], 'important'));
+        body.style.overflow = 'hidden';
+        GROSS.dataset.pfGross = '1';
+      } else if (!an && imGross()){
+        GROSS.setAttribute('style', GROSS.dataset.pfGrossStil);
+        body.style.overflow = GROSS.dataset.pfGrossBody;
+        ['pfGross', 'pfGrossStil', 'pfGrossBody'].forEach(k => delete GROSS.dataset[k]);
+      }
+    } catch (e) {}
+    ss.set('pf-gross', an ? '1' : null);
+    const b = document.getElementById('pfGross'); if (b) grossKnopf(b);
+  }
+  function grossKnopf(btn){
+    const an = imGross();
+    btn.innerHTML = an ? GROSS_AUS : GROSS_AN;
+    btn.setAttribute('aria-label', an ? 'Großansicht beenden' : 'Großansicht');
+    btn.title = an ? 'Großansicht beenden (Esc)' : 'Großansicht – Übung füllt das ganze Fenster (gut auf dem iPad)';
+    btn.setAttribute('aria-pressed', an);
+  }
+  if (GROSS && ss.get('pf-gross') === '1') gross(true);   // in dieser Sitzung schon eingeschaltet
+  if (GROSS) document.addEventListener('keydown', e => { if (e.key === 'Escape' && imGross() && !vollElement(document)) gross(false); });
+
+  function theme(){ return root.dataset.theme === 'dark' ? 'dark' : 'light'; }
+
+  // Tools derselben gruppe (katalog.js) hintereinander → [{name, tools}], ohne gruppe: name ''
+  function gruppen(b){
+    const out = [];
+    b.tools.forEach(t => {
+      const g = out[out.length - 1];
+      if (g && g.name === (t.gruppe || '')) g.tools.push(t); else out.push({name: t.gruppe || '', tools: [t]});
+    });
+    return out;
+  }
+  const toolLi = (b, t) => `<li${t.bedingt ? ` class="pf-bedingt" data-tool="${esc(t.id)}"` : ''}><a href="${toolUrl(b, t)}"${t.id === TOOL ? ' aria-current="page"' : ''}>${esc(t.titel)}</a></li>`;
+
+  // Fach-Menü: Fächer ohne Stufen direkt, Fächer mit Jahrgangsstufen als Untermenü (wie gruppe bei Tools)
+  function fachMenue(){
+    const eintrag = (g, text) => `<li><a href="${gruppeUrl(g)}"${g === GRUPPE ? ' aria-current="page"' : ''}>${esc(text)}</a></li>`;
+    return `<li class="pf-item pf-fach"><a href="${gruppeUrl(GRUPPE)}" aria-haspopup="true" title="Fach wechseln"><small>Fach</small> ${esc(GRUPPE.titel)}</a>
+      <ul class="pf-drop">${K.faecher.map(f => f.stufen
+        ? `<li class="pf-sub"><a href="${fachUrl(f)}"${GRUPPE.fach === f ? ' aria-current="true"' : ''} aria-haspopup="true">${esc(f.titel)}</a><ul class="pf-drop2">${f.stufen.map(st => eintrag(K.gruppen.find(g => g.stufe === st), st.titel)).join('')}</ul></li>`
+        : eintrag(K.gruppen.find(g => g.fach === f), f.titel)).join('')}</ul></li>`;
+  }
+
+  function buildNav(){
+    const s = document.createElement('style'); s.textContent = CSS + akzentCss(); document.head.appendChild(s);
+    const nav = document.createElement('nav');
+    nav.className = 'pf-nav' + (window.PF_EINZELDATEI ? ' pf-einzeln' : '');
+    nav.setAttribute('aria-label', 'Bereiche');
+    const name = esc(K.name).replace(/^(\S+)/, '<span>$1</span>');
+    const EINZELN = !!window.PF_EINZELDATEI;
+    nav.innerHTML = `<div class="pf-in">
+      ${EINZELN ? `<span class="pf-brand">${name}</span>` : `<a class="pf-brand" href="${BASE}index.html">${name}</a>`}
+      <ul class="pf-menu">${fachMenue()}${GRUPPE.bereiche.map(b => `
+        <li class="pf-item" data-b="${esc(b.id)}">
+          <a href="${bereichUrl(b)}"${b.id === BEREICH ? ' aria-current="true"' : ''}>${esc(b.titel)}</a>
+          <ul class="pf-drop">${b.tools.length
+            ? gruppen(b).map(g => g.name
+              ? `<li class="pf-sub"><a href="${bereichUrl(b)}"${g.tools.some(t => t.id === TOOL) ? ' aria-current="true"' : ''} aria-haspopup="true">${esc(g.name)}</a><ul class="pf-drop2">${g.tools.map(t => toolLi(b, t)).join('')}</ul></li>`
+              : g.tools.map(t => toolLi(b, t)).join('')).join('')
+              + `<li><a class="pf-all" href="${bereichUrl(b)}">Alle Übungen zu ${esc(b.titel)}</a></li>`
+            : '<li class="pf-leer">Hier entstehen bald Übungen.</li>'}
+          </ul>
+        </li>`).join('')}
+      </ul>
+      <div class="pf-right">
+        ${GROSS ? '<button class="pf-btn" id="pfGross" type="button"></button>' : ''}
+        ${VOLL ? '<button class="pf-btn" id="pfVoll" type="button"></button>' : ''}
+        ${document.getElementById('themeBtn') ? '' : `<button class="pf-btn" id="pfTheme" type="button" aria-label="Hell/Dunkel umschalten">${theme() === 'dark' ? SONNE : MOND}</button>`}
+        ${EINZELN ? '' : '<button class="pf-btn pf-burger" type="button" aria-label="Menü">☰</button>'}
+      </div>
+    </div>`;
+    document.body.insertBefore(nav, document.body.firstChild);
+    if (!EINZELN){
+      const fuss = document.createElement('footer');
+      fuss.className = 'pf-fuss';
+      fuss.innerHTML = `<a href="${BASE}impressum.html">Impressum</a> · <a href="${BASE}datenschutz.html">Datenschutz</a>`;
+      document.body.appendChild(fuss);
+    }
+
+    // Passt die Leiste nicht in die Breite (Fach-Menü, lange Bereichsnamen, Anmeldung), kommt das Menü hinter ☰
+    const innen = nav.querySelector('.pf-in');
+    // Erst den Zusatz „– Fortschritt wird nicht gespeichert“ weglassen (pf-knapp), erst dann ☰ (pf-eng)
+    const voll = () => innen.scrollWidth > innen.clientWidth + 1;
+    const platz = () => {
+      nav.classList.remove('pf-eng', 'pf-knapp');
+      if (EINZELN || !voll()) return;
+      nav.classList.add('pf-knapp');
+      if (voll()) nav.classList.add('pf-eng');
+    };
+    platz();
+    addEventListener('resize', platz);
+    new MutationObserver(platz).observe(nav.querySelector('.pf-right'), {childList: true, subtree: true, characterData: true});
+    if (document.fonts) document.fonts.ready.then(platz);
+    const schmal = () => matchMedia('(max-width:760px)').matches || nav.classList.contains('pf-eng');
+
+    const burger = nav.querySelector('.pf-burger');
+    if (burger) burger.addEventListener('click', () => nav.classList.toggle('open'));
+    const gb = nav.querySelector('#pfGross');
+    if (gb){ grossKnopf(gb); gb.addEventListener('click', () => gross(!imGross())); }
+    const vb = nav.querySelector('#pfVoll');
+    if (vb){
+      vollKnopf(vb);
+      vb.addEventListener('click', vollUmschalten);
+      new Set([document, VOLL.ownerDocument]).forEach(d => ['fullscreenchange', 'webkitfullscreenchange'].forEach(ev => d.addEventListener(ev, () => vollKnopf(vb))));
+    }
+    const tb = nav.querySelector('#pfTheme');
+    if (tb) tb.addEventListener('click', () => {
+      const t = theme() === 'dark' ? 'light' : 'dark';
+      root.dataset.theme = t; tb.textContent = t === 'dark' ? SONNE : MOND;
+      try { localStorage.setItem('wenn-theme', t); } catch (e) {}
+    });
+
+    // Geräte ohne Maus: erstes Antippen klappt auf, zweites öffnet die Bereichsseite
+    const items = [...nav.querySelectorAll('.pf-item')];
+    if (matchMedia('(hover: none)').matches) items.forEach(li => li.firstElementChild.addEventListener('click', e => {
+      if (schmal() || li.classList.contains('open')) return;
+      e.preventDefault();
+      items.forEach(x => x.classList.toggle('open', x === li));
+    }));
+    // Untermenüs (gruppe): nach links aufklappen, wenn rechts kein Platz ist; ohne Maus erst antippen
+    nav.querySelectorAll('.pf-sub').forEach(sub => {
+      sub.addEventListener('mouseenter', () => {
+        const r = sub.getBoundingClientRect();
+        sub.classList.toggle('links', r.right + 260 > innerWidth);
+      });
+      if (matchMedia('(hover: none)').matches) sub.firstElementChild.addEventListener('click', e => {
+        if (schmal() || sub.classList.contains('open')) return;
+        e.preventDefault();
+        const r = sub.getBoundingClientRect();
+        sub.classList.toggle('links', r.right + 260 > innerWidth);
+        sub.classList.add('open');
+      });
+    });
+    document.addEventListener('click', e => { if (!nav.contains(e.target)){ nav.querySelectorAll('.pf-sub.open').forEach(x => x.classList.remove('open')); items.forEach(x => x.classList.remove('open')); nav.classList.remove('open'); } });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape'){ items.forEach(x => x.classList.remove('open')); nav.classList.remove('open'); } });
+  }
+
+  /* ---------- Übersichtsseiten ---------- */
+  // Tools mit gruppe (katalog.js) stehen unter einer gemeinsamen Zwischenüberschrift
+  function kacheln(b){
+    if (!b.tools.length) return '<p class="pf-hinweis">Hier entstehen bald Übungen.</p>';
+    const kachel = t => `<a class="pf-tile${t.bedingt ? ' pf-bedingt' : ''}"${t.bedingt ? ` data-tool="${esc(t.id)}"` : ''} href="${toolUrl(b, t)}"><b>${esc(t.titel)}</b><span>${esc(t.text)}</span></a>`;
+    return gruppen(b).map(g => (g.name ? `<h3 class="pf-gruppe">${esc(g.name)}</h3>` : '') + `<div class="pf-grid">${g.tools.map(kachel).join('')}</div>`).join('');
+  }
+  function buildPages(){
+    const start = document.getElementById('pf-start');
+    if (start){
+      const gruppenseite = !!root.dataset.gruppe;
+      if (gruppenseite) document.title = GRUPPE.titel + ' – ' + K.name;
+      start.innerHTML = `<h1>${esc(gruppenseite ? GRUPPE.titel : K.name)}</h1><p class="pf-lead">${esc(GRUPPE.text)}${gruppenseite ? '' : ' ' + esc(K.untertitel)}</p>`
+        + GRUPPE.bereiche.map(b => `<section class="pf-sec"><h2><a href="${bereichUrl(b)}">${esc(b.titel)}</a></h2><p class="pf-text">${esc(b.text)}</p>${kacheln(b)}</section>`).join('');
+    }
+    // Fach mit Jahrgangsstufen: Auswahl der Stufe
+    const fach = document.getElementById('pf-fach');
+    if (fach && FACHSEITE){
+      document.title = FACHSEITE.titel + ' – ' + K.name;
+      fach.innerHTML = `<h1>${esc(FACHSEITE.titel)}</h1><p class="pf-lead">${esc(FACHSEITE.text)} Wähle die Jahrgangsstufe.</p><div class="pf-grid">`
+        + K.gruppen.filter(g => g.fach === FACHSEITE).map(g => `<a class="pf-tile" href="${gruppeUrl(g)}"><b>${esc(g.stufe.titel)}</b><span>${esc(g.text)}</span></a>`).join('') + '</div>';
+    }
+    const be = document.getElementById('pf-bereich');
+    const b = BER;
+    if (be && b){
+      document.title = b.titel + ' – ' + K.name;
+      be.innerHTML = `<h1>${esc(b.titel)}</h1><p class="pf-lead">${esc(b.text)}</p>${kacheln(b)}`;
+    }
+  }
+
+  // Hell/Dunkel höchstens einmal pro Sekunde umschalten und weich überblenden – kein Flackern beim schnellen Klicken
+  let themeSperre = 0;
+  document.addEventListener('click', e => {
+    const btn = e.target.closest('#themeBtn,#pfTheme');
+    if (!btn) return;
+    if (Date.now() < themeSperre){ e.stopImmediatePropagation(); e.preventDefault(); return; }
+    themeSperre = Date.now() + 1000;
+    root.classList.add('pf-fade'); btn.classList.add('pf-gesperrt');
+    setTimeout(() => root.classList.remove('pf-fade'), 400);
+    setTimeout(() => btn.classList.remove('pf-gesperrt'), 1000);
+  }, true);
+
+  function init(){ buildNav(); buildPages(); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();
+
+</script>
+<script>/* ../../../sync.js */
+/* vibe learning – Anmeldung und Anbindung an PocketBase
+ *
+ * Läuft die Seite über den PocketBase-Server, erscheint beim ersten Öffnen ein
+ * Anmeldefenster: ein Feld für Code oder Benutzername (bei Benutzernamen folgt das
+ * Passwort), alternativ „Seite ohne Anmeldung nutzen“. Oben rechts in der Leiste
+ * steht danach, wer angemeldet ist; dort meldet man sich auch an und ab.
+ *
+ * Schüler: Fortschritt wird auf dem Server gespeichert, jede gelöste Aufgabe protokolliert.
+ * Lehrkraft/Admin: Anmeldung gilt bis zum Schließen des Browsers, im Menü steht
+ * der Link zur Verwaltung (lehrer.html).
+ * Wird die HTML-Datei direkt geöffnet (oder läuft kein PocketBase dahinter),
+ * passiert nichts davon – die Seite speichert dann wie bisher nur im Browser.
+ *
+ * Bedingte Menüpunkte (katalog.js: bedingt) blendet das Skript nach der Anmeldung ein,
+ * wenn der Server sie für diesen Schüler freigibt (/api/trainer/sichtbar).
+ *
+ * Die Seite ruft auf:
+ *   TrainerSync.changed()      nach jeder Änderung am gespeicherten Stand
+ *   TrainerSync.event({...})   wenn eine Aufgabe richtig gelöst wurde
+ */
+(function () {
+  'use strict';
+
+  const CONFIG = {
+    api: '/api/trainer',
+    verwaltung: 'lehrer.html'   // relativ zum Ordner von sync.js
+  };
+
+  const me = document.currentScript && document.currentScript.src;
+  const BASE = me ? me.replace(/[^/]*$/, '') : '';
+  const PAGE = document.documentElement.dataset.trainer || '';          // Tool-id aus katalog.js, leer auf Übersichtsseiten
+  const TOOL_IDS = window.KATALOG ? [].concat(...window.KATALOG.bereiche.map(b => b.tools.map(t => t.id))) : [];
+  const ALL_PREFIXES = [...new Set(['wenn', 'uo', 'fn', PAGE].concat(TOOL_IDS))].filter(Boolean).map(id => id + '-');
+  const OWN = PAGE + '-';
+  const SKIP = ['wenn-theme'];                                             // Hell/Dunkel bleibt pro Gerät
+  const K = {code: 'ts-code', anzeige: 'ts-anzeige', klasse: 'ts-klasse', queue: 'ts-queue', stand: 'ts-stand-' + PAGE};
+  const SS = {gast: 'ts-gast', lehrer: 'ts-lehrer'};                      // gilt nur bis zum Schließen des Browsers
+
+  const ls = {
+    get(k){ try { return localStorage.getItem(k); } catch (e) { return null; } },
+    set(k, v){ try { localStorage.setItem(k, v); } catch (e) {} },
+    del(k){ try { localStorage.removeItem(k); } catch (e) {} },
+    keys(){ try { return Object.keys(localStorage); } catch (e) { return []; } }
+  };
+  const ss = {
+    get(k){ try { return sessionStorage.getItem(k); } catch (e) { return null; } },
+    set(k, v){ try { sessionStorage.setItem(k, v); } catch (e) {} },
+    del(k){ try { sessionStorage.removeItem(k); } catch (e) {} }
+  };
+  function lehrerSitzung(){ try { return JSON.parse(ss.get(SS.lehrer) || 'null'); } catch (e) { return null; } }
+
+  const hosted = /^https?:$/.test(location.protocol);
+  let aktiv = false, pushTimer = null, pushPending = false, menuEl = null, lastSnap = '';
+
+  /* ---------- Hilfen ---------- */
+  function api(path, opt){
+    opt = opt || {};
+    return fetch(CONFIG.api + path, {
+      method: opt.method || 'GET',
+      keepalive: !!opt.keepalive,
+      headers: {'Content-Type': 'application/json', 'X-Trainer-Code': ls.get(K.code) || ''},
+      body: opt.body ? JSON.stringify(opt.body) : undefined
+    }).then(async r => {
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok){ const err = new Error(j.message || ('HTTP ' + r.status)); err.status = r.status; err.data = j; throw err; }
+      return j;
+    });
+  }
+  const trainerKeys = prefix => ls.keys().filter(k => k.startsWith(prefix) && !SKIP.includes(k));
+  function snapshot(prefix){ prefix = prefix || OWN; const d = {}; trainerKeys(prefix).sort().forEach(k => { d[k] = ls.get(k); }); return d; }
+  function applySnapshot(d, prefix){
+    prefix = prefix || OWN;
+    trainerKeys(prefix).forEach(k => ls.del(k));
+    Object.keys(d || {}).forEach(k => { if (k.startsWith(prefix) && !SKIP.includes(k) && typeof d[k] === 'string') ls.set(k, d[k]); });
+  }
+  function wipeLocal(){
+    ALL_PREFIXES.forEach(p => trainerKeys(p).forEach(k => ls.del(k)));
+    ls.keys().filter(k => k.startsWith('ts-stand-')).forEach(k => ls.del(k));
+    [K.queue, K.code, K.klasse, K.anzeige].forEach(k => ls.del(k));
+  }
+  function reloadOnce(){
+    let last = 0; try { last = +sessionStorage.getItem('ts-reload') || 0; } catch (e) {}
+    if (Date.now() - last < 8000) return;
+    try { sessionStorage.setItem('ts-reload', Date.now()); } catch (e) {}
+    location.reload();
+  }
+
+  /* ---------- Fortschritt abgleichen ---------- */
+  async function pull(){
+    if (!PAGE){ setStatus('ok'); return; }
+    const r = await api('/state?seite=' + PAGE);
+    const local = +ls.get(K.stand) || 0, server = +r.stand || 0;
+    if (r.daten && server > local){
+      const before = JSON.stringify(snapshot());
+      applySnapshot(r.daten);
+      ls.set(K.stand, server);
+      lastSnap = JSON.stringify(snapshot());
+      if (lastSnap !== before) reloadOnce();
+    } else if (local > server) await push();
+    setStatus('ok');
+  }
+
+  async function push(keepalive){
+    clearTimeout(pushTimer); pushPending = false;
+    if (!aktiv || !PAGE) return;
+    const stand = +ls.get(K.stand) || Date.now();
+    setStatus('saving');
+    try {
+      await api('/state', {method: 'POST', body: {seite: PAGE, daten: snapshot(), stand}, keepalive});
+      setStatus('ok');
+    } catch (err){
+      if (err.status === 409){ await pull().catch(() => setStatus('offline')); }
+      else if (err.status === 401) abgelaufen();
+      else { pushPending = true; setStatus('offline'); }
+    }
+  }
+
+  function changed(){
+    if (!PAGE) return;
+    // Seiten schreiben ihren Stand auch beim Öffnen neu – nur echte Änderungen zählen,
+    // sonst würde ein frisch geöffnetes Gerät einen neueren Stand vom Server überschreiben.
+    const snap = JSON.stringify(snapshot());
+    if (snap === lastSnap) return;
+    lastSnap = snap;
+    ls.set(K.stand, Date.now());
+    if (!aktiv) return;
+    pushPending = true;
+    clearTimeout(pushTimer);
+    pushTimer = setTimeout(push, 700);
+  }
+
+  /* ---------- Protokoll gelöster Aufgaben ---------- */
+  function queue(){ try { return JSON.parse(ls.get(K.queue) || '[]'); } catch (e) { return []; } }
+  function event(ev){
+    if (!aktiv || !PAGE) return;
+    const q = queue(); q.push(Object.assign({seite: PAGE}, ev)); ls.set(K.queue, JSON.stringify(q.slice(-500)));
+    flush();
+  }
+  let flushing = false;
+  async function flush(keepalive){
+    if (!aktiv || flushing) return;
+    const q = queue(); if (!q.length) return;
+    flushing = true;
+    try {
+      await api('/events', {method: 'POST', body: {events: q.slice(0, 200)}, keepalive});
+      ls.set(K.queue, JSON.stringify(queue().slice(Math.min(q.length, 200))));
+    } catch (err){
+      if (err.status === 401) abgelaufen(); else setStatus('offline');
+    } finally { flushing = false; }
+    if (queue().length && !keepalive) setTimeout(flush, 2000);
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden' && aktiv){ if (pushPending) push(true); flush(true); }
+  });
+  window.addEventListener('online', () => { if (aktiv){ flush(); if (pushPending) push(); else pull().catch(() => {}); } });
+
+
+  /* ---------- Gast-Fortschritt beim Anmelden übernehmen ---------- */
+  // Für jede Übung: Ist das Konto dort noch leer, wird der Stand dieses Geräts hochgeladen,
+  // sonst gilt der Stand vom Server.
+  async function uebernehmen(){
+    for (const p of ALL_PREFIXES){
+      const id = p.slice(0, -1), lokal = snapshot(p);
+      const st = await api('/state?seite=' + id);
+      const leer = !st.daten || !Object.keys(st.daten).length;
+      if (leer){
+        if (!Object.keys(lokal).length) continue;
+        const stand = Date.now();
+        await api('/state', {method: 'POST', body: {seite: id, daten: lokal, stand}});
+        ls.set('ts-stand-' + id, stand);
+      } else {
+        applySnapshot(st.daten, p);
+        ls.set('ts-stand-' + id, +st.stand || 0);
+      }
+    }
+  }
+
+  /* ---------- Oberfläche: Anmeldefenster + Menü oben rechts ---------- */
+  const CSS = `
+.ts-ov{position:fixed;inset:0;z-index:2000;background:rgba(20,24,32,.6);backdrop-filter:blur(3px);display:grid;place-items:center;padding:16px}
+.ts-box{position:relative;background:var(--panel,#f6f8fb);color:var(--text,#2e3440);border:1px solid var(--border,#cdd3de);border-radius:16px;padding:24px;width:min(420px,100%);box-shadow:0 20px 50px rgba(0,0,0,.3);font:16px/1.5 system-ui,sans-serif}
+.ts-box h2{margin:0 0 6px;font-size:21px}
+.ts-box p{margin:0 0 14px;color:var(--muted,#5b6578)}
+.ts-x{position:absolute;top:10px;right:10px;width:34px;height:34px;border-radius:9px;border:0;background:none;color:var(--muted,#5b6578);font-size:22px;line-height:1;cursor:pointer}
+.ts-x:hover{background:var(--panel2,#eceff4);color:var(--text,#2e3440)}
+.ts-in{width:100%;box-sizing:border-box;font:700 20px ui-monospace,Consolas,monospace;letter-spacing:.03em;padding:12px 14px;border-radius:10px;border:2px solid var(--slot-border,var(--border,#a7b1c2));background:var(--slot,var(--panel2,#eceff4));color:var(--text,#2e3440);outline:none}
+.ts-in:focus{border-color:var(--accent,#5e81ac)}
+.ts-btn{margin-top:12px;width:100%;font:600 17px system-ui,sans-serif;padding:12px;border-radius:10px;border:1px solid color-mix(in srgb,var(--accent,#5e81ac) 50%,var(--panel,#f6f8fb));background:color-mix(in srgb,var(--accent,#5e81ac) 22%,var(--panel,#f6f8fb));color:color-mix(in srgb,var(--accent,#5e81ac) 60%,var(--text,#2e3440));cursor:pointer}
+.ts-btn:disabled{opacity:.6;cursor:wait}
+.ts-err{color:var(--err,#a8434d);min-height:1.4em;margin-top:8px;font-size:14px}
+.ts-zurueck{background:none;border:0;padding:0;margin-top:10px;color:var(--muted,#5b6578);text-decoration:underline;cursor:pointer;font-size:14px}
+.ts-gast{display:block;width:100%;margin-top:18px;padding:12px;border-radius:10px;border:1px solid var(--border,#cdd3de);background:var(--panel2,#eceff4);color:var(--text,#2e3440);font:600 16px system-ui,sans-serif;cursor:pointer}
+.ts-gast small{display:block;font-weight:400;font-size:13px;color:var(--muted,#5b6578)}
+.ts-wrap{position:relative}
+.ts-badge{display:inline-flex;align-items:center;gap:6px;font:600 13px system-ui,sans-serif;padding:7px 11px;border-radius:999px;border:1px solid var(--border,#cdd3de);background:var(--panel2,#eceff4);color:var(--text,#2e3440);cursor:pointer;white-space:nowrap}
+.ts-badge .ts-dot{width:8px;height:8px;border-radius:50%;background:#8a95ab}
+.ts-badge.ok .ts-dot{background:var(--then,#a3be8c)}
+.ts-badge.saving .ts-dot{background:#ebcb8b}
+.ts-badge.offline .ts-dot{background:var(--else,#bf616a)}
+.ts-badge.gast{border-color:color-mix(in srgb,#d08770 60%,var(--border,#cdd3de));background:color-mix(in srgb,#d08770 16%,var(--panel,#f6f8fb))}
+.ts-badge.gast .ts-dot{background:#d08770}
+.ts-dd{display:none;position:absolute;right:0;top:calc(100% + 6px);min-width:240px;z-index:70;background:var(--panel,#f6f8fb);color:var(--text,#2e3440);border:1px solid var(--border,#cdd3de);border-radius:12px;box-shadow:0 14px 30px rgba(0,0,0,.18);padding:6px;font:14px/1.4 system-ui,sans-serif}
+.ts-wrap.open .ts-dd{display:block}
+.ts-einst{padding:8px 10px;border-bottom:1px solid var(--border,#cdd3de);margin-bottom:4px}
+.ts-einst label{display:flex;align-items:center;justify-content:space-between;gap:8px;font-weight:600}
+.ts-einst select{font:inherit;background:var(--panel2,#eceff4);color:inherit;border:1px solid var(--border,#cdd3de);border-radius:6px;padding:3px 6px}
+.ts-einst small{display:block;margin-top:4px;color:var(--muted,#5b6578);font-size:12px;line-height:1.35}
+.ts-dd .ts-info{padding:8px 10px;color:var(--muted,#5b6578);border-bottom:1px solid var(--border,#cdd3de);margin-bottom:4px}
+.ts-dd .ts-info b{color:var(--text,#2e3440)}
+.ts-dd a,.ts-dd button{display:block;width:100%;text-align:left;padding:8px 10px;border-radius:8px;border:0;background:none;color:inherit;font:inherit;text-decoration:none;cursor:pointer}
+.ts-dd a:hover,.ts-dd button:hover{background:var(--panel2,#eceff4)}
+@media (max-width:640px){.ts-badge .ts-lang{display:none}}`;
+
+  function injectCss(){ const s = document.createElement('style'); s.textContent = CSS; document.head.appendChild(s); }
+  const escH = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+
+  function setStatus(st){
+    const b = menuEl && menuEl.querySelector('.ts-badge');
+    if (!b || !aktiv) return;
+    b.className = 'ts-badge ' + st;
+    const t = {ok: 'Fortschritt gespeichert', saving: 'Wird gespeichert …', offline: 'Keine Verbindung – wird später gespeichert'}[st] || '';
+    b.title = t;
+    const i = menuEl.querySelector('.ts-status'); if (i) i.textContent = t;
+  }
+
+  // Einstellung „Design“ (lib/designs.js, nur für Angemeldete, gilt auf diesem Gerät; nav.js schaltet es ein)
+  const DESIGN_HTML = `<div class="ts-einst"><label>Design <select class="ts-design" aria-label="Design"><option value="standard">Standard</option></select></label>
+    <small>Experimentell – nicht alle Übungen sind dafür gebaut. Gilt auf diesem Gerät.</small></div>`;
+  function designWahl(){
+    const sel = menuEl && menuEl.querySelector('.ts-design'); if (!sel) return;
+    const fuellen = () => {
+      if (!window.Designs) return;
+      let akt = 'standard'; try { akt = localStorage.getItem('pf-design') || 'standard'; } catch (e) {}
+      sel.innerHTML = Designs.liste().map(d => `<option value="${escH(d.id)}"${d.id === akt ? ' selected' : ''}>${escH(d.name)}</option>`).join('');
+    };
+    if (window.Designs) fuellen();
+    else { const s = document.createElement('script'); s.src = BASE + 'lib/designs.js'; s.onload = fuellen; document.head.appendChild(s); }
+    sel.addEventListener('change', () => {
+      try { if (sel.value === 'standard') localStorage.removeItem('pf-design'); else localStorage.setItem('pf-design', sel.value); } catch (e) {}
+      location.reload();
+    });
+  }
+  // Menü oben rechts: angemeldet (Dropdown mit Abmelden) oder Gast (Klick öffnet die Anmeldung)
+  function showMenu(){
+    if (menuEl) menuEl.remove();
+    const host = document.querySelector('.pf-right') || document.querySelector('.hdr-right') || document.querySelector('header') || document.body;
+    const L = lehrerSitzung();
+    menuEl = document.createElement('div');
+    menuEl.className = 'ts-wrap';
+    if (aktiv){
+      const klasse = ls.get(K.klasse);
+      menuEl.innerHTML = `<button class="ts-badge saving" type="button"><span class="ts-dot"></span>👤 <span class="ts-lang">${escH(ls.get(K.anzeige) || ls.get(K.code))}</span></button>
+        <div class="ts-dd"><div class="ts-info">Angemeldet als <b>${escH(ls.get(K.anzeige) || ls.get(K.code))}</b>${klasse ? ' (Klasse ' + escH(klasse) + ')' : ''}<br><span class="ts-status"></span></div>
+        ${DESIGN_HTML}<button type="button" data-a="ab">Abmelden</button></div>`;
+    } else if (L){
+      menuEl.innerHTML = `<button class="ts-badge" type="button">👤 <span class="ts-lang">${escH(L.name)}</span></button>
+        <div class="ts-dd"><div class="ts-info">Angemeldet als <b>${escH(L.name)}</b> (${L.rolle === 'admin' ? 'Admin' : 'Lehrkraft'})</div>
+        <a href="${BASE + CONFIG.verwaltung}">Verwaltung: Klassen und Auswertung</a>
+        ${DESIGN_HTML}<button type="button" data-a="ab">Abmelden</button></div>`;
+    } else {
+      menuEl.innerHTML = `<button class="ts-badge gast" type="button" title="Fortschritt wird nicht gespeichert. Klicken zum Anmelden."><span class="ts-dot"></span>Nicht angemeldet<span class="ts-lang">&nbsp;– Fortschritt wird nicht gespeichert</span></button>`;
+    }
+    host.insertBefore(menuEl, host.firstChild);
+    menuEl.querySelector('.ts-badge').addEventListener('click', () => {
+      if (!aktiv && !L){ showLogin(); return; }
+      menuEl.classList.toggle('open');
+    });
+    const ab = menuEl.querySelector('[data-a="ab"]');
+    if (ab) ab.addEventListener('click', abmelden);
+    designWahl();
+    document.addEventListener('click', e => { if (menuEl && !menuEl.contains(e.target)) menuEl.classList.remove('open'); });
+  }
+
+  function showLogin(msg){
+    if (document.querySelector('.ts-ov')) return;
+    const ov = document.createElement('div');
+    ov.className = 'ts-ov';
+    ov.innerHTML = `<div class="ts-box" role="dialog" aria-modal="true" aria-label="Anmelden">
+      <button class="ts-x" type="button" aria-label="Schließen und ohne Anmeldung nutzen" title="Ohne Anmeldung nutzen">×</button>
+      <form class="ts-f1" autocomplete="off">
+        <h2>Anmelden</h2>
+        <p>Gib deinen Zugangscode oder deinen Benutzernamen ein.</p>
+        <input class="ts-in" name="kennung" placeholder="Code oder Benutzername" autocapitalize="none" spellcheck="false" aria-label="Code oder Benutzername">
+        <button class="ts-btn" type="submit">Weiter</button>
+      </form>
+      <form class="ts-f2" hidden>
+        <h2>Passwort</h2>
+        <p>für <b class="ts-wer"></b></p>
+        <input class="ts-in" name="passwort" type="password" autocomplete="current-password" aria-label="Passwort">
+        <button class="ts-btn" type="submit">Anmelden</button>
+        <button class="ts-zurueck" type="button">Anderen Namen eingeben</button>
+      </form>
+      <div class="ts-err">${msg || ''}</div>
+      <button class="ts-gast" type="button">Seite ohne Anmeldung nutzen<small>Dein Fortschritt wird dann nur in diesem Browser gespeichert.</small></button>
+    </div>`;
+    document.body.appendChild(ov);
+    const f1 = ov.querySelector('.ts-f1'), f2 = ov.querySelector('.ts-f2'), err = ov.querySelector('.ts-err');
+    const k = f1.kennung, pw = f2.passwort;
+    setTimeout(() => k.focus(), 50);
+
+    const gast = () => { ss.set(SS.gast, '1'); ov.remove(); document.removeEventListener('keydown', esc); };
+    const esc = e => { if (e.key === 'Escape') gast(); };
+    document.addEventListener('keydown', esc);
+    ov.querySelector('.ts-x').addEventListener('click', gast);
+    ov.querySelector('.ts-gast').addEventListener('click', gast);
+    ov.querySelector('.ts-zurueck').addEventListener('click', () => { f2.hidden = true; f1.hidden = false; err.textContent = ''; k.select(); });
+
+    async function senden(btn, body){
+      btn.disabled = true; err.textContent = '';
+      try {
+        const r = await fetch(CONFIG.api + '/login', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)})
+          .then(async x => { const j = await x.json().catch(() => ({})); if (!x.ok) throw new Error(x.status === 429 ? 'Zu viele Versuche – bitte kurz warten.' : (j.message || 'Anmeldung fehlgeschlagen.')); return j; });
+        if (r.passwort){ f1.hidden = true; f2.hidden = false; ov.querySelector('.ts-wer').textContent = body.kennung; pw.value = ''; pw.focus(); return; }
+        if (r.rolle === 'schueler'){
+          ls.set(K.code, r.cred); ls.set(K.anzeige, r.anzeige); ls.set(K.klasse, r.klasse || '');
+          ss.del(SS.lehrer); ss.del('ts-reload');
+          aktiv = true;
+          await uebernehmen().catch(() => {});
+        } else {
+          ss.set(SS.lehrer, JSON.stringify({rolle: r.rolle, token: r.token, name: r.name}));
+        }
+        location.reload();
+      } catch (x){
+        err.textContent = x.message || 'Anmeldung fehlgeschlagen.';
+        (f2.hidden ? k : pw).select();
+      } finally { btn.disabled = false; }
+    }
+    f1.addEventListener('submit', e => {
+      e.preventDefault();
+      const v = k.value.trim();
+      if (!v){ err.textContent = 'Bitte gib deinen Code oder Benutzernamen ein.'; return; }
+      senden(f1.querySelector('.ts-btn'), {kennung: v});
+    });
+    f2.addEventListener('submit', e => {
+      e.preventDefault();
+      if (!pw.value){ err.textContent = 'Bitte gib dein Passwort ein.'; return; }
+      senden(f2.querySelector('.ts-btn'), {kennung: k.value.trim(), passwort: pw.value});
+    });
+  }
+
+  async function abmelden(){
+    const ohneDesign = () => { try { localStorage.removeItem('pf-design'); } catch (e) {} };   // Design gilt nur für Angemeldete
+    if (lehrerSitzung()){ ohneDesign(); ss.del(SS.lehrer); ss.del(SS.gast); location.reload(); return; }
+    if (!confirm(`Abmelden?\n\nAngemeldet als ${ls.get(K.anzeige) || ls.get(K.code)}. Dein Fortschritt bleibt auf dem Server gespeichert.`)) return;
+    if (pushPending) await push();
+    await flush();
+    if (queue().length && !confirm('Einige gelöste Aufgaben konnten noch nicht übertragen werden (keine Verbindung). Trotzdem abmelden?')) return;
+    ohneDesign(); wipeLocal(); ss.del(SS.gast); ss.del('ts-sichtbar');
+    location.reload();
+  }
+  function abgelaufen(){
+    aktiv = false;
+    wipeLocal(); ss.del('ts-sichtbar');
+    showMenu();
+    showLogin('Deine Anmeldung ist nicht mehr gültig. Bitte melde dich neu an.');
+  }
+
+  /* ---------- Bedingte Menüpunkte (z. B. Tipp-Aufgabe nur mit aufgegebener Aufgabe) ---------- */
+  function zeigeTools(ids){
+    // Tool-ids bestehen nur aus a–z, 0–9 und - (katalog.js); andere werden ignoriert
+    ids.filter(id => /^[a-z0-9-]+$/.test(id)).forEach(id => document.querySelectorAll(`[data-tool="${id}"]`).forEach(el => el.classList.add('pf-sichtbar')));
+  }
+  async function sichtbar(){
+    try { zeigeTools(JSON.parse(ss.get('ts-sichtbar') || '[]')); } catch (e) {}   // Stand der letzten Seite, ohne Flackern
+    try { const r = await api('/sichtbar'); ss.set('ts-sichtbar', JSON.stringify(r.tools || [])); zeigeTools(r.tools || []); } catch (e) {}
+  }
+
+  /* ---------- Start ---------- */
+  async function start(){
+    if (!hosted || window.PF_EINZELDATEI) return;          // Einzeldatei: immer ohne Anmeldung, Fortschritt nur im Browser
+    try {
+      const h = await fetch('/api/health', {cache: 'no-store'});
+      if (!h.ok) return;                                    // kein PocketBase: Seite läuft nur lokal
+    } catch (e){ return; }
+    injectCss();
+    aktiv = !!ls.get(K.code);
+    showMenu();
+    if (!aktiv){
+      if (!lehrerSitzung() && !ss.get(SS.gast)) showLogin();
+      return;
+    }
+    sichtbar();
+    try { await pull(); flush(); }
+    catch (err){ if (err.status === 401) abgelaufen(); else setStatus('offline'); }
+  }
+
+  lastSnap = JSON.stringify(snapshot());   // Stand beim Laden der Seite (vor deren Initialisierung)
+  window.TrainerSync = {changed, event, anmelden: () => showLogin(), get aktiv(){ return aktiv; }, get lehrer(){ return lehrerSitzung(); }, abmelden};
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
+})();
+
+</script>
+<script>
+(function(){var t=null;try{t=localStorage.getItem('wenn-theme');}catch(e){}
+document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');})();
+</script>
+<style>/* ../../englisch.css */
+/* englisch.css – Grundaussehen der Englisch-Seiten (Farben, Karte, Knöpfe, Felder; hell und dunkel)
+ * wie die mit lib/seite.js erzeugten Seiten (BASIS_CSS dort). Eingebunden mit ../../englisch.css (Seiten in Englisch/<Stufe>/<Bereich>/).
+ */
+:root{--bg:#e5e9f0;--panel:#f6f8fb;--panel2:#eceff4;--text:#2e3440;--muted:#5b6578;--border:#cdd3de;--accent:#5e81ac;--err:#a8434d;--ok:#5e8a45;--mono:ui-monospace,Consolas,"Liberation Mono",monospace}
+[data-theme=dark]{--bg:#2e3440;--panel:#3b4252;--panel2:#434c5e;--text:#eceff4;--muted:#a9b3c4;--border:#4c566a;--accent:#88c0d0;--err:#d4848b;--ok:#a3be8c}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{width:min(1000px,100%);margin:0 auto;padding:14px 16px 24px}
+.bar{margin-bottom:12px}
+.brand{font:800 20px var(--mono)}
+.brand span{color:var(--accent-text,var(--accent))}
+.karte{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px 16px}
+.karte h2{font-size:18px;margin:0 0 6px}
+.karte p{margin:0 0 8px}
+.btn{font:600 14px system-ui,sans-serif;background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:7px 12px;cursor:pointer}
+.btn.on,.btn.haupt{background:var(--accent);border-color:var(--accent);color:#fff}
+[data-theme=dark] .btn.on,[data-theme=dark] .btn.haupt{color:#2e3440}
+.btn:disabled{opacity:.45}
+.btn.klein{font-size:13px;padding:4px 9px}
+.feld{font:14px system-ui,sans-serif;background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 8px}
+.muted{color:var(--muted)}
+
+</style>
+<style>/* ../../../lib/aufgaben.css */
+/* aufgaben.css – Aussehen der Aufgabenbausteine aus aufgaben.js (alle Fächer, hell und dunkel über die Variablen der Seite) */
+.af{--af-ok:var(--ok,#5e8a45);--af-err:var(--err,#a8434d);--af-ok-bg:var(--plus-bg,#dfeccf);--af-err-bg:var(--minus-bg,#f3d9dc)}
+[data-theme=dark] .af{--af-ok-bg:var(--plus-bg,#3f4d3a);--af-err-bg:var(--minus-bg,#553c42)}
+.af-frage{font-weight:600;margin:4px 0 10px}
+.af-nr{display:inline-block;min-width:36px;margin-right:6px;font-family:var(--mono,monospace)}
+.af-fb{border-radius:8px;padding:7px 10px;margin:8px 0 0;font-size:14px;color:var(--text)}
+.af-fb.ok{background:var(--af-ok-bg)}
+.af-fb.falsch{background:var(--af-err-bg)}
+.af-knoepfe{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.af-hinweis{font-size:13px;color:var(--muted);margin:0 0 4px 2px}
+/* Kombinierte Aufgabe: Teile nacheinander */
+.af-teil+.af-teil{margin-top:16px;padding-top:12px;border-top:1px dashed var(--border);animation:af-rein .3s ease-out}
+.af-kende:empty{display:none}
+.af-aufgabe+.af-aufgabe{margin-top:18px;padding-top:12px;border-top:1px solid var(--border)}
+.erinnerung{border-left:4px solid var(--accent);background:var(--panel2);border-radius:0 10px 10px 0;padding:6px 12px;margin:0 0 12px}
+.erinnerung summary{cursor:pointer;font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);padding:2px 0}
+.erinnerung>*:not(summary){margin:6px 0}
+.material{border:1px solid var(--border);background:var(--panel2);border-radius:10px;padding:10px 12px;margin:0 0 12px}
+.material .mt{font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:6px}
+.material p:last-child{margin-bottom:0}
+/* Multiple Choice (dieselben Klassen wie in den Excel-Erklärungen) */
+.af .opts{display:flex;flex-direction:column;gap:6px}
+.af .opt{text-align:left;font:15px system-ui,sans-serif;background:var(--panel2);color:var(--text);border:2px solid var(--border);border-radius:10px;padding:8px 12px;cursor:pointer}
+.af .opt:hover{border-color:var(--accent)}
+.af .opts.mono .opt{font-family:var(--mono,monospace)}
+.af .opt.sel{border-color:var(--accent)}
+.af .opt.good{border-color:var(--af-ok);background:var(--af-ok-bg)}
+.af .opt.bad{border-color:var(--af-err);background:var(--af-err-bg)}
+.af .ohint{font-size:13px;color:var(--muted);margin-top:6px}
+/* Zahlen */
+.af-felder{display:flex;flex-direction:column;gap:8px;margin:8px 0}
+/* Tabelle zum Ausfüllen */
+.af-tabelle{overflow-x:auto;margin:8px 0}
+.af-tabelle table{border-collapse:collapse;min-width:100%;font-size:14px}
+.af-tabelle th,.af-tabelle td{border:1px solid var(--border);padding:4px 6px;text-align:right;white-space:nowrap}
+.af-tabelle th{background:var(--panel2);font-weight:700;text-align:center;white-space:normal}
+.af-tabelle th small{font-weight:400;color:var(--muted)}
+.af-tabelle td:first-child{text-align:center}
+.af-tabelle td.zahl{font-family:var(--mono,monospace)}
+.af-tabelle .af-zahl{width:112px}
+/* Wahrheitstabelle (ja/nein zum Anklicken) */
+.af-wahrheit td{text-align:center}
+.af-wahrheit td.af-wname{text-align:left;white-space:normal}
+.af-wahrheit th code{white-space:nowrap}
+.af-wv.af-ja{color:var(--af-ok);font-weight:600}
+.af-wv.af-nein{color:var(--af-err);font-weight:600}
+.af-wb{min-width:64px;font:600 14px system-ui,sans-serif;padding:4px 10px;border:2px dashed var(--border);border-radius:8px;background:var(--panel);color:var(--muted);cursor:pointer}
+.af-wb:hover{border-color:var(--accent)}
+.af-wb.af-ja,.af-wb.af-nein{border-style:solid;color:var(--text)}
+.af-wb:disabled{cursor:default}
+.af-wahrheit th,.af-wahrheit td{white-space:normal}
+@media (max-width:560px){.af-wahrheit th,.af-wahrheit td{padding:4px 3px;font-size:13px}.af-wb{min-width:42px;padding:4px 5px;font-size:13px}.af-wahrheit th code{white-space:normal}}
+.af-zeile{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}
+.af-t{flex:1 1 300px}
+.af-zahl{width:130px;text-align:right;font-family:var(--mono,monospace)}
+.af-m{min-width:14px;font-weight:700}
+.af .richtig{border-color:var(--af-ok)!important;background:var(--af-ok-bg)!important}
+.af .falsch:not(.af-fb){border-color:var(--af-err)!important;background:var(--af-err-bg)!important}
+.af .fast{border-color:#d08770!important;background:color-mix(in srgb,#ebcb8b 35%,var(--panel))!important}
+.af-text{flex:1 1 260px;min-width:0}
+/* Lückentext */
+.af-luecken{line-height:2.4;font-size:16px;margin:0}
+.af-luecken select{font:15px system-ui,sans-serif;background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:3px 6px;max-width:100%}
+/* Zuordnen */
+.af-pool{display:flex;flex-wrap:wrap;gap:8px;min-height:56px;padding:10px;border:2px dashed var(--border);border-radius:12px;margin-bottom:12px}
+.af-leer{color:var(--muted)}
+.af-zonen{display:grid;grid-template-columns:repeat(var(--n,3),minmax(0,1fr));gap:10px}
+@media (max-width:760px){.af-zonen{grid-template-columns:minmax(0,1fr)}}
+.af-zone{border:2px solid var(--border);border-radius:12px;padding:8px;min-height:140px;display:flex;flex-direction:column;gap:6px;background:var(--panel2)}
+.af-zt{text-align:center;font-weight:700;font-size:14px;margin-bottom:2px}
+.af-zone.ziel{border-color:var(--accent)}
+.af-karte{background:var(--panel);color:var(--text);border:1px solid var(--border);border-left:5px solid var(--accent);border-radius:8px;padding:7px 10px;font-size:14px;cursor:grab;touch-action:none;user-select:none}
+.af-pool .af-karte{flex:1 1 210px}
+.af-karte.gewaehlt{outline:3px solid var(--accent)}
+.af-karte.quelle{opacity:.35}
+.af-karte.fix{border-left-color:var(--af-ok);background:var(--af-ok-bg);cursor:default}
+.af-karte.weg{animation:af-wackeln .5s;border-left-color:var(--af-err);background:var(--af-err-bg)}
+@keyframes af-wackeln{20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+.af-geist{position:fixed;z-index:100;pointer-events:none;width:220px;box-shadow:0 8px 20px rgba(0,0,0,.25);transform:rotate(-2deg)}
+/* Buchungssatz */
+.af-builder{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:6px 10px;align-items:center}
+.af-builder .af-sk{align-self:end}
+.af-builder .af-plus{justify-self:start}
+@media (max-width:600px){.af-builder{grid-template-columns:minmax(0,1fr)}.af-builder>*{grid-row:auto!important;grid-column:auto!important}}
+.af-an{font:700 14px var(--mono,monospace)}
+.af-spalte{display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.af-sk{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.af-bz{display:flex;flex-wrap:wrap;gap:4px;align-items:center;width:100%}
+.af-kwahl{position:relative;flex:1 1 150px;min-width:0;display:flex}
+.af-konto{width:100%;min-width:0}
+.af-kliste{position:absolute;z-index:60;top:100%;left:0;right:0;margin-top:2px;max-height:240px;overflow-y:auto;background:var(--panel);border:1px solid var(--border);border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,.18);padding:3px}
+.af-kopt{padding:5px 9px;border-radius:6px;cursor:pointer;font-family:var(--mono,monospace);font-size:14px}
+.af-kopt:hover,.af-kopt.an{background:var(--accent);color:#fff}
+.af-kleer{padding:5px 9px;color:var(--muted);font-size:14px}
+.af-bz .af-zahl{flex:1 1 100px;width:auto}
+.af-x{background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:0 4px}
+pre.af-bs{font:13px/1.5 var(--mono,monospace);background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin:6px 0;overflow-x:auto}
+/* Sequenz */
+.af-kopf{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:12px}
+.af-schritte{display:flex;flex-wrap:wrap;gap:6px;flex:1}
+.af-schritte .btn{font-size:13px;padding:5px 10px}
+.af-schritte .btn.erl::after{content:" ✓";color:var(--ok,#5e8a45)}
+.af-schritte .btn.on.erl::after{color:inherit}
+.af-zaehler{color:var(--muted);font-size:14px}
+.af-erledigt{font-size:13px;color:var(--ok,#5e8a45);font-weight:700;margin:0 0 8px}
+.af-unten{display:flex;justify-content:space-between;gap:8px;margin-top:16px;border-top:1px solid var(--border);padding-top:12px}
+/* Endlos: Stufen als Flammen (wie in den Excel-Übungen), Serie und Rekord */
+.af-flammen{display:flex;flex-wrap:wrap;gap:4px;align-items:flex-end;flex:1}
+.af-flamme{background:none;border:0;padding:2px;cursor:pointer;transform-origin:50% 90%;line-height:0}
+.af-flamme svg{width:30px;height:38px;display:block}
+.af-flamme path{fill:var(--border);transition:fill .2s}
+.af-flamme text{fill:var(--muted);font:800 13px system-ui,sans-serif}
+.af-flamme:hover path{fill:#f0b27a}
+.af-flamme.on path{fill:url(#af-fg)}
+.af-flamme.on text{fill:#fff}
+.af-flamme.on{filter:drop-shadow(0 0 5px rgba(255,150,0,.95)) drop-shadow(0 0 12px rgba(255,70,0,.6));animation:af-flackern 1.4s ease-in-out infinite alternate}
+@keyframes af-flackern{0%{transform:scale(1) rotate(-2deg)}50%{transform:scale(1.05,1.1) rotate(0)}100%{transform:scale(1.02) rotate(2deg)}}
+@media (prefers-reduced-motion:reduce){.af-flamme.on{animation:none}}
+.af-serie{font-weight:600;font-size:15px}
+.af-stufe{font-size:16px!important;color:var(--muted)}
+/* Lern-Chat */
+.af-chat{border:1px solid var(--border);border-radius:14px;background:var(--panel2);overflow:hidden;max-width:720px}
+.af-chatkopf{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--panel);border-bottom:1px solid var(--border)}
+.af-verlauf{display:flex;flex-direction:column;gap:8px;padding:12px;max-height:62vh;overflow-y:auto;scroll-behavior:smooth}
+.af-msg{display:flex;align-items:flex-end;gap:8px;max-width:88%}
+.af-msg.ich{align-self:flex-end;flex-direction:row-reverse}
+.af-ava{flex:none;width:30px;height:30px;border-radius:50%;background:var(--panel);border:1px solid var(--border);display:grid;place-items:center;font-size:17px}
+.af-blase{background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:14px 14px 14px 4px;padding:8px 12px;font-size:15px;line-height:1.4;animation:af-rein .25s ease-out}
+.af-msg.ich .af-blase{background:var(--accent);border-color:var(--accent);color:#fff;border-radius:14px 14px 4px 14px}
+[data-theme=dark] .af-msg.ich .af-blase{color:#2e3440}
+.af-blase.ok{background:var(--af-ok-bg)}
+.af-blase.falsch{background:var(--af-err-bg)}
+.af-blase pre{font:13px/1.5 var(--mono,monospace);margin:6px 0 2px;white-space:pre;overflow-x:auto}
+.af-tippt{display:flex;gap:4px;padding:12px 14px}
+.af-tippt i{width:7px;height:7px;border-radius:50%;background:var(--muted);animation:af-punkt 1s infinite}
+.af-tippt i:nth-child(2){animation-delay:.15s}.af-tippt i:nth-child(3){animation-delay:.3s}
+@keyframes af-punkt{0%,60%,100%{opacity:.25;transform:none}30%{opacity:1;transform:translateY(-3px)}}
+@keyframes af-rein{from{opacity:0;transform:translateY(6px)}}
+.af-chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;padding:10px 12px;border-top:1px solid var(--border);background:var(--panel)}
+.af-chip{font:600 15px system-ui,sans-serif;background:var(--panel);color:var(--accent-text,var(--accent));border:2px solid var(--accent);border-radius:999px;padding:6px 14px;cursor:pointer}
+.af-chip:hover{background:var(--accent);color:#fff}
+.af-chatein{display:flex;gap:6px;align-items:center;padding:10px 12px;border-top:1px solid var(--border);background:var(--panel)}
+.af-chattext{flex:1;min-width:0}
+.af-chatende{padding:10px 12px;border-top:1px solid var(--border);background:var(--panel)}
+/* Bruch in Formeln (alle Fächer): <span class="bruch"><span>Zähler</span><span>Nenner</span></span> */
+.bruch{display:inline-flex;flex-direction:column;vertical-align:middle;text-align:center;margin:0 .15em;line-height:1.3}
+.bruch>span{padding:0 .25em}
+.bruch>span:first-child{border-bottom:1.5px solid currentColor}
+/* Lückentext mit Wortbank (luecken, ziehen:true) */
+.af-bank .af-karte{flex:0 0 auto;border-left-width:1px;border-bottom:3px solid var(--accent)}
+.af-luecken.af-ziehen{line-height:2.6}
+.af-luecke{display:inline-flex;vertical-align:middle;align-items:center;min-width:110px;min-height:38px;margin:2px 3px;padding:2px;border:2px dashed var(--border);border-radius:9px;background:var(--panel2);flex-direction:row}
+.af-luecke .af-karte{line-height:1.3;padding:5px 9px;border-left-width:1px;border-bottom:3px solid var(--accent)}
+.af-luecke.richtig{border-style:solid;border-color:var(--af-ok)}
+/* Buchungssatz: Beträge zum Ziehen (betraege) */
+.af-betraege{margin-bottom:12px}
+.af-bliste{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.af-betrag{display:inline-flex;flex-direction:column;align-items:flex-end;justify-content:flex-end;background:var(--panel);color:var(--text);border:1px solid var(--border);border-left:5px solid var(--accent);border-radius:8px;padding:4px 10px;font:600 15px var(--mono,monospace);cursor:grab;touch-action:none;user-select:none}
+.af-betrag small{font:500 12px system-ui,sans-serif;color:var(--muted)}
+.af-betrag.gewaehlt{outline:3px solid var(--accent)}
+.af-betrag.af-geist{width:auto}
+.af-zahl.ziel{outline:3px solid var(--accent)}
+
+/* Training: Aufgaben auf Zeit und/oder endlos (Aufgaben.training) */
+.af-training{margin-top:6px}
+.tr-karte{background:var(--panel2);border:1px solid var(--border);border-radius:14px;padding:18px 18px 16px;text-align:center;min-height:230px;display:flex;flex-direction:column;align-items:center;gap:12px}
+.tr-titel{margin:0;font-size:18px}
+.tr-regeln{text-align:left;margin:0;padding-left:20px;max-width:560px;color:var(--text)}
+.tr-regeln li{margin:3px 0}
+.tr-start{font-size:17px;padding:10px 22px}
+.tr-zeit{align-self:stretch;height:10px;border-radius:999px;background:var(--border);overflow:hidden}
+.tr-balken{height:100%;width:100%;background:var(--ok,#5e8a45);border-radius:999px;transition:background-color .3s}
+.tr-balken.knapp{background:var(--err,#a8434d)}
+.tr-frage{font:700 clamp(26px,5vw,40px)/1.25 var(--mono,monospace);margin:8px 0 4px;word-break:break-word}
+.tr-sprache{display:block;font:600 13px system-ui,sans-serif;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+.tr-wort{font-family:system-ui,sans-serif}
+.tr-form{display:flex;gap:8px;justify-content:center;width:min(420px,100%)}
+.tr-ein{flex:1;min-width:0;font-size:22px;text-align:center;padding:8px 10px}
+.tr-mc{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;width:min(560px,100%)}
+@media (max-width:480px){.tr-mc{grid-template-columns:minmax(0,1fr)}}
+.tr-opt{display:flex;align-items:center;gap:10px;text-align:left;font:600 18px system-ui,sans-serif;background:var(--panel);color:var(--text);border:2px solid var(--border);border-radius:10px;padding:10px 12px;cursor:pointer}
+.tr-opt:hover:not(:disabled){border-color:var(--accent)}
+.tr-opt.richtig{border-color:var(--ok,#5e8a45);background:var(--plus-bg,#dfeccf)}
+.tr-opt.falsch{border-color:var(--err,#a8434d);background:var(--minus-bg,#f3d9dc)}
+.tr-opt:disabled{cursor:default}
+.tr-taste{flex:none;width:24px;height:24px;border-radius:6px;border:1px solid var(--border);display:grid;place-items:center;font:600 12px var(--mono,monospace);color:var(--muted)}
+.tr-rueck{min-height:24px;font-size:15px}
+.tr-rueck.ok{color:var(--ok,#5e8a45);font-weight:700}
+.tr-rueck.falsch{color:var(--err,#a8434d)}
+.tr-rueck .muted{color:var(--muted);font-size:13px}
+.tr-karte.tr-gut{border-color:var(--ok,#5e8a45);box-shadow:0 0 0 3px color-mix(in srgb,var(--ok,#5e8a45) 30%,transparent)}
+.tr-karte.tr-wackeln{animation:af-wackeln .45s}
+.tr-ergebnis{margin:4px 0 0;font-size:28px}
+.tr-fehler{text-align:left;width:min(560px,100%)}
+.tr-fehler table{border-collapse:collapse;width:100%;margin-top:6px;font-size:14px}
+.tr-fehler td{border-bottom:1px solid var(--border);padding:4px 8px}
+.tr-weiss{color:var(--muted)}
+.tr-info{margin-left:auto;font-size:15px}
+.tr-fehler th{text-align:left;font-size:12px;color:var(--muted);padding:4px 8px;border-bottom:1px solid var(--border)}
+
+</style>
+<script>/* ../../../lib/aufgaben.js */
+/* aufgaben.js – Aufgabenbausteine für alle Fächer: Aufgaben als Daten, Prüfung und Rückmeldung eingebaut
+ *
+ * Einbinden (Pfad zum Ordner pb_public/lib/, z. B. aus BWR/9II/finanzierung/ ../../../lib/):
+ *   <link rel="stylesheet" href="../../../lib/aufgaben.css">   <script src="../../../lib/aufgaben.js"><\/script>
+ * Farben kommen aus den Variablen der Seite (--panel, --panel2, --border, --accent, --text, --muted).
+ *
+ * Aufgabe = Objekt mit typ. Für alle Typen: nr (z. B. '7.1'), frage (Aufgabenstellung, HTML),
+ * erinnerung und material (HTML, stehen über der Aufgabe; erinnerungZu:true = Erinnerung startet zugeklappt), ok (Text bei Erfolg),
+ * Formeln mit Bruchstrich in jedem HTML-Text: <span class="bruch"><span>Zähler</span><span>Nenner</span></span> (aufgaben.css),
+ *   kombi        Kombinierte Aufgabe: teile:[Aufgabe, …] (mindestens zwei, keine Kombi in der Kombi). Teil 2 erscheint
+ *                erst, wenn Teil 1 richtig gelöst ist, usw.; erledigt, wenn der letzte Teil gelöst ist (dann ok).
+ *                nr, frage, erinnerung, material der Kombi stehen über allen Teilen, jeder Teil hat eigene.
+ *                (Früher: danach:{…} an einer Aufgabe – Aufgaben-JSON mit danach wandelt lib/seite.js um.)
+ *   mc           options:[Texte], correct:[Indizes] (mehrere = Mehrfachauswahl, oder multi:true), why:{Index: Erklärung},
+ *                after (Text nach Erfolg), mono, mischen:false (Reihenfolge behalten), sofort:false
+ *                (bei genau einer richtigen Antwort wird sonst beim Antippen sofort geprüft),
+ *                html:true (Antworten als HTML, z. B. Bruch; ohne html sind Antworten reiner Text, „A1<5“ bleibt lesbar).
+ *                Dasselbe Format wie type:'choice' in den Excel-Erklärungen.
+ *   zahlen       felder:[{t (Text), l (Lösung), e (Einheit), h (Hinweis bei Fehler), tol (Toleranz, Std. 0,005)}]
+ *                Eingabe im deutschen Format (1.234,50 €), Knopftext über knopf:'…'
+ *   luecken      text:'… [[richtig|falsch|falsch]] …' → Auswahllisten (erste Antwort richtig, wird gemischt)
+ *                ziehen:true → Wortbank statt Auswahllisten: Wörter in die Lücken ziehen oder erst Wort, dann Lücke
+ *                antippen (Wort in der Lücke antippen = zurück). Bank: je Lücke das richtige Wort, dazu die falschen
+ *                Antworten der Lücken und extra:['…'] (weitere Ablenker), Doppelte nur einmal. [[Wort]] ohne | reicht hier.
+ *   zuordnen     felder:[[id, Titel]], karten:[{t (Text), z (Feld-id)}]; Ziehen mit Maus/Finger oder
+ *                erst Karte, dann Feld antippen. Richtige bleiben liegen, falsche gehen zurück.
+ *   tabelle      Tabelle zum Ausfüllen (z. B. Tilgungsplan): spalten:['Jahr', 'Zinsen', …],
+ *                zeilen:[['1', 40000, {l:2000}, …], …] – Text bzw. Zahl = vorgegeben (Zahlen mit 2 Nachkommastellen),
+ *                {l: Lösung} = Eingabefeld; hinweise:{Spaltenindex: 'Zinsen = Restschuld · 5 %'}, tol (Std. 0,005),
+ *                einheit (z. B. '€', erscheint im Spaltenkopf). Falsche Felder werden rot, Hinweise je Spalte.
+ *   wahrheit     Tabelle mit ja/nein zum Anklicken (z. B. Wahrheitstabelle UND/ODER): spalten:['Titel', 'jahr >= 2000', …]
+ *                (HTML erlaubt), zeilen:[['Oben', true, false, {l:false}], …] – true/false = vorgegeben (ja/nein),
+ *                Text bzw. Zahl = vorgegeben, {l:true|false} = Feld zum Anklicken (leer → ja → nein → ja …);
+ *                werte:['ja', 'nein'] (Beschriftung für true/false), hinweise:{Spaltenindex: 'Text bei Fehler'}.
+ *   freitext     felder:['1. Sicherheit', '2. Sicherheit'] (Beschriftungen, je ein Eingabefeld),
+ *                antworten:[['Grundschuld'], ['Zession', 'Abtretung von Forderungen'], …] (je Eintrag Schreibweisen);
+ *                ein Feld ist richtig, wenn ein Begriff darin vorkommt (Groß/klein, ä/ae egal), jedes Feld braucht
+ *                einen anderen Eintrag. Tippfehler (Abstand bis 45 % bei langen, 30 % bei kurzen Wörtern) gelten als
+ *                „fast richtig“ mit Hinweis auf die Schreibweise; tippfehler:'ok' zählt sie als richtig.
+ *   chat         Lern-Chat wie bei LearningSnacks: name, bild (Emoji), nachrichten:[…], jede Nachricht ist
+ *                'Text des Bots' (HTML erlaubt) oder eine Frage {bot:'Frage', …} mit einer Antwortform:
+ *                  antworten:[{t:'mehr', ok:true, r:'Genau! …'}, {t:'weniger', r:'Nein, …'}]   (Knöpfe)
+ *                  zahl:{l:11900, e:'€', tol}   oder   freitext:{antworten:[…]} (wie Typ freitext)
+ *                  dazu r (Antwort des Bots bei richtig) und rFalsch (Erklärung bei falsch)
+ *                Bei Fehlern erklärt der Bot und macht weiter; am Ende Punkte und „Noch einmal“.
+ *                Gilt als gelöst (fertig), sobald der Chat einmal ganz durchlaufen ist.
+ *   buchungssatz konten:['2800 BK', …] (Auswahl), soll:[['0700 MA', 40000], …], haben:[…],
+ *                steuer:['2600 VORST', '4800 UST'] (für den Hinweis), nebenrechnung (HTML nach Lösung),
+ *                betraege:[['Rechnungsbetrag', 11900], ['', 238], …] → Beträge (z. B. aus einer Kalkulation davor) zum Ziehen,
+ *                Bezeichnung darf leer sein (dann nur der Betrag);
+ *                auf die Betragsfelder oder erst Betrag, dann Feld antippen; auch Ablenker, mehrfach nutzbar,
+ *                jgst:7 → Konten nur mit Kürzel ohne Nummer (konten:['BK', 'UEFE', 'UST']).
+ *                Konto eintippen: Liste filtert nach Nummer oder Kürzel (z. B. „ve“ → 4400 VE).
+ *                „an“ steht wie im Heft auf der Zeile des letzten Soll-Kontos neben dem ersten Haben-Konto.
+ *                prüft: Konten, Soll/Haben vertauscht, fehlende Steuer, Beträge; Lösung im Skill-Format
+ *
+ * API
+ *   Aufgaben.baue(el, a, {fertig})  Baustein in Element el; fertig(a) nach richtiger Lösung (inkl. danach)
+ *   Aufgaben.sequenz({el, key, schritte})  Erarbeitung aus Schritten mit Knöpfen, ✓, Zähler, Zurück/Weiter:
+ *       schritt = {id, kurz (Knopf), titel, html (String oder Funktion), erinnerung, erinnerungZu, material,
+ *                  aufgaben:[…], nach(el) (nach dem Zeichnen, für eigene Grafiken)}
+ *       Schritte mit Aufgaben melden TrainerSync.event (modus 'erarbeitung', aufgabe = schritt.id),
+ *       Info-Schritte gelten beim Weitergehen als erledigt. Gespeichert: <key>-stand {schritt, erledigt}.
+ *   Aufgaben.endlos({el, key, stufen})  Endlos-Modus wie in den Excel-Übungen: Stufen als Flammen, Serie und Rekord,
+ *       „Andere Aufgabe“ (Serie auf 0), „Nächste Aufgabe“ nach richtiger Lösung.
+ *       stufe = {name, neu() → Aufgabe (beliebiger Typ, frisch erzeugt; h/ok für Rechenweg nutzen)}
+ *       Meldet TrainerSync.event (modus 'endlos', stufe 1…n). Gespeichert: <key>-endlos {stufe, rekord:{stufe: n}}.
+ *       Rückgabe {neu() (neue Aufgabe), stufe(n) (Stufe wechseln)}. Vorbild: BWR/9II/finanzierung/zinsrechnung.html
+ *   Aufgaben.training({el, key, training, titel, fertig})  Aufgaben auf Zeit und/oder endlos (Schritt mit "training" im
+ *       Aufgaben-JSON, Format im Kopf von lib/seite.js). Zahlen-Szenarien brauchen lib/formel.js (window.Formel).
+ *       Feste Runde (anzahl) → Ergebnis + Bestleistung; ohne anzahl endlos: ein Fehler beendet die Serie.
+ *       zeit {start, schritt, min}: Balken läuft ab, Zeit je Aufgabe = max(min, start + richtige · schritt).
+ *       versuche:true → falsche Eingabe darf korrigiert werden (sonst sofort Fehler, Lösung kurz sichtbar).
+ *       Gespeichert: <key>-training {stufe, best:{stufe: n}}. Meldet je Runde/Serie TrainerSync.event (modus 'endlos'),
+ *       fertig() nach der ersten Runde (bzw. ab training.ziel richtigen) oder einer Serie ab 10 (bzw. ziel).
+ *       In Aufgaben.sequenz: schritt.training statt schritt.aufgaben.
+ *   Aufgaben.mc.html(a, auswahl:Set, geprueft, reihenfolge?) / Aufgaben.mc.pruefen(a, auswahl) → {ok, gruende}
+ *       für Seiten mit eigenem Ablauf (Excel-Erklärungen: tabelle.js, und-oder.html)
+ *   Aufgaben.finde(antworten, text) → {i (Eintrag), wort, fast} oder null   (Freitext-Abgleich, auch einzeln nutzbar)
+ *   Helfer: zahl('1.234,50 €') → 1234.5, eur(n) → '1.234,50 €', mischen(liste), esc(text), bsText(soll, haben)
+ */
+(function(){
+'use strict';
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;'}[c]));
+const r2 = n => Math.round(n * 100) / 100;
+const zahlText = n => r2(n).toLocaleString('de-DE', {minimumFractionDigits:2, maximumFractionDigits:2});
+const eur = n => r2(n).toLocaleString('de-DE', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' €';
+function zahl(s){
+  s = String(s == null ? '' : s).replace(/€|%|Tage?|\s/g, '');
+  if (!s) return NaN;
+  if (s.includes(',')) s = s.replace(/\./g, '').replace(',', '.');
+  else if (/^-?\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, '');
+  return /^-?\d+(\.\d+)?$/.test(s) ? +s : NaN;
+}
+function mischen(a){ a = a.slice(); for (let i = a.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+const erinnerungHTML = x => x.erinnerung ? `<details class="erinnerung"${x.erinnerungZu ? '' : ' open'}><summary>Erinnerung${x.erinnerungZu ? ' (zum Aufklappen)' : ''}</summary>${x.erinnerung}</details>` : '';
+const fbHTML = fb => fb ? `<div class="af-fb ${fb.ok ? 'ok' : 'falsch'}">${fb.t}</div>` : '';
+const nummern = n => [...Array(n).keys()];
+// Buchungssatz im Format des BWR-Skills: „an“ auf der letzten Soll-Zeile, weitere Haben-Konten bündig darunter
+function bsText(soll, haben){
+  const w1 = Math.max(...soll.map(x => x[0].length)), b1 = Math.max(...soll.map(x => eur(x[1]).length));
+  const w2 = Math.max(...haben.map(x => x[0].length)), b2 = Math.max(...haben.map(x => eur(x[1]).length));
+  const z = (x, w, b) => x[0].padEnd(w) + '  ' + eur(x[1]).padStart(b);
+  const zeilen = soll.map((x, i) => z(x, w1, b1) + (i === soll.length - 1 ? '   an   ' + z(haben[0], w2, b2) : ''));
+  haben.slice(1).forEach(x => zeilen.push(' '.repeat(w1 + b1 + 10) + z(x, w2, b2)));
+  return zeilen.join('\n');
+}
+
+/* ---------- Freitext-Abgleich mit Tippfehlern ---------- */
+const norm = s => String(s || '').toLowerCase().replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss').replace(/[^a-z0-9]+/g, ' ').trim();
+function abstand(a, b){   // Damerau-Levenshtein (vertauschte Nachbarn zählen 1)
+  const d = [];
+  for (let i = 0; i <= a.length; i++){ d[i] = [i]; }
+  for (let j = 1; j <= b.length; j++) d[0][j] = j;
+  for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++){
+    d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) d[i][j] = Math.min(d[i][j], d[i - 2][j - 2] + 1);
+  }
+  return d[a.length][b.length];
+}
+function finde(antworten, text){
+  const t = norm(text); if (!t) return null;
+  const woerter = t.split(' '), stuecke = [];
+  for (let n = 1; n <= 3; n++) for (let i = 0; i + n <= woerter.length; i++) stuecke.push(woerter.slice(i, i + n).join(''));
+  let best = null;
+  antworten.forEach((eintrag, i) => [].concat(eintrag).forEach(wort => {
+    const v = norm(wort), vz = v.replace(/ /g, '');
+    if ((' ' + t + ' ').includes(v) || t.replace(/ /g, '').includes(vz)){ if (!best || best.fast) best = {i, wort:[].concat(eintrag)[0], fast:false, d:0}; return; }
+    const tol = Math.max(1, Math.floor(vz.length * (vz.length >= 10 ? 0.45 : 0.3)));
+    stuecke.forEach(s => { const d = abstand(s, vz); if (d <= tol && (!best || (best.fast && d < best.d))) best = {i, wort:[].concat(eintrag)[0], fast:true, d}; });
+  }));
+  return best;
+}
+
+/* ---------- Typen: zustand(a), html(a, z), pruefen(a, z) → {ok, t} ---------- */
+const mehrfach = a => !!a.multi || a.correct.length > 1;
+const optText = (a, i) => a.html === true ? String(a.options[i]) : esc(a.options[i]);   // HTML nur mit html:true
+const mc = {
+  html(a, sel, geprueft, ord){
+    return `<div class="opts${a.mono ? ' mono' : ''}">` + (ord || nummern(a.options.length)).map(i => {
+      let c = sel.has(i) ? ' sel' : '';
+      if (geprueft && sel.has(i)) c += a.correct.includes(i) ? ' good' : ' bad';
+      return `<button class="opt${c}" type="button" data-opt="${i}">${optText(a, i)}</button>`;
+    }).join('') + `</div><div class="ohint">${mehrfach(a) ? 'Mehrere Antworten möglich.' : 'Genau eine Antwort ist richtig.'}</div>`;
+  },
+  pruefen(a, sel){
+    const falsch = [...sel].filter(i => !a.correct.includes(i)), fehlt = a.correct.filter(i => !sel.has(i));
+    const gruende = falsch.map(i => (a.why && a.why[i]) || `„${optText(a, i)}“ passt nicht.`);
+    if (!falsch.length && fehlt.length) gruende.push(fehlt.length === 1 ? 'Es fehlt noch eine richtige Antwort.' : `Es fehlen noch ${fehlt.length} richtige Antworten.`);
+    return {ok:!falsch.length && !fehlt.length, gruende};
+  }
+};
+const TYPEN = {
+  mc:{
+    zustand:a => ({sel:new Set(), ord:a.mischen === false ? null : mischen(nummern(a.options.length))}),
+    sofort:a => a.sofort !== false && !mehrfach(a),
+    html:(a, z) => mc.html(a, z.sel, z.geprueft, z.ord),
+    pruefen(a, z){
+      if (!z.sel.size) return {ok:false, t:'Wähle zuerst eine Antwort aus.'};
+      z.geprueft = true;
+      const r = mc.pruefen(a, z.sel);
+      return r.ok ? {ok:true, t:'✓ <b>Richtig!</b>' + (a.after ? ' ' + a.after : '')} : {ok:false, t:'Noch nicht ganz.<br>' + r.gruende.join('<br>')};
+    }
+  },
+  zahlen:{
+    zustand:() => ({ein:{}, ok:{}}),
+    html:(a, z) => '<div class="af-felder">' + a.felder.map((f, i) => {
+      const r = z.ok[i];
+      return `<div class="af-zeile"><span class="af-t">${f.t}</span><input class="feld af-zahl${r === true ? ' richtig' : r === false ? ' falsch' : ''}" data-f="${i}" value="${esc(z.ein[i] || '')}" inputmode="decimal" autocomplete="off" aria-label="${esc(String(f.t).replace(/<[^>]+>/g, ''))}"${r === true ? ' readonly' : ''}>`
+        + `<span class="af-e">${f.e || ''}</span><span class="af-m">${r === true ? '✓' : r === false ? '✗' : ''}</span></div>`
+        + (r === false && f.h ? `<div class="af-hinweis">${f.h}</div>` : '');
+    }).join('') + '</div>',
+    pruefen(a, z){
+      a.felder.forEach((f, i) => { z.ok[i] = Math.abs(zahl(z.ein[i]) - f.l) <= (f.tol == null ? 0.005 : f.tol); });
+      return a.felder.every((f, i) => z.ok[i]) ? {ok:true, t:'✓ ' + (a.ok || 'Alles richtig!')} : {ok:false, t:'Noch nicht alles richtig. Die rot markierten Felder stimmen nicht.'};
+    }
+  },
+  luecken:{
+    zustand(a){
+      const teile = String(a.text).split(/\[\[(.*?)\]\]/).map((s, i) => i % 2 ? s.split('|').map(w => w.trim()) : s);
+      const z = {teile, wahl:{}, ok:{}, ord:teile.map(t => Array.isArray(t) ? mischen(nummern(t.length)) : null)};
+      if (a.ziehen){   // Wortbank: je Lücke das richtige Wort, dazu die falschen Antworten und extra (ohne Doppelte)
+        const richtig = teile.filter(Array.isArray).map(t => t[0]);
+        const sonst = [...new Set([...teile.filter(Array.isArray).flatMap(t => t.slice(1)), ...(a.extra || [])])].filter(w => w && !richtig.includes(w));
+        Object.assign(z, {woerter:[...richtig, ...sonst], platz:{}, fix:{}, weg:[], wahl:null});
+        z.ord = mischen(nummern(z.woerter.length));
+      }
+      return z;
+    },
+    // Wortbank: Wort i in Lücke 'L<n>' bzw. zurück (zone ''); höchstens ein Wort pro Lücke
+    legen(z, i, zone){
+      const drin = Object.keys(z.platz).find(k => z.platz[k] === zone);
+      if (zone && drin != null){ if (z.fix[drin]) return; delete z.platz[drin]; }
+      if (!zone) delete z.platz[i]; else z.platz[i] = zone;
+    },
+    html(a, z){
+      let n = 0;
+      if (a.ziehen){
+        const karte = i => `<span class="af-karte${z.fix[i] ? ' fix' : ''}${z.wahl === i ? ' gewaehlt' : ''}${z.weg.includes(i) ? ' weg' : ''}" data-karte="${i}" tabindex="0" role="button">${esc(z.woerter[i])}</span>`;
+        const frei = z.ord.filter(i => z.platz[i] == null);
+        return `<div class="af-pool af-bank" data-zone="">${frei.map(karte).join('') || '<span class="af-leer">Alle Wörter sind verteilt.</span>'}</div>`
+          + '<p class="af-luecken af-ziehen">' + z.teile.map(t => {
+            if (!Array.isArray(t)) return t;
+            const i = n++, w = Object.keys(z.platz).find(k => z.platz[k] === 'L' + i);
+            return `<span class="af-zone af-luecke${z.ok[i] === true ? ' richtig' : ''}" data-zone="L${i}" aria-label="Lücke ${i + 1}">${w != null ? karte(+w) : ''}</span>`;
+          }).join('') + '</p>';
+      }
+      return '<p class="af-luecken">' + z.teile.map((t, j) => {
+        if (!Array.isArray(t)) return t;
+        const i = n++, r = z.ok[i];
+        return `<select data-l="${i}" class="${r === true ? 'richtig' : r === false ? 'falsch' : ''}" aria-label="Lücke ${i + 1}"><option value="">– wählen –</option>`
+          + z.ord[j].map(k => `<option value="${k}"${String(z.wahl[i]) === String(k) ? ' selected' : ''}>${esc(t[k])}</option>`).join('') + '</select>';
+      }).join('') + '</p>';
+    },
+    pruefen(a, z){
+      const n = z.teile.filter(Array.isArray).length;
+      if (a.ziehen){
+        z.weg = []; z.wahl = null;
+        const richtig = z.teile.filter(Array.isArray).map(t => t[0]);
+        Object.keys(z.platz).forEach(w => {
+          const i = +z.platz[w].slice(1);
+          if (z.woerter[w] === richtig[i]){ z.fix[w] = true; z.ok[i] = true; } else { z.weg.push(+w); delete z.platz[w]; }
+        });
+        const k = nummern(n).filter(i => z.ok[i]).length;
+        if (k === n) return {ok:true, t:'✓ ' + (a.ok || 'Alles richtig!')};
+        if (!k && !z.weg.length) return {ok:false, t:'Ziehe zuerst Wörter in die Lücken.'};
+        return {ok:false, t:`${k} von ${n} Lücken richtig. ${z.weg.length ? `${z.weg.length} ${z.weg.length === 1 ? 'Wort ist' : 'Wörter sind'} zurück in die Wortbank gewandert.` : ''}`};
+      }
+      for (let i = 0; i < n; i++) z.ok[i] = String(z.wahl[i]) === '0';
+      return nummern(n).every(i => z.ok[i]) ? {ok:true, t:'✓ ' + (a.ok || 'Alles richtig!')} : {ok:false, t:'Noch nicht alles richtig. Die rot markierten Lücken stimmen nicht.'};
+    }
+  },
+  wahrheit:{
+    zustand:() => ({ein:{}, ok:{}}),
+    html(a, z){
+      const W = a.werte || ['ja', 'nein'], wort = b => b ? W[0] : W[1];
+      const kopf = a.spalten.map(s => `<th>${s}</th>`).join('');
+      const zeilen = a.zeilen.map((r, i) => '<tr>' + r.map((c, j) => {
+        if (typeof c === 'boolean') return `<td class="af-wv ${c ? 'af-ja' : 'af-nein'}">${esc(wort(c))}</td>`;
+        if (!c || typeof c !== 'object') return `<td${j === 0 ? ' class="af-wname"' : ''}>${esc(c == null ? '' : c)}</td>`;
+        const k = i + '-' + j, v = z.ein[k], s = z.ok[k];
+        return `<td class="af-wfeld"><button type="button" class="af-wb${v == null ? '' : v ? ' af-ja' : ' af-nein'}${s === true ? ' richtig' : s === false ? ' falsch' : ''}" data-w="${k}"${s === true ? ' disabled' : ''} aria-label="${esc(String(a.spalten[j]).replace(/<[^>]+>/g, '') + ', Zeile ' + (i + 1))}: ${v == null ? 'leer' : esc(wort(v))}">${v == null ? '?' : esc(wort(v))}</button></td>`;
+      }).join('') + '</tr>').join('');
+      const falsch = Object.keys(z.ok).filter(k => z.ok[k] === false).map(k => +k.split('-')[1]);
+      const hin = [...new Set(falsch)].filter(j => a.hinweise && a.hinweise[j]).map(j => `<div class="af-hinweis">${a.hinweise[j]}</div>`).join('');
+      return `<div class="af-tabelle af-wahrheit"><table><thead><tr>${kopf}</tr></thead><tbody>${zeilen}</tbody></table></div>`
+        + `<div class="af-hinweis">Klicke auf die Felder mit <b>?</b>: ${esc(W[0])} oder ${esc(W[1])}.</div>${hin}`;
+    },
+    pruefen(a, z){
+      let alle = 0, richtig = 0, leer = 0;
+      a.zeilen.forEach((r, i) => r.forEach((c, j) => {
+        if (!c || typeof c !== 'object') return;
+        const k = i + '-' + j; alle++;
+        if (z.ein[k] == null){ leer++; delete z.ok[k]; return; }
+        z.ok[k] = z.ein[k] === c.l; if (z.ok[k]) richtig++;
+      }));
+      if (richtig === alle) return {ok:true, t:'✓ ' + (a.ok || 'Alles richtig ausgefüllt!')};
+      return {ok:false, t:`${richtig} von ${alle} Feldern richtig.${leer ? ` ${leer} ${leer === 1 ? 'Feld ist' : 'Felder sind'} noch leer.` : ''}${richtig < alle - leer ? ' Die rot markierten Felder stimmen nicht.' : ''}`};
+    }
+  },
+  zuordnen:{
+    zustand:a => ({platz:{}, fix:{}, ord:mischen(nummern(a.karten.length)), wahl:null, weg:[]}),
+    html(a, z){
+      const karte = i => `<div class="af-karte${z.fix[i] ? ' fix' : ''}${z.wahl === i ? ' gewaehlt' : ''}${z.weg.includes(i) ? ' weg' : ''}" data-karte="${i}" tabindex="0" role="button">${a.karten[i].t}</div>`;
+      const frei = z.ord.filter(i => z.platz[i] == null);
+      return `<div class="af-pool" data-zone="">${frei.map(karte).join('') || '<span class="af-leer">Alle Karten sind verteilt.</span>'}</div>`
+        + `<div class="af-zonen" style="--n:${a.felder.length}">${a.felder.map(([id, t]) => `<div class="af-zone" data-zone="${esc(id)}"><div class="af-zt">${t}</div>${z.ord.filter(i => z.platz[i] === id).map(karte).join('')}</div>`).join('')}</div>`;
+    },
+    pruefen(a, z){
+      z.weg = []; z.wahl = null;
+      a.karten.forEach((k, i) => { if (z.platz[i] != null){ if (z.platz[i] === k.z) z.fix[i] = true; else { z.weg.push(i); delete z.platz[i]; } } });
+      const n = a.karten.filter((k, i) => z.fix[i]).length;
+      if (n === a.karten.length) return {ok:true, t:`✓ ${a.ok || `Alle ${n} Karten richtig zugeordnet!`}`};
+      if (!n && !z.weg.length) return {ok:false, t:'Ziehe zuerst Karten in die Felder.'};
+      return {ok:false, t:`${n} von ${a.karten.length} richtig. ${z.weg.length ? `${z.weg.length} ${z.weg.length === 1 ? 'Karte ist' : 'Karten sind'} zurück in den Stapel gewandert. ` : ''}Ordne die übrigen Karten zu.`};
+    }
+  },
+  tabelle:{
+    zustand:() => ({ein:{}, ok:{}}),
+    html(a, z){
+      const fmt = v => typeof v === 'number' ? zahlText(v) : esc(v == null ? '' : v);
+      const kopf = a.spalten.map(s => `<th>${esc(s)}${a.einheit && s !== a.spalten[0] ? ` <small>(${esc(a.einheit)})</small>` : ''}</th>`).join('');
+      const zeilen = a.zeilen.map((r, i) => '<tr>' + r.map((c, j) => {
+        if (!c || typeof c !== 'object') return `<td${typeof c === 'number' ? ' class="zahl"' : ''}>${fmt(c)}</td>`;
+        const k = i + '-' + j, s = z.ok[k];
+        return `<td><input class="feld af-zahl${s === true ? ' richtig' : s === false ? ' falsch' : ''}" data-f="${k}" value="${esc(z.ein[k] || '')}" inputmode="decimal" autocomplete="off" aria-label="${esc(a.spalten[j] + ', Zeile ' + (i + 1))}"${s === true ? ' readonly' : ''}></td>`;
+      }).join('') + '</tr>').join('');
+      const falsch = Object.keys(z.ok).filter(k => z.ok[k] === false).map(k => +k.split('-')[1]);
+      const hin = [...new Set(falsch)].filter(j => a.hinweise && a.hinweise[j]).map(j => `<div class="af-hinweis"><b>${esc(a.spalten[j])}:</b> ${a.hinweise[j]}</div>`).join('');
+      return `<div class="af-tabelle"><table><thead><tr>${kopf}</tr></thead><tbody>${zeilen}</tbody></table></div>${hin}`;
+    },
+    pruefen(a, z){
+      let alle = 0, richtig = 0, leer = 0;
+      a.zeilen.forEach((r, i) => r.forEach((c, j) => {
+        if (!c || typeof c !== 'object') return;
+        const k = i + '-' + j, v = zahl(z.ein[k]); alle++;
+        if (isNaN(v)){ leer++; delete z.ok[k]; return; }
+        z.ok[k] = Math.abs(v - c.l) <= (a.tol == null ? 0.005 : a.tol); if (z.ok[k]) richtig++;
+      }));
+      if (richtig === alle) return {ok:true, t:'✓ ' + (a.ok || 'Alles richtig ausgefüllt!')};
+      return {ok:false, t:`${richtig} von ${alle} Feldern richtig.${leer ? ` ${leer} ${leer === 1 ? 'Feld ist' : 'Felder sind'} noch leer.` : ''}${richtig < alle - leer ? ' Die rot markierten Felder stimmen nicht.' : ''}`};
+    }
+  },
+  freitext:{
+    zustand:() => ({ein:{}, st:{}, msg:{}}),
+    html:(a, z) => '<div class="af-felder">' + a.felder.map((f, i) => {
+      const s = z.st[i];
+      return `<div class="af-zeile"><label class="af-t" for="af-ft-${i}">${f}</label><input class="feld af-text${s === 'ok' ? ' richtig' : s === 'fast' ? ' fast' : s ? ' falsch' : ''}" id="af-ft-${i}" data-f="${i}" value="${esc(z.ein[i] || '')}" autocomplete="off" spellcheck="false"${s === 'ok' ? ' readonly' : ''}>`
+        + `<span class="af-m">${s === 'ok' ? '✓' : s === 'fast' ? '≈' : s ? '✗' : ''}</span></div>` + (z.msg[i] ? `<div class="af-hinweis">${z.msg[i]}</div>` : '');
+    }).join('') + '</div>',
+    pruefen(a, z){
+      const belegt = {};
+      z.st = {}; z.msg = {};
+      a.felder.forEach((f, i) => {
+        const r = finde(a.antworten, z.ein[i]);
+        if (!norm(z.ein[i])){ z.st[i] = 'leer'; z.msg[i] = 'Dieses Feld ist noch leer.'; }
+        else if (!r){ z.st[i] = 'falsch'; z.msg[i] = a.h || 'Das passt nicht. Schau noch einmal in die Erklärung.'; }
+        else if (belegt[r.i] != null){ z.st[i] = 'falsch'; z.msg[i] = 'Das hast du schon in einem anderen Feld genannt. Nenne etwas anderes.'; }
+        else if (r.fast && a.tippfehler !== 'ok'){ z.st[i] = 'fast'; z.msg[i] = `Fast richtig – meinst du „${esc(r.wort)}“? Prüfe die Schreibweise.`; belegt[r.i] = i; }
+        else { z.st[i] = 'ok'; if (r.fast) z.msg[i] = `Richtig. Schreibweise: „${esc(r.wort)}“.`; belegt[r.i] = i; }
+      });
+      return a.felder.every((f, i) => z.st[i] === 'ok') ? {ok:true, t:'✓ ' + (a.ok || 'Alles richtig!')} : {ok:false, t:'Noch nicht alles richtig.'};
+    }
+  },
+  chat:{
+    zustand:() => ({i:0, log:[], warte:null, punkte:0, fragen:0, tippt:false, ende:false}),
+    sofort:() => true,
+    html(a, z){
+      const ava = `<span class="af-ava" aria-hidden="true">${a.bild || '🤖'}</span>`;
+      const blase = m => m.wer === 'ich' ? `<div class="af-msg ich"><div class="af-blase">${esc(m.text)}</div></div>`
+        : `<div class="af-msg bot">${ava}<div class="af-blase${m.art ? ' ' + m.art : ''}">${m.html}</div></div>`;
+      let ein = '';
+      const q = z.warte != null ? a.nachrichten[z.warte] : null;
+      if (q && q.antworten) ein = `<div class="af-chips">${q.antworten.map((x, j) => `<button class="af-chip" type="button" data-ca="${j}">${esc(x.t)}</button>`).join('')}</div>`;
+      else if (q) ein = `<div class="af-chatein"><input class="feld af-chattext" ${q.zahl ? 'inputmode="decimal"' : ''} autocomplete="off" placeholder="${q.zahl ? 'Zahl eingeben' : 'Antwort eingeben'}" aria-label="Deine Antwort">${q.zahl && q.zahl.e ? `<span>${q.zahl.e}</span>` : ''}<button class="btn haupt af-senden" type="button">Senden</button></div>`;
+      else if (z.ende) ein = `<div class="af-chatende"><b>Geschafft!</b> Du hast ${z.punkte} von ${z.fragen} Fragen auf Anhieb richtig beantwortet. <button class="btn klein af-neu" type="button">Noch einmal</button></div>`;
+      return `<div class="af-chat"><div class="af-chatkopf">${ava}<b>${esc(a.name || 'Lern-Chat')}</b></div><div class="af-verlauf" aria-live="polite">${z.log.map(blase).join('')}`
+        + (z.tippt ? `<div class="af-msg bot">${ava}<div class="af-blase af-tippt" aria-label="schreibt …"><i></i><i></i><i></i></div></div>` : '') + `</div>${ein}</div>`;
+    },
+    start(ctx){ const z = ctx.z; z.ctx = ctx; if (!z.log.length && !z.tippt) chatWeiter(z, ctx.a); },
+    nach(el){ const v = el.querySelector('.af-verlauf'); if (v) v.scrollTop = v.scrollHeight; const i = el.querySelector('.af-chattext'); if (i && document.activeElement && el.contains(document.activeElement) === false && el.dataset.fokus) i.focus(); },
+    pruefen:() => ({ok:false, t:''})
+  },
+  buchungssatz:{
+    zustand:() => ({soll:[{k:'', b:''}], haben:[{k:'', b:''}]}),
+    html(a, z){
+      if (z.geloest) return `<pre class="af-bs">${esc(bsText(a.soll, a.haben))}</pre>` + (a.nebenrechnung ? `<div class="af-hinweis">${a.nebenrechnung}</div>` : '');
+      const ph = a.jgst === 7 ? 'Konto, z. B. BK' : 'Konto: Nr. oder Kürzel';
+      // Raster: Zeile 1 Überschriften, Soll ab Zeile 2; „an“ und das erste Haben-Konto auf der Zeile des letzten Soll-Kontos
+      const nS = z.soll.length, nH = z.haben.length, pos = (r, c) => ` style="grid-row:${r};grid-column:${c}"`;
+      const zeile = (s, x, i, r, c) => `<div class="af-bz"${pos(r, c)}><span class="af-kwahl"><input class="feld af-konto" data-seite="${s}" data-i="${i}" data-w="k" value="${esc(x.k)}" placeholder="${ph}" autocomplete="off" spellcheck="false" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-label="${s === 'soll' ? 'Soll' : 'Haben'}-Konto ${i + 1}"></span>`
+        + `<input class="feld af-zahl" data-seite="${s}" data-i="${i}" data-w="b" value="${esc(x.b)}" placeholder="Betrag" inputmode="decimal" autocomplete="off" aria-label="Betrag in €">`
+        + (z[s].length > 1 ? `<button class="af-x" type="button" data-weg="${s}" data-i="${i}" aria-label="Zeile entfernen">×</button>` : '') + '</div>';
+      const raster = `<div class="af-sk"${pos(1, 1)}>Soll</div>` + z.soll.map((x, i) => zeile('soll', x, i, 2 + i, 1)).join('')
+        + `<button class="btn klein af-plus" type="button" data-plus="soll"${pos(2 + nS, 1)}>+ Soll-Konto</button>`
+        + `<div class="af-an"${pos(1 + nS, 2)}>an</div>`
+        + `<div class="af-sk"${pos(nS, 3)}>Haben</div>` + z.haben.map((x, i) => zeile('haben', x, i, 1 + nS + i, 3)).join('')
+        + `<button class="btn klein af-plus" type="button" data-plus="haben"${pos(1 + nS + nH, 3)}>+ Haben-Konto</button>`;
+      const bank = a.betraege ? `<div class="af-betraege"><div class="af-sk">Beträge – auf ein Betragsfeld ziehen oder erst Betrag, dann Feld antippen</div><div class="af-bliste">`
+        + a.betraege.map(([t, b], i) => `<span class="af-betrag${z.bwahl === i ? ' gewaehlt' : ''}" data-betrag="${i}" tabindex="0" role="button">${t ? `<small>${esc(t)}</small>` : ''}${esc(zahlText(b))} €</span>`).join('') + '</div></div>' : '';
+      return bank + `<div class="af-builder">${raster}</div>`;
+    },
+    pruefen(a, z){
+      const ein = s => z[s].filter(x => x.k || String(x.b).trim()).map(x => ({k:x.k, b:zahl(x.b)}));
+      const s = ein('soll'), h = ein('haben'), alle = [...s, ...h], ks = l => l.map(x => x.k || x[0]).sort().join('|');
+      const los = [...a.soll, ...a.haben], n = los.length;
+      let t = null;
+      if (!s.length || !h.length) t = 'Trage mindestens ein Soll-Konto und ein Haben-Konto ein.';
+      else if (alle.some(x => !x.k)) t = 'Wähle zu jedem Betrag ein Konto aus.';
+      else if (alle.some(x => !a.konten.includes(x.k))) t = `Das Konto „${esc(alle.find(x => !a.konten.includes(x.k)).k)}“ gibt es hier nicht. Wähle die Konten aus der Liste.`;
+      else if (alle.some(x => isNaN(x.b))) t = 'Trage zu jedem Konto einen Betrag ein, z. B. 12.500,00.';
+      else if (new Set(alle.map(x => x.k)).size !== alle.length) t = 'Jedes Konto darf nur einmal im Buchungssatz stehen.';
+      else if (ks(s) === ks(a.haben) && ks(h) === ks(a.soll)) t = 'Soll und Haben sind vertauscht. Überlege bei jedem Konto: Nimmt es zu oder ab, und auf welcher Seite steht es?';
+      else if (ks(s) !== ks(a.soll) || ks(h) !== ks(a.haben)){
+        const st = los.find(x => (a.steuer || []).includes(x[0]) && !alle.some(y => y.k === x[0]));
+        t = 'Die Konten stimmen noch nicht. ' + (st ? `Denke an das Konto ${st[0]}.` : alle.length > n ? 'Es sind zu viele Konten.' : alle.length < n ? 'Es fehlt ein Konto.' : 'Überlege, welche Konten sich durch den Geschäftsfall verändern.');
+      } else {
+        const soll = (l, k) => l.find(x => x[0] === k)[1];
+        const falsch = [...s.filter(x => Math.abs(x.b - soll(a.soll, x.k)) > 0.005), ...h.filter(x => Math.abs(x.b - soll(a.haben, x.k)) > 0.005)];
+        if (falsch.length) t = `Die Konten stimmen. Prüfe den Betrag bei ${falsch.map(x => x.k).join(', ')}.`;
+      }
+      return t ? {ok:false, t} : {ok:true, t:'✓ ' + (a.ok || 'Richtig!')};
+    }
+  }
+};
+
+/* ---------- Lern-Chat: Ablauf ---------- */
+const textVon = m => typeof m === 'string' ? m : m.bot;
+function chatSage(z, html, art, dann){
+  z.tippt = true; z.ctx.zeichne();
+  const fertig = () => { z.tippt = false; z.weiter = null; z.log.push({wer:'bot', html, art}); dann(); };
+  z.weiter = fertig;
+  z.timer = setTimeout(fertig, Math.min(1600, 350 + String(html).replace(/<[^>]+>/g, '').length * 12));
+}
+function chatWeiter(z, a){
+  if (z.i >= a.nachrichten.length){
+    z.ende = true; z.ctx.zeichne();
+    if (!z.geloest){ z.geloest = true; if (z.ctx.opt.fertig) z.ctx.opt.fertig(a); }
+    return;
+  }
+  const m = a.nachrichten[z.i];
+  chatSage(z, textVon(m), null, () => {
+    if (typeof m === 'object' && (m.antworten || m.zahl || m.freitext)){ z.warte = z.i; z.ctx.zeichne(); return; }
+    z.i++; z.ctx.zeichne(); chatWeiter(z, a);
+  });
+}
+function chatAntwort(ctx, wert, j){
+  const {a, z} = ctx, q = a.nachrichten[z.warte];
+  if (!q) return;
+  let ok, text, r;
+  if (q.antworten){ const x = q.antworten[j]; ok = !!x.ok; text = x.t; r = x.r; }
+  else if (q.zahl){ if (!String(wert).trim()) return; ok = Math.abs(zahl(wert) - q.zahl.l) <= (q.zahl.tol == null ? 0.005 : q.zahl.tol); text = wert + (q.zahl.e && !/€|%/.test(wert) ? ' ' + q.zahl.e : ''); }
+  else { if (!String(wert).trim()) return; const f = finde(q.freitext.antworten, wert); ok = !!f; text = wert; if (f && f.fast) r = (q.r || 'Richtig!') + ` (Schreibweise: „${esc(f.wort)}“)`; }
+  z.fragen++; if (ok) z.punkte++;
+  z.log.push({wer:'ich', text}); z.warte = null; z.i++;
+  chatSage(z, r || (ok ? q.r || '👍 Richtig!' : q.rFalsch || 'Das stimmt leider nicht.'), ok ? 'ok' : 'falsch', () => chatWeiter(z, a));
+}
+
+/* ---------- Baustein zeichnen und bedienen ---------- */
+function baue(el, a, opt){
+  opt = opt || {};
+  if (a.typ === 'kombi') return baueKombi(el, a, opt);
+  const typ = TYPEN[a.typ];
+  if (!typ) throw new Error('aufgaben.js: unbekannter typ ' + a.typ);
+  const z = a._z || (a._z = typ.zustand(a));
+  const ctx = {a, z, typ, opt, el, zeichne(){
+    const sofort = typ.sofort && typ.sofort(a);
+    el.innerHTML = erinnerungHTML(a)
+      + (a.material ? `<div class="material">${a.material}</div>` : '')
+      + (a.frage ? `<p class="af-frage">${a.nr ? `<span class="af-nr">${a.nr}</span>` : ''}${a.frage}</p>` : '')
+      + typ.html(a, z)
+      + (!z.geloest && !sofort ? `<div class="af-knoepfe"><button class="btn haupt af-pruefen" type="button">${a.knopf || 'Prüfen'}</button></div>` : '')
+      + fbHTML(z.fb);
+    if (typ.nach) typ.nach(el, a, z);
+  }};
+  el.classList.add('af'); el._af = ctx;
+  if (typ.start) typ.start(ctx); else ctx.zeichne();
+  if (typ.start && !el.innerHTML) ctx.zeichne();
+  return ctx;
+}
+function pruefe(ctx){
+  const {a, z, typ, opt} = ctx, r = typ.pruefen(a, z);
+  z.fb = {ok:r.ok, t:r.t};
+  const neu = r.ok && !z.geloest;
+  if (neu) z.geloest = true;
+  ctx.zeichne();
+  if (neu && opt.fertig) opt.fertig(a);
+}
+// Kombinierte Aufgabe: Teile nacheinander, der nächste erscheint nach richtiger Lösung des vorigen
+function baueKombi(el, a, opt){
+  const z = a._z || (a._z = {geloest:false});
+  el.classList.add('af-kombi');
+  el.innerHTML = erinnerungHTML(a) + (a.material ? `<div class="material">${a.material}</div>` : '')
+    + (a.frage ? `<p class="af-frage">${a.nr ? `<span class="af-nr">${a.nr}</span>` : ''}${a.frage}</p>` : '') + '<div class="af-teile"></div><div class="af-kende"></div>';
+  const box = el.querySelector('.af-teile'), T = a.teile || [];
+  const ende = () => { el.querySelector('.af-kende').innerHTML = a.ok ? fbHTML({ok:true, t:'✓ ' + a.ok}) : ''; };
+  function zeige(i){
+    const d = document.createElement('div'); d.className = 'af-teil'; box.appendChild(d);
+    baue(d, T[i], {fertig:() => weiter(i)});
+  }
+  function weiter(i){
+    if (i + 1 < T.length){ if (box.children.length === i + 1){ zeige(i + 1); const n = box.children[i + 1]; if (n.scrollIntoView) n.scrollIntoView({behavior:'smooth', block:'nearest'}); } return; }
+    if (!z.geloest){ z.geloest = true; ende(); if (opt.fertig) opt.fertig(a); }
+  }
+  // schon gelöste Teile (Zurückblättern): alle bis zum ersten offenen zeigen
+  let i = 0; zeige(0);
+  while (i + 1 < T.length && T[i]._z && T[i]._z.geloest){ i++; zeige(i); }
+  if (z.geloest) ende();
+  return {a, z, el};
+}
+const ctxVon = t => { const w = t.closest && t.closest('.af'); return w && w._af; };
+
+document.addEventListener('click', e => {
+  const ctx = ctxVon(e.target); if (!ctx || zieht) return;
+  const {a, z} = ctx, t = e.target;
+  if (t.closest('.af-pruefen')) return pruefe(ctx);
+  if (a.typ === 'chat'){
+    const c = t.closest('[data-ca]');
+    if (c) return chatAntwort(ctx, null, +c.dataset.ca);
+    if (t.closest('.af-senden')){ const i = ctx.el.querySelector('.af-chattext'); ctx.el.dataset.fokus = '1'; return chatAntwort(ctx, i ? i.value : ''); }
+    if (t.closest('.af-neu')){ clearTimeout(z.timer); Object.assign(z, TYPEN.chat.zustand(), {geloest:z.geloest, ctx}); return chatWeiter(z, a); }
+    if (z.tippt && z.weiter && t.closest('.af-verlauf')){ clearTimeout(z.timer); return z.weiter(); }
+    return;
+  }
+  const w = t.closest('[data-w]');
+  if (w && a.typ === 'wahrheit'){
+    if (z.geloest || z.ok[w.dataset.w]) return;
+    const v = z.ein[w.dataset.w];
+    z.ein[w.dataset.w] = v == null ? true : !v; delete z.ok[w.dataset.w]; z.fb = null;
+    ctx.zeichne(); const neu = ctx.el.querySelector(`[data-w="${w.dataset.w}"]`); if (neu) neu.focus();
+    return;
+  }
+  const o = t.closest('[data-opt]');
+  if (o && a.typ === 'mc'){
+    if (z.geloest) return;
+    const i = +o.dataset.opt;
+    if (mehrfach(a)){ z.sel.has(i) ? z.sel.delete(i) : z.sel.add(i); } else z.sel = new Set([i]);
+    z.geprueft = false; z.fb = null;
+    return ctx.typ.sofort(a) ? pruefe(ctx) : ctx.zeichne();
+  }
+  if (a.typ === 'zuordnen' || (a.typ === 'luecken' && a.ziehen)){
+    const k = t.closest('[data-karte]'), zo = t.closest('[data-zone]');
+    // Lückentext: Wort in einer Lücke antippen (nichts gewählt) → zurück in die Wortbank
+    if (k && a.typ === 'luecken' && z.wahl == null && z.platz[+k.dataset.karte] != null && !z.fix[+k.dataset.karte]){ legen(ctx, +k.dataset.karte, ''); return ctx.zeichne(); }
+    const inLuecke = k && a.typ === 'luecken' && z.platz[+k.dataset.karte] != null && z.wahl != null && z.wahl !== +k.dataset.karte;
+    if (k && !z.fix[+k.dataset.karte] && !inLuecke){ z.wahl = z.wahl === +k.dataset.karte ? null : +k.dataset.karte; z.weg = []; return ctx.zeichne(); }
+    if (zo && z.wahl != null){ legen(ctx, z.wahl, zo.dataset.zone); z.wahl = null; return ctx.zeichne(); }
+  }
+  if (a.typ === 'buchungssatz'){
+    const p = t.closest('[data-plus]'), w = t.closest('[data-weg]'), bt = t.closest('[data-betrag]'), feld = t.closest('.af-zahl[data-seite]');
+    if (bt){ z.bwahl = z.bwahl === +bt.dataset.betrag ? null : +bt.dataset.betrag; return ctx.zeichne(); }
+    if (feld && z.bwahl != null){ betragSetzen(ctx, feld, z.bwahl); return; }
+    if (p){ z[p.dataset.plus].push({k:'', b:''}); return ctx.zeichne(); }
+    if (w){ z[w.dataset.weg].splice(+w.dataset.i, 1); return ctx.zeichne(); }
+  }
+});
+document.addEventListener('input', e => {
+  const ctx = ctxVon(e.target); if (!ctx) return;
+  const t = e.target, d = t.dataset;
+  if (d.f != null) ctx.z.ein[d.f] = t.value;
+  else if (d.seite) ctx.z[d.seite][+d.i][d.w] = t.value;
+});
+document.addEventListener('change', e => {
+  const ctx = ctxVon(e.target); if (!ctx || e.target.dataset.l == null) return;
+  ctx.z.wahl[e.target.dataset.l] = e.target.value; delete ctx.z.ok[e.target.dataset.l]; e.target.className = '';
+});
+document.addEventListener('keydown', e => {
+  if (e.target.matches && e.target.matches('.af-konto')) return kwTaste(e);
+  if (e.key !== 'Enter') return;
+  const ctx = ctxVon(e.target); if (!ctx) return;
+  if (e.target.matches('.af-chattext')){ e.preventDefault(); ctx.el.dataset.fokus = '1'; chatAntwort(ctx, e.target.value); }
+  else if (e.target.matches('input')){ e.preventDefault(); pruefe(ctx); }
+  else if (e.target.matches('[data-karte]')){ e.preventDefault(); e.target.click(); }
+});
+
+/* Zuordnen: Ziehen mit Maus, Stift oder Finger */
+let zieht = false, zug = null;
+function legen(ctx, i, zone){
+  const z = ctx.z; if (z.fix[i]) return;
+  if (ctx.typ.legen) ctx.typ.legen(z, i, zone); else if (!zone) delete z.platz[i]; else z.platz[i] = zone;
+  z.weg = []; z.fb = null;
+}
+document.addEventListener('pointerdown', e => {
+  const k = e.target.closest && e.target.closest('.af-karte'); if (!k || k.classList.contains('fix')) return;
+  zug = {ctx:ctxVon(k), i:+k.dataset.karte, el:k, x:e.clientX, y:e.clientY, geist:null};
+});
+document.addEventListener('pointermove', e => {
+  if (!zug) return;
+  if (!zug.geist){
+    if (Math.hypot(e.clientX - zug.x, e.clientY - zug.y) < 6) return;
+    zug.geist = zug.el.cloneNode(true); zug.geist.className = 'af-karte af-geist'; document.body.appendChild(zug.geist);
+    zug.el.classList.add('quelle'); zieht = true;
+  }
+  e.preventDefault();
+  zug.geist.style.left = (e.clientX - 110) + 'px'; zug.geist.style.top = (e.clientY - 18) + 'px';
+  zug.ctx.el.querySelectorAll('.ziel').forEach(x => x.classList.remove('ziel'));
+  const ziel = document.elementFromPoint(e.clientX, e.clientY), zo = ziel && ziel.closest('.af-zone');
+  if (zo && zug.ctx.el.contains(zo)) zo.classList.add('ziel');
+});
+document.addEventListener('pointerup', e => {
+  if (!zug) return;
+  const g = zug; zug = null;
+  if (!g.geist) return;
+  g.geist.remove();
+  const ziel = document.elementFromPoint(e.clientX, e.clientY), zo = ziel && ziel.closest('[data-zone]');
+  if (zo && g.ctx.el.contains(zo)) legen(g.ctx, g.i, zo.dataset.zone);
+  g.ctx.zeichne(); setTimeout(() => { zieht = false; }, 0);
+});
+document.addEventListener('pointercancel', () => { if (zug && zug.geist){ zug.geist.remove(); zug.ctx.zeichne(); } zug = null; zieht = false; });
+
+/* Buchungssatz: Konto suchen – Liste unter dem Feld, gefiltert nach Nummer oder Kürzel */
+function kontoTreffer(konten, q){
+  q = String(q || '').trim().toLowerCase();
+  if (!q) return konten.slice();
+  const wert = k => { k = k.toLowerCase(); return k.split(/\s+/).some(w => w.startsWith(q)) ? 0 : k.includes(q) ? 1 : 2; };
+  return konten.map(k => [wert(k), k]).filter(x => x[0] < 2).sort((x, y) => x[0] - y[0]).map(x => x[1]);
+}
+let KW = null;   // offene Liste {inp, l (Treffer), i (markiert), box}
+function kwZu(){ if (KW){ KW.box.remove(); KW.inp.setAttribute('aria-expanded', 'false'); KW = null; } }
+function kwZeige(inp){
+  const ctx = ctxVon(inp); if (!ctx) return;
+  const voll = ctx.a.konten.includes(inp.value);   // schon gewähltes Konto: ganze Liste zeigen
+  const l = kontoTreffer(ctx.a.konten, voll ? '' : inp.value);
+  if (!KW || KW.inp !== inp){ kwZu(); const box = document.createElement('div'); box.className = 'af-kliste'; box.setAttribute('role', 'listbox'); inp.parentNode.appendChild(box); KW = {inp, box}; }
+  KW.l = l; KW.i = l.length ? Math.max(0, voll ? l.indexOf(inp.value) : 0) : -1;
+  KW.box.innerHTML = l.length ? l.map((k, j) => `<div class="af-kopt${j === KW.i ? ' an' : ''}" role="option" data-konto="${esc(k)}">${esc(k)}</div>`).join('') : '<div class="af-kleer">kein passendes Konto</div>';
+  inp.setAttribute('aria-expanded', 'true');
+}
+function kwWahl(inp, k){
+  const ctx = ctxVon(inp); kwZu(); if (!ctx) return;
+  const {seite, i} = inp.dataset;
+  ctx.z[seite][+i].k = k; ctx.z.fb = null; ctx.zeichne();
+  const b = ctx.el.querySelector(`.af-zahl[data-seite="${seite}"][data-i="${i}"]`); if (b) b.focus();
+}
+function kwTaste(e){
+  const inp = e.target;
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp'){
+    e.preventDefault(); if (!KW || KW.inp !== inp) return kwZeige(inp);
+    if (!KW.l.length) return;
+    KW.i = (KW.i + (e.key === 'ArrowDown' ? 1 : -1) + KW.l.length) % KW.l.length;
+    KW.box.querySelectorAll('.af-kopt').forEach((o, j) => o.classList.toggle('an', j === KW.i));
+    const o = KW.box.children[KW.i]; if (o && o.scrollIntoView) o.scrollIntoView({block:'nearest'});
+  } else if (e.key === 'Enter'){
+    e.preventDefault(); if (KW && KW.inp === inp && KW.l[KW.i]) kwWahl(inp, KW.l[KW.i]);
+  } else if (e.key === 'Escape' && KW){ e.preventDefault(); kwZu(); }
+}
+document.addEventListener('focusin', e => { if (e.target.matches && e.target.matches('.af-konto')){ e.target.select(); kwZeige(e.target); } });
+document.addEventListener('input', e => { if (e.target.matches && e.target.matches('.af-konto')) kwZeige(e.target); });
+document.addEventListener('pointerdown', e => {
+  const o = e.target.closest && e.target.closest('.af-kopt');
+  if (o && KW){ e.preventDefault(); kwWahl(KW.inp, o.dataset.konto); }
+});
+// Feld verlassen: eindeutige Eingabe („ve“, „4400“) wird zum Konto, sonst bleibt der Text (Prüfen meldet es)
+document.addEventListener('focusout', e => {
+  const inp = e.target; if (!inp.matches || !inp.matches('.af-konto')) return;
+  const ctx = ctxVon(inp); if (KW && KW.inp === inp) kwZu(); if (!ctx) return;
+  const v = inp.value.trim(), K = ctx.a.konten, lv = v.toLowerCase(), t = kontoTreffer(K, v);
+  const k = !v ? '' : K.find(x => x.toLowerCase() === lv || x.toLowerCase().split(/\s+/).includes(lv)) || (t.length === 1 ? t[0] : null);
+  if (k !== null){ inp.value = k; ctx.z[inp.dataset.seite][+inp.dataset.i].k = k; }
+});
+
+/* Buchungssatz: Betrag aus der Liste (betraege) in ein Betragsfeld legen – antippen oder ziehen */
+function betragSetzen(ctx, feld, i){
+  ctx.z[feld.dataset.seite][+feld.dataset.i].b = zahlText(ctx.a.betraege[i][1]);
+  ctx.z.bwahl = null; ctx.z.fb = null; ctx.zeichne();
+}
+let bzug = null;
+document.addEventListener('pointerdown', e => {
+  const b = e.target.closest && e.target.closest('.af-betrag'); if (!b) return;
+  bzug = {ctx:ctxVon(b), i:+b.dataset.betrag, el:b, x:e.clientX, y:e.clientY, geist:null};
+});
+document.addEventListener('pointermove', e => {
+  if (!bzug) return;
+  if (!bzug.geist){
+    if (Math.hypot(e.clientX - bzug.x, e.clientY - bzug.y) < 6) return;
+    bzug.geist = bzug.el.cloneNode(true); bzug.geist.classList.add('af-geist'); document.body.appendChild(bzug.geist);
+  }
+  e.preventDefault();
+  bzug.geist.style.left = (e.clientX - 50) + 'px'; bzug.geist.style.top = (e.clientY - 18) + 'px';
+  bzug.ctx.el.querySelectorAll('.af-zahl.ziel').forEach(x => x.classList.remove('ziel'));
+  const ziel = document.elementFromPoint(e.clientX, e.clientY), f = ziel && ziel.closest('.af-zahl[data-seite]');
+  if (f && bzug.ctx.el.contains(f)) f.classList.add('ziel');
+});
+document.addEventListener('pointerup', e => {
+  if (!bzug) return;
+  const g = bzug; bzug = null;
+  if (!g.geist) return;
+  g.geist.remove();
+  const ziel = document.elementFromPoint(e.clientX, e.clientY), f = ziel && ziel.closest('.af-zahl[data-seite]');
+  if (f && g.ctx.el.contains(f)) betragSetzen(g.ctx, f, g.i); else g.ctx.zeichne();
+  zieht = true; setTimeout(() => { zieht = false; }, 0);   // kein Klick (Antippen) hinterher
+});
+document.addEventListener('pointercancel', () => { if (bzug && bzug.geist){ bzug.geist.remove(); bzug.ctx.zeichne(); } bzug = null; });
+
+/* ---------- Sequenz (Erarbeitung aus Schritten) ---------- */
+function sequenz(cfg){
+  const root = typeof cfg.el === 'string' ? document.querySelector(cfg.el) : cfg.el, S = cfg.schritte, KEY = cfg.key + '-stand';
+  let stand = {}; try { stand = JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) {}
+  if (!stand.erledigt) stand.erledigt = {};
+  const speichern = () => { try { localStorage.setItem(KEY, JSON.stringify(stand)); } catch (e) {} if (window.TrainerSync) TrainerSync.changed(); };
+  const istAufgabe = s => !!(s.aufgaben && s.aufgaben.length) || !!s.training, anzahl = S.filter(istAufgabe).length;
+  let akt = Math.min(Math.max(stand.schritt || 0, 0), S.length - 1);
+  root.innerHTML = '<div class="af-kopf"><nav class="af-schritte" aria-label="Schritte"></nav><span class="af-zaehler"></span></div><main class="karte af-inhalt" aria-live="polite"></main>';
+  const nav = root.querySelector('.af-schritte'), inhalt = root.querySelector('.af-inhalt'), zaehler = root.querySelector('.af-zaehler');
+  function erledigt(s){
+    const erstmals = !stand.erledigt[s.id];
+    stand.erledigt[s.id] = true; speichern();
+    if (istAufgabe(s) && window.TrainerSync) TrainerSync.event({modus:'erarbeitung', stufe:0, aufgabe:s.id, titel:s.titel || s.kurz, gesamt:anzahl, erstmals});
+    leiste();
+  }
+  function leiste(){
+    nav.innerHTML = S.map((x, i) => `<button class="btn${i === akt ? ' on' : ''}${stand.erledigt[x.id] ? ' erl' : ''}" type="button" data-schritt="${i}"${i === akt ? ' aria-current="step"' : ''}>${x.kurz}</button>`).join('');
+    zaehler.textContent = anzahl ? `${S.filter(x => istAufgabe(x) && stand.erledigt[x.id]).length} von ${anzahl} Aufgaben gelöst` : '';
+  }
+  function zeichne(oben){
+    const s = S[akt];
+    leiste();
+    inhalt.innerHTML = (istAufgabe(s) && stand.erledigt[s.id] ? '<p class="af-erledigt">✓ Diesen Schritt hast du schon gelöst. Du kannst ihn noch einmal bearbeiten.</p>' : '')
+      + (typeof s.html === 'function' ? s.html() : s.html || '')
+      + erinnerungHTML(s)
+      + (s.material ? `<div class="material">${s.material}</div>` : '')
+      + (s.aufgaben || []).map(() => '<div class="af-aufgabe"></div>').join('')
+      + (s.training ? '<div class="af-training"></div>' : '')
+      + `<div class="af-unten"><button class="btn" type="button" data-weiter="-1"${akt ? '' : ' disabled'}>◀ Zurück</button><button class="btn haupt" type="button" data-weiter="1"${akt < S.length - 1 ? '' : ' disabled'}>Weiter ▶</button></div>`;
+    const plaetze = inhalt.querySelectorAll(':scope > .af-aufgabe');
+    (s.aufgaben || []).forEach((a, i) => baue(plaetze[i], a, {fertig:() => { if (s.aufgaben.every(x => geloest(x))) erledigt(s); }}));
+    if (s.training) training({el:inhalt.querySelector('.af-training'), key:cfg.key + '-' + s.id, training:s.training, titel:s.titel || s.kurz, fertig:() => erledigt(s)});
+    if (s.nach) s.nach(inhalt);
+    if (oben) window.scrollTo(0, 0);
+  }
+  const geloest = a => !!(a._z && a._z.geloest);
+  function gehe(i){
+    if (!istAufgabe(S[akt]) && i > akt && !stand.erledigt[S[akt].id]) erledigt(S[akt]);
+    akt = Math.min(Math.max(i, 0), S.length - 1); stand.schritt = akt; speichern(); zeichne(true);
+  }
+  root.addEventListener('click', e => {
+    const b = e.target.closest('[data-schritt], [data-weiter]'); if (!b || !root.contains(b)) return;
+    if (b.dataset.schritt != null) gehe(+b.dataset.schritt); else gehe(akt + +b.dataset.weiter);
+  });
+  zeichne();
+  return {gehe, get schritt(){ return akt; }, stand};
+}
+
+/* ---------- Endlos (zufällige Aufgaben je Stufe, Serie und Rekord) ---------- */
+// Flamme einer Stufe; ein Design (lib/designs.js) kann sie über window.PF_FLAMME ersetzen ({n} = Stufe)
+const FLAMME = n => window.PF_FLAMME ? String(window.PF_FLAMME).replace(/\{n\}/g, n) : `<svg viewBox="0 0 32 40" aria-hidden="true"><path d="M16 2C18 9 27 14 27 26C27 33 22 38 16 38C10 38 5 33 5 26C5 20 9 16 11 11C12 15 13 17 15 18C16 13 17 8 16 2Z"/><text x="16" y="32" text-anchor="middle">${n}</text></svg>`;
+function endlos(cfg){
+  const root = typeof cfg.el === 'string' ? document.querySelector(cfg.el) : cfg.el, ST = cfg.stufen, KEY = cfg.key + '-endlos';
+  let stand = {}; try { stand = JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) {}
+  if (!stand.rekord) stand.rekord = {};
+  let stufe = Math.min(Math.max(stand.stufe || 1, 1), ST.length), serie = 0, akt = null, geloest = false;
+  const speichern = () => { try { localStorage.setItem(KEY, JSON.stringify(stand)); } catch (e) {} if (window.TrainerSync) TrainerSync.changed(); };
+  root.innerHTML = '<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><linearGradient id="af-fg" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#d9230f"/><stop offset=".55" stop-color="#ff7a00"/><stop offset="1" stop-color="#ffd23f"/></linearGradient></defs></svg>'
+    + '<div class="af-kopf"><nav class="af-flammen" aria-label="Stufen"></nav><span class="af-serie"></span></div>'
+    + '<main class="karte af-inhalt" aria-live="polite"><h2 class="af-stufe"></h2><div class="af-aufgabe"></div>'
+    + '<div class="af-unten"><button class="btn" type="button" data-anders>↻ Andere Aufgabe</button><button class="btn haupt" type="button" data-naechste>Nächste Aufgabe ▶</button></div></main>';
+  const $ = s => root.querySelector(s);
+  function kopf(){
+    $('.af-flammen').innerHTML = ST.map((x, i) => `<button class="af-flamme${i + 1 === stufe ? ' on' : ''}" type="button" data-stufe="${i + 1}" title="Stufe ${i + 1}: ${esc(x.name)}" aria-label="Stufe ${i + 1}: ${esc(x.name)}" aria-pressed="${i + 1 === stufe}">${FLAMME(i + 1)}</button>`).join('');
+    $('.af-serie').innerHTML = `🔥 Serie: <b>${serie}</b> <span class="muted">· Rekord ${stand.rekord[stufe] || 0}</span>`;
+    $('.af-stufe').textContent = `Stufe ${stufe}: ${ST[stufe - 1].name}`;
+    $('[data-naechste]').disabled = !geloest;
+    $('[data-anders]').disabled = geloest;
+  }
+  function neu(){
+    geloest = false; akt = ST[stufe - 1].neu();
+    baue($('.af-aufgabe'), akt, {fertig:() => {
+      if (geloest) return;
+      geloest = true; serie++;
+      if (serie > (stand.rekord[stufe] || 0)){ stand.rekord[stufe] = serie; speichern(); }
+      if (window.TrainerSync) TrainerSync.event({modus:'endlos', stufe, aufgabe:'s' + stufe, titel:ST[stufe - 1].name, gesamt:0, erstmals:true});
+      kopf(); $('[data-naechste]').focus();
+    }});
+    kopf();
+  }
+  function setze(n){ stufe = n; stand.stufe = n; serie = 0; speichern(); neu(); }
+  root.addEventListener('click', e => {
+    const f = e.target.closest('[data-stufe]'); if (f) return setze(+f.dataset.stufe);
+    if (e.target.closest('[data-anders]')){ serie = 0; return neu(); }
+    if (e.target.closest('[data-naechste]') && geloest) return neu();
+  });
+  neu();
+  return {neu, stufe:setze};
+}
+
+/* ---------- Training: Aufgaben auf Zeit und/oder endlos ---------- */
+const trStufen = T => Array.isArray(T.stufen) && T.stufen.length ? T.stufen : [{name:'', szenarien:T.szenarien, woerterbuch:T.woerterbuch}];
+const alternativen = s => String(s == null ? '' : s).split('|').map(x => x.trim()).filter(Boolean);
+// Ablenker für Zahlen: eigene falsche Formeln zuerst, dann typische Fehler (±1, ±2, ±10, Ziffern vertauscht)
+function zahlAblenker(l, falsch, runden){
+  const d = Number.isInteger(l) ? 1 : runden ? Math.pow(10, -Math.max(0, runden - 1)) : 0.1;
+  const r = x => Math.round(x * 1e9) / 1e9;
+  const tausch = Number.isInteger(l) && Math.abs(l) >= 10 ? +String(Math.abs(l)).split('').reverse().join('') * Math.sign(l) : null;
+  const kand = [...falsch, ...mischen([l + d, l - d, l + 2 * d, l - 2 * d, l + 10 * d, l - 10 * d, tausch].filter(x => x != null))].map(r);
+  const aus = [];
+  kand.forEach(x => { if (Math.abs(x - l) > 1e-9 && (l < 0 || x >= 0) && !aus.some(y => Math.abs(y - x) < 1e-9) && aus.length < 3) aus.push(x); });
+  return aus;
+}
+// Aufgabengeber einer Stufe → () => {frage (HTML), loesung (Text), optionen (MC: [{t, ok}]), pruefe(text) → 'ok' | 'fast' | 'falsch', zahl}
+function trGeber(st, T){
+  const mc = T.antwort === 'mc';
+  if (Array.isArray(st.szenarien) && st.szenarien.length){
+    if (!window.Formel) throw new Error('aufgaben.js: Training mit Szenarien braucht lib/formel.js');
+    return () => {
+      const sz = st.szenarien[Math.floor(Math.random() * st.szenarien.length)], w = Formel.wuerfle(sz);
+      const txt = x => Formel.zahlText(x) + (sz.einheit ? ' ' + sz.einheit : '');
+      const tol = sz.runden != null ? 0.5 * Math.pow(10, -sz.runden) + 1e-9 : 1e-6;
+      return {frage:w.frage, loesung:txt(w.loesung), zahl:true,
+        optionen:mc ? mischen([{t:txt(w.loesung), ok:true}, ...zahlAblenker(w.loesung, w.falsch, sz.runden).map(x => ({t:txt(x), ok:false}))]) : null,
+        pruefe:s => { const z = zahl(String(s).replace(/−/g, '-')); return !isNaN(z) && Math.abs(z - w.loesung) <= tol ? 'ok' : 'falsch'; }};
+    };
+  }
+  const W = st.woerterbuch || {}, E = (W.eintraege || []).filter(x => Array.isArray(x) && alternativen(x[0]).length && alternativen(x[1]).length);
+  const sp = Array.isArray(W.sprachen) ? W.sprachen : [];
+  let stapel = [], zuletzt = -1;
+  return () => {
+    if (!stapel.length){ stapel = mischen(E.map((_, i) => i)); if (stapel.length > 1 && stapel[stapel.length - 1] === zuletzt) stapel.unshift(stapel.pop()); }
+    const i = zuletzt = stapel.pop(), rueck = W.richtung === 'b-a' || (W.richtung === 'beide' && Math.random() < 0.5);
+    const von = alternativen(E[i][rueck ? 1 : 0]), nach = alternativen(E[i][rueck ? 0 : 1]);
+    const kopf = sp[0] || sp[1] ? `<span class="tr-sprache">${esc(sp[rueck ? 1 : 0] || '')} → ${esc(sp[rueck ? 0 : 1] || '')}</span>` : '';
+    let optionen = null;
+    if (mc){
+      const andere = [];
+      mischen(E.filter((_, j) => j !== i)).forEach(x => { const t = alternativen(x[rueck ? 0 : 1])[0]; if (!nach.some(n => norm(n) === norm(t)) && !andere.some(a => norm(a) === norm(t))) andere.push(t); });
+      optionen = mischen([{t:nach[0], ok:true}, ...andere.slice(0, 3).map(t => ({t, ok:false}))]);
+    }
+    return {frage:kopf + `<span class="tr-wort">${esc(von.join(' / '))}</span>`, loesung:nach.join(' / '), optionen,
+      pruefe(s){
+        const t = norm(s); if (!t) return 'falsch';
+        if (nach.some(n => norm(n) === t)) return 'ok';
+        const nah = nach.some(n => { const v = norm(n).replace(/ /g, ''); return abstand(t.replace(/ /g, ''), v) <= Math.max(1, Math.floor(v.length * 0.2)); });
+        return nah ? (W.tippfehler ? 'ok' : 'fast') : 'falsch';
+      }};
+  };
+}
+function training(cfg){
+  const root = typeof cfg.el === 'string' ? document.querySelector(cfg.el) : cfg.el, T = cfg.training || {}, ST = trStufen(T), KEY = cfg.key + '-training';
+  let stand = {}; try { stand = JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) {}
+  if (!stand.best) stand.best = {};
+  const speichern = () => { try { localStorage.setItem(KEY, JSON.stringify(stand)); } catch (e) {} if (window.TrainerSync) TrainerSync.changed(); };
+  const mc = T.antwort === 'mc', anzahl = T.anzahl > 0 ? Math.round(T.anzahl) : 0, endlos = !anzahl;
+  const Z = T.zeit && T.zeit.start > 0 ? {start:+T.zeit.start, schritt:+T.zeit.schritt || 0, min:T.zeit.min > 0 ? +T.zeit.min : 0.5} : null;
+  let stufe = Math.min(Math.max(stand.stufe || 0, 0), ST.length - 1), gib = null, phase = 'start', akt = null, richtige = 0, nr = 0, fehler = [];
+  let raf = 0, warte = 0, t0 = 0, dauer = 0;
+  root.innerHTML = '<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><linearGradient id="af-fg" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#d9230f"/><stop offset=".55" stop-color="#ff7a00"/><stop offset="1" stop-color="#ffd23f"/></linearGradient></defs></svg>'
+    + '<div class="tr"><div class="af-kopf"><nav class="af-flammen" aria-label="Stufen"></nav><span class="tr-info"></span></div><div class="tr-karte" aria-live="polite"></div></div>';
+  root.classList.add('af-training');
+  const $ = s => root.querySelector(s), karte = $('.tr-karte'), lebt = () => root.isConnected;
+  const best = () => stand.best[stufe] || 0;
+  const zeitText = s => String(Math.round(s * 100) / 100).replace('.', ',') + ' s';
+  function kopf(){
+    $('.af-flammen').innerHTML = ST.length > 1 ? ST.map((x, i) => `<button class="af-flamme${i === stufe ? ' on' : ''}" type="button" data-trstufe="${i}" title="Stufe ${i + 1}${x.name ? ': ' + esc(x.name) : ''}" aria-label="Stufe ${i + 1}${x.name ? ': ' + esc(x.name) : ''}" aria-pressed="${i === stufe}">${FLAMME(i + 1)}</button>`).join('') : '';
+    $('.tr-info').innerHTML = phase === 'start' || phase === 'ende' ? `Bestleistung: <b>${best()}</b>${endlos ? '' : ' von ' + anzahl}`
+      : endlos ? `🔥 Serie: <b>${richtige}</b> <span class="muted">· Bestleistung ${best()}</span>` : `Aufgabe ${nr} von ${anzahl} <span class="muted">· ✓ ${richtige}</span>`;
+  }
+  function halt(){ cancelAnimationFrame(raf); clearTimeout(warte); }
+  function startBild(){
+    halt(); phase = 'start';
+    try { gib = trGeber(ST[stufe], T); } catch (e) { karte.innerHTML = `<p class="af-fb falsch">${esc(e.message)}</p>`; return; }
+    const name = ST[stufe].name ? `<h2 class="tr-titel">${ST.length > 1 ? `Stufe ${stufe + 1}: ` : ''}${esc(ST[stufe].name)}</h2>` : '';
+    const zeit = Z ? `Für jede Aufgabe hast du <b>${zeitText(Z.start)}</b>${Z.schritt < 0 ? `, nach jeder richtigen Antwort ${zeitText(-Z.schritt)} weniger (mindestens ${zeitText(Z.min)})` : Z.schritt > 0 ? `, nach jeder richtigen Antwort ${zeitText(Z.schritt)} mehr` : ''}.` : 'Ohne Zeitdruck.';
+    karte.innerHTML = name + `<ul class="tr-regeln"><li>${endlos ? 'Endlos: Wie lang wird deine Serie? Ein Fehler beendet sie.' : `${anzahl} Aufgaben – wie viele schaffst du?`}</li><li>${zeit}</li><li>${mc ? 'Klicke die richtige Antwort an (oder Taste 1–4).' : 'Tippe die Antwort ein und drücke Enter.'}${T.versuche ? ' Bei einem Fehler darfst du es nochmal versuchen.' : ''}</li></ul>`
+      + `<button class="btn haupt tr-start" type="button">▶ Start</button>`;
+    kopf(); const b = $('.tr-start'); if (b && document.activeElement && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) b.focus({preventScroll:true});
+  }
+  function starte(){ halt(); richtige = 0; nr = 0; fehler = []; phase = 'laeuft'; naechste(); }
+  function naechste(){
+    halt();
+    if (!lebt()) return;
+    if (!endlos && nr >= anzahl) return ende();
+    nr++; phase = 'laeuft';
+    try { akt = gib(); } catch (e) { karte.innerHTML = `<p class="af-fb falsch">${esc(e.message)}</p>`; return; }
+    karte.innerHTML = (Z ? '<div class="tr-zeit" aria-hidden="true"><div class="tr-balken"></div></div>' : '') + `<div class="tr-frage">${akt.frage}</div>`
+      + (mc ? `<div class="tr-mc">${akt.optionen.map((o, i) => `<button class="tr-opt" type="button" data-tropt="${i}"><span class="tr-taste">${i + 1}</span>${esc(o.t)}</button>`).join('')}</div>`
+        : `<div class="tr-form"><input class="feld tr-ein" ${akt.zahl ? 'inputmode="decimal" ' : ''}autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="send" aria-label="Antwort"><button class="btn haupt tr-ok" type="button">OK</button></div>`)
+      + `<div class="tr-rueck"></div>` + (Z ? '' : '<button class="btn klein tr-weiss" type="button">Weiß ich nicht</button>');
+    kopf();
+    const ein = $('.tr-ein'); if (ein) ein.focus({preventScroll:true});
+    if (Z){ dauer = Math.max(Z.min, Z.start + richtige * Z.schritt); t0 = performance.now(); raf = requestAnimationFrame(tick); }
+  }
+  function tick(){
+    if (!lebt() || phase !== 'laeuft') return;
+    const rest = 1 - (performance.now() - t0) / (dauer * 1000), b = $('.tr-balken');
+    if (b){ b.style.width = Math.max(0, rest * 100) + '%'; b.classList.toggle('knapp', rest < 0.3); }
+    if (rest <= 0) return falsch('zeit', '');
+    raf = requestAnimationFrame(tick);
+  }
+  function antwort(text, opt){
+    if (phase !== 'laeuft') return;
+    const r = opt != null ? (akt.optionen[opt].ok ? 'ok' : 'falsch') : akt.pruefe(text);
+    if (r === 'ok') return gut();
+    if (T.versuche){
+      const rk = $('.tr-rueck'); rk.className = 'tr-rueck falsch'; rk.textContent = r === 'fast' ? 'Fast – achte auf die Schreibweise. Nochmal!' : 'Nicht ganz – nochmal!';
+      karte.classList.remove('tr-wackeln'); void karte.offsetWidth; karte.classList.add('tr-wackeln');
+      if (opt != null){ const b = root.querySelector(`[data-tropt="${opt}"]`); if (b){ b.disabled = true; b.classList.add('falsch'); } }
+      else { const e = $('.tr-ein'); e.value = ''; e.focus(); }
+      return;
+    }
+    falsch(r, opt != null ? akt.optionen[opt].t : text);
+  }
+  function gut(){
+    halt(); richtige++; phase = 'pause';
+    karte.classList.add('tr-gut'); const rk = $('.tr-rueck'); rk.className = 'tr-rueck ok'; rk.textContent = '✓ Richtig';
+    kopf(); warte = setTimeout(() => { karte.classList.remove('tr-gut'); naechste(); }, 450);
+  }
+  function falsch(grund, eingabe){
+    halt(); phase = 'loesung';
+    fehler.push({frage:akt.frage, loesung:akt.loesung, eingabe, zeit:grund === 'zeit'});
+    const rk = $('.tr-rueck'); rk.className = 'tr-rueck falsch';
+    rk.innerHTML = `${grund === 'zeit' ? '⏱ Zeit abgelaufen.' : grund === 'fast' ? 'Fast – achte auf die Schreibweise.' : '✗ Leider falsch.'} Richtig ist: <b>${esc(akt.loesung)}</b> <span class="muted">(Enter: weiter)</span>`;
+    if (mc) root.querySelectorAll('[data-tropt]').forEach(b => { b.disabled = true; if (akt.optionen[+b.dataset.tropt].ok) b.classList.add('richtig'); else if (akt.optionen[+b.dataset.tropt].t === eingabe) b.classList.add('falsch'); });
+    const e = $('.tr-ein'); if (e) e.readOnly = true;
+    const w = $('.tr-weiss'); if (w) w.remove();
+    warte = setTimeout(weiter, grund === 'zeit' ? 1800 : 2200);
+  }
+  function weiter(){ if (phase !== 'loesung') return; if (endlos) ende(); else naechste(); }
+  function ende(){
+    halt(); phase = 'ende';
+    const alt = best(), neu = richtige > alt;
+    if (neu){ stand.best[stufe] = richtige; speichern(); }
+    const titel = (cfg.titel || 'Training') + (ST[stufe].name ? ' · ' + ST[stufe].name : '');
+    if (window.TrainerSync) TrainerSync.event({modus:'endlos', stufe:stufe + 1, aufgabe:'training', titel:`${titel}: ${endlos ? 'Serie ' + richtige : richtige + ' von ' + anzahl}`, gesamt:0, erstmals:true});
+    const liste = fehler.length ? `<details class="tr-fehler"${endlos ? ' open' : ''}><summary>${endlos ? 'Daran lag es' : `Fehler (${fehler.length})`}</summary><table><tr><th>Aufgabe</th><th>deine Antwort</th><th>richtig</th></tr>${fehler.slice(-12).map(f => `<tr><td>${f.frage}</td><td>${f.zeit ? '⏱' : f.eingabe ? esc(f.eingabe) : '–'}</td><td><b>${esc(f.loesung)}</b></td></tr>`).join('')}</table></details>` : '';
+    karte.innerHTML = `<h2 class="tr-ergebnis">${endlos ? `Serie: ${richtige}` : `${richtige} von ${anzahl} richtig`}</h2>`
+      + `<p>${neu ? '🎉 <b>Neue Bestleistung!</b>' : `Bestleistung: ${alt}${endlos ? '' : ' von ' + anzahl}`}</p>` + liste
+      + `<button class="btn haupt tr-start" type="button">↻ ${endlos ? 'Neue Serie' : 'Nochmal'}</button>`;
+    kopf(); $('.tr-start').focus({preventScroll:true});
+    if (cfg.fertig && richtige >= (T.ziel != null ? T.ziel : endlos ? 10 : 0)) cfg.fertig();
+  }
+  root.addEventListener('click', e => {
+    const f = e.target.closest('[data-trstufe]'); if (f){ stufe = +f.dataset.trstufe; stand.stufe = stufe; speichern(); return startBild(); }
+    if (e.target.closest('.tr-start')) return starte();
+    const o = e.target.closest('[data-tropt]'); if (o && !o.disabled) return antwort(null, +o.dataset.tropt);
+    if (e.target.closest('.tr-weiss')) return falsch('weiss', '');
+    if (e.target.closest('.tr-ok')) return absenden();
+  });
+  // kein <form>: in abgeschotteten iframes (Vorschau, Moodle) schickt der Browser Formulare nicht ab
+  function absenden(){ const e = $('.tr-ein'); if (!e) return; if (phase === 'loesung') return weiter(); if (e.value.trim()) antwort(e.value); }
+  function taste(e){
+    if (!lebt()){ document.removeEventListener('keydown', taste); return; }
+    if (e.target.closest && e.target.closest('input,textarea,select') && !e.target.closest('.af-training')) return;
+    if (phase === 'loesung' && e.key === 'Enter'){ e.preventDefault(); return weiter(); }
+    if (phase === 'laeuft' && e.key === 'Enter' && e.target.matches && e.target.matches('.tr-ein')){ e.preventDefault(); return absenden(); }
+    if (mc && phase === 'laeuft' && /^[1-4]$/.test(e.key) && akt.optionen[+e.key - 1]){ const b = root.querySelector(`[data-tropt="${+e.key - 1}"]`); if (b && !b.disabled){ e.preventDefault(); antwort(null, +e.key - 1); } }
+  }
+  document.addEventListener('keydown', taste);
+  startBild();
+  return {stop:halt, start:starte};
+}
+
+window.Aufgaben = {baue, sequenz, endlos, training, mc, mehrfach, finde, zahl, eur, mischen, esc, bsText, TYPEN};
+})();
+
+</script>
+<style>
+.wrap{max-width:860px}
+.schritte{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}
+.schritte .btn{font-size:13px;padding:5px 11px}
+.schritte .btn .nr{display:inline-block;min-width:18px;height:18px;line-height:18px;border-radius:50%;background:var(--panel);color:var(--text);font-size:11px;margin-right:6px;text-align:center}
+.schritte .btn.on .nr{background:rgba(255,255,255,.85);color:#2e3440}
+.ansicht[hidden]{display:none}
+.karte h2{margin-bottom:10px}
+.sprachen{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 34px;gap:6px;align-items:center;margin-bottom:6px}
+.sprachen .feld{font-weight:700;text-transform:none}
+.liste{display:flex;flex-direction:column;gap:6px}
+.zeile{display:grid;grid-template-columns:28px minmax(0,1fr) minmax(0,1fr) 34px;gap:6px;align-items:center}
+.zeile .nr{font:13px var(--mono);color:var(--muted);text-align:right}
+.sprachen{grid-template-columns:28px minmax(0,1fr) minmax(0,1fr) 34px}
+.zeile .feld,.sprachen .feld{width:100%;font-size:16px;padding:8px 10px}
+.x{background:none;border:0;color:var(--muted);font-size:18px;cursor:pointer;padding:4px;border-radius:6px}
+.x:hover{color:var(--err);background:var(--panel2)}
+.unten{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:14px;padding-top:12px;border-top:1px solid var(--border)}
+.unten .rechts{margin-left:auto;display:flex;gap:8px;align-items:center}
+.zahl{font-weight:700}
+.hinweis{font-size:13px;color:var(--muted);margin:8px 0 0}
+details.import{margin-top:12px}
+details.import summary{cursor:pointer;font-weight:600;font-size:14px}
+details.import textarea{width:100%;min-height:110px;margin:8px 0 6px;font:14px/1.4 var(--mono)}
+.wahl{margin:0 0 16px}
+.wahl h3{font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:0 0 6px}
+.optionen{display:flex;flex-wrap:wrap;gap:8px}
+.optionen .btn{padding:10px 14px;font-size:15px;text-align:left}
+.optionen .btn small{display:block;font-weight:400;font-size:12px;opacity:.85;margin-top:2px}
+.haken{display:flex;gap:8px;align-items:center;margin:6px 0;font-size:15px;cursor:pointer}
+.haken input{width:18px;height:18px}
+.zusammen{background:var(--panel2);border-radius:10px;padding:10px 12px;margin-top:4px}
+.los{display:grid;place-items:center;min-height:230px;font:800 clamp(34px,8vw,56px)/1 system-ui,sans-serif;color:var(--accent-text,var(--accent));animation:los .9s ease-out}
+@keyframes los{0%{transform:scale(.4);opacity:0}35%{transform:scale(1.08);opacity:1}100%{transform:scale(1)}}
+@media (prefers-reduced-motion:reduce){.los{animation:none}}
+@media (max-width:560px){.zeile{grid-template-columns:22px minmax(0,1fr) minmax(0,1fr) 28px;gap:4px}.sprachen{grid-template-columns:22px minmax(0,1fr) minmax(0,1fr) 28px;gap:4px}.zeile .feld,.sprachen .feld{font-size:15px;padding:7px 6px}.optionen .btn{flex:1 1 100%}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="bar"><div class="brand">Vokabel<span>trainer</span></div><div class="muted">Eigene Vokabeln eintragen und üben</div></div>
+  <nav class="schritte" aria-label="Schritte">
+    <button class="btn on" type="button" data-zu="eintragen"><span class="nr">1</span>Eintragen</button>
+    <button class="btn" type="button" data-zu="modus"><span class="nr">2</span>Modus wählen</button>
+    <button class="btn" type="button" data-zu="ueben"><span class="nr">3</span>Üben</button>
+  </nav>
+
+  <section class="karte ansicht" id="eintragen">
+    <h2>Vokabeln eintragen</h2>
+    <p class="muted">Ein Wortpaar pro Zeile. Mit <b>Enter</b> geht es ins nächste Feld. Mehrere richtige Antworten trennst du mit <b>|</b>, z. B. <code>Freund|Freundin</code>.</p>
+    <div class="sprachen">
+      <span></span>
+      <input class="feld" id="spracheA" aria-label="Sprache links" maxlength="30">
+      <input class="feld" id="spracheB" aria-label="Sprache rechts" maxlength="30">
+      <button class="x" type="button" id="tauschen" title="Spalten tauschen" aria-label="Spalten tauschen">⇄</button>
+    </div>
+    <div class="liste" id="liste"></div>
+    <details class="import">
+      <summary>Liste einfügen (aus Excel, Quizlet, Heft …)</summary>
+      <p class="hinweis">Eine Zeile pro Wortpaar, getrennt durch Tabulator, Semikolon, „=“ oder „ - “. Beispiel: <code>dog ; Hund</code></p>
+      <textarea class="feld" id="importText" spellcheck="false" placeholder="dog ; Hund&#10;cat ; Katze"></textarea>
+      <button class="btn" type="button" id="importieren">Hinzufügen</button> <span class="muted" id="importInfo"></span>
+    </details>
+    <div class="unten">
+      <button class="btn klein" type="button" id="beispiel">Beispiel laden</button>
+      <button class="btn klein" type="button" id="leeren">Liste leeren</button>
+      <span class="rechts"><span class="muted"><span class="zahl" id="anzahl">0</span> Wortpaare</span><button class="btn haupt" type="button" id="weiter1">Weiter ▶</button></span>
+    </div>
+    <p class="hinweis" id="hinweis1"></p>
+  </section>
+
+  <section class="karte ansicht" id="modus" hidden>
+    <h2>Modus wählen</h2>
+    <div class="wahl"><h3>Richtung</h3><div class="optionen" data-wahl="richtung"></div></div>
+    <div class="wahl"><h3>Antworten</h3><div class="optionen" data-wahl="antwort"></div><p class="hinweis" id="mcHinweis"></p></div>
+    <div class="wahl"><h3>Ablauf</h3><div class="optionen" data-wahl="ablauf"></div></div>
+    <div class="wahl"><h3>Zeit</h3><div class="optionen" data-wahl="zeit"></div></div>
+    <div class="wahl" id="extras"><h3>Beim Schreiben</h3>
+      <label class="haken"><input type="checkbox" id="tippfehler"> Kleine Tippfehler zählen als richtig</label>
+      <label class="haken"><input type="checkbox" id="versuche"> Bei einem Fehler nochmal versuchen</label>
+    </div>
+    <p class="zusammen" id="zusammen"></p>
+    <div class="unten">
+      <button class="btn" type="button" data-zu="eintragen">◀ Zurück</button>
+      <span class="rechts"><button class="btn haupt" type="button" id="start">Start ▶</button></span>
+    </div>
+  </section>
+
+  <section class="ansicht" id="ueben" hidden>
+    <div class="karte"><div id="training"></div>
+      <div class="unten">
+        <button class="btn" type="button" data-zu="modus">◀ Modus ändern</button>
+        <button class="btn" type="button" data-zu="eintragen">✎ Liste bearbeiten</button>
+      </div>
+    </div>
+  </section>
+</div>
+<script>
+'use strict';
+const ID = 'vokabeltrainer', $ = s => document.querySelector(s), esc = Aufgaben.esc;
+const lies = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) || d; } catch (e) { return d; } };
+const schreib = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} if (window.TrainerSync) TrainerSync.changed(); };
+
+/* ---------- Daten ---------- */
+let liste = lies(ID + '-liste', null);
+if (!liste || !Array.isArray(liste.eintraege)) liste = {sprachen:['Englisch', 'Deutsch'], eintraege:[]};
+let modus = Object.assign({richtung:'a-b', antwort:'eingabe', ablauf:'einmal', zeit:'aus', tippfehler:true, versuche:false}, lies(ID + '-modus', {}));
+let uhr = 0;
+const merkeListe = () => { clearTimeout(uhr); uhr = setTimeout(() => schreib(ID + '-liste', liste), 300); };
+const paare = () => liste.eintraege.filter(e => String(e[0]).trim() && String(e[1]).trim()).map(e => [String(e[0]).trim(), String(e[1]).trim()]);
+const A = () => liste.sprachen[0].trim() || 'Sprache 1', B = () => liste.sprachen[1].trim() || 'Sprache 2';
+
+/* ---------- 1 Eintragen ---------- */
+function zeilen(fokus){
+  if (!liste.eintraege.length || liste.eintraege[liste.eintraege.length - 1].some(x => String(x).trim())) liste.eintraege.push(['', '']);
+  $('#liste').innerHTML = liste.eintraege.map((e, i) => `<div class="zeile" data-i="${i}"><span class="nr">${i + 1}</span>`
+    + `<input class="feld" data-s="0" value="${esc(e[0])}" aria-label="${esc(A())}, Zeile ${i + 1}" autocomplete="off" spellcheck="false" autocapitalize="off">`
+    + `<input class="feld" data-s="1" value="${esc(e[1])}" aria-label="${esc(B())}, Zeile ${i + 1}" autocomplete="off" spellcheck="false" autocapitalize="off">`
+    + `<button class="x" type="button" title="Zeile löschen" aria-label="Zeile ${i + 1} löschen"${i === liste.eintraege.length - 1 ? ' hidden' : ''}>✕</button></div>`).join('');
+  if (fokus) { const f = $(`.zeile[data-i="${fokus[0]}"] [data-s="${fokus[1]}"]`); if (f) f.focus(); }
+  zaehlen();
+}
+function zaehlen(){
+  const n = paare().length;
+  $('#anzahl').textContent = n;
+  $('#weiter1').disabled = n < 2;
+  $('#hinweis1').textContent = n < 2 ? 'Trag mindestens 2 Wortpaare ein, dann geht es weiter.' : '';
+  $('#beispiel').hidden = n > 0;
+  document.querySelector('[data-zu="modus"]').disabled = n < 2;
+  document.querySelector('.schritte [data-zu="ueben"]').disabled = n < 2;
+}
+$('#spracheA').value = liste.sprachen[0]; $('#spracheB').value = liste.sprachen[1];
+['spracheA', 'spracheB'].forEach((id, s) => $('#' + id).addEventListener('input', e => { liste.sprachen[s] = e.target.value; merkeListe(); }));
+$('#tauschen').addEventListener('click', () => {
+  liste.sprachen.reverse(); liste.eintraege = liste.eintraege.map(e => [e[1], e[0]]);
+  $('#spracheA').value = liste.sprachen[0]; $('#spracheB').value = liste.sprachen[1]; merkeListe(); zeilen();
+});
+$('#liste').addEventListener('input', e => {
+  const z = e.target.closest('.zeile'); if (!z) return;
+  const i = +z.dataset.i; liste.eintraege[i][+e.target.dataset.s] = e.target.value; merkeListe();
+  if (i === liste.eintraege.length - 1 && e.target.value.trim()) {   // letzte Zeile beschrieben → neue leere Zeile darunter
+    liste.eintraege.push(['', '']); z.querySelector('.x').hidden = false;
+    const n = liste.eintraege.length - 1, neu = document.createElement('div');
+    neu.className = 'zeile'; neu.dataset.i = n;
+    neu.innerHTML = `<span class="nr">${n + 1}</span><input class="feld" data-s="0" aria-label="${esc(A())}, Zeile ${n + 1}" autocomplete="off" spellcheck="false" autocapitalize="off"><input class="feld" data-s="1" aria-label="${esc(B())}, Zeile ${n + 1}" autocomplete="off" spellcheck="false" autocapitalize="off"><button class="x" type="button" title="Zeile löschen" aria-label="Zeile ${n + 1} löschen" hidden>✕</button>`;
+    $('#liste').appendChild(neu);
+  }
+  zaehlen();
+});
+$('#liste').addEventListener('keydown', e => {
+  if (e.key !== 'Enter' || !e.target.matches('.feld')) return;
+  e.preventDefault();
+  const i = +e.target.closest('.zeile').dataset.i, s = +e.target.dataset.s;
+  const ziel = s === 0 ? [i, 1] : [i + 1, 0];
+  const f = $(`.zeile[data-i="${ziel[0]}"] [data-s="${ziel[1]}"]`); if (f) f.focus();
+});
+$('#liste').addEventListener('click', e => {
+  const x = e.target.closest('.x'); if (!x) return;
+  const i = +x.closest('.zeile').dataset.i; liste.eintraege.splice(i, 1); merkeListe();
+  zeilen([Math.min(i, liste.eintraege.length - 1), 0]);
+});
+// Einfügen: Tabulator, Semikolon, „=“, „ - “/„ – “
+function zerlege(text){
+  return String(text).split(/\r?\n/).map(z => z.trim()).filter(Boolean).map(z => {
+    const m = z.split('\t').length > 1 ? z.split('\t') : z.includes(';') ? z.split(';') : z.includes('=') ? z.split('=') : z.split(/\s[-–]\s/);
+    return m.length >= 2 ? [m[0].trim(), m.slice(1).join(' ').trim()] : null;
+  }).filter(p => p && p[0] && p[1]);
+}
+$('#importieren').addEventListener('click', () => {
+  const neu = zerlege($('#importText').value);
+  $('#importInfo').textContent = neu.length ? `${neu.length} Wortpaare hinzugefügt.` : 'Keine Wortpaare erkannt – Trennzeichen prüfen.';
+  if (!neu.length) return;
+  liste.eintraege = liste.eintraege.filter(e => e.some(x => String(x).trim())).concat(neu);
+  $('#importText').value = ''; merkeListe(); zeilen();
+});
+$('#beispiel').addEventListener('click', () => {
+  liste = {sprachen:['Englisch', 'Deutsch'], eintraege:[['house', 'Haus'], ['tree', 'Baum'], ['car', 'Auto'], ['sun', 'Sonne'], ['to run', 'rennen|laufen'], ['happy', 'glücklich|fröhlich'], ['window', 'Fenster'], ['friend', 'Freund|Freundin']]};
+  $('#spracheA').value = liste.sprachen[0]; $('#spracheB').value = liste.sprachen[1]; merkeListe(); zeilen();
+});
+$('#leeren').addEventListener('click', () => {
+  if (paare().length && !confirm('Alle Vokabeln aus der Liste löschen?')) return;
+  liste.eintraege = []; merkeListe(); zeilen([0, 0]);
+});
+
+/* ---------- 2 Modus ---------- */
+const WAHL = {
+  richtung: () => [['a-b', `${A()} → ${B()}`], ['b-a', `${B()} → ${A()}`], ['beide', 'Gemischt', 'beide Richtungen']],
+  antwort: () => [['eingabe', '✎ Schreiben', 'Antwort eintippen'], ['mc', '☑ Auswählen', '4 Antworten zur Wahl']],
+  ablauf: () => [['einmal', 'Einmal alle', `jedes Wort einmal (${paare().length})`], ['endlos', 'Endlos-Serie', 'ein Fehler beendet sie']],
+  zeit: () => [['aus', 'Ohne Zeit', 'in Ruhe überlegen'], ['an', 'Auf Zeit', 'wird immer schneller']]
+};
+function modusZeigen(){
+  const mcGeht = paare().length >= 4;
+  if (!mcGeht && modus.antwort === 'mc') modus.antwort = 'eingabe';
+  document.querySelectorAll('[data-wahl]').forEach(box => {
+    const k = box.dataset.wahl;
+    box.innerHTML = WAHL[k]().map(([v, t, u]) => `<button class="btn${modus[k] === v ? ' on' : ''}" type="button" data-wert="${v}" aria-pressed="${modus[k] === v}"${k === 'antwort' && v === 'mc' && !mcGeht ? ' disabled' : ''}>${esc(t)}${u ? `<small>${esc(u)}</small>` : ''}</button>`).join('');
+  });
+  $('#mcHinweis').textContent = mcGeht ? '' : 'Auswählen geht ab 4 Wortpaaren.';
+  $('#extras').hidden = modus.antwort !== 'eingabe';
+  $('#tippfehler').checked = !!modus.tippfehler; $('#versuche').checked = !!modus.versuche;
+  const r = WAHL.richtung().find(x => x[0] === modus.richtung)[1];
+  $('#zusammen').innerHTML = `<b>${paare().length} Wortpaare</b> · ${esc(r)} · ${modus.antwort === 'mc' ? 'Auswählen' : 'Schreiben'} · ${modus.ablauf === 'einmal' ? 'jedes Wort einmal' : 'Endlos-Serie'} · ${modus.zeit === 'an' ? 'auf Zeit' : 'ohne Zeit'}`;
+}
+$('#modus').addEventListener('click', e => {
+  const b = e.target.closest('[data-wert]'); if (!b || b.disabled) return;
+  modus[b.closest('[data-wahl]').dataset.wahl] = b.dataset.wert; schreib(ID + '-modus', modus); modusZeigen();
+});
+['tippfehler', 'versuche'].forEach(k => $('#' + k).addEventListener('change', e => { modus[k] = e.target.checked; schreib(ID + '-modus', modus); }));
+
+/* ---------- 3 Üben ---------- */
+let lauf = null, losUhr = 0;
+function ueben(){
+  if (lauf) { lauf.stop(); lauf = null; }
+  clearTimeout(losUhr);
+  const P = paare(), mc = modus.antwort === 'mc';
+  const T = {antwort:mc ? 'mc' : 'eingabe', versuche:!mc && modus.versuche,
+    woerterbuch:{sprachen:[A(), B()], richtung:modus.richtung, eintraege:P, tippfehler:!mc && modus.tippfehler}};
+  if (modus.ablauf === 'einmal') T.anzahl = P.length;
+  if (modus.zeit === 'an') T.zeit = mc ? {start:6, schritt:-0.1, min:2.5} : {start:10, schritt:-0.15, min:4};
+  // neues Element je Lauf: Aufgaben.training hängt sich an das Element (Tastatur), das alte wird damit abgehängt
+  const el = document.createElement('div');
+  $('#training').replaceChildren(el);
+  el.innerHTML = '<div class="los" aria-live="polite">Los geht’s!</div>';
+  const sig = [modus.richtung, T.antwort, modus.ablauf, modus.zeit].join('-');
+  losUhr = setTimeout(() => {
+    if (!el.isConnected) return;
+    lauf = Aufgaben.training({el, key:ID + '-' + sig, training:T, titel:'Vokabeltrainer'});
+    lauf.start();
+  }, matchMedia('(prefers-reduced-motion: reduce)').matches ? 300 : 900);
+}
+
+/* ---------- Ansichten ---------- */
+function zeige(name){
+  if (name !== 'eintragen' && paare().length < 2) name = 'eintragen';
+  if (name !== 'ueben') { if (lauf) { lauf.stop(); lauf = null; } clearTimeout(losUhr); $('#training').replaceChildren(); }
+  document.querySelectorAll('.ansicht').forEach(a => a.hidden = a.id !== name);
+  document.querySelectorAll('.schritte .btn').forEach(b => { const an = b.dataset.zu === name; b.classList.toggle('on', an); b.setAttribute('aria-current', an ? 'step' : 'false'); });
+  if (name === 'eintragen') zeilen();
+  if (name === 'modus') modusZeigen();
+  if (name === 'ueben') ueben();
+  window.scrollTo({top:0});
+}
+document.addEventListener('click', e => { const b = e.target.closest('[data-zu]'); if (b && !b.disabled) zeige(b.dataset.zu); });
+$('#weiter1').addEventListener('click', () => zeige('modus'));
+$('#start').addEventListener('click', () => zeige('ueben'));
+zeige('eintragen');
+</script>
+</body>
+</html>

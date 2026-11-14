@@ -30,6 +30,10 @@ Gesammelt im Thread „Aufbau der Seite“. Umgesetzt wird erst, wenn die Lehrkr
 
 ### Version vom 14.11.
 
+66. **Vokabeltrainer für Schüler** (gewünscht 14.11.)
+    `Englisch/1/wortschatz-1/vokabeltrainer.html` (Tool `vokabeltrainer`): 1 Eintragen (Tabelle, Enter springt weiter, neue Zeile entsteht von selbst, Sprachen benennbar und tauschbar, Liste einfügen aus Excel/Quizlet mit Tab, ;, = oder „ - “, Beispiel laden, leeren) → 2 Modus wählen (Richtung, Schreiben/Auswählen ab 4 Paaren, einmal alle/Endlos-Serie, ohne/auf Zeit, beim Schreiben Tippfehler und zweiter Versuch) → 3 Üben („Los geht’s!“, dann Aufgaben.training aus lib/aufgaben.js). Liste und Modus im Browser gespeichert (mit Anmeldung auf dem Server, Datenschutz ergänzt), Bestleistung je Modus. Neu `Englisch/englisch.css` (Grundaussehen wie lib/seite.js).
+    Getestet in Chromium (Server und Einzeldatei, auch Handybreite): Tippen mit Enter, Einfügen (vier Trennzeichen, Zeile ohne Trennung wird übergangen), Löschen, Auswählen auf Zeit (6 von 6), Schreiben, Neuladen behält Liste und Modus. Nicht mit PocketBase.
+
 65. **Fach Englisch mit Vokabel-Demo** (gewünscht 14.11.)
     Neues Fach `Englisch` mit den Jahrgangsstufen 1–5 (`pb_public/Englisch/1` … `/5`, Übersichtsseiten, katalog.js). Stufen 2–5 noch ohne Bereiche. In Stufe 1 Bereich „Wortschatz“ (`wortschatz-1`) mit „Vokabel-Demo“ (`vokabel-demo`): 50 Grundwörter in fünf Themen (Familie, Schule, Tiere, Essen, Farben und Zahlen), erzeugt mit lib/seite.js aus Aufgaben-JSON: Wortliste, Anklicken (Englisch → Deutsch, Runden zu 10, Thema über die Stufen), Schreiben (Deutsch → Englisch, Tippfehler zählen, auch „Alle 50“), gemischt auf Zeit (endlos, Bestleistung). `werkzeuge/einzeldateien.py` kennt das Fach (Einzeldatei und ByCS-Paket).
     Getestet in Chromium: Fach-, Stufen- und Bereichsseiten, alle Übungsteile auf dem Server und als Einzeldatei; nicht mit PocketBase (Speichern, Lehrerbereich).
