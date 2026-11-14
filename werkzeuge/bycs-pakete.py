@@ -7,7 +7,8 @@ SCORM 2004 ist Standard, weil SCORM 1.2 nur 4096 Zeichen Speicherstand erlaubt; 
 die HTML-/Python-Kurse nicht, deren Code mitgespeichert wird. scorm.js kann beides.
 Ergebnis: bycs/<Fach>/…/<datei>.zip, gleiche Ordner und Auswahl wie standalone/ (werkzeuge/einzeldateien.py).
 
-Jedes Paket enthält index.html (die Einzeldatei, alles eingebettet) und imsmanifest.xml.
+Jedes Paket enthält index.html (die Einzeldatei, alles eingebettet) und imsmanifest.xml, unkomprimiert
+(damit Git bei Änderungen nur die Unterschiede speichert, siehe schreibe_zip).
 Anstelle von sync.js wird pb_public/scorm.js eingebettet: Es meldet Bewertung, Status und jede gelöste
 Aufgabe an Moodle und speichert den Stand dort (cmi.suspend_data). Vorne kommt
 window.PF_BYCS = {stufen: n} dazu (Stufen laut katalog.js, für die Prozentzahl).
@@ -104,10 +105,13 @@ def paket(seite, stufen):
 
 
 def schreibe_zip(ziel, eintraege):
-    with zipfile.ZipFile(ziel, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as z:
+    # Unkomprimiert (ZIP_STORED): Die Pakete liegen im Repo. Komprimierte ZIPs ändern sich bei jeder kleinen
+    # Änderung (z. B. katalog.js, in jedes Paket eingebettet) komplett, Git muss sie dann ganz neu speichern.
+    # Unkomprimiert kann Git nur die Unterschiede speichern. Das Paket wird dafür etwa dreimal so groß; ByCS ist das egal.
+    with zipfile.ZipFile(ziel, "w", zipfile.ZIP_STORED) as z:
         for name, inhalt in eintraege:
             info = zipfile.ZipInfo(name, ZEIT)
-            info.compress_type = zipfile.ZIP_DEFLATED
+            info.compress_type = zipfile.ZIP_STORED
             info.external_attr = 0o644 << 16
             z.writestr(info, inhalt.encode("utf-8"))
 
