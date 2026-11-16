@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="de" data-trainer="demo-typen">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Demo Aufgabentypen – vibe learning</title>
+<!--
+  Erzeugt mit lib/seite.js aus Aufgaben-JSON (werkzeuge/demo-aufgabentypen.js).
+  Inhalt bearbeiten: im Skript ändern und neu erzeugen (Format: Kopfkommentar von lib/seite.js, Aufgabentypen: lib/aufgaben.js).
+  Gespeichert: demo-typen-stand = {schritt, erledigt}.
+-->
+<script src="../../katalog.js"></script>
+<script src="../../nav.js"></script>
+<script src="../../sync.js"></script>
+<script>
+(function(){var t=null;try{t=localStorage.getItem('wenn-theme');}catch(e){}document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');})();
+</script>
+<style>:root{--bg:#e5e9f0;--panel:#f6f8fb;--panel2:#eceff4;--text:#2e3440;--muted:#5b6578;--border:#cdd3de;--accent:#5e81ac;--err:#a8434d;--ok:#5e8a45;--mono:ui-monospace,Consolas,"Liberation Mono",monospace}[data-theme=dark]{--bg:#2e3440;--panel:#3b4252;--panel2:#434c5e;--text:#eceff4;--muted:#a9b3c4;--border:#4c566a;--accent:#88c0d0;--err:#d4848b;--ok:#a3be8c}*{box-sizing:border-box}html,body{margin:0}body{background:var(--bg);color:var(--text);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}.wrap{width:min(1000px,100%);margin:0 auto;padding:14px 16px 24px}.bar{margin-bottom:12px}.brand{font:800 20px var(--mono)}.brand span{color:var(--accent-text,var(--accent))}.karte{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px 16px}.karte h2{font-size:18px;margin:0 0 6px}.karte p{margin:0 0 8px}.btn{font:600 14px system-ui,sans-serif;background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:7px 12px;cursor:pointer}.btn.on,.btn.haupt{background:var(--accent);border-color:var(--accent);color:#fff}[data-theme=dark] .btn.on,[data-theme=dark] .btn.haupt{color:#2e3440}.btn:disabled{opacity:.45}.btn.klein{font-size:13px;padding:4px 9px}.feld{font:14px system-ui,sans-serif;background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 8px}.muted{color:var(--muted)}</style>
+<link rel="stylesheet" href="../../lib/aufgaben.css">
+<script src="../../lib/aufgaben.js"></script>
+<script src="../../lib/formel.js"></script>
+<style>.info{border-left:4px solid var(--accent);padding:2px 0 2px 12px;margin:0 0 12px}.wrap{max-width:1000px}table{border-collapse:collapse}td,th{border:1px solid var(--border);padding:4px 8px}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin:0 0 10px;font:13px/1.5 var(--mono)}</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="bar"><div class="brand">Demo Aufgabentypen</div><div class="muted">Neue Aufgabentypen (experimentell) und das Szenario: Jede Seite zeigt einen Typ und erklärt, wie du ihn erstellst.</div></div>
+  <div id="app"></div>
+</div>
+<script>
+'use strict';
+const DATEN = {
+ "titel": "Demo Aufgabentypen",
+ "kurztext": "Neue Aufgabentypen (experimentell) und das Szenario: Jede Seite zeigt einen Typ und erklärt, wie du ihn erstellst.",
+ "schritte": [
+  {
+   "kurz": "Reihenfolge",
+   "titel": "Reihenfolge (reihenfolge)",
+   "html": "<h2>Reihenfolge (reihenfolge)<\/h2><p class=\"info\">Für Abläufe und Schemata: Kalkulationsschema, Schritte eines Verfahrens, Zeilen eines Programms.<\/p><h3>So arbeiten die Schüler<\/h3><p>Die Karten erscheinen gemischt. Sie lassen sich ziehen, mit ▲ ▼ verschieben oder man tippt erst eine Karte und dann die Zielstelle an. „Prüfen“ zeigt, welche Karten schon richtig stehen.<\/p><h3>So erstellst du die Aufgabe<\/h3><p><b>Im Baukasten:<\/b> Tools → Übung erstellen, links unter „Experimentell (β)“ den Baustein <b>⇅ Reihenfolge<\/b> anklicken, die Karten in der richtigen Reihenfolge eintragen. Der Schalter „Code“ zeigt die Karten in Schreibmaschinenschrift und behält die Einrückung.<\/p><p><b>Im JSON:<\/b><\/p><ul><li><code>karten<\/code>: die Texte in der <b>richtigen<\/b> Reihenfolge, gemischt wird von selbst<\/li><li><code>\"mono\": true<\/code>: Karten sind reiner Text (Codezeilen)<\/li><li><code>h<\/code>: Hinweis bei falscher Reihenfolge<\/li><\/ul><p>Die Aufgabe unten sieht als JSON so aus:<\/p><pre>{\n \"typ\": \"reihenfolge\",\n \"frage\": \"Bringe die Schritte in die richtige Reihenfolge: So entsteht eine Reihenfolge-Aufgabe.\",\n \"karten\": [ \"Tools → Übung erstellen öffnen\", \"Links unter „Experimentell (β)“ den Baustein „Reihenfolge“ anklicken\", \"Aufgabenstellung eintragen\", \"Karten in der richtigen Reihenfolge eintragen\", \"Mit „Vorschau“ ausprobieren\", \"Herunterladen oder einreichen\"\n ],\n \"h\": \"Erst öffnen, dann den Baustein wählen, zuletzt herunterladen.\",\n \"ok\": \"Genau so entsteht die Aufgabe.\" }<\/pre><h3>Ausprobieren<\/h3>",
+   "aufgaben": [
+    {
+     "typ": "reihenfolge",
+     "frage": "Bringe die Schritte in die richtige Reihenfolge: So entsteht eine Reihenfolge-Aufgabe.",
+     "karten": [
+      "Tools → Übung erstellen öffnen",
+      "Links unter „Experimentell (β)“ den Baustein „Reihenfolge“ anklicken",
+      "Aufgabenstellung eintragen",
+      "Karten in der richtigen Reihenfolge eintragen",
+      "Mit „Vorschau“ ausprobieren",
+      "Herunterladen oder einreichen"
+     ],
+     "h": "Erst öffnen, dann den Baustein wählen, zuletzt herunterladen.",
+     "ok": "Genau so entsteht die Aufgabe."
+    }
+   ],
+   "id": "s1"
+  },
+  {
+   "kurz": "Offen",
+   "titel": "Offene Antwort (offen)",
+   "html": "<h2>Offene Antwort (offen)<\/h2><p class=\"info\">Für „Begründe“, „Beurteile“, „Erläutere“: Antworten, die sich nicht automatisch prüfen lassen.<\/p><h3>So arbeiten die Schüler<\/h3><p>Sie schreiben ihre Antwort, lassen sich die Musterlösung zeigen und haken ab, welche Punkte ihre Antwort enthält. Danach können sie die Antwort überarbeiten oder die Selbstkontrolle abschließen.<\/p><h3>So erstellst du die Aufgabe<\/h3><p><b>Im Baukasten:<\/b> Tools → Übung erstellen, links unter „Experimentell (β)“ den Baustein <b>📝 Offene Antwort<\/b> anklicken, Musterlösung eintragen und je Zeile ein Kriterium zum Abhaken.<\/p><p><b>Im JSON:<\/b><\/p><ul><li><code>muster<\/code>: Musterlösung (Formatierung erlaubt)<\/li><li><code>kriterien<\/code>: Liste zum Abhaken (kann fehlen)<\/li><li><code>zeilen<\/code>: Höhe des Textfelds, <code>min<\/code>: Mindestzahl Zeichen<\/li><\/ul><p><b>Wichtig:<\/b> Die Aufgabe gilt als gelöst, sobald die Selbstkontrolle abgeschlossen ist, egal wie viele Haken gesetzt sind. Der Text wird nicht gespeichert und nicht an die Lehrkraft übertragen.<\/p><p>Die Aufgabe unten sieht als JSON so aus:<\/p><pre>{\n \"typ\": \"offen\",\n \"frage\": \"Erkläre in zwei Sätzen, wofür sich der Aufgabentyp „Offene Antwort“ eignet und wie die Antwort kontrolliert wird.\",\n \"min\": 30,\n \"muster\": \"&lt;p&gt;Der Typ eignet sich für Aufgaben, die eine eigene Formulierung verlangen, zum Beispiel Begründungen und Beurteilungen. Die Antwort wird nicht automatisch bewertet: Die Schüler vergleichen sie mit der Musterlösung und haken Kriterien ab.&lt;/p&gt;\",\n \"kriterien\": [ \"nennt Aufgaben mit eigener Formulierung (begründen, beurteilen …)\", \"sagt, dass nicht automatisch bewertet wird\", \"nennt Musterlösung und Kriterien zum Abhaken\"\n ] }<\/pre><h3>Ausprobieren<\/h3>",
+   "aufgaben": [
+    {
+     "typ": "offen",
+     "frage": "Erkläre in zwei Sätzen, wofür sich der Aufgabentyp „Offene Antwort“ eignet und wie die Antwort kontrolliert wird.",
+     "min": 30,
+     "muster": "<p>Der Typ eignet sich für Aufgaben, die eine eigene Formulierung verlangen, zum Beispiel Begründungen und Beurteilungen. Die Antwort wird nicht automatisch bewertet: Die Schüler vergleichen sie mit der Musterlösung und haken Kriterien ab.<\/p>",
+     "kriterien": [
+      "nennt Aufgaben mit eigener Formulierung (begründen, beurteilen …)",
+      "sagt, dass nicht automatisch bewertet wird",
+      "nennt Musterlösung und Kriterien zum Abhaken"
+     ]
+    }
+   ],
+   "id": "s2"
+  },
+  {
+   "kurz": "Markieren",
+   "titel": "Markieren (markieren)",
+   "html": "<h2>Markieren (markieren)<\/h2><p class=\"info\">Für „Finde alle …“: Wortarten, Fachbegriffe, Bestandteile eines Belegs, Zeilen eines Programms.<\/p><h3>So arbeiten die Schüler<\/h3><p>Sie klicken die gesuchten Wörter oder Zeilen an, ein zweiter Klick hebt die Markierung auf. Nach „Prüfen“ bleiben richtige Stellen grün, falsche werden rot und wieder abgewählt.<\/p><h3>So erstellst du die Aufgabe<\/h3><p><b>Im Baukasten:<\/b> Tools → Übung erstellen, links unter „Experimentell (β)“ den Baustein <b>🖍 Markieren<\/b> anklicken und den Text eintragen. Jede gesuchte Stelle kommt in doppelte eckige Klammern. Oben wählst du, ob Wörter oder ganze Zeilen angeklickt werden.<\/p><p><b>Im JSON:<\/b><\/p><ul><li><code>text<\/code>: reiner Text, gesuchte Stellen als <code>[[so]]<\/code>, neue Zeile mit <code>\\n<\/code><\/li><li><code>\"einheit\": \"zeile\"<\/code>: ganze Zeilen anklicken (gesucht ist jede Zeile mit <code>[[<\/code>)<\/li><li><code>\"mono\": true<\/code>: Code, <code>\"anzahl\": false<\/code>: Anzahl nicht verraten, <code>h<\/code>: Hinweis<\/li><\/ul><p>Die erste Aufgabe unten sieht als JSON so aus:<\/p><pre>{\n \"typ\": \"markieren\",\n \"frage\": \"Markiere alle Feldnamen, die es beim Typ „Markieren“ gibt.\",\n \"text\": \"Der Text der Aufgabe steht im Feld [[text]]. Mit [[einheit]] legst du fest, ob Wörter oder Zeilen angeklickt werden. Für Code gibt es [[mono]], und mit [[anzahl]] verschweigst du, wie viele Stellen gesucht sind. Das Feld karten gehört dagegen zu einem anderen Typ.\",\n \"h\": \"Gesucht sind vier Feldnamen.\" }<\/pre><h3>Ausprobieren<\/h3>",
+   "aufgaben": [
+    {
+     "typ": "markieren",
+     "frage": "Markiere alle Feldnamen, die es beim Typ „Markieren“ gibt.",
+     "text": "Der Text der Aufgabe steht im Feld [[text]]. Mit [[einheit]] legst du fest, ob Wörter oder Zeilen angeklickt werden. Für Code gibt es [[mono]], und mit [[anzahl]] verschweigst du, wie viele Stellen gesucht sind. Das Feld karten gehört dagegen zu einem anderen Typ.",
+     "h": "Gesucht sind vier Feldnamen."
+    },
+    {
+     "typ": "markieren",
+     "einheit": "zeile",
+     "mono": true,
+     "frage": "Zweite Variante mit ganzen Zeilen: In welchen Zeilen dieses JSON steht eine gesuchte Stelle?",
+     "text": "{\"typ\": \"markieren\",\n \"frage\": \"Markiere alle Nomen.\",\n [[\"text\": \"Der [[Hund]] bellt im [[Garten]].\"]],\n \"anzahl\": false}"
+    }
+   ],
+   "id": "s3"
+  },
+  {
+   "kurz": "Verbessern",
+   "titel": "Fehler verbessern (verbessern)",
+   "html": "<h2>Fehler verbessern (verbessern)<\/h2><p class=\"info\">Fehlersuche wie in den Bereichen HTML und Python, aber für beliebige Texte: Rechtschreibung, Grammatik, Code, Buchungssätze.<\/p><h3>So arbeiten die Schüler<\/h3><p>Erst die Zeile mit dem Fehler anklicken. Dann in dieser Zeile alle falschen Stellen anklicken (nochmal klicken wählt wieder ab) und „Prüfen“. Zum Schluss die Stellen verbessern und wieder „Prüfen“. Bei nur einer Zeile entfällt der erste Schritt.<\/p><h3>So erstellst du die Aufgabe<\/h3><p><b>Im Baukasten:<\/b> Tools → Übung erstellen, links unter „Experimentell (β)“ den Baustein <b>🩹 Fehler verbessern<\/b> anklicken und den Text mit den eingebauten Fehlern eintragen.<\/p><p><b>Im JSON:<\/b><\/p><ul><li><code>text<\/code>: reiner Text, Zeilen mit <code>\\n<\/code>, Fehler als <code>[[falsch|richtig]]<\/code> – das <b>Falsche zuerst<\/b>, es wird angezeigt<\/li><li>weitere richtige Lösungen anhängen: <code>[[falsch|richtig|auch richtig]]<\/code>; <code>[[zu viel|]]<\/code> = Stelle löschen<\/li><li>Stellen sind Wörter (durch Leerzeichen getrennt); ein Fehler mitten im Wort braucht eine eigene Klammer: <code>Titel[[&lt;/h2&gt;|&lt;/h1&gt;]]<\/code><\/li><li><code>\"mono\": true<\/code>: Code, <code>\"gross\": false<\/code>: Groß/klein egal, <code>h<\/code>: Hinweis<\/li><\/ul><p>Die Aufgabe unten sieht als JSON so aus:<\/p><pre>{\n \"typ\": \"verbessern\",\n \"frage\": \"In dieser Anleitung stecken drei Fehler. Finde und verbessere sie.\",\n \"text\": \"Fehler stehen in [[einfachen|doppelten]] eckigen Klammern.\\nIn der Klammer steht zuerst das [[Richtige|Falsche]] und danach die Verbesserung.\\nDie Schüler klicken zuerst die Zeile mit dem Fehler an.\\nGetrennt wird mit einem senkrechten [[Komma|Strich]].\",\n \"gross\": false,\n \"h\": \"Lies oben unter „Im JSON“ nach.\",\n \"ok\": \"Alle drei Fehler verbessert – so funktioniert der Typ.\" }<\/pre><h3>Ausprobieren<\/h3>",
+   "aufgaben": [
+    {
+     "typ": "verbessern",
+     "frage": "In dieser Anleitung stecken drei Fehler. Finde und verbessere sie.",
+     "text": "Fehler stehen in [[einfachen|doppelten]] eckigen Klammern.\nIn der Klammer steht zuerst das [[Richtige|Falsche]] und danach die Verbesserung.\nDie Schüler klicken zuerst die Zeile mit dem Fehler an.\nGetrennt wird mit einem senkrechten [[Komma|Strich]].",
+     "gross": false,
+     "h": "Lies oben unter „Im JSON“ nach.",
+     "ok": "Alle drei Fehler verbessert – so funktioniert der Typ."
+    }
+   ],
+   "id": "s4"
+  },
+  {
+   "kurz": "Beschriften",
+   "titel": "Bild beschriften (beschriften)",
+   "html": "<h2>Bild beschriften (beschriften)<\/h2><p class=\"info\">Für Abbildungen: Bestandteile eines Belegs, Oberfläche eines Programms, Hardware, Diagramme.<\/p><h3>So arbeiten die Schüler<\/h3><p>Die Begriffe liegen in der Wortbank. Sie werden auf die nummerierten Punkte im Bild gezogen (oder: erst Begriff, dann Punkt antippen). Richtige bleiben liegen, falsche wandern zurück.<\/p><h3>So erstellst du die Aufgabe<\/h3><p><b>Im Baukasten:<\/b> Tools → Übung erstellen, links unter „Experimentell (β)“ den Baustein <b>🏷 Bild beschriften<\/b> anklicken, mit „Bild auswählen“ ein Bild hochladen (es wird verkleinert und eingebettet) und für jeden Punkt ins Bild klicken. Den Begriff trägst du in der Liste darunter ein.<\/p><p><b>Im JSON:<\/b><\/p><ul><li><code>bild<\/code>: eingebettetes Bild (<code>data:image/…;base64,…<\/code>, höchstens 600 kB)<\/li><li><code>punkte<\/code>: je <code>x<\/code> und <code>y<\/code> in Prozent von links und oben, <code>t<\/code> = Begriff<\/li><li><code>extra<\/code>: weitere Begriffe als Ablenker, <code>alt<\/code>: Bildbeschreibung<\/li><\/ul><p>Die Aufgabe unten sieht als JSON so aus:<\/p><pre>{\n \"typ\": \"beschriften\",\n \"frage\": \"Das Bild zeigt, wie eine Beschriften-Aufgabe aufgebaut ist. Beschrifte die Teile.\",\n \"alt\": \"Schema einer Beschriften-Aufgabe: oben ein gestrichelter Kasten mit Kärtchen, darunter ein Bild mit zwei Kreisen, unten ein Knopf\",\n \"bild\": \"data:image/svg+xml;base64,…\",\n \"punkte\": [ { \"x\": 80, \"y\": 18.5, \"t\": \"Wortbank\" }, { \"x\": 33, \"y\": 18.5, \"t\": \"Begriff zum Ziehen\" }, { \"x\": 51.5, \"y\": 40, \"t\": \"Punkt im Bild\" }, { \"x\": 15.5, \"y\": 86, \"t\": \"Knopf „Prüfen“\" }\n ],\n \"extra\": [ \"Musterlösung\", \"Lücke\"\n ] }<\/pre><h3>Ausprobieren<\/h3>",
+   "aufgaben": [
+    {
+     "typ": "beschriften",
+     "frage": "Das Bild zeigt, wie eine Beschriften-Aufgabe aufgebaut ist. Beschrifte die Teile.",
+     "alt": "Schema einer Beschriften-Aufgabe: oben ein gestrichelter Kasten mit Kärtchen, darunter ein Bild mit zwei Kreisen, unten ein Knopf",
+     "bild": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2NDAiIGhlaWdodD0iNDAwIiB2aWV3Qm94PSIwIDAgNjQwIDQwMCIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiPgo8cmVjdCB3aWR0aD0iNjQwIiBoZWlnaHQ9IjQwMCIgZmlsbD0iI2Y2ZjhmYiIvPjxyZWN0IHg9IjIwIiB5PSIyMCIgd2lkdGg9IjYwMCIgaGVpZ2h0PSIzNjAiIHJ4PSIxNCIgZmlsbD0iI2ZmZiIgc3Ryb2tlPSIjY2RkM2RlIiBzdHJva2Utd2lkdGg9IjIiLz4KPHJlY3QgeD0iNDQiIHk9IjQ0IiB3aWR0aD0iNTUyIiBoZWlnaHQ9IjYwIiByeD0iMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzlhYTViOCIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtZGFzaGFycmF5PSI4IDYiLz4KPHJlY3QgeD0iNTgiIHk9IjU4IiB3aWR0aD0iOTAiIGhlaWdodD0iMzIiIHJ4PSI3IiBmaWxsPSIjZWNlZmY0IiBzdHJva2U9IiM1ZTgxYWMiIHN0cm9rZS13aWR0aD0iMiIvPjxyZWN0IHg9IjE2MCIgeT0iNTgiIHdpZHRoPSIxMTAiIGhlaWdodD0iMzIiIHJ4PSI3IiBmaWxsPSIjZWNlZmY0IiBzdHJva2U9IiM1ZTgxYWMiIHN0cm9rZS13aWR0aD0iMiIvPjxyZWN0IHg9IjI4MiIgeT0iNTgiIHdpZHRoPSI4MCIgaGVpZ2h0PSIzMiIgcng9IjciIGZpbGw9IiNlY2VmZjQiIHN0cm9rZT0iIzVlODFhYyIgc3Ryb2tlLXdpZHRoPSIyIi8+CjxyZWN0IHg9IjQ0IiB5PSIxMjQiIHdpZHRoPSIzNjAiIGhlaWdodD0iMTgwIiByeD0iMTAiIGZpbGw9IiNkZGU2ZjAiIHN0cm9rZT0iIzlhYTViOCIgc3Ryb2tlLXdpZHRoPSIyIi8+PHBhdGggZD0iTTYwIDI5MCBMMTUwIDE5MCBMMjIwIDI1MCBMMjgwIDE3MCBMMzkwIDI5MCBaIiBmaWxsPSIjYTNiZThjIi8+PGNpcmNsZSBjeD0iMzMwIiBjeT0iMTYwIiByPSIxOCIgZmlsbD0iI2ViY2I4YiIvPgo8Y2lyY2xlIGN4PSIxNTAiIGN5PSIyMDAiIHI9IjE1IiBmaWxsPSIjZmZmIiBzdHJva2U9IiMyZTM0NDAiIHN0cm9rZS13aWR0aD0iMiIvPjxjaXJjbGUgY3g9IjMzMCIgY3k9IjE2MCIgcj0iMTUiIGZpbGw9IiNmZmYiIHN0cm9rZT0iIzJlMzQ0MCIgc3Ryb2tlLXdpZHRoPSIyIi8+CjxyZWN0IHg9IjQ0IiB5PSIzMjQiIHdpZHRoPSIxMTAiIGhlaWdodD0iMzgiIHJ4PSI5IiBmaWxsPSIjNWU4MWFjIi8+Cjwvc3ZnPg==",
+     "punkte": [
+      {
+       "x": 80,
+       "y": 18.5,
+       "t": "Wortbank"
+      },
+      {
+       "x": 33,
+       "y": 18.5,
+       "t": "Begriff zum Ziehen"
+      },
+      {
+       "x": 51.5,
+       "y": 40,
+       "t": "Punkt im Bild"
+      },
+      {
+       "x": 15.5,
+       "y": 86,
+       "t": "Knopf „Prüfen“"
+      }
+     ],
+     "extra": [
+      "Musterlösung",
+      "Lücke"
+     ]
+    }
+   ],
+   "id": "s5"
+  },
+  {
+   "kurz": "Blöcke",
+   "titel": "Blöcke bauen (bloecke)",
+   "html": "<h2>Blöcke bauen (bloecke)<\/h2><p class=\"info\">Wie beim blockbasierten Programmieren: Formeln, Buchungssätze in Worten oder kurze Programme aus Bausteinen zusammensetzen.<\/p><h3>So arbeiten die Schüler<\/h3><p>Einen Block antippen setzt ihn ans Ende, ein Block im Feld verschwindet beim Antippen wieder. Durch Ziehen landet ein Block an einer bestimmten Stelle (auf den Block ziehen, vor dem er stehen soll).<\/p><h3>So erstellst du die Aufgabe<\/h3><p><b>Im Baukasten:<\/b> Tools → Übung erstellen, links unter „Experimentell (β)“ den Baustein <b>🧱 Blöcke bauen<\/b> anklicken. Je Zeile einen Block für den Vorrat eintragen (auch Ablenker), darunter die Lösung in der richtigen Reihenfolge.<\/p><p><b>Im JSON:<\/b><\/p><ul><li><code>bloecke<\/code>: Vorrat, <code>loesung<\/code>: Blöcke in der richtigen Reihenfolge (oder <code>loesungen<\/code>: mehrere Listen)<\/li><li><code>\"gleichwertig\": true<\/code>: jede rechnerisch gleichwertige Formel zählt, z. B. K · p oder p · K<\/li><li><code>start<\/code>: fester Text davor, <code>\"einmal\": true<\/code>: jeder Block nur einmal, <code>\"senkrecht\": true<\/code>: untereinander, <code>\"mono\": true<\/code>: Code<\/li><\/ul><p>Die erste Aufgabe unten sieht als JSON so aus:<\/p><pre>{\n \"typ\": \"bloecke\",\n \"mono\": true,\n \"frage\": \"Baue den Anfang einer Blöcke-Aufgabe, so wie er im JSON steht.\",\n \"bloecke\": [ \"{\", \"}\", \"\\\"typ\\\"\", \"\\\"bloecke\\\"\", \"\\\"mc\\\"\", \":\", \",\", \"[\"\n ],\n \"loesung\": [ \"{\", \"\\\"typ\\\"\", \":\", \"\\\"bloecke\\\"\", \"}\"\n ],\n \"h\": \"Erst die geschweifte Klammer, dann Feldname, Doppelpunkt und Wert.\" }<\/pre><h3>Ausprobieren<\/h3>",
+   "aufgaben": [
+    {
+     "typ": "bloecke",
+     "mono": true,
+     "frage": "Baue den Anfang einer Blöcke-Aufgabe, so wie er im JSON steht.",
+     "bloecke": [
+      "{",
+      "}",
+      "\"typ\"",
+      "\"bloecke\"",
+      "\"mc\"",
+      ":",
+      ",",
+      "["
+     ],
+     "loesung": [
+      "{",
+      "\"typ\"",
+      ":",
+      "\"bloecke\"",
+      "}"
+     ],
+     "h": "Erst die geschweifte Klammer, dann Feldname, Doppelpunkt und Wert."
+    },
+    {
+     "typ": "bloecke",
+     "frage": "Zweite Variante mit „gleichwertig“: Baue die Formel für die Tageszinsen. Jede richtige Schreibweise zählt.",
+     "start": "Z =",
+     "gleichwertig": true,
+     "bloecke": [
+      "K",
+      "p",
+      "t",
+      "·",
+      ":",
+      "(",
+      ")",
+      "100",
+      "360",
+      "+"
+     ],
+     "loesung": [
+      "K",
+      "·",
+      "p",
+      "·",
+      "t",
+      ":",
+      "(",
+      "100",
+      "·",
+      "360",
+      ")"
+     ]
+    }
+   ],
+   "id": "s6"
+  },
+  {
+   "kurz": "Karteikarten",
+   "titel": "Karteikarten (karteikarten)",
+   "html": "<h2>Karteikarten (karteikarten)<\/h2><p class=\"info\">Zum Lernen von Begriffen und Definitionen, wenn die Schüler sich selbst einschätzen sollen.<\/p><h3>So arbeiten die Schüler<\/h3><p>Karte lesen, umdrehen (Karte anklicken oder Knopf) und ehrlich „Gewusst“ oder „Nicht gewusst“ wählen. Nicht gewusste Karten kommen nach kurzer Zeit wieder. Fertig, wenn alle Karten gewusst sind.<\/p><h3>So erstellst du die Aufgabe<\/h3><p><b>Im Baukasten:<\/b> Tools → Übung erstellen, links unter „Experimentell (β)“ den Baustein <b>🃏 Karteikarten<\/b> anklicken und je Karte Vorderseite und Rückseite eintragen.<\/p><p><b>Im JSON:<\/b><\/p><ul><li><code>karten<\/code>: Liste aus <code>{\"v\": \"Vorderseite\", \"r\": \"Rückseite\"}<\/code> (Formatierung erlaubt)<\/li><li><code>\"mischen\": false<\/code>: Reihenfolge behalten<\/li><\/ul><p><b>Abgrenzung:<\/b> Für Vokabeln mit Eintippen oder auf Zeit passt der Baustein „⏱ Training“ besser, dort wird die Antwort geprüft.<\/p><p>Die Aufgabe unten sieht als JSON so aus:<\/p><pre>{\n \"typ\": \"karteikarten\",\n \"frage\": \"Lerne mit den Karten, wie man Karteikarten erstellt.\",\n \"karten\": [ { \"v\": \"In welchem Feld stehen die Karten?\", \"r\": \"&lt;code&gt;karten&lt;/code&gt;\" }, { \"v\": \"Wofür steht &lt;code&gt;v&lt;/code&gt;?\", \"r\": \"Vorderseite\" }, { \"v\": \"Wofür steht &lt;code&gt;r&lt;/code&gt;?\", \"r\": \"Rückseite\" }, { \"v\": \"Was passiert mit einer Karte, die nicht gewusst wurde?\", \"r\": \"Sie kommt nach etwa drei Karten wieder.\" }, { \"v\": \"Wann gilt die Aufgabe als gelöst?\", \"r\": \"Wenn alle Karten einmal gewusst wurden.\" }\n ] }<\/pre><h3>Ausprobieren<\/h3>",
+   "aufgaben": [
+    {
+     "typ": "karteikarten",
+     "frage": "Lerne mit den Karten, wie man Karteikarten erstellt.",
+     "karten": [
+      {
+       "v": "In welchem Feld stehen die Karten?",
+       "r": "<code>karten<\/code>"
+      },
+      {
+       "v": "Wofür steht <code>v<\/code>?",
+       "r": "Vorderseite"
+      },
+      {
+       "v": "Wofür steht <code>r<\/code>?",
+       "r": "Rückseite"
+      },
+      {
+       "v": "Was passiert mit einer Karte, die nicht gewusst wurde?",
+       "r": "Sie kommt nach etwa drei Karten wieder."
+      },
+      {
+       "v": "Wann gilt die Aufgabe als gelöst?",
+       "r": "Wenn alle Karten einmal gewusst wurden."
+      }
+     ]
+    }
+   ],
+   "id": "s7"
+  },
+  {
+   "kurz": "Kreuzwort",
+   "titel": "Kreuzworträtsel (kreuzwort)",
+   "html": "<h2>Kreuzworträtsel (kreuzwort)<\/h2><p class=\"info\">Zum Wiederholen von Fachbegriffen. Sparsam einsetzen: Es kostet die Schüler viel Zeit für wenige Begriffe.<\/p><h3>So arbeiten die Schüler<\/h3><p>Ein Feld oder einen Hinweis anklicken und tippen, der Cursor springt weiter. Leertaste oder nochmaliges Antippen wechselt zwischen waagrecht und senkrecht, die Pfeiltasten bewegen den Cursor. „Prüfen“ färbt falsche Buchstaben rot.<\/p><h3>So erstellst du die Aufgabe<\/h3><p><b>Im Baukasten:<\/b> Tools → Übung erstellen, links unter „Experimentell (β)“ den Baustein <b>🔠 Kreuzworträtsel<\/b> anklicken und je Zeile Lösungswort und Hinweis eintragen. Das Gitter entsteht von selbst und sieht immer gleich aus.<\/p><p><b>Im JSON:<\/b><\/p><ul><li><code>woerter<\/code>: Liste aus <code>{\"w\": \"Wort\", \"t\": \"Hinweis\"}<\/code>, 2 bis 25 Wörter<\/li><li>Buchstaben A–Z, Ä, Ö, Ü; ß wird SS, Leerzeichen und Bindestriche entfallen<\/li><li>Wörter ohne gemeinsamen Buchstaben stehen einzeln unter dem Gitter<\/li><\/ul><p>Die Aufgabe unten sieht als JSON so aus:<\/p><pre>{\n \"typ\": \"kreuzwort\",\n \"frage\": \"Löse das Rätsel rund um das Kreuzworträtsel.\",\n \"woerter\": [ { \"w\": \"Gitter\", \"t\": \"Es entsteht von selbst aus der Wortliste\" }, { \"w\": \"Hinweis\", \"t\": \"Das steht im Feld t\" }, { \"w\": \"Leertaste\", \"t\": \"Wechselt die Schreibrichtung\" }, { \"w\": \"Baukasten\", \"t\": \"Dort stellst du die Aufgabe zusammen\" }, { \"w\": \"Senkrecht\", \"t\": \"Von oben nach unten\" }, { \"w\": \"Umlaut\", \"t\": \"Ä, Ö oder Ü: ein … bekommt ein eigenes Feld\" }\n ] }<\/pre><h3>Ausprobieren<\/h3>",
+   "aufgaben": [
+    {
+     "typ": "kreuzwort",
+     "frage": "Löse das Rätsel rund um das Kreuzworträtsel.",
+     "woerter": [
+      {
+       "w": "Gitter",
+       "t": "Es entsteht von selbst aus der Wortliste"
+      },
+      {
+       "w": "Hinweis",
+       "t": "Das steht im Feld t"
+      },
+      {
+       "w": "Leertaste",
+       "t": "Wechselt die Schreibrichtung"
+      },
+      {
+       "w": "Baukasten",
+       "t": "Dort stellst du die Aufgabe zusammen"
+      },
+      {
+       "w": "Senkrecht",
+       "t": "Von oben nach unten"
+      },
+      {
+       "w": "Umlaut",
+       "t": "Ä, Ö oder Ü: ein … bekommt ein eigenes Feld"
+      }
+     ]
+    }
+   ],
+   "id": "s8"
+  },
+  {
+   "kurz": "Szenario",
+   "titel": "Szenario (chat mit Verzweigungen)",
+   "html": "<h2>Szenario (chat mit Verzweigungen)<\/h2><p class=\"info\">Der Lern-Chat kann jetzt verzweigen: Entscheidungen führen zu unterschiedlichen Verläufen, zum Beispiel bei einer Kreditberatung oder einem Datenschutz-Fall. Das Szenario ist nicht experimentell, alte Chats laufen unverändert.<\/p><h3>So arbeiten die Schüler<\/h3><p>Wie im Lern-Chat: Knöpfe antippen oder Antworten eintippen. Je nach Antwort geht das Gespräch anders weiter.<\/p><h3>So erstellst du die Aufgabe<\/h3><p><b>Im Baukasten:<\/b> Tools → Übung erstellen, links unter „Experimentell (β)“ den Baustein <b>💬 Lern-Chat<\/b> (oben bei den Aufgaben) anklicken und den Schalter „Szenario (Verzweigungen)“ einschalten. Dann bekommt eine Nachricht eine <b>Marke<\/b>, und bei Antworten oder Nachrichten wählst du unter „weiter zu“ diese Marke.<\/p><p><b>Im JSON:<\/b><\/p><ul><li><code>\"id\": \"marke\"<\/code> an einer Nachricht: Sprungziel<\/li><li><code>\"weiter\": \"marke\"<\/code> an einem Antwort-Knopf oder einer Nachricht: dorthin springen statt zur nächsten Nachricht<\/li><li><code>\"ende\": true<\/code>: Der Chat endet hier<\/li><li>Hat kein Knopf <code>\"ok\": true<\/code>, ist es eine Entscheidung ohne richtig und falsch<\/li><li>Text mit Marke als Objekt: <code>{\"bot\": \"Text\", \"id\": \"marke\"}<\/code><\/li><\/ul><p><b>Achte darauf:<\/b> Jeder Zweig braucht ein Ende – entweder eine Nachricht mit „Ende“ oder einen Sprung zu einem gemeinsamen Schluss. Sonst läuft der Chat einfach in den nächsten Zweig weiter.<\/p><p>Die Aufgabe unten sieht als JSON so aus:<\/p><pre>{\n \"typ\": \"chat\",\n \"name\": \"Szenario-Hilfe\",\n \"bild\": \"data:image/svg+xml;base64,…\",\n \"nachrichten\": [ \"Hallo! Ich bin selbst ein Szenario und zeige dir, wie ich gebaut bin.\", { \"id\": \"menue\", \"bot\": \"Was möchtest du wissen?\", \"antworten\": [ { \"t\": \"Wie springe ich?\", \"weiter\": \"sprung\" }, { \"t\": \"Was ist eine Entscheidung?\", \"weiter\": \"wahl\" }, { \"t\": \"Wie endet ein Chat?\", \"weiter\": \"schluss\" } ] }, { \"id\": \"sprung\", \"bot\": \"Diese Nachricht hat die Marke &lt;code&gt;sprung&lt;/code&gt;. Der Knopf, den du gedrückt hast, hat &lt;code&gt;\\\"weiter\\\": \\\"sprung\\\"&lt;/code&gt;.\" }, { \"bot\": \"Wohin geht es ohne &lt;code&gt;weiter&lt;/code&gt;?\", \"antworten\": [ { \"t\": \"zur nächsten Nachricht\", \"ok\": true, \"r\": \"Genau, einfach der Reihe nach.\" }, { \"t\": \"zum Anfang\", \"r\": \"Nein: Ohne &lt;code&gt;weiter&lt;/code&gt; kommt die nächste Nachricht.\" } ], \"weiter\": \"menue\" }, { \"id\": \"wahl\", \"bot\": \"Die Frage „Was möchtest du wissen?“ ist eine Entscheidung: Kein Knopf hat &lt;code&gt;\\\"ok\\\": true&lt;/code&gt;. Sie zählt nicht als Frage und wird nicht als richtig oder falsch gewertet.\", \"weiter\": \"menue\" }, { \"id\": \"schluss\", \"bot\": \"Eine Nachricht mit &lt;code&gt;\\\"ende\\\": true&lt;/code&gt; beendet den Chat – so wie diese. Mit „Noch einmal“ kannst du die anderen Wege gehen.\", \"ende\": true }\n ] }<\/pre><h3>Ausprobieren<\/h3>",
+   "aufgaben": [
+    {
+     "typ": "chat",
+     "name": "Szenario-Hilfe",
+     "bild": "🧭",
+     "nachrichten": [
+      "Hallo! Ich bin selbst ein Szenario und zeige dir, wie ich gebaut bin.",
+      {
+       "id": "menue",
+       "bot": "Was möchtest du wissen?",
+       "antworten": [
+        {
+         "t": "Wie springe ich?",
+         "weiter": "sprung"
+        },
+        {
+         "t": "Was ist eine Entscheidung?",
+         "weiter": "wahl"
+        },
+        {
+         "t": "Wie endet ein Chat?",
+         "weiter": "schluss"
+        }
+       ]
+      },
+      {
+       "id": "sprung",
+       "bot": "Diese Nachricht hat die Marke <code>sprung<\/code>. Der Knopf, den du gedrückt hast, hat <code>\"weiter\": \"sprung\"<\/code>."
+      },
+      {
+       "bot": "Wohin geht es ohne <code>weiter<\/code>?",
+       "antworten": [
+        {
+         "t": "zur nächsten Nachricht",
+         "ok": true,
+         "r": "Genau, einfach der Reihe nach."
+        },
+        {
+         "t": "zum Anfang",
+         "r": "Nein: Ohne <code>weiter<\/code> kommt die nächste Nachricht."
+        }
+       ],
+       "weiter": "menue"
+      },
+      {
+       "id": "wahl",
+       "bot": "Die Frage „Was möchtest du wissen?“ ist eine Entscheidung: Kein Knopf hat <code>\"ok\": true<\/code>. Sie zählt nicht als Frage und wird nicht als richtig oder falsch gewertet.",
+       "weiter": "menue"
+      },
+      {
+       "id": "schluss",
+       "bot": "Eine Nachricht mit <code>\"ende\": true<\/code> beendet den Chat – so wie diese. Mit „Noch einmal“ kannst du die anderen Wege gehen.",
+       "ende": true
+      }
+     ]
+    }
+   ],
+   "id": "s9"
+  }
+ ]
+};
+Aufgaben.sequenz({el:'#app', key:"demo-typen", schritte:DATEN.schritte});
+</script>
+</body>
+</html>
