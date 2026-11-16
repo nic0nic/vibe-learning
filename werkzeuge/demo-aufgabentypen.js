@@ -13,6 +13,13 @@ const seite = (kurz, titel, wofuer, bedienung, baukasten, felder, aufgaben, extr
   html: `<h2>${titel}</h2><p class="info">${wofuer}</p><h3>So arbeiten die Schüler</h3><p>${bedienung}</p><h3>So erstellst du die Aufgabe</h3>${WO(baukasten)}`
     + `<p><b>Im JSON:</b></p><ul>${felder.map(f => `<li>${f}</li>`).join('')}</ul>${extra || ''}<details><summary>JSON der ${aufgaben.length > 1 ? 'ersten Aufgabe' : 'Aufgabe'} unten anzeigen</summary>${json(aufgaben[0])}</details><h3>Ausprobieren</h3>`,
   aufgaben});
+// Training ist ein eigener Schritt (training statt aufgaben): Seite wie bei den Typen, das JSON zeigt den ganzen Schritt
+const training = (kurz, titel, wofuer, bedienung, baukasten, felder, tr) => {
+  const s = seite(kurz, titel, wofuer, bedienung, '!Tools → Übung erstellen, links ganz oben <b>⏱ Training (Zeit / endlos)</b> anklicken. Das Training ist kein Aufgabentyp, sondern ein eigener Schritt und steht allein auf seiner Seite. ' + baukasten, felder, [{}]);
+  delete s.aufgaben; s.training = tr;
+  s.html = s.html.replace(/<details>[\s\S]*?<\/details>/, '<details><summary>JSON dieses Schritts anzeigen</summary>' + json({kurz, titel: 'Training', training: tr}) + '</details>');
+  return s;
+};
 const bild = 'data:image/svg+xml;base64,' + Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="640" height="400" viewBox="0 0 640 400" font-family="sans-serif">
 <rect width="640" height="400" fill="#f6f8fb"/><rect x="20" y="20" width="600" height="360" rx="14" fill="#fff" stroke="#cdd3de" stroke-width="2"/>
 <rect x="44" y="44" width="552" height="60" rx="10" fill="none" stroke="#9aa5b8" stroke-width="2" stroke-dasharray="8 6"/>
@@ -126,14 +133,46 @@ const standard = [
     [{typ: 'kreuzwort', frage: 'Löse das Rätsel rund um das Kreuzworträtsel.',
       woerter: [{w: 'Gitter', t: 'Es entsteht von selbst aus der Wortliste'}, {w: 'Hinweis', t: 'Das steht im Feld t'}, {w: 'Leertaste', t: 'Wechselt die Schreibrichtung'},
         {w: 'Baukasten', t: 'Dort stellst du die Aufgabe zusammen'}, {w: 'Senkrecht', t: 'Von oben nach unten'}, {w: 'Umlaut', t: 'Ä, Ö oder Ü: ein … bekommt ein eigenes Feld'}]}]),
-  (s => { s.training = {antwort: 'eingabe', anzahl: 5, szenarien: [{frage: '{a} · {b} =', werte: {a: [2, 9], b: [2, 9]}, loesung: 'a * b', falsch: ['a + b']}]};
-          delete s.aufgaben; s.html = s.html.replace(/<details>[\s\S]*?<\/details>/, '<details><summary>JSON dieses Schritts anzeigen</summary>' + json({kurz: 'Training', titel: 'Training', training: s.training}) + '</details>'); return s; })(
-  seite('Training', 'Training (Schritt mit training)',
-    'Für Drill: Kopfrechnen oder Vokabeln, eine Aufgabe nach der anderen, auf Wunsch auf Zeit oder endlos mit Serie und Bestleistung.',
-    '„Start“ drücken, Antwort eintippen und Enter (oder aus vier Antworten wählen). Am Ende stehen Ergebnis, Bestleistung und die Fehler.',
-    '!Tools → Übung erstellen, links ganz oben <b>⏱ Training (Zeit / endlos)</b> anklicken. Das Training ist kein Aufgabentyp, sondern ein eigener Schritt: Es steht allein auf seiner Seite. Zahlen-Aufgaben entstehen aus einer Vorlage mit Zufallswerten, Vokabeln lassen sich aus Excel oder Quizlet einfügen.',
-    ['Schritt mit <code>training</code> statt <code>aufgaben</code>', '<code>"antwort"</code>: <code>"eingabe"</code> oder <code>"mc"</code>, <code>anzahl</code>: Aufgaben pro Runde (weglassen = endlos)', '<code>zeit</code>: <code>{"start": 5, "schritt": -0.1, "min": 1.5}</code> (weglassen = ohne Zeit)', '<code>szenarien</code>: Zahlen-Aufgaben mit <code>frage</code>, <code>werte</code>, <code>loesung</code> – oder <code>woerterbuch</code> mit <code>eintraege</code>', '<code>stufen</code>: mehrere Stufen mit eigenem Inhalt, eigener Antwortform und Zeit'],
-    [{typ: 'mc', options: ['', ''], correct: [0]}])),
+  training('Training', 'Training: feste Runde (Schritt mit training)',
+    'Für Drill: Kopfrechnen oder Vokabeln, eine Aufgabe nach der anderen. Das Training hat viele Schalter – diese und die nächsten drei Seiten zeigen sie der Reihe nach. Hier: eine <b>feste Runde</b> ohne Zeit, mit <b>mehreren Versuchen</b>, Antworten zum <b>Eintippen</b>.',
+    '„Start“ drücken, Antwort eintippen und Enter. Weil „Mehrere Versuche“ an ist, darf eine falsche Antwort korrigiert werden; „Weiß ich nicht“ zeigt die Lösung. Am Ende stehen Ergebnis, Bestleistung und die Fehler.',
+    'Im Formular „Aufgaben pro Runde“ eintragen, die Schalter „Zeit“ aus und „Mehrere Versuche“ an. Die Zahlen-Aufgaben entstehen aus Vorlagen mit Zufallswerten.',
+    ['Schritt mit <code>training</code> statt <code>aufgaben</code>', '<code>"antwort": "eingabe"</code>: eintippen (oder <code>"mc"</code>: aus vier Antworten wählen)', '<code>anzahl</code>: Aufgaben pro Runde; weglassen = endlos', '<code>"versuche": true</code>: falsche Antworten dürfen korrigiert werden', '<code>ziel</code>: so viele richtige zählen den Schritt als erledigt (hier 4 von 6)',
+     '<code>szenarien</code>: Vorlagen für Zahlen-Aufgaben, es wird zufällig eine gewählt', 'Im Szenario: <code>frage</code> mit <code>{a}</code> (Wert) oder <code>{=a*b}</code> (Rechnung), <code>loesung</code> als Formel',
+     '<code>werte</code>: <code>[von, bis]</code>, <code>[von, bis, Schritt]</code>, <code>{"aus": [2, 5, 10]}</code> oder eine Formel aus früheren Werten', '<code>bedingung</code>: es wird neu gewürfelt, bis sie stimmt; <code>runden</code>: Nachkommastellen; <code>einheit</code>'],
+    {antwort: 'eingabe', anzahl: 6, versuche: true, ziel: 4, szenarien: [
+      {frage: '{a} · {b} =', werte: {a: [2, 9], b: [2, 9]}, loesung: 'a * b'},
+      {frage: '{a} − {b} =', werte: {a: [10, 50], b: [1, 40]}, bedingung: 'b < a', loesung: 'a - b'},
+      {frage: '{p} % von {g} € =', werte: {p: {aus: [10, 20, 25, 50]}, g: [20, 200, 20]}, loesung: 'g * p / 100', einheit: '€'},
+      {frage: '{n} Hefte kosten {=n*preis} €. Ein Heft kostet', werte: {n: [2, 6], preis: [0.5, 2.5, 0.25]}, loesung: 'preis', runden: 2, einheit: '€'}]}),
+  training('Training Zeit', 'Training: endlos auf Zeit, Antworten auswählen',
+    'Dieselbe Art Training, aber <b>endlos</b> (Serie und Bestleistung), <b>auf Zeit</b> und mit <b>Antworten zum Auswählen</b>.',
+    'Der Balken läuft ab. Antwort anklicken oder Taste 1 bis 4 drücken. Nach jeder richtigen Antwort wird die Zeit etwas kürzer. Ein Fehler oder abgelaufene Zeit beendet die Serie.',
+    '„Aufgaben pro Runde“ leer lassen (= endlos), Schalter „Zeit“ an und die drei Zeitwerte eintragen, Antwortform „Auswählen“.',
+    ['<code>anzahl</code> fehlt: endlos, gezählt wird die Serie; ein Fehler beendet sie', '<code>zeit</code>: <code>start</code> = Sekunden für die erste Aufgabe, <code>schritt</code> = Änderung je richtiger Antwort (negativ = schneller), <code>min</code> = kürzeste Zeit', '<code>"antwort": "mc"</code>: vier Antworten, die falschen entstehen von selbst (knapp daneben, Ziffern vertauscht)',
+     '<code>falsch</code> im Szenario: typische falsche Rechnungen als Formeln – sie erscheinen als Antworten', '<code>ziel</code>: Serie, ab der der Schritt als erledigt gilt (Standard bei endlos: 10, hier 5)'],
+    {antwort: 'mc', zeit: {start: 8, schritt: -0.3, min: 3}, ziel: 5, szenarien: [
+      {frage: '{a} · {b} =', werte: {a: [3, 9], b: [3, 9]}, loesung: 'a * b', falsch: ['a + b', 'a * b + a']},
+      {frage: '{a} + {b} · {c} =', werte: {a: [2, 9], b: [2, 5], c: [2, 5]}, loesung: 'a + b * c', falsch: ['(a + b) * c']}]}),
+  training('Training Vokabeln', 'Training: Vokabeln (Wörterbuch)',
+    'Statt Zahlen ein <b>Wörterbuch</b>: Vokabeln oder Begriffspaare, in eine oder beide Richtungen, mit Tippfehler-Erkennung.',
+    'Das Wort erscheint, die Übersetzung wird eingetippt. Gibt es mehrere richtige Wörter, reicht eines. Ein kleiner Tippfehler zählt hier als richtig. Jedes Wort kommt einmal, dann beginnt der Stapel neu gemischt.',
+    'Bei „Inhalt“ auf „Vokabeln“ umschalten. Die Liste lässt sich aus Excel, Quizlet oder Anki einfügen (Tab, Semikolon oder „=“ zwischen den Seiten).',
+    ['<code>woerterbuch</code> statt <code>szenarien</code>', '<code>eintraege</code>: <code>[["house", "Haus|Gebäude"], …]</code> – <code>|</code> trennt mehrere richtige Antworten', '<code>sprachen</code>: die zwei Namen, erscheinen über dem Wort', '<code>richtung</code>: <code>"a-b"</code>, <code>"b-a"</code> oder <code>"beide"</code> (zufällig)',
+     '<code>"tippfehler": true</code>: fast richtig zählt als richtig (sonst „Fast – achte auf die Schreibweise“)', 'Mit <code>"antwort": "mc"</code> braucht das Wörterbuch mindestens 4 Einträge; die falschen Antworten kommen aus den anderen Einträgen'],
+    {antwort: 'eingabe', anzahl: 8, versuche: true, woerterbuch: {sprachen: ['Englisch', 'Deutsch'], richtung: 'beide', tippfehler: true,
+      eintraege: [['task', 'Aufgabe'], ['answer', 'Antwort|Lösung'], ['step', 'Schritt'], ['level', 'Stufe|Level'], ['time', 'Zeit'], ['mistake|error', 'Fehler'], ['streak', 'Serie'], ['practice', 'Übung|Training']]}}),
+  training('Training Stufen', 'Training: Stufen mit eigener Antwortform und Zeit',
+    'Mehrere <b>Stufen</b> in einem Training. Jede Stufe kann eigenen Inhalt, eine eigene Antwortform und eine eigene Zeit haben – zum Beispiel erst auswählen, dann eintippen, dann beides auf Zeit.',
+    'Oben die Stufe wählen (Flammen), dann „Start“. Die Bestleistung wird je Stufe gemerkt.',
+    'Im Formular „＋ Stufe“ anklicken. Je Stufe Name, Inhalt, Antwortform und Zeit einstellen.',
+    ['<code>stufen</code>: Liste aus <code>{"name": "…", "szenarien": […]}</code> oder <code>{"name": "…", "woerterbuch": {…}}</code>', 'Jede Stufe darf eigenes <code>antwort</code> und <code>zeit</code> haben; <code>"zeit": null</code> = diese Stufe ohne Zeit', 'Was in der Stufe fehlt, gilt vom Training (hier: Eintippen, 6 Sekunden)', '<code>anzahl</code>, <code>versuche</code> und <code>ziel</code> gelten für alle Stufen gemeinsam'],
+    {antwort: 'eingabe', anzahl: 5, zeit: {start: 6, schritt: 0, min: 6}, stufen: [
+      {name: 'Auswählen ohne Zeit', antwort: 'mc', zeit: null, szenarien: [{frage: '{a} + {b} =', werte: {a: [10, 60], b: [10, 39]}, loesung: 'a + b', falsch: ['a + b + 10', 'a + b - 10']}]},
+      {name: 'Auswählen auf Zeit', antwort: 'mc', szenarien: [{frage: '{a} + {b} =', werte: {a: [10, 60], b: [10, 39]}, loesung: 'a + b', falsch: ['a + b + 10', 'a + b - 10']}]},
+      {name: 'Eintippen ohne Zeit', zeit: null, szenarien: [{frage: '{a} + {b} =', werte: {a: [10, 60], b: [10, 39]}, loesung: 'a + b'}]},
+      {name: 'Eintippen auf Zeit', szenarien: [{frage: '{a} + {b} =', werte: {a: [10, 60], b: [10, 39]}, loesung: 'a + b'}]},
+      {name: 'Vokabeln auswählen, 4 Sekunden', antwort: 'mc', zeit: {start: 4, schritt: 0, min: 4}, woerterbuch: {sprachen: ['Englisch', 'Deutsch'], richtung: 'a-b', eintraege: [['task', 'Aufgabe'], ['answer', 'Antwort'], ['step', 'Schritt'], ['level', 'Stufe'], ['time', 'Zeit'], ['mistake', 'Fehler']]}}]}),
 ];
 BEREICH = 'Experimentell (β)';
 const experimentell = [

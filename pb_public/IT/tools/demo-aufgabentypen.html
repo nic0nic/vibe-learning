@@ -584,11 +584,13 @@ const DATEN = {
   },
   {
    "kurz": "Training",
-   "titel": "Training (Schritt mit training)",
-   "html": "<h2>Training (Schritt mit training)<\/h2><p class=\"info\">Für Drill: Kopfrechnen oder Vokabeln, eine Aufgabe nach der anderen, auf Wunsch auf Zeit oder endlos mit Serie und Bestleistung.<\/p><h3>So arbeiten die Schüler<\/h3><p>„Start“ drücken, Antwort eintippen und Enter (oder aus vier Antworten wählen). Am Ende stehen Ergebnis, Bestleistung und die Fehler.<\/p><h3>So erstellst du die Aufgabe<\/h3><p><b>Im Baukasten:<\/b> Tools → Übung erstellen, links ganz oben <b>⏱ Training (Zeit / endlos)<\/b> anklicken. Das Training ist kein Aufgabentyp, sondern ein eigener Schritt: Es steht allein auf seiner Seite. Zahlen-Aufgaben entstehen aus einer Vorlage mit Zufallswerten, Vokabeln lassen sich aus Excel oder Quizlet einfügen.<\/p><p><b>Im JSON:<\/b><\/p><ul><li>Schritt mit <code>training<\/code> statt <code>aufgaben<\/code><\/li><li><code>\"antwort\"<\/code>: <code>\"eingabe\"<\/code> oder <code>\"mc\"<\/code>, <code>anzahl<\/code>: Aufgaben pro Runde (weglassen = endlos)<\/li><li><code>zeit<\/code>: <code>{\"start\": 5, \"schritt\": -0.1, \"min\": 1.5}<\/code> (weglassen = ohne Zeit)<\/li><li><code>szenarien<\/code>: Zahlen-Aufgaben mit <code>frage<\/code>, <code>werte<\/code>, <code>loesung<\/code> – oder <code>woerterbuch<\/code> mit <code>eintraege<\/code><\/li><li><code>stufen<\/code>: mehrere Stufen mit eigenem Inhalt, eigener Antwortform und Zeit<\/li><\/ul><details><summary>JSON dieses Schritts anzeigen<\/summary><pre>{\n \"kurz\": \"Training\",\n \"titel\": \"Training\",\n \"training\": { \"antwort\": \"eingabe\", \"anzahl\": 5, \"szenarien\": [ { \"frage\": \"{a} · {b} =\", \"werte\": { \"a\": [ 2, 9 ], \"b\": [ 2, 9 ] }, \"loesung\": \"a * b\", \"falsch\": [ \"a + b\" ] } ]\n } }<\/pre><\/details><h3>Ausprobieren<\/h3>",
+   "titel": "Training: feste Runde (Schritt mit training)",
+   "html": "<h2>Training: feste Runde (Schritt mit training)<\/h2><p class=\"info\">Für Drill: Kopfrechnen oder Vokabeln, eine Aufgabe nach der anderen. Das Training hat viele Schalter – diese und die nächsten drei Seiten zeigen sie der Reihe nach. Hier: eine <b>feste Runde<\/b> ohne Zeit, mit <b>mehreren Versuchen<\/b>, Antworten zum <b>Eintippen<\/b>.<\/p><h3>So arbeiten die Schüler<\/h3><p>„Start“ drücken, Antwort eintippen und Enter. Weil „Mehrere Versuche“ an ist, darf eine falsche Antwort korrigiert werden; „Weiß ich nicht“ zeigt die Lösung. Am Ende stehen Ergebnis, Bestleistung und die Fehler.<\/p><h3>So erstellst du die Aufgabe<\/h3><p><b>Im Baukasten:<\/b> Tools → Übung erstellen, links ganz oben <b>⏱ Training (Zeit / endlos)<\/b> anklicken. Das Training ist kein Aufgabentyp, sondern ein eigener Schritt und steht allein auf seiner Seite. Im Formular „Aufgaben pro Runde“ eintragen, die Schalter „Zeit“ aus und „Mehrere Versuche“ an. Die Zahlen-Aufgaben entstehen aus Vorlagen mit Zufallswerten.<\/p><p><b>Im JSON:<\/b><\/p><ul><li>Schritt mit <code>training<\/code> statt <code>aufgaben<\/code><\/li><li><code>\"antwort\": \"eingabe\"<\/code>: eintippen (oder <code>\"mc\"<\/code>: aus vier Antworten wählen)<\/li><li><code>anzahl<\/code>: Aufgaben pro Runde; weglassen = endlos<\/li><li><code>\"versuche\": true<\/code>: falsche Antworten dürfen korrigiert werden<\/li><li><code>ziel<\/code>: so viele richtige zählen den Schritt als erledigt (hier 4 von 6)<\/li><li><code>szenarien<\/code>: Vorlagen für Zahlen-Aufgaben, es wird zufällig eine gewählt<\/li><li>Im Szenario: <code>frage<\/code> mit <code>{a}<\/code> (Wert) oder <code>{=a*b}<\/code> (Rechnung), <code>loesung<\/code> als Formel<\/li><li><code>werte<\/code>: <code>[von, bis]<\/code>, <code>[von, bis, Schritt]<\/code>, <code>{\"aus\": [2, 5, 10]}<\/code> oder eine Formel aus früheren Werten<\/li><li><code>bedingung<\/code>: es wird neu gewürfelt, bis sie stimmt; <code>runden<\/code>: Nachkommastellen; <code>einheit<\/code><\/li><\/ul><details><summary>JSON dieses Schritts anzeigen<\/summary><pre>{\n \"kurz\": \"Training\",\n \"titel\": \"Training\",\n \"training\": { \"antwort\": \"eingabe\", \"anzahl\": 6, \"versuche\": true, \"ziel\": 4, \"szenarien\": [ { \"frage\": \"{a} · {b} =\", \"werte\": { \"a\": [ 2, 9 ], \"b\": [ 2, 9 ] }, \"loesung\": \"a * b\" }, { \"frage\": \"{a} − {b} =\", \"werte\": { \"a\": [ 10, 50 ], \"b\": [ 1, 40 ] }, \"bedingung\": \"b &lt; a\", \"loesung\": \"a - b\" }, { \"frage\": \"{p} % von {g} € =\", \"werte\": { \"p\": { \"aus\": [ 10, 20, 25, 50 ] }, \"g\": [ 20, 200, 20 ] }, \"loesung\": \"g * p / 100\", \"einheit\": \"€\" }, { \"frage\": \"{n} Hefte kosten {=n*preis} €. Ein Heft kostet\", \"werte\": { \"n\": [ 2, 6 ], \"preis\": [ 0.5, 2.5, 0.25 ] }, \"loesung\": \"preis\", \"runden\": 2, \"einheit\": \"€\" } ]\n } }<\/pre><\/details><h3>Ausprobieren<\/h3>",
    "training": {
     "antwort": "eingabe",
-    "anzahl": 5,
+    "anzahl": 6,
+    "versuche": true,
+    "ziel": 4,
     "szenarien": [
      {
       "frage": "{a} · {b} =",
@@ -602,14 +604,319 @@ const DATEN = {
         9
        ]
       },
-      "loesung": "a * b",
-      "falsch": [
-       "a + b"
-      ]
+      "loesung": "a * b"
+     },
+     {
+      "frage": "{a} − {b} =",
+      "werte": {
+       "a": [
+        10,
+        50
+       ],
+       "b": [
+        1,
+        40
+       ]
+      },
+      "bedingung": "b < a",
+      "loesung": "a - b"
+     },
+     {
+      "frage": "{p} % von {g} € =",
+      "werte": {
+       "p": {
+        "aus": [
+         10,
+         20,
+         25,
+         50
+        ]
+       },
+       "g": [
+        20,
+        200,
+        20
+       ]
+      },
+      "loesung": "g * p / 100",
+      "einheit": "€"
+     },
+     {
+      "frage": "{n} Hefte kosten {=n*preis} €. Ein Heft kostet",
+      "werte": {
+       "n": [
+        2,
+        6
+       ],
+       "preis": [
+        0.5,
+        2.5,
+        0.25
+       ]
+      },
+      "loesung": "preis",
+      "runden": 2,
+      "einheit": "€"
      }
     ]
    },
    "id": "s14"
+  },
+  {
+   "kurz": "Training Zeit",
+   "titel": "Training: endlos auf Zeit, Antworten auswählen",
+   "html": "<h2>Training: endlos auf Zeit, Antworten auswählen<\/h2><p class=\"info\">Dieselbe Art Training, aber <b>endlos<\/b> (Serie und Bestleistung), <b>auf Zeit<\/b> und mit <b>Antworten zum Auswählen<\/b>.<\/p><h3>So arbeiten die Schüler<\/h3><p>Der Balken läuft ab. Antwort anklicken oder Taste 1 bis 4 drücken. Nach jeder richtigen Antwort wird die Zeit etwas kürzer. Ein Fehler oder abgelaufene Zeit beendet die Serie.<\/p><h3>So erstellst du die Aufgabe<\/h3><p><b>Im Baukasten:<\/b> Tools → Übung erstellen, links ganz oben <b>⏱ Training (Zeit / endlos)<\/b> anklicken. Das Training ist kein Aufgabentyp, sondern ein eigener Schritt und steht allein auf seiner Seite. „Aufgaben pro Runde“ leer lassen (= endlos), Schalter „Zeit“ an und die drei Zeitwerte eintragen, Antwortform „Auswählen“.<\/p><p><b>Im JSON:<\/b><\/p><ul><li><code>anzahl<\/code> fehlt: endlos, gezählt wird die Serie; ein Fehler beendet sie<\/li><li><code>zeit<\/code>: <code>start<\/code> = Sekunden für die erste Aufgabe, <code>schritt<\/code> = Änderung je richtiger Antwort (negativ = schneller), <code>min<\/code> = kürzeste Zeit<\/li><li><code>\"antwort\": \"mc\"<\/code>: vier Antworten, die falschen entstehen von selbst (knapp daneben, Ziffern vertauscht)<\/li><li><code>falsch<\/code> im Szenario: typische falsche Rechnungen als Formeln – sie erscheinen als Antworten<\/li><li><code>ziel<\/code>: Serie, ab der der Schritt als erledigt gilt (Standard bei endlos: 10, hier 5)<\/li><\/ul><details><summary>JSON dieses Schritts anzeigen<\/summary><pre>{\n \"kurz\": \"Training Zeit\",\n \"titel\": \"Training\",\n \"training\": { \"antwort\": \"mc\", \"zeit\": { \"start\": 8, \"schritt\": -0.3, \"min\": 3 }, \"ziel\": 5, \"szenarien\": [ { \"frage\": \"{a} · {b} =\", \"werte\": { \"a\": [ 3, 9 ], \"b\": [ 3, 9 ] }, \"loesung\": \"a * b\", \"falsch\": [ \"a + b\", \"a * b + a\" ] }, { \"frage\": \"{a} + {b} · {c} =\", \"werte\": { \"a\": [ 2, 9 ], \"b\": [ 2, 5 ], \"c\": [ 2, 5 ] }, \"loesung\": \"a + b * c\", \"falsch\": [ \"(a + b) * c\" ] } ]\n } }<\/pre><\/details><h3>Ausprobieren<\/h3>",
+   "training": {
+    "antwort": "mc",
+    "zeit": {
+     "start": 8,
+     "schritt": -0.3,
+     "min": 3
+    },
+    "ziel": 5,
+    "szenarien": [
+     {
+      "frage": "{a} · {b} =",
+      "werte": {
+       "a": [
+        3,
+        9
+       ],
+       "b": [
+        3,
+        9
+       ]
+      },
+      "loesung": "a * b",
+      "falsch": [
+       "a + b",
+       "a * b + a"
+      ]
+     },
+     {
+      "frage": "{a} + {b} · {c} =",
+      "werte": {
+       "a": [
+        2,
+        9
+       ],
+       "b": [
+        2,
+        5
+       ],
+       "c": [
+        2,
+        5
+       ]
+      },
+      "loesung": "a + b * c",
+      "falsch": [
+       "(a + b) * c"
+      ]
+     }
+    ]
+   },
+   "id": "s15"
+  },
+  {
+   "kurz": "Training Vokabeln",
+   "titel": "Training: Vokabeln (Wörterbuch)",
+   "html": "<h2>Training: Vokabeln (Wörterbuch)<\/h2><p class=\"info\">Statt Zahlen ein <b>Wörterbuch<\/b>: Vokabeln oder Begriffspaare, in eine oder beide Richtungen, mit Tippfehler-Erkennung.<\/p><h3>So arbeiten die Schüler<\/h3><p>Das Wort erscheint, die Übersetzung wird eingetippt. Gibt es mehrere richtige Wörter, reicht eines. Ein kleiner Tippfehler zählt hier als richtig. Jedes Wort kommt einmal, dann beginnt der Stapel neu gemischt.<\/p><h3>So erstellst du die Aufgabe<\/h3><p><b>Im Baukasten:<\/b> Tools → Übung erstellen, links ganz oben <b>⏱ Training (Zeit / endlos)<\/b> anklicken. Das Training ist kein Aufgabentyp, sondern ein eigener Schritt und steht allein auf seiner Seite. Bei „Inhalt“ auf „Vokabeln“ umschalten. Die Liste lässt sich aus Excel, Quizlet oder Anki einfügen (Tab, Semikolon oder „=“ zwischen den Seiten).<\/p><p><b>Im JSON:<\/b><\/p><ul><li><code>woerterbuch<\/code> statt <code>szenarien<\/code><\/li><li><code>eintraege<\/code>: <code>[[\"house\", \"Haus|Gebäude\"], …]<\/code> – <code>|<\/code> trennt mehrere richtige Antworten<\/li><li><code>sprachen<\/code>: die zwei Namen, erscheinen über dem Wort<\/li><li><code>richtung<\/code>: <code>\"a-b\"<\/code>, <code>\"b-a\"<\/code> oder <code>\"beide\"<\/code> (zufällig)<\/li><li><code>\"tippfehler\": true<\/code>: fast richtig zählt als richtig (sonst „Fast – achte auf die Schreibweise“)<\/li><li>Mit <code>\"antwort\": \"mc\"<\/code> braucht das Wörterbuch mindestens 4 Einträge; die falschen Antworten kommen aus den anderen Einträgen<\/li><\/ul><details><summary>JSON dieses Schritts anzeigen<\/summary><pre>{\n \"kurz\": \"Training Vokabeln\",\n \"titel\": \"Training\",\n \"training\": { \"antwort\": \"eingabe\", \"anzahl\": 8, \"versuche\": true, \"woerterbuch\": { \"sprachen\": [ \"Englisch\", \"Deutsch\" ], \"richtung\": \"beide\", \"tippfehler\": true, \"eintraege\": [ [ \"task\", \"Aufgabe\" ], [ \"answer\", \"Antwort|Lösung\" ], [ \"step\", \"Schritt\" ], [ \"level\", \"Stufe|Level\" ], [ \"time\", \"Zeit\" ], [ \"mistake|error\", \"Fehler\" ], [ \"streak\", \"Serie\" ], [ \"practice\", \"Übung|Training\" ] ] }\n } }<\/pre><\/details><h3>Ausprobieren<\/h3>",
+   "training": {
+    "antwort": "eingabe",
+    "anzahl": 8,
+    "versuche": true,
+    "woerterbuch": {
+     "sprachen": [
+      "Englisch",
+      "Deutsch"
+     ],
+     "richtung": "beide",
+     "tippfehler": true,
+     "eintraege": [
+      [
+       "task",
+       "Aufgabe"
+      ],
+      [
+       "answer",
+       "Antwort|Lösung"
+      ],
+      [
+       "step",
+       "Schritt"
+      ],
+      [
+       "level",
+       "Stufe|Level"
+      ],
+      [
+       "time",
+       "Zeit"
+      ],
+      [
+       "mistake|error",
+       "Fehler"
+      ],
+      [
+       "streak",
+       "Serie"
+      ],
+      [
+       "practice",
+       "Übung|Training"
+      ]
+     ]
+    }
+   },
+   "id": "s16"
+  },
+  {
+   "kurz": "Training Stufen",
+   "titel": "Training: Stufen mit eigener Antwortform und Zeit",
+   "html": "<h2>Training: Stufen mit eigener Antwortform und Zeit<\/h2><p class=\"info\">Mehrere <b>Stufen<\/b> in einem Training. Jede Stufe kann eigenen Inhalt, eine eigene Antwortform und eine eigene Zeit haben – zum Beispiel erst auswählen, dann eintippen, dann beides auf Zeit.<\/p><h3>So arbeiten die Schüler<\/h3><p>Oben die Stufe wählen (Flammen), dann „Start“. Die Bestleistung wird je Stufe gemerkt.<\/p><h3>So erstellst du die Aufgabe<\/h3><p><b>Im Baukasten:<\/b> Tools → Übung erstellen, links ganz oben <b>⏱ Training (Zeit / endlos)<\/b> anklicken. Das Training ist kein Aufgabentyp, sondern ein eigener Schritt und steht allein auf seiner Seite. Im Formular „＋ Stufe“ anklicken. Je Stufe Name, Inhalt, Antwortform und Zeit einstellen.<\/p><p><b>Im JSON:<\/b><\/p><ul><li><code>stufen<\/code>: Liste aus <code>{\"name\": \"…\", \"szenarien\": […]}<\/code> oder <code>{\"name\": \"…\", \"woerterbuch\": {…}}<\/code><\/li><li>Jede Stufe darf eigenes <code>antwort<\/code> und <code>zeit<\/code> haben; <code>\"zeit\": null<\/code> = diese Stufe ohne Zeit<\/li><li>Was in der Stufe fehlt, gilt vom Training (hier: Eintippen, 6 Sekunden)<\/li><li><code>anzahl<\/code>, <code>versuche<\/code> und <code>ziel<\/code> gelten für alle Stufen gemeinsam<\/li><\/ul><details><summary>JSON dieses Schritts anzeigen<\/summary><pre>{\n \"kurz\": \"Training Stufen\",\n \"titel\": \"Training\",\n \"training\": { \"antwort\": \"eingabe\", \"anzahl\": 5, \"zeit\": { \"start\": 6, \"schritt\": 0, \"min\": 6 }, \"stufen\": [ { \"name\": \"Auswählen ohne Zeit\", \"antwort\": \"mc\", \"zeit\": null, \"szenarien\": [ { \"frage\": \"{a} + {b} =\", \"werte\": { \"a\": [ 10, 60 ], \"b\": [ 10, 39 ] }, \"loesung\": \"a + b\", \"falsch\": [ \"a + b + 10\", \"a + b - 10\" ] } ] }, { \"name\": \"Auswählen auf Zeit\", \"antwort\": \"mc\", \"szenarien\": [ { \"frage\": \"{a} + {b} =\", \"werte\": { \"a\": [ 10, 60 ], \"b\": [ 10, 39 ] }, \"loesung\": \"a + b\", \"falsch\": [ \"a + b + 10\", \"a + b - 10\" ] } ] }, { \"name\": \"Eintippen ohne Zeit\", \"zeit\": null, \"szenarien\": [ { \"frage\": \"{a} + {b} =\", \"werte\": { \"a\": [ 10, 60 ], \"b\": [ 10, 39 ] }, \"loesung\": \"a + b\" } ] }, { \"name\": \"Eintippen auf Zeit\", \"szenarien\": [ { \"frage\": \"{a} + {b} =\", \"werte\": { \"a\": [ 10, 60 ], \"b\": [ 10, 39 ] }, \"loesung\": \"a + b\" } ] }, { \"name\": \"Vokabeln auswählen, 4 Sekunden\", \"antwort\": \"mc\", \"zeit\": { \"start\": 4, \"schritt\": 0, \"min\": 4 }, \"woerterbuch\": { \"sprachen\": [ \"Englisch\", \"Deutsch\" ], \"richtung\": \"a-b\", \"eintraege\": [ [ \"task\", \"Aufgabe\" ], [ \"answer\", \"Antwort\" ], [ \"step\", \"Schritt\" ], [ \"level\", \"Stufe\" ], [ \"time\", \"Zeit\" ], [ \"mistake\", \"Fehler\" ] ] } } ]\n } }<\/pre><\/details><h3>Ausprobieren<\/h3>",
+   "training": {
+    "antwort": "eingabe",
+    "anzahl": 5,
+    "zeit": {
+     "start": 6,
+     "schritt": 0,
+     "min": 6
+    },
+    "stufen": [
+     {
+      "name": "Auswählen ohne Zeit",
+      "antwort": "mc",
+      "zeit": null,
+      "szenarien": [
+       {
+        "frage": "{a} + {b} =",
+        "werte": {
+         "a": [
+          10,
+          60
+         ],
+         "b": [
+          10,
+          39
+         ]
+        },
+        "loesung": "a + b",
+        "falsch": [
+         "a + b + 10",
+         "a + b - 10"
+        ]
+       }
+      ]
+     },
+     {
+      "name": "Auswählen auf Zeit",
+      "antwort": "mc",
+      "szenarien": [
+       {
+        "frage": "{a} + {b} =",
+        "werte": {
+         "a": [
+          10,
+          60
+         ],
+         "b": [
+          10,
+          39
+         ]
+        },
+        "loesung": "a + b",
+        "falsch": [
+         "a + b + 10",
+         "a + b - 10"
+        ]
+       }
+      ]
+     },
+     {
+      "name": "Eintippen ohne Zeit",
+      "zeit": null,
+      "szenarien": [
+       {
+        "frage": "{a} + {b} =",
+        "werte": {
+         "a": [
+          10,
+          60
+         ],
+         "b": [
+          10,
+          39
+         ]
+        },
+        "loesung": "a + b"
+       }
+      ]
+     },
+     {
+      "name": "Eintippen auf Zeit",
+      "szenarien": [
+       {
+        "frage": "{a} + {b} =",
+        "werte": {
+         "a": [
+          10,
+          60
+         ],
+         "b": [
+          10,
+          39
+         ]
+        },
+        "loesung": "a + b"
+       }
+      ]
+     },
+     {
+      "name": "Vokabeln auswählen, 4 Sekunden",
+      "antwort": "mc",
+      "zeit": {
+       "start": 4,
+       "schritt": 0,
+       "min": 4
+      },
+      "woerterbuch": {
+       "sprachen": [
+        "Englisch",
+        "Deutsch"
+       ],
+       "richtung": "a-b",
+       "eintraege": [
+        [
+         "task",
+         "Aufgabe"
+        ],
+        [
+         "answer",
+         "Antwort"
+        ],
+        [
+         "step",
+         "Schritt"
+        ],
+        [
+         "level",
+         "Stufe"
+        ],
+        [
+         "time",
+         "Zeit"
+        ],
+        [
+         "mistake",
+         "Fehler"
+        ]
+       ]
+      }
+     }
+    ]
+   },
+   "id": "s17"
   },
   {
    "kurz": "Reihenfolge",
@@ -631,7 +938,7 @@ const DATEN = {
      "ok": "Genau so entsteht die Aufgabe."
     }
    ],
-   "id": "s15"
+   "id": "s18"
   },
   {
    "kurz": "Offen",
@@ -650,7 +957,7 @@ const DATEN = {
      ]
     }
    ],
-   "id": "s16"
+   "id": "s19"
   },
   {
    "kurz": "Markieren",
@@ -671,7 +978,7 @@ const DATEN = {
      "text": "{\"typ\": \"markieren\",\n \"frage\": \"Markiere alle Nomen.\",\n [[\"text\": \"Der [[Hund]] bellt im [[Garten]].\"]],\n \"anzahl\": false}"
     }
    ],
-   "id": "s17"
+   "id": "s20"
   },
   {
    "kurz": "Beschriften",
@@ -711,7 +1018,7 @@ const DATEN = {
      ]
     }
    ],
-   "id": "s18"
+   "id": "s21"
   },
   {
    "kurz": "Blöcke",
@@ -773,7 +1080,7 @@ const DATEN = {
      ]
     }
    ],
-   "id": "s19"
+   "id": "s22"
   },
   {
    "kurz": "Karteikarten",
@@ -807,7 +1114,7 @@ const DATEN = {
      ]
     }
    ],
-   "id": "s20"
+   "id": "s23"
   }
  ]
 };
