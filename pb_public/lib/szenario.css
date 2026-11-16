@@ -1,0 +1,27 @@
+/* szenario.css – Bild eines Szenarios aus lib/szenario.js: Kästen (.sz-n) mit Anschlüssen (.sz-port) und Pfeilen (.sz-pf) */
+.sz-flaeche{overflow:auto;background:var(--panel2) radial-gradient(var(--border) 1px,transparent 1px) 0 0/18px 18px}
+.sz-innen{position:relative;min-width:100%;min-height:100%}
+.sz-n{position:absolute;z-index:1;width:230px;background:var(--panel);border:2px solid var(--border);border-radius:10px;padding:6px 8px 12px;font-size:13px;cursor:pointer;user-select:none}
+.sz-n.frage{border-color:color-mix(in srgb,var(--accent) 55%,var(--border))}
+.sz-n.sel{border-color:var(--marke,var(--accent));box-shadow:0 0 0 3px color-mix(in srgb,var(--marke,var(--accent)) 25%,transparent)}
+.sz-n.ziel{border-color:var(--accent);box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 35%,transparent)}
+.sz-n.lose{border-style:dashed}
+.sz-kopf{display:flex;gap:6px;align-items:center;font:700 11.5px system-ui,sans-serif;color:var(--muted);margin-bottom:2px}
+.sz-kopf b{background:var(--accent);color:#fff;border-radius:999px;padding:0 7px;font-size:10.5px}.sz-kopf b.warn{background:var(--err)}.sz-kopf small{margin-left:auto;font-weight:400}
+[data-theme=dark] .sz-kopf b{color:#2e3440}
+.sz-text{overflow-wrap:anywhere}
+.sz-a{position:relative;margin:4px -4px 0 0;padding:2px 22px 2px 8px;border:1px solid var(--accent);border-radius:999px;color:var(--accent-text,var(--accent));background:var(--panel)}
+.sz-a.sz-ein{border-style:dashed;color:var(--muted);border-color:var(--border)}
+.sz-port{position:absolute;width:16px;height:16px;border-radius:50%;background:var(--accent);border:2px solid var(--panel);cursor:crosshair;touch-action:none;z-index:2}
+.sz-port:hover,.sz-port.ziel{transform:scale(1.35)}
+.sz-port.unten{left:50%;bottom:-9px;margin-left:-8px;background:var(--muted)}
+.sz-a .sz-port{right:2px;top:50%;margin-top:-8px}
+.sz-port.erbt{background:var(--panel);border-color:var(--border)}
+.sz-port.stopp{border-radius:3px;background:var(--text)}
+.sz-port.aus{display:none}
+.sz-pf{fill:none;stroke:var(--muted);stroke-width:2;stroke-linejoin:round}.sz-pf.ant{stroke:var(--accent)}.sz-pf.quer{stroke-dasharray:6 5}
+.sz-sp{fill:var(--muted)}.sz-sp.a{fill:var(--accent)}
+.sz-svg{position:absolute;left:0;top:0;z-index:0;pointer-events:none;overflow:visible}
+/* nur ansehen (Szenario.zeige): keine Bedienung */
+.sz-fest{border:1px solid var(--border);border-radius:10px;margin:0 0 12px;max-height:80vh}
+.sz-fest .sz-n,.sz-fest .sz-port{cursor:default}.sz-fest .sz-port:hover{transform:none}

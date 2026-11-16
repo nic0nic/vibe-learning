@@ -327,6 +327,36 @@ button.af-vz:hover{background:var(--panel);box-shadow:inset 3px 0 0 var(--accent
 .af-bfeld+.af-hinweis{margin-top:6px}
 
 </style>
+<style>/* ../../lib/szenario.css */
+/* szenario.css – Bild eines Szenarios aus lib/szenario.js: Kästen (.sz-n) mit Anschlüssen (.sz-port) und Pfeilen (.sz-pf) */
+.sz-flaeche{overflow:auto;background:var(--panel2) radial-gradient(var(--border) 1px,transparent 1px) 0 0/18px 18px}
+.sz-innen{position:relative;min-width:100%;min-height:100%}
+.sz-n{position:absolute;z-index:1;width:230px;background:var(--panel);border:2px solid var(--border);border-radius:10px;padding:6px 8px 12px;font-size:13px;cursor:pointer;user-select:none}
+.sz-n.frage{border-color:color-mix(in srgb,var(--accent) 55%,var(--border))}
+.sz-n.sel{border-color:var(--marke,var(--accent));box-shadow:0 0 0 3px color-mix(in srgb,var(--marke,var(--accent)) 25%,transparent)}
+.sz-n.ziel{border-color:var(--accent);box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 35%,transparent)}
+.sz-n.lose{border-style:dashed}
+.sz-kopf{display:flex;gap:6px;align-items:center;font:700 11.5px system-ui,sans-serif;color:var(--muted);margin-bottom:2px}
+.sz-kopf b{background:var(--accent);color:#fff;border-radius:999px;padding:0 7px;font-size:10.5px}.sz-kopf b.warn{background:var(--err)}.sz-kopf small{margin-left:auto;font-weight:400}
+[data-theme=dark] .sz-kopf b{color:#2e3440}
+.sz-text{overflow-wrap:anywhere}
+.sz-a{position:relative;margin:4px -4px 0 0;padding:2px 22px 2px 8px;border:1px solid var(--accent);border-radius:999px;color:var(--accent-text,var(--accent));background:var(--panel)}
+.sz-a.sz-ein{border-style:dashed;color:var(--muted);border-color:var(--border)}
+.sz-port{position:absolute;width:16px;height:16px;border-radius:50%;background:var(--accent);border:2px solid var(--panel);cursor:crosshair;touch-action:none;z-index:2}
+.sz-port:hover,.sz-port.ziel{transform:scale(1.35)}
+.sz-port.unten{left:50%;bottom:-9px;margin-left:-8px;background:var(--muted)}
+.sz-a .sz-port{right:2px;top:50%;margin-top:-8px}
+.sz-port.erbt{background:var(--panel);border-color:var(--border)}
+.sz-port.stopp{border-radius:3px;background:var(--text)}
+.sz-port.aus{display:none}
+.sz-pf{fill:none;stroke:var(--muted);stroke-width:2;stroke-linejoin:round}.sz-pf.ant{stroke:var(--accent)}.sz-pf.quer{stroke-dasharray:6 5}
+.sz-sp{fill:var(--muted)}.sz-sp.a{fill:var(--accent)}
+.sz-svg{position:absolute;left:0;top:0;z-index:0;pointer-events:none;overflow:visible}
+/* nur ansehen (Szenario.zeige): keine Bedienung */
+.sz-fest{border:1px solid var(--border);border-radius:10px;margin:0 0 12px;max-height:80vh}
+.sz-fest .sz-n,.sz-fest .sz-port{cursor:default}.sz-fest .sz-port:hover{transform:none}
+
+</style>
 <style>/* ../python/lib/codemirror.css */
 /* BASICS */
 
@@ -4201,26 +4231,27 @@ Aufgaben.sequenz({el:'#app', key:${JSON.stringify(id)}, schritte:DATEN.schritte}
 })();
 
 </script>
-<script>/* ../../vorlage-szenario.js */
-/* vorlage-szenario.js – Szenario (verzweigter Lern-Chat) im Baukasten visuell bauen: Bausteine und Pfeile
+<script>/* ../../lib/szenario.js */
+/* szenario.js – Szenario (verzweigter Lern-Chat, Typ chat in lib/aufgaben.js) als Bild: Kästen und Pfeile
  *
- * Öffnet wie der Kontenplan ein Fenster über dem Baukasten: Knopf mit data-szenario-bau im Formular des Lern-Chats
- * (vorlage-typen.js). Links Bausteine (anklicken oder auf einen Kasten bzw. Anschluss ziehen), in der Mitte die
- * Nachrichten als Kästen mit Pfeilen (Anschluss ● ziehen = Pfeil zu einem anderen Kasten), rechts die Eigenschaften
- * des markierten Kastens. Die Anordnung entsteht von selbst und wird nicht gespeichert.
- * Einbinden nach vorlage-typen.js; nutzt Baukasten.aufgabe() / aendere(). Aussehen: .sz-… in uebung-erstellen.html.
+ * Genutzt vom Baukasten (vorlage-szenario.js: Szenario visuell bauen) und von Seiten, die ein Szenario zeigen
+ * (IT/tools/demo-aufgabentypen.html). Dazu lib/szenario.css.
+ *   <link rel="stylesheet" href="…/lib/szenario.css">  <script src="…/lib/szenario.js"><\/script>
  *
- * Gespeichert wird das gewohnte Format des Typs chat (lib/aufgaben.js): Die Kästen werden so gereiht, dass möglichst
- * viele Pfeile „nächste Nachricht“ bedeuten; die übrigen werden zu "weiter": "<id>" (ids m1, m2 … entstehen von selbst),
- * ein Anschluss ohne Pfeil zu "ende": true. Knöpfe ohne „ok“ und ohne eigenen Pfeil bekommen "entscheidung": true.
- *
- * Modell im Fenster: G = {start, nodes: [{k, m (Nachricht als Objekt ohne weiter/ende), out (Ziel-k oder null = Ende),
- *   aout: [je Antwort Ziel-k, null = Ende, undefined = wie der Kasten]}]}
- *   Szenario.lesen(aufgabe) → G, Szenario.schreiben(G) → nachrichten   (auch für Tests)
+ * API
+ *   Szenario.zeige(el, aufgabe)     Bild einer chat-Aufgabe in el (nur ansehen); el muss sichtbar sein (Höhen werden gemessen).
+ *                                   Nach einer Änderung von Schrift oder Design einfach noch einmal aufrufen.
+ *   Szenario.lesen(aufgabe) → G     Modell: {start, zaehler, nodes: [{k, m (Nachricht als Objekt ohne weiter/ende),
+ *                                   out (Ziel-k oder null = Ende), aout: [je Antwort Ziel-k, null = Ende, undefined = wie der Kasten]}]}
+ *   Szenario.schreiben(G) → nachrichten   zurück ins Format von chat: Reihenfolge so, dass möglichst viele Pfeile „nächste
+ *                                   Nachricht“ bedeuten, sonst "weiter": "<id>" (ids m1, m2 … entstehen von selbst), "ende", "entscheidung"
+ *   Szenario.zeichne(innen, G, {sel}) → {Kasten-k: Nummer}   Kästen (.sz-n, data-n) mit Anschlüssen (.sz-port, data-port="k:"
+ *                                   bzw. "k:<Antwort>") in Ebenen ab Start setzen, Pfeile als SVG; sel = markierter Kasten
+ *   Szenario.art(n) → 'text' | 'knoepfe' | 'zahl' | 'freitext', Szenario.alleEigen(n), Szenario.kurz(html, n), Szenario.SYMBOL
+ * Bild lesen: ● Anschluss, ■ Ende, gestrichelter Pfeil = Sprung zurück oder quer, gestrichelter Kasten = wird nie erreicht.
  */
 (function () {
   'use strict';
-  const B = window.Baukasten;
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
   const nurText = h => String(h || '').replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&amp;/g, '&');
   const kurz = (h, n) => { const t = nurText(h).trim(); return t.length > n ? t.slice(0, n - 2).replace(/\s+\S*$/, '') + ' …' : t; };
@@ -4286,6 +4317,93 @@ Aufgaben.sequenz({el:'#app', key:${JSON.stringify(id)}, schritte:DATEN.schritte}
       return Object.keys(m).length === 1 && typeof m.bot === 'string' ? m.bot : m;
     });
   }
+  const SYMBOL = {text: '💬', knoepfe: '🔘', zahl: '🔢', freitext: '✎'};
+
+  /* ---------- Bild: Kästen in Ebenen (Breitensuche ab Start), Pfeile als SVG darüber ---------- */
+  const W = 230, LUECKE = 34, ZEILE = 58;
+  function zeichne(innen, G, opt) {
+    const sel = opt && opt.sel, by = k => G.nodes.find(n => n.k === k) || null;
+    const kinder = {}, tiefe = {}, wurzeln = [], lose = new Set();
+    const ziele = n => { const l = []; n.aout.forEach(t => { if (t && by(t)) l.push(t); }); if (!alleEigen(n) && n.out && by(n.out)) l.push(n.out); return [...new Set(l)]; };
+    const suche = r => { wurzeln.push(r); tiefe[r] = 0; kinder[r] = []; const q = [r]; while (q.length) { const k = q.shift(); ziele(by(k)).forEach(c => { if (tiefe[c] == null) { tiefe[c] = tiefe[k] + 1; kinder[k].push(c); kinder[c] = []; q.push(c); } }); } };
+    if (G.start && by(G.start)) suche(G.start);
+    G.nodes.forEach(n => { if (tiefe[n.k] == null) { lose.add(n.k); suche(n.k); } });
+    const nummer = {}; let z = 0;
+    const zaehle = k => { nummer[k] = ++z; kinder[k].forEach(zaehle); }; wurzeln.forEach(zaehle);
+    const kasten = n => {
+      const t = art(n), wahl = t === 'knoepfe' && !n.m.antworten.some(x => x.ok);
+      const ant = t === 'knoepfe' ? n.m.antworten.map((x, j) => `<div class="sz-a"><span>${esc(kurz(x.t, 24) || '?')}${wahl ? '' : x.ok ? ' ✓' : ' ✗'}</span><span class="sz-port${n.aout[j] === undefined ? ' erbt' : n.aout[j] == null ? ' stopp' : ''}" data-port="${n.k}:${j}" title="${n.aout[j] === undefined ? 'geht weiter wie der Kasten – ziehen für einen eigenen Pfeil' : 'Pfeil auf einen Kasten ziehen'}"></span></div>`).join('')
+        : t === 'zahl' ? `<div class="sz-a sz-ein"><span>Zahl: ${esc(n.m.zahl.l)}${n.m.zahl.e ? ' ' + esc(n.m.zahl.e) : ''}</span></div>` : t === 'freitext' ? `<div class="sz-a sz-ein"><span>Begriff: ${esc(kurz(((n.m.freitext.antworten || [])[0] || [])[0] || '', 18))}</span></div>` : '';
+      return `<div class="sz-n${n.k === sel ? ' sel' : ''}${lose.has(n.k) ? ' lose' : ''}${t !== 'text' ? ' frage' : ''}" data-n="${n.k}" tabindex="0">
+        <div class="sz-kopf"><span>${wahl ? '🔀' : SYMBOL[t]} ${nummer[n.k]}</span>${n.k === G.start ? '<b>Start</b>' : lose.has(n.k) ? '<b class="warn" title="Kein Pfeil führt hierher">nie erreicht</b>' : ''}${n.m.id && !/^m\d+$/.test(n.m.id) ? `<small>⚑ ${esc(n.m.id)}</small>` : ''}</div>
+        <div class="sz-text">${esc(kurz(n.m.bot, 90)) || '<i>ohne Text</i>'}</div>${ant}
+        <span class="sz-port unten${alleEigen(n) ? ' aus' : n.out == null || !by(n.out) ? ' stopp' : ''}" data-port="${n.k}:" title="Pfeil auf einen Kasten ziehen"></span></div>`;
+    };
+    innen.innerHTML = G.nodes.map(kasten).join('') || '<p class="hinweis sz-leer">Noch keine Nachricht. Klicke links einen Baustein an.</p>';
+    // Höhen messen, dann setzen
+    const el = {}, h = {}, x = {}, y = {}, zeilenH = [];
+    innen.querySelectorAll('.sz-n').forEach(e => { el[e.dataset.n] = e; h[e.dataset.n] = e.offsetHeight; });
+    G.nodes.forEach(n => { zeilenH[tiefe[n.k]] = Math.max(zeilenH[tiefe[n.k]] || 0, h[n.k]); });
+    const oben = [], unten = zeilenH.reduce((s, v, i) => { oben[i] = s; return s + v + ZEILE; }, 14);
+    let blatt = 0;
+    const setze = k => { if (!kinder[k].length) x[k] = 30 + blatt++ * (W + LUECKE); else { kinder[k].forEach(setze); x[k] = (x[kinder[k][0]] + x[kinder[k][kinder[k].length - 1]]) / 2; } y[k] = oben[tiefe[k]]; };
+    wurzeln.forEach(setze);
+    G.nodes.forEach(n => { el[n.k].style.left = x[n.k] + 'px'; el[n.k].style.top = y[n.k] + 'px'; });
+    const breit = 44 + Math.max(1, blatt) * (W + LUECKE), hoch = Math.max(60, unten - ZEILE + 24);
+    innen.style.width = breit + 'px'; innen.style.height = hoch + 'px';
+    // Pfeile
+    const R = innen.getBoundingClientRect(), mitte = p => { const r = p.getBoundingClientRect(); return [r.left + r.width / 2 - R.left, r.top + r.height / 2 - R.top]; };
+    let pfade = '';
+    // Pfeil nach unten: Bogen. Pfeil zurück (Ziel nicht tiefer): außen am Kasten vorbei durch die Lücke zwischen den Spalten
+    // nach oben und von der Seite auf das Ziel. Das SVG liegt hinter den Kästen, Linien verschwinden also hinter ihnen.
+    const pfeil = (port, nach, seite, klasse, von) => {
+      const [x1, y1] = mitte(port), x2 = x[nach] + W / 2, y2 = y[nach] - 3;
+      let weg;
+      if (y2 > y1 + 14) { const c1 = seite ? [x1 + 46, y1] : [x1, y1 + 34]; weg = `M${x1} ${y1} C${c1[0]} ${c1[1]}, ${x2} ${y2 - 40}, ${x2} ${y2}`; }
+      else {
+        const rechts = seite || x1 >= x2, xs = rechts ? x[von] + W + LUECKE / 2 : x[von] - LUECKE / 2, xe = x2 + (xs >= x2 ? 26 : -26);
+        weg = `M${x1} ${y1} ${seite ? '' : `V${y1 + 20} `}H${xs} V${y2 - 22} H${xe} V${y2}`;
+      }
+      pfade += `<path class="${klasse}" d="${weg}" marker-end="url(#sz-spitze${klasse.includes('ant') ? '-a' : ''})"/>`;
+    };
+    G.nodes.forEach(n => {
+      if (!alleEigen(n) && n.out && by(n.out)) pfeil(el[n.k].querySelector('.sz-port.unten'), n.out, false, 'sz-pf' + (kinder[n.k].includes(n.out) ? '' : ' quer'), n.k);
+      n.aout.forEach((t, j) => { if (t && by(t)) pfeil(el[n.k].querySelector(`[data-port="${n.k}:${j}"]`), t, true, 'sz-pf ant' + (kinder[n.k].includes(t) ? '' : ' quer'), n.k); });
+    });
+    innen.insertAdjacentHTML('beforeend', `<svg class="sz-svg" width="${breit}" height="${hoch}" aria-hidden="true"><defs>
+      <marker id="sz-spitze" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="sz-sp" d="M0 0L10 5L0 10z"/></marker>
+      <marker id="sz-spitze-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="sz-sp a" d="M0 0L10 5L0 10z"/></marker></defs>${pfade}<path class="sz-zug" d=""/></svg>`);
+    return nummer;
+  }
+  function zeige(el, aufgabe) {
+    el = typeof el === 'string' ? document.querySelector(el) : el;
+    el.classList.add('sz-flaeche', 'sz-fest');
+    el.innerHTML = '<div class="sz-innen"></div>';
+    zeichne(el.firstChild, lesen(aufgabe), {});
+    el.setAttribute('role', 'img'); el.setAttribute('aria-label', 'Aufbau des Szenarios als Kästen mit Pfeilen');
+  }
+  const Szenario = {zeige, zeichne, lesen, schreiben, art, alleEigen, kurz, SYMBOL, BREITE: W};
+  if (typeof window !== 'undefined') window.Szenario = Szenario;
+  if (typeof module !== 'undefined' && module.exports) module.exports = Szenario;
+})();
+
+</script>
+<script>/* ../../vorlage-szenario.js */
+/* vorlage-szenario.js – Szenario (verzweigter Lern-Chat) im Baukasten visuell bauen: Bausteine und Pfeile
+ *
+ * Öffnet wie der Kontenplan ein Fenster über dem Baukasten: Knopf mit data-szenario-bau im Formular des Lern-Chats
+ * (vorlage-typen.js). Links Bausteine (anklicken oder auf einen Kasten bzw. Anschluss ziehen), in der Mitte die
+ * Nachrichten als Kästen mit Pfeilen (Anschluss ● ziehen = Pfeil zu einem anderen Kasten), rechts die Eigenschaften
+ * des markierten Kastens. Die Anordnung entsteht von selbst und wird nicht gespeichert.
+ * Bild, Modell und Speichern im chat-Format: lib/szenario.js (+ lib/szenario.css), davor einbinden.
+ * Einbinden nach vorlage-typen.js; nutzt Baukasten.aufgabe() / aendere(). Fenster-Layout: .sz-… in uebung-erstellen.html.
+ */
+(function () {
+  'use strict';
+  const B = window.Baukasten;
+  const {lesen, schreiben, art, alleEigen, kurz, SYMBOL} = window.Szenario;   // lib/szenario.js
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+
   const VORLAGE = {
     text: () => ({bot: 'Neue Nachricht'}),
     knoepfe: () => ({bot: 'Frage?', antworten: [{t: 'Antwort A', ok: true, r: 'Genau!'}, {t: 'Antwort B', r: 'Leider nein.'}]}),
@@ -4294,13 +4412,12 @@ Aufgaben.sequenz({el:'#app', key:${JSON.stringify(id)}, schritte:DATEN.schritte}
     freitext: () => ({bot: 'Wie heißt …?', freitext: {antworten: [['Begriff']]}})
   };
   const BAUSTEINE = [['text', '💬', 'Nachricht'], ['wahl', '🔀', 'Entscheidung'], ['knoepfe', '🔘', 'Frage mit Knöpfen'], ['zahl', '🔢', 'Frage: Zahl'], ['freitext', '✎', 'Frage: Begriff']];
-  const SYMBOL = {text: '💬', knoepfe: '🔘', zahl: '🔢', freitext: '✎'};
 
   /* ---------- Fenster ---------- */
   function oeffnen() {
     const a0 = B.aufgabe(); if (!a0 || a0.typ !== 'chat') return;
     B.szenarioAn = true;
-    const G = lesen(a0), W = 230, LUECKE = 34, ZEILE = 58;
+    const G = lesen(a0), W = window.Szenario.BREITE;
     let sel = G.start, zug = null, nummer = {};
     const by = k => G.nodes.find(n => n.k === k) || null;
     const d = document.createElement('dialog'); d.className = 'kp-dialog sz-dialog';
@@ -4317,52 +4434,7 @@ Aufgaben.sequenz({el:'#app', key:${JSON.stringify(id)}, schritte:DATEN.schritte}
     function geaendert(nurFlaeche) { speichern(); zeichne(); if (!nurFlaeche) eigenschaften(); }
 
     /* ----- Fläche: Kästen in Ebenen (Breitensuche ab Start), Pfeile als SVG darüber ----- */
-    function zeichne() {
-      const kinder = {}, tiefe = {}, wurzeln = [], lose = new Set();
-      const ziele = n => { const l = []; n.aout.forEach(t => { if (t && by(t)) l.push(t); }); if (!alleEigen(n) && n.out && by(n.out)) l.push(n.out); return [...new Set(l)]; };
-      const suche = r => { wurzeln.push(r); tiefe[r] = 0; kinder[r] = []; const q = [r]; while (q.length) { const k = q.shift(); ziele(by(k)).forEach(c => { if (tiefe[c] == null) { tiefe[c] = tiefe[k] + 1; kinder[k].push(c); kinder[c] = []; q.push(c); } }); } };
-      if (G.start && by(G.start)) suche(G.start);
-      G.nodes.forEach(n => { if (tiefe[n.k] == null) { lose.add(n.k); suche(n.k); } });
-      nummer = {}; let z = 0;
-      const zaehle = k => { nummer[k] = ++z; kinder[k].forEach(zaehle); }; wurzeln.forEach(zaehle);
-      const kasten = n => {
-        const t = art(n), wahl = t === 'knoepfe' && !n.m.antworten.some(x => x.ok);
-        const ant = t === 'knoepfe' ? n.m.antworten.map((x, j) => `<div class="sz-a"><span>${esc(kurz(x.t, 24) || '?')}${wahl ? '' : x.ok ? ' ✓' : ' ✗'}</span><span class="sz-port${n.aout[j] === undefined ? ' erbt' : n.aout[j] == null ? ' stopp' : ''}" data-port="${n.k}:${j}" title="${n.aout[j] === undefined ? 'geht weiter wie der Kasten – ziehen für einen eigenen Pfeil' : 'Pfeil auf einen Kasten ziehen'}"></span></div>`).join('')
-          : t === 'zahl' ? `<div class="sz-a sz-ein"><span>Zahl: ${esc(n.m.zahl.l)}${n.m.zahl.e ? ' ' + esc(n.m.zahl.e) : ''}</span></div>` : t === 'freitext' ? `<div class="sz-a sz-ein"><span>Begriff: ${esc(kurz(((n.m.freitext.antworten || [])[0] || [])[0] || '', 18))}</span></div>` : '';
-        return `<div class="sz-n${n.k === sel ? ' sel' : ''}${lose.has(n.k) ? ' lose' : ''}${t !== 'text' ? ' frage' : ''}" data-n="${n.k}" tabindex="0">
-          <div class="sz-kopf"><span>${wahl ? '🔀' : SYMBOL[t]} ${nummer[n.k]}</span>${n.k === G.start ? '<b>Start</b>' : lose.has(n.k) ? '<b class="warn" title="Kein Pfeil führt hierher">nie erreicht</b>' : ''}${n.m.id && !/^m\d+$/.test(n.m.id) ? `<small>⚑ ${esc(n.m.id)}</small>` : ''}</div>
-          <div class="sz-text">${esc(kurz(n.m.bot, 90)) || '<i>ohne Text</i>'}</div>${ant}
-          <span class="sz-port unten${alleEigen(n) ? ' aus' : n.out == null || !by(n.out) ? ' stopp' : ''}" data-port="${n.k}:" title="Pfeil auf einen Kasten ziehen"></span></div>`;
-      };
-      innen.innerHTML = G.nodes.map(kasten).join('') || '<p class="hinweis sz-leer">Noch keine Nachricht. Klicke links einen Baustein an.</p>';
-      // Höhen messen, dann setzen
-      const el = {}, h = {}, x = {}, y = {}, zeilenH = [];
-      innen.querySelectorAll('.sz-n').forEach(e => { el[e.dataset.n] = e; h[e.dataset.n] = e.offsetHeight; });
-      G.nodes.forEach(n => { zeilenH[tiefe[n.k]] = Math.max(zeilenH[tiefe[n.k]] || 0, h[n.k]); });
-      const oben = []; zeilenH.reduce((s, v, i) => { oben[i] = s; return s + v + ZEILE; }, 14);
-      let blatt = 0;
-      const setze = k => { if (!kinder[k].length) x[k] = 14 + blatt++ * (W + LUECKE); else { kinder[k].forEach(setze); x[k] = (x[kinder[k][0]] + x[kinder[k][kinder[k].length - 1]]) / 2; } y[k] = oben[tiefe[k]]; };
-      wurzeln.forEach(setze);
-      G.nodes.forEach(n => { el[n.k].style.left = x[n.k] + 'px'; el[n.k].style.top = y[n.k] + 'px'; });
-      const breit = 28 + Math.max(1, blatt) * (W + LUECKE), hoch = (oben[zeilenH.length] || 60) + 30;
-      innen.style.width = breit + 'px'; innen.style.height = hoch + 'px';
-      // Pfeile
-      const R = innen.getBoundingClientRect(), mitte = p => { const r = p.getBoundingClientRect(); return [r.left + r.width / 2 - R.left, r.top + r.height / 2 - R.top]; };
-      let pfade = '';
-      const pfeil = (port, nach, seite, klasse) => {
-        const [x1, y1] = mitte(port), x2 = x[nach] + W / 2, y2 = y[nach] - 3;
-        const runter = y2 > y1 + 14, c1 = seite ? [x1 + 46, y1] : [x1, y1 + 34];
-        const c2 = runter ? [x2, y2 - 40] : [x2 + (x1 >= x2 ? 150 : -150), y2 - 90];
-        pfade += `<path class="${klasse}" d="M${x1} ${y1} C${c1[0]} ${c1[1]}, ${c2[0]} ${c2[1]}, ${x2} ${y2}" marker-end="url(#sz-spitze${klasse.includes('ant') ? '-a' : ''})"/>`;
-      };
-      G.nodes.forEach(n => {
-        if (!alleEigen(n) && n.out && by(n.out)) pfeil(el[n.k].querySelector('.sz-port.unten'), n.out, false, 'sz-pf' + (kinder[n.k].includes(n.out) ? '' : ' quer'));
-        n.aout.forEach((t, j) => { if (t && by(t)) pfeil(el[n.k].querySelector(`[data-port="${n.k}:${j}"]`), t, true, 'sz-pf ant' + (kinder[n.k].includes(t) ? '' : ' quer')); });
-      });
-      innen.insertAdjacentHTML('beforeend', `<svg class="sz-svg" width="${breit}" height="${hoch}" aria-hidden="true"><defs>
-        <marker id="sz-spitze" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="sz-sp" d="M0 0L10 5L0 10z"/></marker>
-        <marker id="sz-spitze-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="sz-sp a" d="M0 0L10 5L0 10z"/></marker></defs>${pfade}<path class="sz-zug" d=""/></svg>`);
-    }
+    function zeichne() { nummer = window.Szenario.zeichne(innen, G, {sel}); }
 
     /* ----- Eigenschaften des markierten Kastens ----- */
     const zielWahl = (attr, wert, n, erbt) => `<select class="feld" ${attr} aria-label="weiter zu">${erbt ? `<option value="~"${wert === undefined ? ' selected' : ''}>wie der Kasten („danach“)</option>` : ''}<option value=""${wert === null || (wert !== undefined && !by(wert)) ? ' selected' : ''}>■ Ende</option>`
@@ -4495,7 +4567,7 @@ Aufgaben.sequenz({el:'#app', key:${JSON.stringify(id)}, schritte:DATEN.schritte}
   }
 
   document.addEventListener('click', e => { if (e.target.closest && e.target.closest('[data-szenario-bau]')) oeffnen(); });
-  window.Szenario = {lesen, schreiben, oeffnen};
+  window.Szenario.oeffnen = oeffnen;
 })();
 
 </script>
@@ -5131,33 +5203,10 @@ dialog.sz-dialog{width:min(1500px,calc(100vw - 24px));height:calc(100vh - 24px)}
 .sz-hilfe{flex:1 1 300px;margin:0}
 .sz-arbeit{flex:1;min-height:0;display:grid;grid-template-columns:190px minmax(0,1fr) 320px}
 .sz-leiste{display:flex;flex-direction:column;gap:6px;padding:10px;border-right:1px solid var(--border);overflow:auto}
-.sz-flaeche{overflow:auto;background:var(--panel2) radial-gradient(var(--border) 1px,transparent 1px) 0 0/18px 18px}
-.sz-innen{position:relative;min-width:100%;min-height:100%}
 .sz-eig{display:flex;flex-direction:column;gap:6px;padding:10px 12px;border-left:1px solid var(--border);overflow:auto}
 .sz-eig h3{margin:0;font-size:15px}.sz-eig .feld{width:100%;min-width:0}.sz-eig .reihe{display:flex;gap:6px;align-items:center}.sz-eig .reihe .feld{flex:1}
 .sz-ant{display:flex;flex-direction:column;gap:4px;border:1px solid var(--border);border-radius:8px;padding:6px;background:var(--panel2)}
 @media (max-width:900px){.sz-arbeit{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(280px,1fr) auto;overflow:auto}.sz-leiste{flex-direction:row;flex-wrap:wrap;border-right:0;border-bottom:1px solid var(--border)}.sz-leiste .hinweis,.sz-leiste .leiste-trenn{display:none}.sz-eig{border-left:0;border-top:1px solid var(--border)}}
-.sz-n{position:absolute;width:230px;background:var(--panel);border:2px solid var(--border);border-radius:10px;padding:6px 8px 12px;font-size:13px;cursor:pointer;user-select:none}
-.sz-n.frage{border-color:color-mix(in srgb,var(--accent) 55%,var(--border))}
-.sz-n.sel{border-color:var(--marke);box-shadow:0 0 0 3px color-mix(in srgb,var(--marke) 25%,transparent)}
-.sz-n.ziel{border-color:var(--accent);box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 35%,transparent)}
-.sz-n.lose{border-style:dashed}
-.sz-kopf{display:flex;gap:6px;align-items:center;font:700 11.5px system-ui,sans-serif;color:var(--muted);margin-bottom:2px}
-.sz-kopf b{background:var(--accent);color:#fff;border-radius:999px;padding:0 7px;font-size:10.5px}.sz-kopf b.warn{background:var(--err)}.sz-kopf small{margin-left:auto;font-weight:400}
-[data-theme=dark] .sz-kopf b{color:#2e3440}
-.sz-text{overflow-wrap:anywhere}
-.sz-a{position:relative;margin:4px -4px 0 0;padding:2px 22px 2px 8px;border:1px solid var(--accent);border-radius:999px;color:var(--accent-text,var(--accent));background:var(--panel)}
-.sz-a.sz-ein{border-style:dashed;color:var(--muted);border-color:var(--border)}
-.sz-port{position:absolute;width:16px;height:16px;border-radius:50%;background:var(--accent);border:2px solid var(--panel);cursor:crosshair;touch-action:none;z-index:2}
-.sz-port:hover,.sz-port.ziel{transform:scale(1.35)}
-.sz-port.unten{left:50%;bottom:-9px;margin-left:-8px;background:var(--muted)}
-.sz-a .sz-port{right:2px;top:50%;margin-top:-8px}
-.sz-port.erbt{background:var(--panel);border-color:var(--border)}
-.sz-port.stopp{border-radius:3px;background:var(--text)}
-.sz-port.aus{display:none}
-.sz-svg{position:absolute;left:0;top:0;pointer-events:none;overflow:visible}
-.sz-pf{fill:none;stroke:var(--muted);stroke-width:2}.sz-pf.ant{stroke:var(--accent)}.sz-pf.quer{stroke-dasharray:6 5}
-.sz-sp{fill:var(--muted)}.sz-sp.a{fill:var(--accent)}
 .sz-zug{fill:none;stroke:var(--marke);stroke-width:2.5;stroke-dasharray:4 4}
 .sz-teil{touch-action:none}
 .sz-geist{position:fixed;z-index:10;pointer-events:none;opacity:.9;box-shadow:0 8px 20px rgba(0,0,0,.25)}

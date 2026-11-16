@@ -322,6 +322,28 @@ API
   Helfer: zahl('1.234,50 €') → 1234.5, eur(n) → '1.234,50 €', mischen(liste), esc(text), bsText(soll, haben)
 ```
 
+### lib/szenario.js – Szenario (verzweigter Lern-Chat) als Bild aus Kästen und Pfeilen zeigen (dazu szenario.css)
+
+```text
+szenario.js – Szenario (verzweigter Lern-Chat, Typ chat in lib/aufgaben.js) als Bild: Kästen und Pfeile
+
+Genutzt vom Baukasten (vorlage-szenario.js: Szenario visuell bauen) und von Seiten, die ein Szenario zeigen
+(IT/tools/demo-aufgabentypen.html). Dazu lib/szenario.css.
+  <link rel="stylesheet" href="…/lib/szenario.css">  <script src="…/lib/szenario.js"></script>
+
+API
+  Szenario.zeige(el, aufgabe)     Bild einer chat-Aufgabe in el (nur ansehen); el muss sichtbar sein (Höhen werden gemessen).
+                                  Nach einer Änderung von Schrift oder Design einfach noch einmal aufrufen.
+  Szenario.lesen(aufgabe) → G     Modell: {start, zaehler, nodes: [{k, m (Nachricht als Objekt ohne weiter/ende),
+                                  out (Ziel-k oder null = Ende), aout: [je Antwort Ziel-k, null = Ende, undefined = wie der Kasten]}]}
+  Szenario.schreiben(G) → nachrichten   zurück ins Format von chat: Reihenfolge so, dass möglichst viele Pfeile „nächste
+                                  Nachricht“ bedeuten, sonst "weiter": "<id>" (ids m1, m2 … entstehen von selbst), "ende", "entscheidung"
+  Szenario.zeichne(innen, G, {sel}) → {Kasten-k: Nummer}   Kästen (.sz-n, data-n) mit Anschlüssen (.sz-port, data-port="k:"
+                                  bzw. "k:<Antwort>") in Ebenen ab Start setzen, Pfeile als SVG; sel = markierter Kasten
+  Szenario.art(n) → 'text' | 'knoepfe' | 'zahl' | 'freitext', Szenario.alleEigen(n), Szenario.kurz(html, n), Szenario.SYMBOL
+Bild lesen: ● Anschluss, ■ Ende, gestrichelter Pfeil = Sprung zurück oder quer, gestrichelter Kasten = wird nie erreicht.
+```
+
 ### IT/excel/basis.js – Excel: Grundlage aller Excel-Übungen (dazu basis.css)
 
 ```text

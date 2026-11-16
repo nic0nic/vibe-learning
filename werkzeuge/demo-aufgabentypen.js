@@ -1,6 +1,6 @@
 // Erzeugt pb_public/IT/tools/demo-aufgabentypen.html (Demo der experimentellen Aufgabentypen und des Szenarios).
 // Aufruf im Hauptordner: node werkzeuge/demo-aufgabentypen.js – Texte und Aufgaben hier ändern, nicht in der erzeugten Seite.
-// Oben ein Umschalter für die Designs aus lib/designs.js (UMSCHALTER unten, einziger eigener Code der Seite).
+// Eigener Code der Seite (UMSCHALTER unten): Umschalter für die Designs aus lib/designs.js und das Bild des Szenarios aus lib/szenario.js.
 // Je Seite ein Typ: Anleitung (wofür, Bedienung, Erstellen im Baukasten und im JSON) und eine Aufgabe, deren Inhalt den Typ erklärt.
 const fs = require('fs'), H = __dirname + '/../pb_public/', S = require(H + 'lib/seite.js');
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -19,35 +19,6 @@ const bild = 'data:image/svg+xml;base64,' + Buffer.from(`<svg xmlns="http://www.
 <circle cx="150" cy="200" r="15" fill="#fff" stroke="#2e3440" stroke-width="2"/><circle cx="330" cy="160" r="15" fill="#fff" stroke="#2e3440" stroke-width="2"/>
 <rect x="44" y="324" width="110" height="38" rx="9" fill="#5e81ac"/>
 </svg>`).toString('base64');
-
-// Szenario als Baum (verschachtelte Liste): Nachrichten der Reihe nach, Antworten als Äste; Sprünge zu schon gezeigten Nachrichten als Verweis
-function baum(a) {
-  const N = a.nachrichten, kurz = m => { const t = String(typeof m === 'string' ? m : m.bot).replace(/<[^>]+>/g, '').replace(/&[a-z]+;/g, ' '); return esc(t.length > 58 ? t.slice(0, 56).replace(/\s+\S*$/, '') + ' …' : t); };
-  const ziel = id => N.findIndex(n => n && typeof n === 'object' && n.id === id), gezeigt = new Set();
-  const nach = (m, i, x) => (x && x.ende) || (m && typeof m === 'object' && m.ende && !(x && x.weiter != null)) ? N.length
-    : (j => j >= 0 ? j : i + 1)(ziel(x && x.weiter != null ? x.weiter : m && typeof m === 'object' ? m.weiter : null));
-  const ENDE = '<li><span class="b-ende">■ Ende</span></li>';
-  function folge(i) {
-    let h = '';
-    for (;;) {
-      if (i >= N.length) return h + ENDE;
-      const m = N[i], obj = m && typeof m === 'object';
-      if (gezeigt.has(i)) return h + `<li><span class="b-sprung">↩ weiter bei „${kurz(m)}“</span></li>`;
-      gezeigt.add(i);
-      const marke = obj && m.id ? ` <span class="b-marke">⚑ ${esc(m.id)}</span>` : '';
-      if (!obj || !(m.antworten || m.zahl || m.freitext)) { h += `<li><span class="b-bot">${kurz(m)}</span>${marke}</li>`; i = nach(m, i); continue; }
-      const wahl = m.antworten && !m.antworten.some(x => x.ok);
-      const A = m.antworten ? m.antworten.map(x => ({t: `„${esc(x.t)}“` + (wahl ? '' : x.ok ? ' ✓' : ' ✗'), eigen: x.weiter != null || x.ende, x}))
-        : [{t: m.zahl ? `Zahl: ${m.zahl.l}${m.zahl.e ? ' ' + esc(m.zahl.e) : ''}` : 'Begriff eintippen', eigen: false}];
-      const offen = A.some(y => !y.eigen);
-      h += `<li><span class="b-frage">${wahl ? 'Entscheidung' : 'Frage'}: ${kurz(m)}</span>${marke}<ul>`
-        + A.map(y => `<li><span class="b-antwort">${y.t}</span>${y.eigen ? `<ul>${folge(nach(m, i, y.x))}</ul>` : ''}</li>`).join('') + '</ul></li>';
-      if (!offen) return h;
-      i = nach(m, i);
-    }
-  }
-  return `<ul class="baum">${folge(0)}</ul>`;
-}
 
 const schritte = [
   seite('Reihenfolge', 'Reihenfolge (reihenfolge)',
@@ -132,23 +103,16 @@ const schritte = [
       {id: 'schluss', bot: 'Eine Nachricht mit <code>"ende": true</code> beendet den Chat – so wie diese. Mit „Noch einmal“ kannst du die anderen Wege gehen.', ende: true}]}],
     '<p><b>Achte darauf:</b> Jeder Zweig braucht ein Ende – entweder eine Nachricht mit „Ende“ oder einen Sprung zu einem gemeinsamen Schluss. Sonst läuft der Chat einfach in den nächsten Zweig weiter.</p>')
 ];
-// Baum des Szenarios vor dem JSON-Beispiel einfügen
+// Bild des Szenarios vor dem JSON-Beispiel: leerer Platzhalter, den das Skript der Seite mit lib/szenario.js füllt (wie im Baukasten)
 { const s = schritte[schritte.length - 1];
-  s.html = s.html.replace('<details>', '<h3>Das Szenario unten als Baum</h3><p>Von oben nach unten: Nachrichten des Bots, darunter eingerückt die Antworten und was auf sie folgt. ⚑ = Marke, ↩ = Sprung zu einer Nachricht, die schon im Baum steht.</p>' + baum(s.aufgaben[0]) + '<details>'); }
+  s.html = s.html.replace('<details>', '<h3>Das Szenario unten als Bild</h3><p>So zeigt es auch der Baukasten unter „🗺 Szenario visuell bauen …“: Jeder Kasten ist eine Nachricht, jeder Pfeil führt zur nächsten. ● ist ein Anschluss, ■ ein Ende, ein gestrichelter Pfeil springt zurück.</p><div class="sz-bild"></div><details>'); }
 const j = {titel: 'Demo Aufgabentypen', kurztext: 'Neue Aufgabentypen (experimentell) und das Szenario: Jede Seite zeigt einen Typ und erklärt, wie du ihn erstellst.', schritte};
 const f = S.pruefe(j); if (f.length) { console.log(f.join('\n')); process.exit(1); }
 // Umschalter für die Designs (lib/designs.js): gilt nur auf dieser Seite und bis zum Neuladen, die Einstellung im Konto bleibt unberührt
 const UMSCHALTER = `<script src="../../lib/designs.js"></script>
-<style>.demo-design{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;margin-top:8px;font-size:14px}.demo-design select{max-width:100%}
-/* Baum eines Szenarios (verschachtelte Liste mit Verbindungslinien) */
-.baum,.baum ul{list-style:none;margin:0;padding:0}.baum{margin:0 0 12px}.baum ul{margin:4px 0 0 14px}
-.baum li{position:relative;padding:4px 0 4px 18px;font-size:14px}
-.baum li::before{content:"";position:absolute;left:0;top:0;bottom:0;border-left:2px solid var(--border)}
-.baum li:last-child::before{bottom:auto;height:17px}
-.baum li::after{content:"";position:absolute;left:0;top:17px;width:13px;border-top:2px solid var(--border)}
-.baum span{display:inline-block;border:1px solid var(--border);border-radius:8px;padding:1px 8px;background:var(--panel2)}
-.baum .b-frage{border-color:var(--accent);font-weight:600}.baum .b-antwort{border-radius:999px;background:var(--panel);border-color:var(--accent);color:var(--accent-text,var(--accent))}
-.baum .b-sprung,.baum .b-ende{border-style:dashed;color:var(--muted);background:none}.baum .b-marke{border:0;background:none;padding:0 2px;color:var(--muted);font-size:12.5px}</style>
+<link rel="stylesheet" href="../../lib/szenario.css">
+<script src="../../lib/szenario.js"></script>
+<style>.demo-design{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;margin-top:8px;font-size:14px}.demo-design select{max-width:100%}</style>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
   if (!window.Designs) return;
@@ -170,9 +134,14 @@ document.addEventListener('DOMContentLoaded', function () {
       var t = null; try { t = localStorage.getItem('wenn-theme'); } catch (e) {}
       root.dataset.theme = t || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
     }
-    zeige();
+    zeige(); bild(true);
   });
   zeige();
+  // Bild des Szenarios (lib/szenario.js) in den Platzhalter .sz-bild zeichnen, sobald die Seite „Szenario“ angezeigt wird
+  var chat = null; DATEN.schritte.forEach(function (s) { (s.aufgaben || []).forEach(function (a) { if (a.typ === 'chat') chat = a; }); });
+  function bild(neu) { var el = document.querySelector('.sz-bild'); if (el && chat && window.Szenario && (neu || !el.firstChild)) Szenario.zeige(el, chat); }
+  new MutationObserver(function () { bild(false); }).observe(document.getElementById('app'), {childList: true, subtree: true});
+  bild(false);
 });
 </script>
 </head>`;

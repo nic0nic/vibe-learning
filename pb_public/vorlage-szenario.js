@@ -4,84 +4,15 @@
  * (vorlage-typen.js). Links Bausteine (anklicken oder auf einen Kasten bzw. Anschluss ziehen), in der Mitte die
  * Nachrichten als Kästen mit Pfeilen (Anschluss ● ziehen = Pfeil zu einem anderen Kasten), rechts die Eigenschaften
  * des markierten Kastens. Die Anordnung entsteht von selbst und wird nicht gespeichert.
- * Einbinden nach vorlage-typen.js; nutzt Baukasten.aufgabe() / aendere(). Aussehen: .sz-… in uebung-erstellen.html.
- *
- * Gespeichert wird das gewohnte Format des Typs chat (lib/aufgaben.js): Die Kästen werden so gereiht, dass möglichst
- * viele Pfeile „nächste Nachricht“ bedeuten; die übrigen werden zu "weiter": "<id>" (ids m1, m2 … entstehen von selbst),
- * ein Anschluss ohne Pfeil zu "ende": true. Knöpfe ohne „ok“ und ohne eigenen Pfeil bekommen "entscheidung": true.
- *
- * Modell im Fenster: G = {start, nodes: [{k, m (Nachricht als Objekt ohne weiter/ende), out (Ziel-k oder null = Ende),
- *   aout: [je Antwort Ziel-k, null = Ende, undefined = wie der Kasten]}]}
- *   Szenario.lesen(aufgabe) → G, Szenario.schreiben(G) → nachrichten   (auch für Tests)
+ * Bild, Modell und Speichern im chat-Format: lib/szenario.js (+ lib/szenario.css), davor einbinden.
+ * Einbinden nach vorlage-typen.js; nutzt Baukasten.aufgabe() / aendere(). Fenster-Layout: .sz-… in uebung-erstellen.html.
  */
 (function () {
   'use strict';
   const B = window.Baukasten;
+  const {lesen, schreiben, art, alleEigen, kurz, SYMBOL} = window.Szenario;   // lib/szenario.js
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
-  const nurText = h => String(h || '').replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&amp;/g, '&');
-  const kurz = (h, n) => { const t = nurText(h).trim(); return t.length > n ? t.slice(0, n - 2).replace(/\s+\S*$/, '') + ' …' : t; };
-  const art = n => n.m.zahl ? 'zahl' : n.m.freitext ? 'freitext' : n.m.antworten ? 'knoepfe' : 'text';
-  // Knöpfe, bei denen jede Antwort einen eigenen Pfeil hat: der Anschluss „danach“ wird nie benutzt
-  const alleEigen = n => art(n) === 'knoepfe' && n.m.antworten.length > 0 && n.m.antworten.every((x, j) => n.aout[j] !== undefined);
 
-  /* ---------- Aufgabe ↔ Modell ---------- */
-  function lesen(a) {
-    const N = Array.isArray(a.nachrichten) ? a.nachrichten : [];
-    const ziel = id => id == null ? -1 : N.findIndex(n => n && typeof n === 'object' && n.id === id);
-    const nach = (m, i) => { if (m && typeof m === 'object' && m.ende) return null; const j = m && typeof m === 'object' ? ziel(m.weiter) : -1, t = j >= 0 ? j : i + 1; return t < N.length ? 'n' + t : null; };
-    const nodes = N.map((m, i) => {
-      const o = typeof m === 'string' ? {bot: m} : JSON.parse(JSON.stringify(m || {bot: ''}));
-      const n = {k: 'n' + i, m: o, out: null, aout: []};
-      (o.antworten || []).forEach((x, j) => { n.aout[j] = x.ende ? null : ziel(x.weiter) >= 0 ? 'n' + ziel(x.weiter) : undefined; delete x.weiter; delete x.ende; });
-      // "ende" an einer Frage gilt nur für Antworten ohne eigenen Pfeil – das ist hier der Anschluss „danach“
-      n.out = nach(m, i);
-      delete o.weiter; delete o.ende; delete o.entscheidung;
-      return n;
-    });
-    return {start: nodes.length ? 'n0' : null, nodes, zaehler: nodes.length};
-  }
-  function reihe(G) {   // Reihenfolge der Nachrichten: Ketten entlang „danach“, Abzweigungen dahinter, Unerreichbares am Ende
-    const by = {}, ord = [], drin = new Set();
-    G.nodes.forEach(n => { by[n.k] = n; });
-    const kette = k => {
-      const offen = [];
-      while (k != null && by[k] && !drin.has(k)) { const n = by[k]; drin.add(k); ord.push(n); n.aout.forEach(t => { if (t) offen.push(t); }); k = alleEigen(n) ? null : n.out; }
-      offen.forEach(kette);
-    };
-    kette(G.start); G.nodes.forEach(n => kette(n.k));
-    return ord;
-  }
-  function schreiben(G) {
-    const ord = reihe(G), by = {}, ziele = new Set(), plan = [];
-    G.nodes.forEach(n => { by[n.k] = n; });
-    ord.forEach((n, p) => {
-      const naechste = ord[p + 1] ? ord[p + 1].k : null, e = {weiter: undefined, ende: false, a: []};
-      if (!alleEigen(n)) { if (n.out == null || !by[n.out]) e.ende = p < ord.length - 1; else if (n.out !== naechste) { e.weiter = n.out; ziele.add(n.out); } }
-      (n.m.antworten || []).forEach((x, j) => {
-        const t = n.aout[j];
-        if (t === undefined || (!alleEigen(n) && t === n.out && t != null)) e.a[j] = {};
-        else if (t == null || !by[t]) e.a[j] = {ende: true};
-        else { e.a[j] = {weiter: t}; ziele.add(t); }
-      });
-      plan.push(e);
-    });
-    // Marken: eigene Namen bleiben, m1, m2 … entstehen nur für Sprungziele und verschwinden sonst wieder
-    const belegt = new Set(G.nodes.map(n => n.m.id).filter(id => id != null && !/^m\d+$/.test(id)));
-    let nr = 1;
-    G.nodes.forEach(n => {
-      if (n.m.id != null && /^m\d+$/.test(n.m.id)) { if (ziele.has(n.k) && !belegt.has(n.m.id)) belegt.add(n.m.id); else delete n.m.id; }
-      if (n.m.id === '') delete n.m.id;
-    });
-    G.nodes.forEach(n => { if (ziele.has(n.k) && n.m.id == null) { while (belegt.has('m' + nr)) nr++; n.m.id = 'm' + nr; belegt.add(n.m.id); } });
-    return ord.map((n, p) => {
-      const e = plan[p], m = JSON.parse(JSON.stringify(n.m));
-      if (e.weiter) m.weiter = by[e.weiter].m.id;
-      if (e.ende) m.ende = true;
-      (m.antworten || []).forEach((x, j) => { if (e.a[j].ende) x.ende = true; else if (e.a[j].weiter) x.weiter = by[e.a[j].weiter].m.id; });
-      if (m.antworten && !m.antworten.some(x => x.ok) && !m.antworten.some(x => x.weiter != null || x.ende)) m.entscheidung = true;
-      return Object.keys(m).length === 1 && typeof m.bot === 'string' ? m.bot : m;
-    });
-  }
   const VORLAGE = {
     text: () => ({bot: 'Neue Nachricht'}),
     knoepfe: () => ({bot: 'Frage?', antworten: [{t: 'Antwort A', ok: true, r: 'Genau!'}, {t: 'Antwort B', r: 'Leider nein.'}]}),
@@ -90,13 +21,12 @@
     freitext: () => ({bot: 'Wie heißt …?', freitext: {antworten: [['Begriff']]}})
   };
   const BAUSTEINE = [['text', '💬', 'Nachricht'], ['wahl', '🔀', 'Entscheidung'], ['knoepfe', '🔘', 'Frage mit Knöpfen'], ['zahl', '🔢', 'Frage: Zahl'], ['freitext', '✎', 'Frage: Begriff']];
-  const SYMBOL = {text: '💬', knoepfe: '🔘', zahl: '🔢', freitext: '✎'};
 
   /* ---------- Fenster ---------- */
   function oeffnen() {
     const a0 = B.aufgabe(); if (!a0 || a0.typ !== 'chat') return;
     B.szenarioAn = true;
-    const G = lesen(a0), W = 230, LUECKE = 34, ZEILE = 58;
+    const G = lesen(a0), W = window.Szenario.BREITE;
     let sel = G.start, zug = null, nummer = {};
     const by = k => G.nodes.find(n => n.k === k) || null;
     const d = document.createElement('dialog'); d.className = 'kp-dialog sz-dialog';
@@ -113,52 +43,7 @@
     function geaendert(nurFlaeche) { speichern(); zeichne(); if (!nurFlaeche) eigenschaften(); }
 
     /* ----- Fläche: Kästen in Ebenen (Breitensuche ab Start), Pfeile als SVG darüber ----- */
-    function zeichne() {
-      const kinder = {}, tiefe = {}, wurzeln = [], lose = new Set();
-      const ziele = n => { const l = []; n.aout.forEach(t => { if (t && by(t)) l.push(t); }); if (!alleEigen(n) && n.out && by(n.out)) l.push(n.out); return [...new Set(l)]; };
-      const suche = r => { wurzeln.push(r); tiefe[r] = 0; kinder[r] = []; const q = [r]; while (q.length) { const k = q.shift(); ziele(by(k)).forEach(c => { if (tiefe[c] == null) { tiefe[c] = tiefe[k] + 1; kinder[k].push(c); kinder[c] = []; q.push(c); } }); } };
-      if (G.start && by(G.start)) suche(G.start);
-      G.nodes.forEach(n => { if (tiefe[n.k] == null) { lose.add(n.k); suche(n.k); } });
-      nummer = {}; let z = 0;
-      const zaehle = k => { nummer[k] = ++z; kinder[k].forEach(zaehle); }; wurzeln.forEach(zaehle);
-      const kasten = n => {
-        const t = art(n), wahl = t === 'knoepfe' && !n.m.antworten.some(x => x.ok);
-        const ant = t === 'knoepfe' ? n.m.antworten.map((x, j) => `<div class="sz-a"><span>${esc(kurz(x.t, 24) || '?')}${wahl ? '' : x.ok ? ' ✓' : ' ✗'}</span><span class="sz-port${n.aout[j] === undefined ? ' erbt' : n.aout[j] == null ? ' stopp' : ''}" data-port="${n.k}:${j}" title="${n.aout[j] === undefined ? 'geht weiter wie der Kasten – ziehen für einen eigenen Pfeil' : 'Pfeil auf einen Kasten ziehen'}"></span></div>`).join('')
-          : t === 'zahl' ? `<div class="sz-a sz-ein"><span>Zahl: ${esc(n.m.zahl.l)}${n.m.zahl.e ? ' ' + esc(n.m.zahl.e) : ''}</span></div>` : t === 'freitext' ? `<div class="sz-a sz-ein"><span>Begriff: ${esc(kurz(((n.m.freitext.antworten || [])[0] || [])[0] || '', 18))}</span></div>` : '';
-        return `<div class="sz-n${n.k === sel ? ' sel' : ''}${lose.has(n.k) ? ' lose' : ''}${t !== 'text' ? ' frage' : ''}" data-n="${n.k}" tabindex="0">
-          <div class="sz-kopf"><span>${wahl ? '🔀' : SYMBOL[t]} ${nummer[n.k]}</span>${n.k === G.start ? '<b>Start</b>' : lose.has(n.k) ? '<b class="warn" title="Kein Pfeil führt hierher">nie erreicht</b>' : ''}${n.m.id && !/^m\d+$/.test(n.m.id) ? `<small>⚑ ${esc(n.m.id)}</small>` : ''}</div>
-          <div class="sz-text">${esc(kurz(n.m.bot, 90)) || '<i>ohne Text</i>'}</div>${ant}
-          <span class="sz-port unten${alleEigen(n) ? ' aus' : n.out == null || !by(n.out) ? ' stopp' : ''}" data-port="${n.k}:" title="Pfeil auf einen Kasten ziehen"></span></div>`;
-      };
-      innen.innerHTML = G.nodes.map(kasten).join('') || '<p class="hinweis sz-leer">Noch keine Nachricht. Klicke links einen Baustein an.</p>';
-      // Höhen messen, dann setzen
-      const el = {}, h = {}, x = {}, y = {}, zeilenH = [];
-      innen.querySelectorAll('.sz-n').forEach(e => { el[e.dataset.n] = e; h[e.dataset.n] = e.offsetHeight; });
-      G.nodes.forEach(n => { zeilenH[tiefe[n.k]] = Math.max(zeilenH[tiefe[n.k]] || 0, h[n.k]); });
-      const oben = []; zeilenH.reduce((s, v, i) => { oben[i] = s; return s + v + ZEILE; }, 14);
-      let blatt = 0;
-      const setze = k => { if (!kinder[k].length) x[k] = 14 + blatt++ * (W + LUECKE); else { kinder[k].forEach(setze); x[k] = (x[kinder[k][0]] + x[kinder[k][kinder[k].length - 1]]) / 2; } y[k] = oben[tiefe[k]]; };
-      wurzeln.forEach(setze);
-      G.nodes.forEach(n => { el[n.k].style.left = x[n.k] + 'px'; el[n.k].style.top = y[n.k] + 'px'; });
-      const breit = 28 + Math.max(1, blatt) * (W + LUECKE), hoch = (oben[zeilenH.length] || 60) + 30;
-      innen.style.width = breit + 'px'; innen.style.height = hoch + 'px';
-      // Pfeile
-      const R = innen.getBoundingClientRect(), mitte = p => { const r = p.getBoundingClientRect(); return [r.left + r.width / 2 - R.left, r.top + r.height / 2 - R.top]; };
-      let pfade = '';
-      const pfeil = (port, nach, seite, klasse) => {
-        const [x1, y1] = mitte(port), x2 = x[nach] + W / 2, y2 = y[nach] - 3;
-        const runter = y2 > y1 + 14, c1 = seite ? [x1 + 46, y1] : [x1, y1 + 34];
-        const c2 = runter ? [x2, y2 - 40] : [x2 + (x1 >= x2 ? 150 : -150), y2 - 90];
-        pfade += `<path class="${klasse}" d="M${x1} ${y1} C${c1[0]} ${c1[1]}, ${c2[0]} ${c2[1]}, ${x2} ${y2}" marker-end="url(#sz-spitze${klasse.includes('ant') ? '-a' : ''})"/>`;
-      };
-      G.nodes.forEach(n => {
-        if (!alleEigen(n) && n.out && by(n.out)) pfeil(el[n.k].querySelector('.sz-port.unten'), n.out, false, 'sz-pf' + (kinder[n.k].includes(n.out) ? '' : ' quer'));
-        n.aout.forEach((t, j) => { if (t && by(t)) pfeil(el[n.k].querySelector(`[data-port="${n.k}:${j}"]`), t, true, 'sz-pf ant' + (kinder[n.k].includes(t) ? '' : ' quer')); });
-      });
-      innen.insertAdjacentHTML('beforeend', `<svg class="sz-svg" width="${breit}" height="${hoch}" aria-hidden="true"><defs>
-        <marker id="sz-spitze" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="sz-sp" d="M0 0L10 5L0 10z"/></marker>
-        <marker id="sz-spitze-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="sz-sp a" d="M0 0L10 5L0 10z"/></marker></defs>${pfade}<path class="sz-zug" d=""/></svg>`);
-    }
+    function zeichne() { nummer = window.Szenario.zeichne(innen, G, {sel}); }
 
     /* ----- Eigenschaften des markierten Kastens ----- */
     const zielWahl = (attr, wert, n, erbt) => `<select class="feld" ${attr} aria-label="weiter zu">${erbt ? `<option value="~"${wert === undefined ? ' selected' : ''}>wie der Kasten („danach“)</option>` : ''}<option value=""${wert === null || (wert !== undefined && !by(wert)) ? ' selected' : ''}>■ Ende</option>`
@@ -291,5 +176,5 @@
   }
 
   document.addEventListener('click', e => { if (e.target.closest && e.target.closest('[data-szenario-bau]')) oeffnen(); });
-  window.Szenario = {lesen, schreiben, oeffnen};
+  window.Szenario.oeffnen = oeffnen;
 })();
