@@ -30,7 +30,7 @@ routerAdd("POST", "/api/trainer/einreichen", (e) => {
     daten = { titel: body.titel ? u.text(body.titel, 120).trim() : pruef.titel, kurztext: body.kurztext != null ? u.text(body.kurztext, 300).trim() : "" };
   } else {
     const roh = String(body.json || "");
-    if (roh.length > Seite.MAX) return e.json(400, { message: "Die Aufgaben sind zu umfangreich." });
+    if (roh.length > Seite.MAX + 6 * Seite.MAX_BILD) return e.json(400, { message: "Die Aufgaben sind zu umfangreich." });
     try { daten = JSON.parse(roh); } catch (err) { return e.json(400, { message: "Das JSON ist nicht gültig: " + String(err).slice(0, 160) }); }
     if (body.titel) daten.titel = u.text(body.titel, 120).trim();
     if (body.kurztext != null) daten.kurztext = u.text(body.kurztext, 300).trim();

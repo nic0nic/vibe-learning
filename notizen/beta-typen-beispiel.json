@@ -1,0 +1,32 @@
+{"titel": "Beta-Typen", "kurztext": "Experimentelle Aufgabentypen", "schritte": [
+ {"kurz": "Reihenfolge", "titel": "Reihenfolge", "aufgaben": [
+  {"typ": "reihenfolge", "frage": "Ordne das Kalkulationsschema.", "karten": ["Listeneinkaufspreis", "− Liefererrabatt", "= Zieleinkaufspreis", "− Liefererskonto", "= Bareinkaufspreis"]},
+  {"typ": "reihenfolge", "mono": true, "frage": "Ordne das Programm.", "karten": ["alter = int(input())", "if alter >= 18:", "    print(\"<b>volljährig</b>\")", "else:", "    print(\"minderjährig\")"]}]},
+ {"kurz": "Offen", "titel": "Offen", "aufgaben": [
+  {"typ": "offen", "frage": "Begründe, warum ein Unternehmen Skonto nutzen sollte.", "min": 20, "muster": "<p>Skonto ist ein Preisnachlass für schnelle Zahlung. Der Verzicht entspricht einem sehr teuren Lieferantenkredit.</p>", "kriterien": ["nennt den Preisnachlass", "vergleicht mit einem Kredit"]}]},
+ {"kurz": "Markieren", "titel": "Markieren", "aufgaben": [
+  {"typ": "markieren", "frage": "Markiere alle Aufwandskonten.", "text": "Auf dem Tisch liegen Belege zu [[AWR]], BK, [[AWF]], UEFE und [[AWB]]."},
+  {"typ": "markieren", "einheit": "zeile", "mono": true, "frage": "In welchen Zeilen wird etwas ausgegeben?", "text": "x = 3\n[[print(x)]]\ny = x * 2\n\n[[print(\"<p>\", y)]]"}]},
+ {"kurz": "Verbessern", "titel": "Verbessern", "aufgaben": [
+  {"typ": "verbessern", "mono": true, "frage": "Finde und verbessere die Fehler.", "text": "<h1>Mouse Rat[[</h2>|</h1>]]\n<p>Die Band aus Pawnee</p>\n<img [[scr|src]]=\"band.jpg\" [[alt|alt=\"Band\"]]>"},
+  {"typ": "verbessern", "frage": "Verbessere den Satz.", "text": "Yesterday I [[go|went]] to school and [[meet|met]] my friends."}]},
+ {"kurz": "Beschriften", "titel": "Beschriften", "aufgaben": [
+  {"typ": "beschriften", "frage": "Beschrifte das T-Konto.", "alt": "T-Konto", "bild": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MDAgMjAwIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2ZmZiIvPjxwYXRoIGQ9Ik0yMCA1MEgzODBNMjAwIDUwVjE4MCIgc3Ryb2tlPSIjMDAwIiBzdHJva2Utd2lkdGg9IjMiLz48L3N2Zz4=", "punkte": [{"x": 25, "y": 15, "t": "Soll"}, {"x": 75, "y": 15, "t": "Haben"}], "extra": ["Aktiva"]}]},
+ {"kurz": "Blöcke", "titel": "Blöcke", "aufgaben": [
+  {"typ": "bloecke", "frage": "Baue die Zinsformel.", "start": "Z =", "gleichwertig": true, "bloecke": ["K", "p", "t", "·", ":", "(", ")", "100", "360", "+"], "loesung": ["K", "·", "p", "·", "t", ":", "(", "100", "·", "360", ")"]},
+  {"typ": "bloecke", "senkrecht": true, "mono": true, "einmal": true, "frage": "Baue das Programm.", "bloecke": ["print(summe)", "summe = a + b", "a = 3", "b = 4", "summe = a - b"], "loesungen": [["a = 3", "b = 4", "summe = a + b", "print(summe)"], ["b = 4", "a = 3", "summe = a + b", "print(summe)"]]}]},
+ {"kurz": "Karteikarten", "titel": "Karteikarten", "aufgaben": [
+  {"typ": "karteikarten", "frage": "Lerne die Begriffe.", "karten": [{"v": "Disagio", "r": "Abschlag vom Kreditbetrag"}, {"v": "Tilgung", "r": "Rückzahlung des Kredits"}, {"v": "Annuität", "r": "<b>gleichbleibende</b> Rate"}]}]},
+ {"kurz": "Kreuzwort", "titel": "Kreuzworträtsel", "aufgaben": [
+  {"typ": "kreuzwort", "frage": "Löse das Rätsel.", "woerter": [{"w": "Bilanz", "t": "Gegenüberstellung von Vermögen und Kapital"}, {"w": "Inventur", "t": "Bestandsaufnahme"}, {"w": "Aktiva", "t": "linke Seite der Bilanz"}, {"w": "Zins", "t": "Preis für geliehenes Geld"}]}]},
+ {"kurz": "Szenario", "titel": "Szenario", "aufgaben": [
+  {"typ": "chat", "name": "Bankberaterin", "bild": "🏦", "nachrichten": ["Du brauchst 5.000 € für eine Maschine.",
+   {"bot": "Wie finanzierst du?", "antworten": [{"t": "Kontokorrent", "weiter": "kk"}, {"t": "Darlehen", "weiter": "dar"}]},
+   {"id": "kk", "bot": "Der Kontokorrentkredit ist flexibel, aber teuer."},
+   {"bot": "Ist er für eine Maschine geeignet?", "antworten": [{"t": "ja", "r": "Nein, er ist kurzfristig."}, {"t": "nein", "ok": true, "r": "Genau."}], "weiter": "schluss"},
+   {"id": "dar", "bot": "Ein Darlehen passt zur langen Nutzung."},
+   {"bot": "Wie hoch sind die Zinsen bei 4 % im ersten Jahr?", "zahl": {"l": 200, "e": "€"}, "rFalsch": "5.000 € · 4 : 100 = 200 €"},
+   {"id": "schluss", "bot": "Damit ist die Finanzierung geklärt.", "ende": true},
+   "Diese Nachricht erscheint nie."]},
+  {"typ": "chat", "name": "Alt", "nachrichten": ["Alter Chat ohne Sprünge.", {"bot": "1 + 1?", "zahl": {"l": 2}}, "Ende."]}]}
+]}

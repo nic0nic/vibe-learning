@@ -173,9 +173,14 @@ Aufgaben-JSON (reine Daten, kein JavaScript; Aufgabentypen wie in lib/aufgaben.j
     Wörterbuch: {"sprachen": ["Englisch", "Deutsch"], "richtung": "a-b" | "b-a" | "beide", "tippfehler": false,
       "eintraege": [["house", "Haus|Gebäude"], …]}   (| = mehrere richtige Antworten)
   Altes Format {"typ": …, "danach": {…}} wandelt normalisiere in eine Kombi um (Seite.ohneDanach).
+  Experimentelle Typen (Seite.EXPERIMENTELL, Format in lib/aufgaben.js): reihenfolge, offen, markieren, verbessern,
+    beschriften, bloecke, karteikarten, kreuzwort. Reiner Text (darf „<p>“ enthalten, wird nicht als HTML geprüft): Seite.ROH.
+    "bild" (beschriften) nur eingebettet als data:image/png|jpeg|gif|webp|svg+xml;base64,… (höchstens Seite.MAX_BILD Zeichen,
+    zählt nicht zu den 150 kB).
 
 API
   Seite.TYPEN                     Aufgabentypen mit Pflichtfeldern (muss zu lib/aufgaben.js passen)
+  Seite.EXPERIMENTELL             Typen, deren Format sich noch ändern kann (wie Aufgaben.EXPERIMENTELL)
   Seite.normalisiere(json)        → {titel, kurztext, design, schritte} (Schritte bekommen id und kurz, danach → kombi)
   Seite.ohneDanach(aufgabe)       → Aufgabe mit danach-Kette als {"typ": "kombi", "teile": […]} (sonst unverändert)
   Seite.pruefe(json)              → Liste von Fehlern (leer = in Ordnung), deutsch, mit Fundstelle
@@ -192,7 +197,7 @@ API
             Bibliotheken eingebettet, wie in werkzeuge/bycs-pakete.py (dort statt sync.js)
 ```
 
-### lib/aufgaben.js – Aufgabenbausteine für alle Fächer: Multiple Choice, Zahlen, Lückentext, Zuordnen, Buchungssatz, Erarbeitung (dazu aufgaben.css)
+### lib/aufgaben.js – Aufgabenbausteine für alle Fächer: Multiple Choice, Zahlen, Lückentext, Zuordnen, Buchungssatz, Lern-Chat mit Szenario, Erarbeitung; experimentell: Reihenfolge, offene Antwort, Markieren, Verbessern, Beschriften, Blöcke, Karteikarten, Kreuzworträtsel (dazu aufgaben.css)
 
 ```text
 aufgaben.js – Aufgabenbausteine für alle Fächer: Aufgaben als Daten, Prüfung und Rückmeldung eingebaut
@@ -241,6 +246,10 @@ Formeln mit Bruchstrich in jedem HTML-Text: <span class="bruch"><span>Zähler</s
                  dazu r (Antwort des Bots bei richtig) und rFalsch (Erklärung bei falsch)
                Bei Fehlern erklärt der Bot und macht weiter; am Ende Punkte und „Noch einmal“.
                Gilt als gelöst (fertig), sobald der Chat einmal ganz durchlaufen ist.
+               Szenario (verzweigter Chat, alles optional, alte Chats laufen unverändert): Nachricht als Objekt mit
+                 id:'kredit' (Sprungziel), weiter:'id' (danach dorthin statt zur nächsten), ende:true (Chat endet hier);
+                 Antwort-Knopf mit weiter:'id' bzw. ende:true (gilt vor weiter/ende der Frage).
+                 Frage, bei der kein Knopf ok:true hat = Entscheidung: zählt nicht als Frage, r erscheint neutral.
   buchungssatz konten:['2800 BK', …] (Auswahl), soll:[['0700 MA', 40000], …], haben:[…],
                steuer:['2600 VORST', '4800 UST'] (für den Hinweis), nebenrechnung (HTML nach Lösung),
                betraege:[['Rechnungsbetrag', 11900], ['', 238], …] → Beträge (z. B. aus einer Kalkulation davor) zum Ziehen,
@@ -250,6 +259,34 @@ Formeln mit Bruchstrich in jedem HTML-Text: <span class="bruch"><span>Zähler</s
                Konto eintippen: Liste filtert nach Nummer oder Kürzel (z. B. „ve“ → 4400 VE).
                „an“ steht wie im Heft auf der Zeile des letzten Soll-Kontos neben dem ersten Haben-Konto.
                prüft: Konten, Soll/Haben vertauscht, fehlende Steuer, Beträge; Lösung im Skill-Format
+
+EXPERIMENTELL (Branch beta, Liste in Aufgaben.EXPERIMENTELL): Format und Bedienung können sich noch ändern.
+  reihenfolge  karten:['erster Schritt', 'zweiter Schritt', …] in der richtigen Reihenfolge (HTML erlaubt), werden gemischt;
+               ziehen, ▲ ▼ oder erst Karte, dann Zielstelle antippen. mono:true → Karten sind reiner Text in
+               Schreibmaschinenschrift (Codezeilen, Einrückung bleibt). h (Hinweis bei Fehler). Gleiche Texte sind austauschbar.
+  offen        Freie Antwort mit Selbstkontrolle: muster (Musterlösung, HTML), kriterien:['nennt …', 'begründet …'] (zum Abhaken,
+               optional), zeilen (Höhe des Textfelds, Std. 5), min (Mindestzahl Zeichen, Std. 1). Ablauf: schreiben →
+               „Musterlösung zeigen“ → abhaken → abschließen (= gelöst, unabhängig von den Haken). Der Text wird nicht gespeichert.
+  markieren    text:'Der [[Hund]] bellt.' – Stellen in [[…]] sind gesucht; angeklickt werden Wörter (Satzzeichen nicht) oder
+               mit einheit:'zeile' ganze Zeilen (Zeile mit [[ ist gesucht). Reiner Text, Zeilenumbruch mit \n.
+               mono:true (Code: Schreibmaschinenschrift, Trennung nur an Leerzeichen), anzahl:false (Anzahl nicht verraten), h.
+  verbessern   Fehlersuche: text mit Zeilen (\n), Fehler als [[falsch|richtig|auch richtig]] (falsch wird angezeigt;
+               [[zu viel|]] = Stelle löschen). Ablauf je Fehlerzeile: Zeile anklicken → alle falschen Stellen anklicken
+               (nochmal = abwählen) → Prüfen → Stellen verbessern → Prüfen. Bei nur einer Zeile entfällt die Zeilenwahl.
+               Stellen sind durch Leerzeichen getrennte Wörter bzw. die Klammern. mono:true (Code), gross:false (Groß/klein egal), h.
+  beschriften  bild (Adresse oder data:image/…), alt, punkte:[{x:25, y:40, t:'Begriff'}] (x, y in Prozent des Bildes),
+               extra:['Ablenker']; Begriffe aus der Wortbank auf die nummerierten Punkte ziehen (oder antippen).
+  bloecke      Blöcke wie beim blockbasierten Programmieren zu einer Formel oder einem Ablauf zusammensetzen:
+               bloecke:['Z', '=', 'K', '·', 'p', …] (Vorrat, reiner Text, beliebig oft nutzbar; einmal:true = jeder nur einmal),
+               loesung:['Z', '=', …] (Reihenfolge) oder loesungen:[[…], […]], start:'Z =' (fester Text davor),
+               gleichwertig:true → jede rechnerisch gleichwertige Formel zählt (braucht lib/formel.js; „=“ trennt die Seiten),
+               senkrecht:true (Blöcke untereinander), mono:true, h.
+  karteikarten karten:[{v:'Vorderseite', r:'Rückseite'}] (HTML), mischen:false; umdrehen, „Gewusst“/„Nicht gewusst“ –
+               nicht gewusste Karten kommen wieder, gelöst, wenn alle gewusst sind.
+  kreuzwort    woerter:[{w:'Bilanz', t:'Hinweis'}] – das Gitter entsteht von selbst (immer gleich); Buchstaben A–Z, Ä, Ö, Ü,
+               ß wird SS, Leerzeichen und Bindestriche entfallen. Wörter ohne gemeinsamen Buchstaben stehen einzeln darunter.
+  Eigene Typen können klick(ctx, ziel), eingabe(ctx, feld) → true = erledigt, taste(ctx, ereignis) → true = erledigt
+  und legen(z, karte, zone, a) mitbringen (siehe die experimentellen Typen).
 
 API
   Aufgaben.baue(el, a, {fertig})  Baustein in Element el; fertig(a) nach richtiger Lösung (inkl. danach)

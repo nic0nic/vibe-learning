@@ -20,7 +20,7 @@
  * Typ registrieren (vorlage-typen.js): Baukasten.typ('mc', {name, symbol, neu() → Aufgabe, kurz(a) → Text,
  *   form(a, H) → HTML, tun: {name(a, dataset, H)} (Knöpfe data-tun), verschiebe(a, liste, von, nach) (optional),
  *   titel(a) → Name auf Karte/Panel (z. B. mit eingeschalteten Optionen),
- *   frageLabel (statt „Aufgabenstellung“), okLabel})
+ *   frageLabel (statt „Aufgabenstellung“), okLabel, experimentell: true (Leiste: Abschnitt „Experimentell (β)“, Name mit Zusatz)})
  * Kombinierte Aufgabe (typ kombi, teile:[…]): Block wie „falls“ in Scratch, Teile untereinander, unten beliebig
  *   erweiterbar. Auswahl sel = {s, i, tiefe}: tiefe 0 = Aufgabe im Schritt, tiefe k = Teil k der Kombi.
  *   H.vorher = Teil davor (nur in einer Kombi), z. B. um Beträge aus einer Rechnung zu übernehmen.
@@ -96,7 +96,7 @@
   const S = () => doc.schritte;
   const schritt = () => S()[sel.s];
   function kette(s, i, tiefe) { const a = S()[s] && (S()[s].aufgaben || [])[i]; return !tiefe ? a : a && Array.isArray(a.teile) ? a.teile[tiefe - 1] : undefined; }
-  const typName = a => { const T = TYPEN[a.typ]; return T ? (T.titel ? T.titel(a) : T.name) : 'Unbekannter Typ „' + a.typ + '“'; };
+  const typName = a => { const T = TYPEN[a.typ]; return T ? (T.titel ? T.titel(a) : T.name) + (T.experimentell ? ' (experimentell)' : '') : 'Unbekannter Typ „' + a.typ + '“'; };
   const aufgabe = () => sel.i == null ? null : kette(sel.s, sel.i, sel.tiefe);
   function normal(d) {
     d = JSON.parse(JSON.stringify(d || {}));
@@ -152,8 +152,11 @@
     E.leiste.innerHTML = `<button class="teil" type="button" data-baustein="schritt" title="Ziehen oder anklicken"><span class="sym">📄</span><span>Schritt / Erklärung</span></button>`
       + (window.Baukasten.training ? `<button class="teil" type="button" data-baustein="training" title="Neuer Schritt: Aufgaben auf Zeit und/oder endlos (Kopfrechnen, Vokabeln …)"><span class="sym">⏱</span><span>Training (Zeit / endlos)</span></button>` : '')
       + '<div class="leiste-trenn">Aufgaben</div>'
-      + Object.keys(TYPEN).sort((x, y) => (x === 'kombi') - (y === 'kombi')).map(k => (k === 'kombi' ? '<div class="leiste-trenn">Kombinieren</div>' : '')
-        + `<button class="teil" type="button" data-baustein="${k}" title="Ziehen oder anklicken"><span class="sym">${TYPEN[k].symbol}</span><span>${esc(TYPEN[k].name)}</span></button>`).join('')
+      + (() => {   // Reihenfolge: Aufgaben, Kombinieren, zuletzt die experimentellen Typen
+        const rang = k => TYPEN[k].experimentell ? 2 : k === 'kombi' ? 1 : 0, namen = Object.keys(TYPEN).sort((x, y) => rang(x) - rang(y));
+        const kopf = (k, i) => rang(k) && (!i || rang(namen[i - 1]) !== rang(k)) ? `<div class="leiste-trenn"${rang(k) === 2 ? ' title="Neu im Test: Format und Bedienung können sich noch ändern"' : ''}>${rang(k) === 2 ? 'Experimentell (β)' : 'Kombinieren'}</div>` : '';
+        return namen.map((k, i) => kopf(k, i) + `<button class="teil" type="button" data-baustein="${k}" title="${TYPEN[k].experimentell ? 'Experimentell – ' : ''}Ziehen oder anklicken"><span class="sym">${TYPEN[k].symbol}</span><span>${esc(TYPEN[k].name)}</span></button>`).join('');
+      })()
       + '<p class="hinweis">Bausteine in die Mitte ziehen oder anklicken (kommt hinter die markierte Aufgabe; ist eine kombinierte Aufgabe markiert, wird es ihr nächster Teil).</p>';
   }
 

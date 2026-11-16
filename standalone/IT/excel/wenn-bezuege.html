@@ -1414,6 +1414,10 @@ main{max-width:1020px;margin:0 auto;padding:18px 16px}
  *                  dazu r (Antwort des Bots bei richtig) und rFalsch (Erklärung bei falsch)
  *                Bei Fehlern erklärt der Bot und macht weiter; am Ende Punkte und „Noch einmal“.
  *                Gilt als gelöst (fertig), sobald der Chat einmal ganz durchlaufen ist.
+ *                Szenario (verzweigter Chat, alles optional, alte Chats laufen unverändert): Nachricht als Objekt mit
+ *                  id:'kredit' (Sprungziel), weiter:'id' (danach dorthin statt zur nächsten), ende:true (Chat endet hier);
+ *                  Antwort-Knopf mit weiter:'id' bzw. ende:true (gilt vor weiter/ende der Frage).
+ *                  Frage, bei der kein Knopf ok:true hat = Entscheidung: zählt nicht als Frage, r erscheint neutral.
  *   buchungssatz konten:['2800 BK', …] (Auswahl), soll:[['0700 MA', 40000], …], haben:[…],
  *                steuer:['2600 VORST', '4800 UST'] (für den Hinweis), nebenrechnung (HTML nach Lösung),
  *                betraege:[['Rechnungsbetrag', 11900], ['', 238], …] → Beträge (z. B. aus einer Kalkulation davor) zum Ziehen,
@@ -1423,6 +1427,34 @@ main{max-width:1020px;margin:0 auto;padding:18px 16px}
  *                Konto eintippen: Liste filtert nach Nummer oder Kürzel (z. B. „ve“ → 4400 VE).
  *                „an“ steht wie im Heft auf der Zeile des letzten Soll-Kontos neben dem ersten Haben-Konto.
  *                prüft: Konten, Soll/Haben vertauscht, fehlende Steuer, Beträge; Lösung im Skill-Format
+ *
+ * EXPERIMENTELL (Branch beta, Liste in Aufgaben.EXPERIMENTELL): Format und Bedienung können sich noch ändern.
+ *   reihenfolge  karten:['erster Schritt', 'zweiter Schritt', …] in der richtigen Reihenfolge (HTML erlaubt), werden gemischt;
+ *                ziehen, ▲ ▼ oder erst Karte, dann Zielstelle antippen. mono:true → Karten sind reiner Text in
+ *                Schreibmaschinenschrift (Codezeilen, Einrückung bleibt). h (Hinweis bei Fehler). Gleiche Texte sind austauschbar.
+ *   offen        Freie Antwort mit Selbstkontrolle: muster (Musterlösung, HTML), kriterien:['nennt …', 'begründet …'] (zum Abhaken,
+ *                optional), zeilen (Höhe des Textfelds, Std. 5), min (Mindestzahl Zeichen, Std. 1). Ablauf: schreiben →
+ *                „Musterlösung zeigen“ → abhaken → abschließen (= gelöst, unabhängig von den Haken). Der Text wird nicht gespeichert.
+ *   markieren    text:'Der [[Hund]] bellt.' – Stellen in [[…]] sind gesucht; angeklickt werden Wörter (Satzzeichen nicht) oder
+ *                mit einheit:'zeile' ganze Zeilen (Zeile mit [[ ist gesucht). Reiner Text, Zeilenumbruch mit \n.
+ *                mono:true (Code: Schreibmaschinenschrift, Trennung nur an Leerzeichen), anzahl:false (Anzahl nicht verraten), h.
+ *   verbessern   Fehlersuche: text mit Zeilen (\n), Fehler als [[falsch|richtig|auch richtig]] (falsch wird angezeigt;
+ *                [[zu viel|]] = Stelle löschen). Ablauf je Fehlerzeile: Zeile anklicken → alle falschen Stellen anklicken
+ *                (nochmal = abwählen) → Prüfen → Stellen verbessern → Prüfen. Bei nur einer Zeile entfällt die Zeilenwahl.
+ *                Stellen sind durch Leerzeichen getrennte Wörter bzw. die Klammern. mono:true (Code), gross:false (Groß/klein egal), h.
+ *   beschriften  bild (Adresse oder data:image/…), alt, punkte:[{x:25, y:40, t:'Begriff'}] (x, y in Prozent des Bildes),
+ *                extra:['Ablenker']; Begriffe aus der Wortbank auf die nummerierten Punkte ziehen (oder antippen).
+ *   bloecke      Blöcke wie beim blockbasierten Programmieren zu einer Formel oder einem Ablauf zusammensetzen:
+ *                bloecke:['Z', '=', 'K', '·', 'p', …] (Vorrat, reiner Text, beliebig oft nutzbar; einmal:true = jeder nur einmal),
+ *                loesung:['Z', '=', …] (Reihenfolge) oder loesungen:[[…], […]], start:'Z =' (fester Text davor),
+ *                gleichwertig:true → jede rechnerisch gleichwertige Formel zählt (braucht lib/formel.js; „=“ trennt die Seiten),
+ *                senkrecht:true (Blöcke untereinander), mono:true, h.
+ *   karteikarten karten:[{v:'Vorderseite', r:'Rückseite'}] (HTML), mischen:false; umdrehen, „Gewusst“/„Nicht gewusst“ –
+ *                nicht gewusste Karten kommen wieder, gelöst, wenn alle gewusst sind.
+ *   kreuzwort    woerter:[{w:'Bilanz', t:'Hinweis'}] – das Gitter entsteht von selbst (immer gleich); Buchstaben A–Z, Ä, Ö, Ü,
+ *                ß wird SS, Leerzeichen und Bindestriche entfallen. Wörter ohne gemeinsamen Buchstaben stehen einzeln darunter.
+ *   Eigene Typen können klick(ctx, ziel), eingabe(ctx, feld) → true = erledigt, taste(ctx, ereignis) → true = erledigt
+ *   und legen(z, karte, zone, a) mitbringen (siehe die experimentellen Typen).
  *
  * API
  *   Aufgaben.baue(el, a, {fertig})  Baustein in Element el; fertig(a) nach richtiger Lösung (inkl. danach)
@@ -1592,18 +1624,7 @@ const TYPEN = {
     },
     pruefen(a, z){
       const n = z.teile.filter(Array.isArray).length;
-      if (a.ziehen){
-        z.weg = []; z.wahl = null;
-        const richtig = z.teile.filter(Array.isArray).map(t => t[0]);
-        Object.keys(z.platz).forEach(w => {
-          const i = +z.platz[w].slice(1);
-          if (z.woerter[w] === richtig[i]){ z.fix[w] = true; z.ok[i] = true; } else { z.weg.push(+w); delete z.platz[w]; }
-        });
-        const k = nummern(n).filter(i => z.ok[i]).length;
-        if (k === n) return {ok:true, t:'✓ ' + (a.ok || 'Alles richtig!')};
-        if (!k && !z.weg.length) return {ok:false, t:'Ziehe zuerst Wörter in die Lücken.'};
-        return {ok:false, t:`${k} von ${n} Lücken richtig. ${z.weg.length ? `${z.weg.length} ${z.weg.length === 1 ? 'Wort ist' : 'Wörter sind'} zurück in die Wortbank gewandert.` : ''}`};
-      }
+      if (a.ziehen) return bankPruefen(a, z, z.teile.filter(Array.isArray).map(t => t[0]), 'Lücken', 'Ziehe zuerst Wörter in die Lücken.');
       for (let i = 0; i < n; i++) z.ok[i] = String(z.wahl[i]) === '0';
       return nummern(n).every(i => z.ok[i]) ? {ok:true, t:'✓ ' + (a.ok || 'Alles richtig!')} : {ok:false, t:'Noch nicht alles richtig. Die rot markierten Lücken stimmen nicht.'};
     }
@@ -1711,7 +1732,7 @@ const TYPEN = {
       const q = z.warte != null ? a.nachrichten[z.warte] : null;
       if (q && q.antworten) ein = `<div class="af-chips">${q.antworten.map((x, j) => `<button class="af-chip" type="button" data-ca="${j}">${esc(x.t)}</button>`).join('')}</div>`;
       else if (q) ein = `<div class="af-chatein"><input class="feld af-chattext" ${q.zahl ? 'inputmode="decimal"' : ''} autocomplete="off" placeholder="${q.zahl ? 'Zahl eingeben' : 'Antwort eingeben'}" aria-label="Deine Antwort">${q.zahl && q.zahl.e ? `<span>${q.zahl.e}</span>` : ''}<button class="btn haupt af-senden" type="button">Senden</button></div>`;
-      else if (z.ende) ein = `<div class="af-chatende"><b>Geschafft!</b> Du hast ${z.punkte} von ${z.fragen} Fragen auf Anhieb richtig beantwortet. <button class="btn klein af-neu" type="button">Noch einmal</button></div>`;
+      else if (z.ende) ein = `<div class="af-chatende"><b>Geschafft!</b> ${z.fragen ? `Du hast ${z.punkte} von ${z.fragen} Fragen auf Anhieb richtig beantwortet.` : 'Du bist am Ende angekommen.'} <button class="btn klein af-neu" type="button">Noch einmal</button></div>`;
       return `<div class="af-chat"><div class="af-chatkopf">${ava}<b>${esc(a.name || 'Lern-Chat')}</b></div><div class="af-verlauf" aria-live="polite">${z.log.map(blase).join('')}`
         + (z.tippt ? `<div class="af-msg bot">${ava}<div class="af-blase af-tippt" aria-label="schreibt …"><i></i><i></i><i></i></div></div>` : '') + `</div>${ein}</div>`;
     },
@@ -1762,6 +1783,414 @@ const TYPEN = {
   }
 };
 
+/* ---------- Experimentelle Typen (Branch beta): Format kann sich noch ändern ---------- */
+const EXPERIMENTELL = ['reihenfolge', 'offen', 'markieren', 'verbessern', 'beschriften', 'bloecke', 'karteikarten', 'kreuzwort'];
+// Aufgabe als gelöst melden (für Typen mit eigenem Ablauf statt „Prüfen“)
+function loese(ctx, t){
+  const z = ctx.z, neu = !z.geloest;
+  z.fb = t ? {ok:true, t} : null; z.geloest = true; ctx.zeichne();
+  if (neu && ctx.opt.fertig) ctx.opt.fertig(ctx.a);
+}
+const fokus = (ctx, sel) => { const e = ctx.el.querySelector(sel); if (e) e.focus({preventScroll:true}); };
+// Wortbank prüfen (Lückentext mit ziehen, Beschriften): richtige Wörter bleiben liegen, falsche gehen zurück
+function bankPruefen(a, z, richtig, was, leer){
+  const n = richtig.length;
+  z.weg = []; z.wahl = null;
+  Object.keys(z.platz).forEach(w => {
+    const i = +z.platz[w].slice(1);
+    if (z.woerter[w] === richtig[i]){ z.fix[w] = true; z.ok[i] = true; } else { z.weg.push(+w); delete z.platz[w]; }
+  });
+  const k = nummern(n).filter(i => z.ok[i]).length;
+  if (k === n) return {ok:true, t:'✓ ' + (a.ok || 'Alles richtig!')};
+  if (!k && !z.weg.length) return {ok:false, t:leer};
+  return {ok:false, t:`${k} von ${n} ${was} richtig. ${z.weg.length ? `${z.weg.length} ${z.weg.length === 1 ? 'Wort ist' : 'Wörter sind'} zurück in die Wortbank gewandert.` : ''}`};
+}
+// Text mit [[…]] in Stücke: {t (Text), teile (Inhalt der Klammer an | getrennt) oder null, leer (nur Leerraum)}
+function stuecke(text, trenner){
+  const out = [];
+  String(text).split(/\[\[([\s\S]*?)\]\]/).forEach((s, i) => {
+    if (i % 2){ const teile = s.split('|'); out.push({t:teile[0], teile}); }
+    else s.split(trenner).forEach(w => { if (w) out.push({t:w, teile:null, leer:/^\s+$/.test(w)}); });
+  });
+  return out;
+}
+const WORT_TRENNER = /(\s+|[.,;:!?()„“”"«»]+)/, CODE_TRENNER = /(\s+)/;
+const gleichText = (x, y, gross) => { const n = s => String(s).replace(/\s+/g, ' ').trim(); return gross === false ? n(x).toLowerCase() === n(y).toLowerCase() : n(x) === n(y); };
+// Formeln aus Blöcken: gleichwertig, wenn beide Seiten jeder Gleichung für zufällige Werte dasselbe ergeben (lib/formel.js)
+function formelGleich(x, y){
+  const F = window.Formel; if (!F) return false;
+  try {
+    const X = x.split('=').map(s => s.trim()), Y = y.split('=').map(s => s.trim());
+    if (X.length !== Y.length || X.some(s => !s)) return false;
+    const namen = [...new Set([...X, ...Y].flatMap(s => F.namen(s)))];
+    for (let k = 0; k < 6; k++){
+      const w = {}; namen.forEach(n => { w[n] = 1 + Math.round(Math.random() * 9000) / 100; });
+      for (let i = 0; i < X.length; i++){ const p = F.wert(X[i], w), q = F.wert(Y[i], w); if (!isFinite(p) || !isFinite(q) || Math.abs(p - q) > 1e-6 * Math.max(1, Math.abs(q))) return false; }
+    }
+    return true;
+  } catch (e) { return false; }
+}
+// Kreuzworträtsel: Wort → Großbuchstaben ohne Leerzeichen (ß → SS), Gitter immer gleich aus der Wortliste gebaut
+const kwWort = w => String(w == null ? '' : w).toUpperCase().replace(/[^A-ZÄÖÜ]/g, '');
+function kwLayout(liste){
+  const W = liste.map((x, i) => ({i, w:kwWort(x.w), t:x.t})).filter(x => x.w.length > 1);
+  const G = {}, R = {}, liegt = [], k = (r, c) => r + ',' + c;
+  let b = null;   // Rahmen {r0, r1, c0, c1}
+  function passt(w, r, c, quer){
+    const dr = quer ? 0 : 1, dc = quer ? 1 : 0;
+    if (G[k(r - dr, c - dc)] || G[k(r + dr * w.length, c + dc * w.length)]) return -1;
+    let kreuz = 0;
+    for (let n = 0; n < w.length; n++){
+      const rr = r + dr * n, cc = c + dc * n, g = G[k(rr, cc)];
+      if (g){ if (g !== w[n] || R[k(rr, cc)].includes(quer ? 'q' : 's')) return -1; kreuz++; }
+      else if (G[k(rr + dc, cc + dr)] || G[k(rr - dc, cc - dr)]) return -1;
+    }
+    return kreuz;
+  }
+  function lege(x, r, c, quer){
+    for (let n = 0; n < x.w.length; n++){ const key = k(r + (quer ? 0 : n), c + (quer ? n : 0)); G[key] = x.w[n]; R[key] = (R[key] || '') + (quer ? 'q' : 's'); }
+    const r1 = r + (quer ? 0 : x.w.length - 1), c1 = c + (quer ? x.w.length - 1 : 0);
+    b = b ? {r0:Math.min(b.r0, r), r1:Math.max(b.r1, r1), c0:Math.min(b.c0, c), c1:Math.max(b.c1, c1)} : {r0:r, r1, c0:c, c1};
+    liegt.push({i:x.i, w:x.w, t:x.t, r, c, quer});
+  }
+  let rest = W.slice().sort((x, y) => y.w.length - x.w.length);
+  if (rest.length) lege(rest.shift(), 0, 0, true);
+  for (let weiter = true; weiter && rest.length;){
+    weiter = false;
+    for (const x of rest.slice()){
+      let best = null;
+      Object.keys(G).forEach(key => {
+        const [r, c] = key.split(',').map(Number);
+        for (let n = 0; n < x.w.length; n++){
+          if (x.w[n] !== G[key]) continue;
+          [[r, c - n, true], [r - n, c, false]].forEach(([pr, pc, quer]) => {
+            const kreuz = passt(x.w, pr, pc, quer); if (kreuz < 1) return;
+            const r1 = pr + (quer ? 0 : x.w.length - 1), c1 = pc + (quer ? x.w.length - 1 : 0);
+            const h = Math.max(b.r1, r1) - Math.min(b.r0, pr) + 1, br = Math.max(b.c1, c1) - Math.min(b.c0, pc) + 1;
+            const wert = kreuz * 1000 - h * br - Math.abs(h - br) - (br > 14 ? 500 : 0);
+            if (!best || wert > best.wert) best = {wert, pr, pc, quer};
+          });
+        }
+      });
+      if (best){ lege(x, best.pr, best.pc, best.quer); rest = rest.filter(y => y !== x); weiter = true; }
+    }
+  }
+  rest.forEach(x => lege(x, b.r1 + 2, b.c0, true));   // passt nirgends: eigene Zeile darunter
+  if (!b) return {zeilen:0, spalten:0, zellen:{}, eintraege:[]};
+  const zellen = {}, eintraege = liegt.map(x => Object.assign({}, x, {r:x.r - b.r0, c:x.c - b.c0})).sort((x, y) => x.r - y.r || x.c - y.c || (y.quer - x.quer));
+  let nr = 0;
+  eintraege.forEach((e, j) => {
+    const vor = eintraege.slice(0, j).find(v => v.r === e.r && v.c === e.c);
+    e.nr = vor ? vor.nr : ++nr; e.zellen = [];
+    for (let n = 0; n < e.w.length; n++){
+      const key = k(e.r + (e.quer ? 0 : n), e.c + (e.quer ? n : 0)), z = zellen[key] || (zellen[key] = {b:e.w[n]});
+      z[e.quer ? 'q' : 's'] = j; if (!n) z.nr = e.nr; e.zellen.push(key);
+    }
+  });
+  return {zeilen:b.r1 - b.r0 + 1, spalten:b.c1 - b.c0 + 1, zellen, eintraege};
+}
+function kwAktiv(ctx){   // aktives Wort im Gitter und in der Liste hervorheben
+  const z = ctx.z, c = z.L.zellen[z.akt], j = c ? (z.quer ? c.q : c.s) : null, e = j != null ? z.L.eintraege[j] : null;
+  ctx.el.querySelectorAll('.af-kwi').forEach(i => i.classList.toggle('akt', !!e && e.zellen.includes(i.dataset.kw)));
+  ctx.el.querySelectorAll('[data-kwe]').forEach(l => l.classList.toggle('akt', +l.dataset.kwe === j));
+}
+function kwGehe(ctx, key, quer){
+  const z = ctx.z, c = z.L.zellen[key]; if (!c) return false;
+  if (quer != null) z.quer = quer;
+  if ((z.quer ? c.q : c.s) == null) z.quer = c.q != null;
+  z.akt = key;
+  const i = ctx.el.querySelector(`.af-kwi[data-kw="${key}"]`); if (i){ i.focus({preventScroll:true}); if (i.select) i.select(); }
+  kwAktiv(ctx); return true;
+}
+const kwNeben = (key, quer, d) => { const [r, c] = key.split(',').map(Number); return quer ? r + ',' + (c + d) : (r + d) + ',' + c; };
+
+Object.assign(TYPEN, {
+  reihenfolge:{
+    zustand(a){
+      const n = a.karten.length, sortiert = o => o.every((i, p) => a.karten[i] === a.karten[p]);
+      let ord = mischen(nummern(n));
+      for (let k = 0; k < 8 && n > 1 && sortiert(ord); k++) ord = mischen(nummern(n));
+      if (n > 1 && sortiert(ord)) ord.push(ord.shift());
+      return {ord, ok:{}, fix:{}, weg:[], wahl:null};
+    },
+    legen(z, i, zone){ if (zone[0] !== 'P') return; z.ord.splice(z.ord.indexOf(i), 1); z.ord.splice(+zone.slice(1), 0, i); z.ok = {}; z.wahl = null; },
+    html(a, z){
+      const n = z.ord.length;
+      return `<div class="af-hinweis">Bringe die Karten in die richtige Reihenfolge: ziehen, mit ▲ ▼ verschieben oder erst eine Karte, dann die Zielstelle antippen.</div><ol class="af-reihe${a.mono ? ' mono' : ''}">`
+        + z.ord.map((i, p) => `<li class="af-zone af-rzeile${z.ok[p] === true ? ' richtig' : z.ok[p] === false ? ' falsch' : ''}" data-zone="P${p}"><span class="af-rnr">${p + 1}</span>`
+          + `<div class="af-karte${z.geloest ? ' fix' : ''}${z.wahl === i ? ' gewaehlt' : ''}" data-karte="${i}" tabindex="0" role="button">${a.mono ? esc(a.karten[i]) : a.karten[i]}</div>`
+          + (z.geloest ? '' : `<span class="af-rpfeile"><button type="button" class="af-rp" data-rp="${p}" data-d="-1" aria-label="nach oben"${p ? '' : ' disabled'}>▲</button><button type="button" class="af-rp" data-rp="${p}" data-d="1" aria-label="nach unten"${p < n - 1 ? '' : ' disabled'}>▼</button></span>`) + '</li>').join('') + '</ol>';
+    },
+    klick(ctx, t){
+      const z = ctx.z; if (z.geloest) return;
+      const rp = t.closest('[data-rp]'), k = t.closest('[data-karte]');
+      if (rp){
+        const p = +rp.dataset.rp, q = p + +rp.dataset.d;
+        [z.ord[p], z.ord[q]] = [z.ord[q], z.ord[p]]; z.ok = {}; z.fb = null; z.wahl = null; ctx.zeichne();
+        return fokus(ctx, `[data-rp="${q}"][data-d="${rp.dataset.d}"]:not(:disabled), [data-rp="${q}"]:not(:disabled)`);
+      }
+      if (!k) return;
+      const i = +k.dataset.karte;
+      if (z.wahl == null || z.wahl === i) z.wahl = z.wahl === i ? null : i;
+      else legen(ctx, z.wahl, 'P' + z.ord.indexOf(i));
+      ctx.zeichne();
+    },
+    pruefen(a, z){
+      z.wahl = null;
+      z.ord.forEach((i, p) => { z.ok[p] = a.karten[i] === a.karten[p]; });
+      const k = z.ord.filter((i, p) => z.ok[p]).length, n = z.ord.length;
+      return k === n ? {ok:true, t:'✓ ' + (a.ok || 'Die Reihenfolge stimmt!')} : {ok:false, t:`${k} von ${n} Karten stehen an der richtigen Stelle.${a.h ? ' ' + a.h : ''}`};
+    }
+  },
+  offen:{
+    zustand:() => ({ein:{}, haken:{}, phase:0}),
+    sofort:() => true,
+    html(a, z){
+      const K = a.kriterien || [];
+      let h = `<textarea class="feld af-offen" data-f="text" rows="${a.zeilen > 0 ? +a.zeilen : 5}" placeholder="Deine Antwort" aria-label="Deine Antwort"${z.phase ? ' readonly' : ''}>${esc(z.ein.text || '')}</textarea>`;
+      if (!z.phase) return h + '<div class="af-knoepfe"><button class="btn haupt" type="button" data-offen="zeigen">Fertig – Musterlösung zeigen</button></div>';
+      h += `<div class="af-muster"><div class="af-sk">Musterlösung</div>${a.muster}</div>`;
+      if (K.length) h += `<div class="af-kriterien"><div class="af-sk">Selbstkontrolle: Hake ab, was deine Antwort enthält</div>`
+        + K.map((k, i) => `<label><input type="checkbox" data-krit="${i}"${z.haken[i] ? ' checked' : ''}${z.phase > 1 ? ' disabled' : ''}> <span>${k}</span></label>`).join('') + '</div>';
+      if (z.phase === 1) h += '<div class="af-knoepfe"><button class="btn" type="button" data-offen="zurueck">Antwort überarbeiten</button><button class="btn haupt" type="button" data-offen="fertig">Selbstkontrolle abschließen</button></div>';
+      return h;
+    },
+    klick(ctx, t){
+      const {a, z} = ctx, k = t.closest('[data-krit]'), b = t.closest('[data-offen]');
+      if (k){ z.haken[k.dataset.krit] = k.checked; return; }
+      if (!b) return;
+      const tun = b.dataset.offen, min = a.min > 0 ? +a.min : 1;
+      if (tun === 'zeigen'){
+        if (String(z.ein.text || '').trim().length < min){ z.fb = {ok:false, t:min > 1 ? `Schreibe zuerst deine Antwort (mindestens ${min} Zeichen).` : 'Schreibe zuerst deine Antwort.'}; ctx.zeichne(); return fokus(ctx, '.af-offen'); }
+        z.phase = 1; z.fb = null; return ctx.zeichne();
+      }
+      if (tun === 'zurueck'){ z.phase = 0; ctx.zeichne(); return fokus(ctx, '.af-offen'); }
+      const K = a.kriterien || [], n = K.filter((x, i) => z.haken[i]).length;
+      z.phase = 2;
+      loese(ctx, '✓ ' + (K.length ? `Selbstkontrolle abgeschlossen: ${n} von ${K.length} ${K.length === 1 ? 'Punkt' : 'Punkten'} erfüllt.${n < K.length ? ' Vergleiche die fehlenden Punkte mit der Musterlösung.' : ''}` : (a.ok || 'Mit der Musterlösung verglichen.')));
+    },
+    pruefen:() => ({ok:false, t:''})
+  },
+  markieren:{
+    zustand(a){
+      const zeile = a.einheit === 'zeile';
+      const teile = zeile ? String(a.text).split('\n').map(l => ({t:l.replace(/\[\[|\]\]/g, ''), ziel:/\[\[/.test(l), leer:!l.trim()}))
+        : stuecke(a.text, a.mono ? CODE_TRENNER : WORT_TRENNER).map(s => ({t:s.t, ziel:!!s.teile, leer:!s.teile && (s.leer || !/[0-9A-Za-zÄÖÜäöüß]/.test(s.t)) && !a.mono || !!s.leer}));
+      return {teile, zeile, sel:new Set(), st:{}};
+    },
+    html(a, z){
+      const n = z.teile.filter(x => x.ziel).length, was = z.zeile ? ['Zeile', 'Zeilen'] : ['Stelle', 'Stellen'];
+      const teil = (x, i) => x.leer ? esc(x.t) : `<button type="button" class="af-mw${z.sel.has(i) ? ' sel' : ''}${z.st[i] === 'ok' ? ' richtig' : z.st[i] === 'falsch' ? ' falsch' : ''}" data-mw="${i}" aria-pressed="${z.sel.has(i)}">${z.zeile ? `<span class="af-znr">${i + 1}</span><span>${esc(x.t)}</span>` : esc(x.t)}</button>`;
+      return `<div class="af-hinweis">Klicke die gesuchten ${was[1]} an (nochmal klicken hebt die Markierung auf).${a.anzahl === false ? '' : ` Gesucht: ${n} ${was[n === 1 ? 0 : 1]}.`}</div>`
+        + `<div class="af-mark${a.mono ? ' mono' : ''}${z.zeile ? ' zeilen' : ''}">${z.teile.map((x, i) => z.zeile && x.leer ? '<div class="af-mleer"></div>' : teil(x, i)).join('')}</div>`;
+    },
+    klick(ctx, t){
+      const z = ctx.z, b = t.closest('[data-mw]'); if (!b || z.geloest) return;
+      const i = +b.dataset.mw; if (z.st[i] === 'ok') return;
+      Object.keys(z.st).forEach(k => { if (z.st[k] === 'falsch') delete z.st[k]; });
+      z.sel.has(i) ? z.sel.delete(i) : z.sel.add(i); z.fb = null; ctx.zeichne(); fokus(ctx, `[data-mw="${i}"]`);
+    },
+    pruefen(a, z){
+      if (!z.sel.size) return {ok:false, t:'Markiere zuerst etwas.'};
+      let falsch = 0;
+      [...z.sel].forEach(i => { if (z.teile[i].ziel) z.st[i] = 'ok'; else { z.st[i] = 'falsch'; z.sel.delete(i); falsch++; } });
+      const n = z.teile.filter(x => x.ziel).length, k = z.sel.size;
+      if (k === n && !falsch) return {ok:true, t:'✓ ' + (a.ok || 'Alles gefunden!')};
+      return {ok:false, t:`${k} von ${n} gefunden.${falsch ? ` ${falsch} ${falsch === 1 ? 'Markierung war' : 'Markierungen waren'} falsch (rot).` : ''}${a.h ? ' ' + a.h : ''}`};
+    }
+  },
+  verbessern:{
+    zustand(a){
+      const zeilen = String(a.text).split('\n').map(l => stuecke(l, CODE_TRENNER).map(s => ({t:s.t, lsg:s.teile ? s.teile.slice(1) : null, leer:!!s.leer})));
+      const z = {zeilen, phase:'zeile', zeile:null, zFalsch:[], fertig:{}, sel:new Set(), wFalsch:[], ein:{}, eOk:{}};
+      if (zeilen.length === 1){ z.zeile = 0; z.phase = 'wort'; }
+      return z;
+    },
+    sofort:a => !!a._z && a._z.phase === 'zeile',
+    html(a, z){
+      const fehlerZ = z.zeilen.map((l, i) => l.some(x => x.lsg) ? i : -1).filter(i => i >= 0), rest = fehlerZ.filter(i => !z.fertig[i]).length, mehr = z.zeilen.length > 1;
+      const info = z.geloest ? '' : z.phase === 'zeile' ? `<b>${rest === 1 ? 'In einer Zeile steckt' : `In ${rest} Zeilen stecken`} noch Fehler.</b> Klicke eine fehlerhafte Zeile an.`
+        : z.phase === 'wort' ? `${mehr ? `<b>Richtig, in Zeile ${z.zeile + 1} steckt ein Fehler.</b> ` : ''}Klicke alle falschen Stellen an (nochmal klicken wählt wieder ab), dann „Prüfen“.`
+        : 'Verbessere die markierten Stellen, dann „Prüfen“.';
+      const zeile = (l, i) => {
+        const nr = mehr ? `<span class="af-znr">${i + 1}</span>` : '';
+        if (z.fertig[i]) return `<div class="af-vz fertig">${nr}<span class="af-vt">${l.map(x => x.lsg ? `<mark>${esc(x.neu)}</mark>` : esc(x.t)).join('')}</span></div>`;
+        if (z.zeile !== i){
+          const text = esc(l.map(x => x.t).join('')), aus = z.phase !== 'zeile' || z.zFalsch.includes(i) || !text.trim();
+          return aus ? `<div class="af-vz${z.zFalsch.includes(i) ? ' falsch' : ''}">${nr}<span class="af-vt">${text}</span></div>` : `<button type="button" class="af-vz wahl" data-vz="${i}" aria-label="Zeile ${i + 1}">${nr}<span class="af-vt">${text}</span></button>`;
+        }
+        return `<div class="af-vz aktiv">${nr}<span class="af-vt">` + l.map((x, j) => {
+          if (x.leer) return esc(x.t);
+          if (z.phase === 'wort') return `<button type="button" class="af-mw${z.sel.has(j) ? ' sel' : ''}${z.wFalsch.includes(j) ? ' falsch' : ''}" data-vw="${j}" aria-pressed="${z.sel.has(j)}">${esc(x.t)}</button>`;
+          if (!x.lsg) return esc(x.t);
+          const v = z.ein[j] != null ? z.ein[j] : x.t;
+          return `<input class="feld af-vin${z.eOk[j] === true ? ' richtig' : z.eOk[j] === false ? ' falsch' : ''}" data-f="${j}" value="${esc(v)}" size="${Math.max(4, Math.max(v.length, x.t.length) + 2)}" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="„${esc(x.t)}“ verbessern">`;
+        }).join('') + '</span></div>';
+      };
+      return (info ? `<div class="af-hinweis af-vinfo">${info}</div>` : '') + `<div class="af-verb${a.mono ? ' mono' : ''}">${z.zeilen.map(zeile).join('')}</div>`;
+    },
+    klick(ctx, t){
+      const z = ctx.z, vz = t.closest('[data-vz]'), vw = t.closest('[data-vw]');
+      if (z.geloest) return;
+      if (vz && z.phase === 'zeile'){
+        const i = +vz.dataset.vz;
+        if (z.zeilen[i].some(x => x.lsg)){ z.zeile = i; z.phase = 'wort'; z.sel = new Set(); z.wFalsch = []; z.zFalsch = []; z.fb = null; }
+        else { z.zFalsch.push(i); z.fb = {ok:false, t:`Zeile ${i + 1} ist in Ordnung. Sieh noch einmal genau hin.`}; }
+        return ctx.zeichne();
+      }
+      if (vw && z.phase === 'wort'){
+        const j = +vw.dataset.vw;
+        z.sel.has(j) ? z.sel.delete(j) : z.sel.add(j); z.wFalsch = []; z.fb = null; ctx.zeichne(); fokus(ctx, `[data-vw="${j}"]`);
+      }
+    },
+    pruefen(a, z){
+      const l = z.zeilen[z.zeile], soll = l.map((x, j) => x.lsg ? j : -1).filter(j => j >= 0);
+      if (z.phase === 'wort'){
+        if (!z.sel.size) return {ok:false, t:'Klicke zuerst die falschen Stellen an.'};
+        z.wFalsch = [...z.sel].filter(j => !l[j].lsg); z.wFalsch.forEach(j => z.sel.delete(j));
+        const k = z.sel.size;
+        if (k < soll.length || z.wFalsch.length) return {ok:false, t:`${k} von ${soll.length} ${soll.length === 1 ? 'Fehler' : 'Fehlern'} gefunden.${z.wFalsch.length ? ` ${z.wFalsch.length === 1 ? 'Eine markierte Stelle ist' : z.wFalsch.length + ' markierte Stellen sind'} in Ordnung (rot).` : ''}`};
+        z.phase = 'text'; z.fok = true; z.ein = {}; z.eOk = {}; soll.forEach(j => { z.ein[j] = l[j].t; });
+        return {gut:true, t:`✓ Gefunden. Verbessere jetzt ${soll.length === 1 ? 'die Stelle' : 'die Stellen'}.`};
+      }
+      if (z.phase !== 'text') return {ok:false, t:''};
+      soll.forEach(j => { z.eOk[j] = l[j].lsg.some(x => gleichText(x, z.ein[j] == null ? '' : z.ein[j], a.gross)); });
+      if (!soll.every(j => z.eOk[j])) return {ok:false, t:'Noch nicht richtig. Die rot markierten Stellen stimmen noch nicht.' + (a.h ? ' ' + a.h : '')};
+      soll.forEach(j => { l[j].neu = String(z.ein[j]).trim(); });
+      z.fertig[z.zeile] = true; z.zeile = null; z.phase = 'zeile'; z.sel = new Set(); z.zFalsch = [];
+      if (z.zeilen.some((x, i) => !z.fertig[i] && x.some(y => y.lsg))) return {gut:true, t:'✓ Zeile verbessert. Suche den nächsten Fehler.'};
+      return {ok:true, t:'✓ ' + (a.ok || 'Alle Fehler verbessert!')};
+    },
+    nach(el, a, z){ if (z.fok){ z.fok = false; const i = el.querySelector('.af-vin'); if (i){ i.focus({preventScroll:true}); i.select(); } } }
+  },
+  beschriften:{
+    zustand(a){
+      const richtig = a.punkte.map(p => p.t), sonst = [...new Set(a.extra || [])].filter(w => w && !richtig.includes(w));
+      const woerter = [...richtig, ...sonst];
+      return {woerter, platz:{}, fix:{}, ok:{}, weg:[], wahl:null, ord:mischen(nummern(woerter.length))};
+    },
+    legen:(z, i, zone) => TYPEN.luecken.legen(z, i, zone),
+    html(a, z){
+      const karte = i => `<span class="af-karte${z.fix[i] ? ' fix' : ''}${z.wahl === i ? ' gewaehlt' : ''}${z.weg.includes(i) ? ' weg' : ''}" data-karte="${i}" tabindex="0" role="button">${esc(z.woerter[i])}</span>`;
+      const frei = z.ord.filter(i => z.platz[i] == null);
+      return `<div class="af-pool af-bank" data-zone="">${frei.map(karte).join('') || '<span class="af-leer">Alle Begriffe sind verteilt.</span>'}</div>`
+        + `<div class="af-bild"><img src="${esc(a.bild)}" alt="${esc(a.alt || '')}" draggable="false">` + a.punkte.map((p, i) => {
+          const w = Object.keys(z.platz).find(k => z.platz[k] === 'L' + i);
+          return `<span class="af-zone af-punkt${z.ok[i] === true ? ' richtig' : ''}${w != null ? ' voll' : ''}" data-zone="L${i}" style="left:${+p.x}%;top:${+p.y}%" aria-label="Punkt ${i + 1}">${w != null ? karte(+w) : `<b>${i + 1}</b>`}</span>`;
+        }).join('') + '</div>';
+    },
+    pruefen:(a, z) => bankPruefen(a, z, a.punkte.map(p => p.t), 'Punkten', 'Ziehe zuerst Begriffe auf die Punkte im Bild.')
+  },
+  bloecke:{
+    zustand:() => ({reihe:[], fix:{}, weg:[], wahl:null}),
+    // Karten-Nummern: 0 … = Block im Vorrat, 1000 + Stelle = Block im Feld; Zonen: '' Vorrat, 'W' Feld (ans Ende), 'W<n>' vor Block n
+    legen(z, i, zone, a){
+      const ziel = zone === 'W' ? z.reihe.length : zone[0] === 'W' ? +zone.slice(1) : -1;
+      if (i < 1000){ if (ziel >= 0 && !(a.einmal && z.reihe.includes(i))) z.reihe.splice(ziel, 0, i); return; }
+      const j = i - 1000, x = z.reihe.splice(j, 1)[0];
+      if (ziel >= 0) z.reihe.splice(ziel > j ? ziel - 1 : ziel, 0, x);
+    },
+    html(a, z){
+      const frei = nummern(a.bloecke.length).filter(i => !(a.einmal && z.reihe.includes(i)));
+      return `<div class="af-pool af-bank af-bvorrat${a.mono ? ' mono' : ''}" data-zone="">${frei.map(i => `<span class="af-karte af-block" data-karte="${i}" tabindex="0" role="button">${esc(a.bloecke[i])}</span>`).join('') || '<span class="af-leer">Alle Blöcke sind verbaut.</span>'}</div>`
+        + `<div class="af-zone af-bfeld${a.senkrecht ? ' senkrecht' : ''}${a.mono ? ' mono' : ''}${z.geloest ? ' richtig' : ''}" data-zone="W">${a.start ? `<span class="af-bstart">${esc(a.start)}</span>` : ''}`
+        + (z.reihe.map((i, j) => `<span class="af-karte af-block${z.geloest ? ' fix' : ''}" data-karte="${1000 + j}" data-zone="W${j}" tabindex="0" role="button">${esc(a.bloecke[i])}</span>`).join('') || '<span class="af-leer">Ziehe Blöcke hierher oder tippe sie an.</span>') + '</div>'
+        + (z.geloest ? '' : '<div class="af-hinweis">Block antippen: ans Ende setzen bzw. wieder entfernen. Ziehen: an eine bestimmte Stelle.</div>');
+    },
+    klick(ctx, t){
+      const z = ctx.z, k = t.closest('[data-karte]'); if (!k || z.geloest) return;
+      const i = +k.dataset.karte;
+      legen(ctx, i, i < 1000 ? 'W' : ''); ctx.zeichne();
+    },
+    pruefen(a, z){
+      const ist = z.reihe.map(i => a.bloecke[i]), L = Array.isArray(a.loesungen) && a.loesungen.length ? a.loesungen : [a.loesung];
+      if (!ist.length) return {ok:false, t:'Baue zuerst etwas aus den Blöcken.'};
+      const gleich = l => l.length === ist.length && l.every((x, i) => x === ist[i]);
+      if (L.some(gleich) || (a.gleichwertig && formelGleich(ist.join(' '), L[0].join(' ')))) return {ok:true, t:'✓ ' + (a.ok || 'Richtig gebaut!')};
+      const vorn = Math.max(...L.map(l => { let n = 0; while (n < l.length && n < ist.length && l[n] === ist[n]) n++; return n; }));
+      return {ok:false, t:'Noch nicht richtig.' + (!a.gleichwertig && vorn ? ` ${vorn === 1 ? 'Der erste Block stimmt' : `Die ersten ${vorn} Blöcke stimmen`}.` : '') + (a.h ? ' ' + a.h : '')};
+    }
+  },
+  karteikarten:{
+    zustand:a => ({stapel:a.mischen === false ? nummern(a.karten.length) : mischen(nummern(a.karten.length)), offen:false, gesehen:{}, sofort:0, ende:false}),
+    sofort:() => true,
+    html(a, z){
+      const n = a.karten.length;
+      if (z.ende) return `<div class="af-kk-ende"><button class="btn klein" type="button" data-kk="neu">↻ Noch einmal</button></div>`;
+      const k = a.karten[z.stapel[0]];
+      return `<div class="af-kk-info">Noch ${z.stapel.length} von ${n} ${n === 1 ? 'Karte' : 'Karten'}</div>`
+        + `<div class="af-kk${z.offen ? ' offen' : ''}" data-kk="dreh" tabindex="0" role="button" aria-label="Karte umdrehen"><span class="af-sk">${z.offen ? 'Rückseite' : 'Vorderseite'}</span><div class="af-kk-text">${z.offen ? k.r : k.v}</div></div>`
+        + (z.offen ? '<div class="af-knoepfe af-kk-knoepfe"><button class="btn" type="button" data-kk="nein">✗ Nicht gewusst</button><button class="btn haupt" type="button" data-kk="ja">✓ Gewusst</button></div>'
+          : '<div class="af-knoepfe af-kk-knoepfe"><button class="btn haupt" type="button" data-kk="dreh">Umdrehen</button></div>');
+    },
+    klick(ctx, t){
+      const {a, z} = ctx, b = t.closest('[data-kk]'); if (!b) return;
+      const tun = b.dataset.kk;
+      if (tun === 'neu'){ Object.assign(z, TYPEN.karteikarten.zustand(a), {fb:null}); return ctx.zeichne(); }
+      if (tun === 'dreh'){ z.offen = !z.offen; ctx.zeichne(); return fokus(ctx, z.offen ? '[data-kk="ja"]' : '[data-kk="dreh"].btn'); }
+      const i = z.stapel.shift(), erst = !z.gesehen[i];
+      z.gesehen[i] = true; z.offen = false;
+      if (tun === 'ja'){ if (erst) z.sofort++; } else z.stapel.splice(Math.min(z.stapel.length, 3), 0, i);   // nicht gewusst: kommt nach drei Karten wieder
+      if (z.stapel.length){ ctx.zeichne(); return fokus(ctx, '[data-kk="dreh"].btn'); }
+      z.ende = true;
+      loese(ctx, `✓ ${a.ok || 'Geschafft!'} Alle ${a.karten.length} Karten gewusst, ${z.sofort} davon beim ersten Mal.`);
+    },
+    taste(ctx, e){ if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('.af-kk')){ e.preventDefault(); e.target.click(); return true; } },
+    pruefen:() => ({ok:false, t:''})
+  },
+  kreuzwort:{
+    zustand:a => ({L:kwLayout(a.woerter), ein:{}, ok:{}, quer:true, akt:null}),
+    html(a, z){
+      const L = z.L;
+      let g = '';
+      for (let r = 0; r < L.zeilen; r++) for (let c = 0; c < L.spalten; c++){
+        const key = r + ',' + c, x = L.zellen[key];
+        g += !x ? '<span class="af-kwx"></span>' : `<span class="af-kwz">${x.nr ? `<i>${x.nr}</i>` : ''}<input class="af-kwi${z.ok[key] === true ? ' richtig' : z.ok[key] === false ? ' falsch' : ''}" data-kw="${key}" value="${esc(z.ein[key] || '')}" maxlength="2" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" aria-label="Zeile ${r + 1}, Spalte ${c + 1}"${z.geloest ? ' readonly' : ''}></span>`;
+      }
+      const liste = quer => L.eintraege.map((e, j) => e.quer === quer ? `<li data-kwe="${j}"><b>${e.nr}</b> ${e.t} <small>(${e.w.length})</small></li>` : '').join('');
+      return `<div class="af-kw"><div class="af-kw-gitter" style="--kc:${L.spalten}">${g}</div><div class="af-kw-listen">`
+        + [[true, 'Waagrecht →'], [false, 'Senkrecht ↓']].map(([q, t]) => liste(q) ? `<div><div class="af-sk">${t}</div><ul>${liste(q)}</ul></div>` : '').join('') + '</div></div>'
+        + (z.geloest ? '' : '<div class="af-hinweis">Umlaute als Ä, Ö, Ü; ß als SS. Leertaste oder nochmal antippen wechselt die Schreibrichtung.</div>');
+    },
+    klick(ctx, t){
+      const z = ctx.z, i = t.closest('.af-kwi'), e = t.closest('[data-kwe]');
+      if (e){ const x = z.L.eintraege[+e.dataset.kwe]; return kwGehe(ctx, x.zellen[0], x.quer); }
+      if (!i) return;
+      const c = z.L.zellen[i.dataset.kw];
+      kwGehe(ctx, i.dataset.kw, z.akt === i.dataset.kw && c.q != null && c.s != null ? !z.quer : z.quer);
+    },
+    eingabe(ctx, t){
+      const key = t.dataset.kw, z = ctx.z; if (key == null) return false;
+      const v = (String(t.value).toUpperCase().replace(/ß/g, 'S').match(/[A-ZÄÖÜ]/g) || []).pop() || '';
+      t.value = v; z.ein[key] = v; delete z.ok[key]; z.fb = null; t.classList.remove('richtig', 'falsch');
+      if (z.akt !== key) kwGehe(ctx, key);
+      if (v) kwGehe(ctx, kwNeben(key, z.quer, 1));
+      return true;
+    },
+    taste(ctx, e){
+      const t = e.target, z = ctx.z, key = t.dataset && t.dataset.kw; if (key == null || z.geloest) return false;
+      const pfeil = {ArrowLeft:[true, -1], ArrowRight:[true, 1], ArrowUp:[false, -1], ArrowDown:[false, 1]}[e.key];
+      if (pfeil){ e.preventDefault(); const n = kwNeben(key, pfeil[0], pfeil[1]); if (z.L.zellen[n]) kwGehe(ctx, n, pfeil[0]); return true; }
+      if (e.key === ' '){ e.preventDefault(); kwGehe(ctx, key, !z.quer); return true; }
+      if (e.key === 'Backspace' && !t.value){
+        e.preventDefault(); const n = kwNeben(key, z.quer, -1);
+        if (z.L.zellen[n]){ z.ein[n] = ''; delete z.ok[n]; const i = ctx.el.querySelector(`.af-kwi[data-kw="${n}"]`); if (i){ i.value = ''; i.classList.remove('richtig', 'falsch'); } kwGehe(ctx, n); }
+        return true;
+      }
+      return false;
+    },
+    pruefen(a, z){
+      const Z = z.L.zellen, E = z.L.eintraege;
+      let leer = 0;
+      Object.keys(Z).forEach(k => { if (!z.ein[k]){ leer++; delete z.ok[k]; } else z.ok[k] = z.ein[k] === Z[k].b; });
+      const gut = E.filter(e => e.zellen.every(k => z.ok[k] === true)).length;
+      if (gut === E.length) return {ok:true, t:'✓ ' + (a.ok || 'Das Rätsel ist gelöst!')};
+      const falsch = Object.keys(Z).filter(k => z.ok[k] === false).length;
+      return {ok:false, t:`${gut} von ${E.length} Wörtern richtig.${falsch ? ` ${falsch} ${falsch === 1 ? 'Buchstabe stimmt' : 'Buchstaben stimmen'} nicht (rot).` : ''}${leer ? ` ${leer} ${leer === 1 ? 'Feld ist' : 'Felder sind'} noch leer.` : ''}`};
+    }
+  }
+});
+
 /* ---------- Lern-Chat: Ablauf ---------- */
 const textVon = m => typeof m === 'string' ? m : m.bot;
 function chatSage(z, html, art, dann){
@@ -1779,18 +2208,27 @@ function chatWeiter(z, a){
   const m = a.nachrichten[z.i];
   chatSage(z, textVon(m), null, () => {
     if (typeof m === 'object' && (m.antworten || m.zahl || m.freitext)){ z.warte = z.i; z.ctx.zeichne(); return; }
-    z.i++; z.ctx.zeichne(); chatWeiter(z, a);
+    z.i = chatZiel(a, m, z.i); z.ctx.zeichne(); chatWeiter(z, a);
   });
+}
+// Szenario: nächste Nachricht nach m (Stelle i) – ende:true beendet, weiter:'id' springt zur Nachricht mit dieser id
+function chatZiel(a, m, i, x){
+  if (x && x.ende || (m && typeof m === 'object' && m.ende && !(x && x.weiter != null))) return a.nachrichten.length;
+  const id = x && x.weiter != null ? x.weiter : m && typeof m === 'object' ? m.weiter : null;
+  const j = id == null ? -1 : a.nachrichten.findIndex(n => n && typeof n === 'object' && n.id === id);
+  return j >= 0 ? j : i + 1;
 }
 function chatAntwort(ctx, wert, j){
   const {a, z} = ctx, q = a.nachrichten[z.warte];
   if (!q) return;
-  let ok, text, r;
-  if (q.antworten){ const x = q.antworten[j]; ok = !!x.ok; text = x.t; r = x.r; }
+  let ok, text, r, x = null;
+  const wahl = !!q.antworten && !q.antworten.some(y => y.ok);   // Entscheidung ohne richtig/falsch (Szenario)
+  if (q.antworten){ x = q.antworten[j]; ok = !!x.ok; text = x.t; r = x.r; }
   else if (q.zahl){ if (!String(wert).trim()) return; ok = Math.abs(zahl(wert) - q.zahl.l) <= (q.zahl.tol == null ? 0.005 : q.zahl.tol); text = wert + (q.zahl.e && !/€|%/.test(wert) ? ' ' + q.zahl.e : ''); }
   else { if (!String(wert).trim()) return; const f = finde(q.freitext.antworten, wert); ok = !!f; text = wert; if (f && f.fast) r = (q.r || 'Richtig!') + ` (Schreibweise: „${esc(f.wort)}“)`; }
+  z.log.push({wer:'ich', text}); z.i = chatZiel(a, q, z.warte, x); z.warte = null;
+  if (wahl) return r ? chatSage(z, r, null, () => chatWeiter(z, a)) : chatWeiter(z, a);
   z.fragen++; if (ok) z.punkte++;
-  z.log.push({wer:'ich', text}); z.warte = null; z.i++;
   chatSage(z, r || (ok ? q.r || '👍 Richtig!' : q.rFalsch || 'Das stimmt leider nicht.'), ok ? 'ok' : 'falsch', () => chatWeiter(z, a));
 }
 
@@ -1818,7 +2256,7 @@ function baue(el, a, opt){
 }
 function pruefe(ctx){
   const {a, z, typ, opt} = ctx, r = typ.pruefen(a, z);
-  z.fb = {ok:r.ok, t:r.t};
+  z.fb = r.t ? {ok:r.ok || !!r.gut, t:r.t} : null;   // gut: richtiger Zwischenschritt, noch nicht gelöst
   const neu = r.ok && !z.geloest;
   if (neu) z.geloest = true;
   ctx.zeichne();
@@ -1852,6 +2290,7 @@ document.addEventListener('click', e => {
   const ctx = ctxVon(e.target); if (!ctx || zieht) return;
   const {a, z} = ctx, t = e.target;
   if (t.closest('.af-pruefen')) return pruefe(ctx);
+  if (ctx.typ.klick) return ctx.typ.klick(ctx, t);
   if (a.typ === 'chat'){
     const c = t.closest('[data-ca]');
     if (c) return chatAntwort(ctx, null, +c.dataset.ca);
@@ -1876,11 +2315,12 @@ document.addEventListener('click', e => {
     z.geprueft = false; z.fb = null;
     return ctx.typ.sofort(a) ? pruefe(ctx) : ctx.zeichne();
   }
-  if (a.typ === 'zuordnen' || (a.typ === 'luecken' && a.ziehen)){
+  const bank = (a.typ === 'luecken' && a.ziehen) || a.typ === 'beschriften';   // Wortbank: höchstens ein Wort je Lücke bzw. Punkt
+  if (a.typ === 'zuordnen' || bank){
     const k = t.closest('[data-karte]'), zo = t.closest('[data-zone]');
-    // Lückentext: Wort in einer Lücke antippen (nichts gewählt) → zurück in die Wortbank
-    if (k && a.typ === 'luecken' && z.wahl == null && z.platz[+k.dataset.karte] != null && !z.fix[+k.dataset.karte]){ legen(ctx, +k.dataset.karte, ''); return ctx.zeichne(); }
-    const inLuecke = k && a.typ === 'luecken' && z.platz[+k.dataset.karte] != null && z.wahl != null && z.wahl !== +k.dataset.karte;
+    // Wortbank: Wort in einer Lücke antippen (nichts gewählt) → zurück in die Wortbank
+    if (k && bank && z.wahl == null && z.platz[+k.dataset.karte] != null && !z.fix[+k.dataset.karte]){ legen(ctx, +k.dataset.karte, ''); return ctx.zeichne(); }
+    const inLuecke = k && bank && z.platz[+k.dataset.karte] != null && z.wahl != null && z.wahl !== +k.dataset.karte;
     if (k && !z.fix[+k.dataset.karte] && !inLuecke){ z.wahl = z.wahl === +k.dataset.karte ? null : +k.dataset.karte; z.weg = []; return ctx.zeichne(); }
     if (zo && z.wahl != null){ legen(ctx, z.wahl, zo.dataset.zone); z.wahl = null; return ctx.zeichne(); }
   }
@@ -1895,6 +2335,7 @@ document.addEventListener('click', e => {
 document.addEventListener('input', e => {
   const ctx = ctxVon(e.target); if (!ctx) return;
   const t = e.target, d = t.dataset;
+  if (ctx.typ.eingabe && ctx.typ.eingabe(ctx, t)) return;
   if (d.f != null) ctx.z.ein[d.f] = t.value;
   else if (d.seite) ctx.z[d.seite][+d.i][d.w] = t.value;
 });
@@ -1904,8 +2345,9 @@ document.addEventListener('change', e => {
 });
 document.addEventListener('keydown', e => {
   if (e.target.matches && e.target.matches('.af-konto')) return kwTaste(e);
-  if (e.key !== 'Enter') return;
   const ctx = ctxVon(e.target); if (!ctx) return;
+  if (ctx.typ.taste && ctx.typ.taste(ctx, e)) return;
+  if (e.key !== 'Enter') return;
   if (e.target.matches('.af-chattext')){ e.preventDefault(); ctx.el.dataset.fokus = '1'; chatAntwort(ctx, e.target.value); }
   else if (e.target.matches('input')){ e.preventDefault(); pruefe(ctx); }
   else if (e.target.matches('[data-karte]')){ e.preventDefault(); e.target.click(); }
@@ -1915,7 +2357,7 @@ document.addEventListener('keydown', e => {
 let zieht = false, zug = null;
 function legen(ctx, i, zone){
   const z = ctx.z; if (z.fix[i]) return;
-  if (ctx.typ.legen) ctx.typ.legen(z, i, zone); else if (!zone) delete z.platz[i]; else z.platz[i] = zone;
+  if (ctx.typ.legen) ctx.typ.legen(z, i, zone, ctx.a); else if (!zone) delete z.platz[i]; else z.platz[i] = zone;
   z.weg = []; z.fb = null;
 }
 document.addEventListener('pointerdown', e => {
@@ -2298,7 +2740,7 @@ function training(cfg){
   return {stop:halt, start:starte};
 }
 
-window.Aufgaben = {baue, sequenz, endlos, training, mc, mehrfach, finde, zahl, eur, mischen, esc, bsText, TYPEN};
+window.Aufgaben = {baue, sequenz, endlos, training, mc, mehrfach, finde, zahl, eur, mischen, esc, bsText, TYPEN, EXPERIMENTELL};
 })();
 
 </script>

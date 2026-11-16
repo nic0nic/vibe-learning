@@ -311,7 +311,7 @@
   });
 
   /* ---------- Lern-Chat ---------- */
-  const nArt = m => typeof m === 'string' ? 'text' : m.zahl ? 'zahl' : m.freitext ? 'freitext' : 'knoepfe';
+  const nArt = m => typeof m === 'string' ? 'text' : m.zahl ? 'zahl' : m.freitext ? 'freitext' : m.antworten ? 'knoepfe' : 'marke';   // marke: Text als Objekt {bot, id, weiter, ende} (Szenario)
   B.typ('chat', {
     name: 'Lern-Chat', symbol: '💬',
     neu: () => ({typ: 'chat', name: 'Bot', bild: '🤖', nachrichten: ['Hallo! Ich erkläre dir heute …', {bot: 'Was meinst du?', antworten: [{t: 'Antwort A', ok: true, r: 'Genau!'}, {t: 'Antwort B', r: 'Leider nein.'}]}]}),
@@ -319,34 +319,60 @@
     form(a, H) {
       const msg = (m, i) => {
         const art = nArt(m), p = `nachrichten.${i}`;
-        const seg = ['text', 'knoepfe', 'zahl', 'freitext'].map(x => `<button type="button" class="btn klein${x === art ? ' on' : ''}" data-tun="art" data-i="${i}" data-m="${x}">${{text: 'Text', knoepfe: 'Knöpfe', zahl: 'Zahl', freitext: 'Begriff'}[x]}</button>`).join('');
+        const seg = ['text', 'knoepfe', 'zahl', 'freitext'].map(x => `<button type="button" class="btn klein${x === art ? ' on' : ''}" data-tun="art" data-i="${i}" data-m="${x}">${{text: 'Text', knoepfe: 'Knöpfe', zahl: 'Zahl', freitext: 'Begriff'}[x]}</button>`).join('').replace('data-m="text"', art === 'marke' ? 'data-m="text" aria-pressed="true" style="outline:2px solid var(--accent)"' : 'data-m="text"');
         let innen = '';
         if (art === 'text') innen = H.feld(p, '', {art: 'area', pflicht: true, ph: 'Text des Bots', zeilen: 2});
+        else if (art === 'marke') innen = H.feld(`${p}.bot`, '', {art: 'area', pflicht: true, ph: 'Text des Bots', zeilen: 2});
         else {
           innen = H.feld(`${p}.bot`, '', {art: 'area', pflicht: true, ph: 'Frage des Bots', zeilen: 2});
           if (art === 'knoepfe') innen += (m.antworten || []).map((x, j) => `<div class="reihe"><label class="hk" title="richtige Antwort"><input type="checkbox" data-tun="aok" data-i="${i}" data-j="${j}"${x.ok ? ' checked' : ''}> ok</label>${H.feld(`${p}.antworten.${j}.t`, '', {pflicht: true, ph: 'Knopf'})}${H.feld(`${p}.antworten.${j}.r`, '', {ph: 'Antwort des Bots'})}${weg('aweg', {i, j})}</div>`).join('') + plus('aplus', 'Knopf', {i});
           if (art === 'zahl') innen += `<div class="reihe">${H.feld(`${p}.zahl.l`, '', {art: 'zahl', pflicht: true, ph: 'Lösung'})}${H.feld(`${p}.zahl.e`, '', {ph: 'Einheit'})}${H.feld(`${p}.zahl.tol`, '', {art: 'zahl', ph: 'Toleranz'})}</div>`;
           if (art === 'freitext') innen += H.feld(`${p}.freitext.antworten`, '', {art: 'gruppen', pflicht: true, ph: 'je Zeile ein Begriff, Schreibweisen mit Komma', zeilen: 2});
           if (art !== 'knoepfe') innen += H.feld(`${p}.r`, '', {ph: 'Antwort des Bots bei richtig'});
-          innen += H.feld(`${p}.rFalsch`, '', {ph: 'Erklärung bei falsch'});
+          if (art !== 'knoepfe' || m.antworten.some(x => x.ok)) innen += H.feld(`${p}.rFalsch`, '', {ph: 'Erklärung bei falsch'});
+          else innen += '<p class="hinweis">Kein Knopf ist „ok“: Das ist eine Entscheidung ohne richtig/falsch (zählt nicht als Frage).</p>';
         }
-        return H.zeile('nachrichten', i, `<div class="spalte"><div class="reihe"><div class="seg">${seg}</div>${weg('mweg', {i})}</div>${innen}</div>`);
+        // Szenario: Sprungmarke und Sprünge (nur mit Schalter „Szenario“ oder wenn schon benutzt)
+        if (sz) {
+          if (art === 'knoepfe') innen += (m.antworten || []).map((x, j) => `<div class="reihe"><span class="hinweis">„${H.esc(x.t || '?')}“ →</span>${zielWahl(`${p}.antworten.${j}.weiter`, x.weiter, 'weiter wie die Frage')}</div>`).join('');
+          innen += `<div class="reihe">${H.feld(`${p}.id`, '', {ph: 'Marke (Sprungziel), z. B. kredit', neu: true})}<span class="hinweis">danach →</span>${zielWahl(`${p}.weiter`, m.weiter, 'nächste Nachricht')}
+            <label class="hk"><input type="checkbox" data-tun="ende" data-i="${i}"${m.ende ? ' checked' : ''}> Ende</label></div>`;
+        }
+        return H.zeile('nachrichten', i, `<div class="spalte"><div class="reihe"><div class="seg">${seg}</div>${sz && art === 'text' ? H.knopf('marke', '⚑ Marke / Sprung', {i}, {titel: 'Diese Nachricht bekommt eine Marke, einen Sprung oder beendet den Chat'}) : ''}${weg('mweg', {i})}</div>${innen}</div>`);
       };
+      const ids = a.nachrichten.filter(m => m && typeof m === 'object' && m.id).map(m => m.id);
+      const sz = B.szenarioAn || a.nachrichten.some(m => m && typeof m === 'object' && (m.id != null || m.weiter != null || m.ende || (m.antworten || []).some(x => x.weiter != null || x.ende)));
+      const zielWahl = (pfad, wert, leer) => `<select class="feld" data-k="${pfad}" data-art="text" aria-label="weiter zu"><option value="">${leer}</option>${ids.map(id => `<option${id === wert ? ' selected' : ''}>${H.esc(id)}</option>`).join('')}${wert != null && !ids.includes(wert) ? `<option selected>${H.esc(wert)}</option>` : ''}</select>`;
       return `<div class="reihe">${H.feld('name', 'Name des Bots', {pflicht: true})}${H.feld('bild', 'Bild (Emoji)')}</div>
+        <div class="schalterleiste"><label class="schalter" title="Verzweigter Chat: Antworten springen zu einer Nachricht mit Marke, Nachrichten können den Chat beenden"><input type="checkbox" data-tun="szenario"${sz ? ' checked' : ''}><span></span> Szenario (Verzweigungen)</label></div>
+        ${sz ? '<p class="hinweis">Nachrichten eine <b>Marke</b> geben und bei Antworten oder Nachrichten „weiter zu“ dieser Marke wählen. Ohne Angabe geht es mit der nächsten Nachricht weiter. Knöpfe ohne „ok“ sind eine Entscheidung.</p>' : ''}
         <label class="klein">Nachrichten (⠿ ziehen zum Sortieren)</label>${a.nachrichten.map(msg).join('')}${plus('mplus', 'Nachricht')}`;
     },
     tun: {
       art(a, d) {
         const i = +d.i, m = a.nachrichten[i], text = typeof m === 'string' ? m : m.bot;
-        if (d.m === 'text') a.nachrichten[i] = text;
-        else if (d.m === 'knoepfe') a.nachrichten[i] = {bot: text, antworten: [{t: 'Ja', ok: true}, {t: 'Nein'}]};
-        else if (d.m === 'zahl') a.nachrichten[i] = {bot: text, zahl: {l: 0}};
-        else a.nachrichten[i] = {bot: text, freitext: {antworten: [['Begriff']]}};
+        const sz = {}; if (m && typeof m === 'object') ['id', 'weiter', 'ende'].forEach(k => { if (m[k] != null) sz[k] = m[k]; });   // Szenario: Marke und Sprung behalten
+        if (d.m === 'text') a.nachrichten[i] = Object.keys(sz).length ? Object.assign({bot: text}, sz) : text;
+        else if (d.m === 'knoepfe') a.nachrichten[i] = Object.assign({bot: text, antworten: [{t: 'Ja', ok: true}, {t: 'Nein'}]}, sz);
+        else if (d.m === 'zahl') a.nachrichten[i] = Object.assign({bot: text, zahl: {l: 0}}, sz);
+        else a.nachrichten[i] = Object.assign({bot: text, freitext: {antworten: [['Begriff']]}}, sz);
       },
       aok(a, d) { const x = a.nachrichten[+d.i].antworten[+d.j]; if (x.ok) delete x.ok; else x.ok = true; },
       aplus(a, d) { a.nachrichten[+d.i].antworten.push({t: ''}); },
       aweg(a, d) { a.nachrichten[+d.i].antworten.splice(+d.j, 1); },
       mplus(a) { a.nachrichten.push(''); },
+      // Szenario aus: alle Marken, Sprünge und Enden entfernen (reine Text-Objekte werden wieder Text)
+      szenario(a) {
+        const an = B.szenarioAn || a.nachrichten.some(m => m && typeof m === 'object' && (m.id != null || m.weiter != null || m.ende || (m.antworten || []).some(x => x.weiter != null || x.ende)));
+        B.szenarioAn = !an;
+        if (an) a.nachrichten = a.nachrichten.map(m => {
+          if (!m || typeof m !== 'object') return m;
+          delete m.id; delete m.weiter; delete m.ende; (m.antworten || []).forEach(x => { delete x.weiter; delete x.ende; });
+          return m.antworten || m.zahl || m.freitext ? m : m.bot;
+        });
+      },
+      marke(a, d) { const i = +d.i; if (typeof a.nachrichten[i] === 'string') a.nachrichten[i] = {bot: a.nachrichten[i]}; },
+      ende(a, d) { const m = a.nachrichten[+d.i]; if (m.ende) delete m.ende; else m.ende = true; },
       mweg(a, d) { a.nachrichten.splice(+d.i, 1); }
     }
   });

@@ -26,6 +26,21 @@ Gesammelt im Thread „Aufbau der Seite“. Umgesetzt wird erst, wenn die Lehrkr
 64. **Töne bei Antworten** (aus Nr. 62, Design Musik)
     Eigene Option für alle Designs (Standard aus, Web Audio): kurzer Ton bei richtig/falsch. Braucht einen Schalter auf der Seite (auch in Einzeldateien und ByCS), deshalb getrennt von den Designs.
 
+70. **Experimentelle Aufgabentypen und Szenario** (gewünscht 16.11., Branch `beta`, noch nicht auf `main`)
+    Acht neue Typen in `lib/aufgaben.js`, als experimentell gekennzeichnet (`Aufgaben.EXPERIMENTELL`, `Seite.EXPERIMENTELL`, Kopfkommentar, im Baukasten eigener Abschnitt „Experimentell (β)“ und Zusatz „(experimentell)“ am Namen; für Schüler ohne Kennzeichnung):
+    - `reihenfolge` (Karten ordnen: ziehen, ▲ ▼, antippen; `mono` für Codezeilen)
+    - `offen` (freie Antwort, Musterlösung, Kriterien zum Abhaken; nichts wird bewertet oder gespeichert)
+    - `markieren` (Wörter oder Zeilen anklicken, gesucht in `[[…]]`)
+    - `verbessern` (wie die Fehlersuche in HTML/Python: Zeile anklicken → falsche Stellen anklicken, nochmal = abwählen → verbessern; Fehler als `[[falsch|richtig]]`)
+    - `beschriften` (Begriffe auf nummerierte Punkte eines Bildes ziehen; Bild als data:-Adresse eingebettet, höchstens 600 kB, zählt nicht zu den 150 kB)
+    - `bloecke` (Blöcke zu Formel oder Ablauf ziehen; `gleichwertig` vergleicht Formeln rechnerisch über lib/formel.js)
+    - `karteikarten` (umdrehen, gewusst / nicht gewusst, Wiederholung)
+    - `kreuzwort` (Gitter entsteht aus der Wortliste, immer gleich)
+    Nicht experimentell: **Szenario** als Erweiterung von `chat` (`id`, `weiter`, `ende`, Entscheidungen ohne richtig/falsch); alte Chats laufen unverändert, im Baukasten Schalter „Szenario (Verzweigungen)“.
+    Dazu: `lib/seite.js` prüft alle Typen (reiner Text darf „<p>“ enthalten: `Seite.ROH`), `vorlage-typen-beta.js` (Formulare, Bild hochladen und Punkte anklicken), `pb_hooks/einreichen.pb.js` (Größe mit Bildern), Skill `vibe-learning-seite-erstellen` im Branch `beta` (typen.md, pruefe.py). Neue Haken für Typen in aufgaben.js: `klick`, `eingabe`, `taste`. Beispiel mit allen Typen: `notizen/beta-typen-beispiel.json` (in „Übung erstellen“ → JSON einfügen).
+    Getestet in Chromium (Einzeldatei aus dem Beispiel): jeder Typ falsch und richtig gelöst, Ziehen und Antippen, Szenario beide Zweige, alter Chat, alte Typen (Lücken mit Wortbank, Zuordnen, MC, Zahlen, Freitext), Baukasten (alle Formulare, neue Bausteine, Bild hochladen, Szenario an/aus), Handybreite dunkel ohne Querscrollen. Nicht getestet: echter Finger/Touch, Firefox/Safari, PocketBase (Speichern, Einreichen mit Bild), ByCS.
+    **Offen:** Rückmeldung aus dem Unterricht; danach je Typ entscheiden, ob er nach `main` kommt. Bekannte Grenzen: lange Listen zum Ziehen erschweren am Handy das Scrollen; Kreuzworträtsel am Handy mit Bildschirmtastatur ungetestet; `verbessern` trennt Stellen nur an Leerzeichen und Klammern.
+
 ## Erledigt
 
 ### Version vom 14.11.

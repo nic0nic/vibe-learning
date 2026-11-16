@@ -19,9 +19,14 @@
  *     Wörterbuch: {"sprachen": ["Englisch", "Deutsch"], "richtung": "a-b" | "b-a" | "beide", "tippfehler": false,
  *       "eintraege": [["house", "Haus|Gebäude"], …]}   (| = mehrere richtige Antworten)
  *   Altes Format {"typ": …, "danach": {…}} wandelt normalisiere in eine Kombi um (Seite.ohneDanach).
+ *   Experimentelle Typen (Seite.EXPERIMENTELL, Format in lib/aufgaben.js): reihenfolge, offen, markieren, verbessern,
+ *     beschriften, bloecke, karteikarten, kreuzwort. Reiner Text (darf „<p>“ enthalten, wird nicht als HTML geprüft): Seite.ROH.
+ *     "bild" (beschriften) nur eingebettet als data:image/png|jpeg|gif|webp|svg+xml;base64,… (höchstens Seite.MAX_BILD Zeichen,
+ *     zählt nicht zu den 150 kB).
  *
  * API
  *   Seite.TYPEN                     Aufgabentypen mit Pflichtfeldern (muss zu lib/aufgaben.js passen)
+ *   Seite.EXPERIMENTELL             Typen, deren Format sich noch ändern kann (wie Aufgaben.EXPERIMENTELL)
  *   Seite.normalisiere(json)        → {titel, kurztext, design, schritte} (Schritte bekommen id und kurz, danach → kombi)
  *   Seite.ohneDanach(aufgabe)       → Aufgabe mit danach-Kette als {"typ": "kombi", "teile": […]} (sonst unverändert)
  *   Seite.pruefe(json)              → Liste von Fehlern (leer = in Ordnung), deutsch, mit Fundstelle
@@ -41,8 +46,16 @@
   'use strict';
   const TYPEN = {
     mc: ['options', 'correct'], zahlen: ['felder'], luecken: ['text'], zuordnen: ['felder', 'karten'],
-    freitext: ['felder', 'antworten'], chat: ['nachrichten'], buchungssatz: ['konten', 'soll', 'haben'], kombi: ['teile'], tabelle: ['spalten', 'zeilen'], wahrheit: ['spalten', 'zeilen']
+    freitext: ['felder', 'antworten'], chat: ['nachrichten'], buchungssatz: ['konten', 'soll', 'haben'], kombi: ['teile'], tabelle: ['spalten', 'zeilen'], wahrheit: ['spalten', 'zeilen'],
+    reihenfolge: ['karten'], offen: ['muster'], markieren: ['text'], verbessern: ['text'], beschriften: ['bild', 'punkte'], bloecke: ['bloecke'], karteikarten: ['karten'], kreuzwort: ['woerter']
   };
+  const EXPERIMENTELL = ['reihenfolge', 'offen', 'markieren', 'verbessern', 'beschriften', 'bloecke', 'karteikarten', 'kreuzwort'];
+  // Felder, die als reiner Text angezeigt werden (kein HTML): dürfen „<p>“ enthalten
+  const ROH = {markieren: ['text'], verbessern: ['text'], bloecke: ['bloecke', 'loesung', 'loesungen', 'start'], beschriften: ['bild', 'punkte', 'extra', 'alt'],
+    kreuzwort: [], reihenfolge: a => a.mono ? ['karten'] : []};
+  const rohVon = x => { const r = x && typeof x.typ === 'string' && Object.prototype.hasOwnProperty.call(ROH, x.typ) ? ROH[x.typ] : null; return typeof r === 'function' ? r(x) : r || []; };
+  const MAX_BILD = 600000, BILD = /^data:image\/(?:png|jpeg|gif|webp|svg\+xml);base64,[A-Za-z0-9+\/]+=*$/;
+  const kwWort = w => String(w == null ? '' : w).toUpperCase().replace(/[^A-ZÄÖÜ]/g, '');
   const MAX = 150000;
   // Erlaubtliste für HTML in eingereichten Texten (alles andere wird abgelehnt, auch unvollständige Tags)
   const ERLAUBT = ['p', 'br', 'b', 'strong', 'i', 'em', 'u', 's', 'sub', 'sup', 'small', 'mark', 'span', 'div', 'hr',
@@ -67,7 +80,7 @@
   function alleTexte(x, wo, f) {
     if (typeof x === 'string') { htmlFehler(x).forEach(e => f.push(`${wo}: ${e}`)); return; }
     if (Array.isArray(x)) x.forEach((y, i) => alleTexte(y, wo, f));
-    else if (x && typeof x === 'object') Object.keys(x).forEach(k => alleTexte(x[k], wo, f));
+    else if (x && typeof x === 'object') { const roh = rohVon(x); Object.keys(x).forEach(k => { if (!roh.includes(k)) alleTexte(x[k], wo, f); }); }
   }
   const istText = v => typeof v === 'string' && v.trim() !== '';
   // Rechenausdrücke der Trainings-Szenarien (lib/formel.js); fehlt sie (z. B. im Hook), werden Formeln nicht geprüft
@@ -127,8 +140,15 @@
     if (a.typ === 'chat' && Array.isArray(a.nachrichten)) a.nachrichten.forEach((m, i) => {
       if (typeof m === 'string') return;
       if (!m || !istText(m.bot)) return f.push(`${wo}, Nachricht ${i + 1}: Text oder {"bot": …} erwartet`);
-      if (m.antworten && !m.antworten.some(x => x && x.ok)) f.push(`${wo}, Nachricht ${i + 1}: keine Antwort mit "ok": true`);
-      if (m.zahl && typeof m.zahl.l !== 'number') f.push(`${wo}, Nachricht ${i + 1}: „zahl“ braucht „l“ (Lösung als Zahl)`);
+      const ids = a.nachrichten.filter(x => x && typeof x === 'object' && x.id != null).map(x => x.id), wn = `${wo}, Nachricht ${i + 1}`;
+      const ziel = (x, was) => { if (x.weiter != null && !ids.includes(x.weiter)) f.push(`${wn}${was}: „weiter“ zeigt auf „${x.weiter}“, aber keine Nachricht hat diese „id“`); };
+      if (m.antworten && !Array.isArray(m.antworten)) return f.push(`${wn}: „antworten“ muss eine Liste sein`);
+      // Szenario: Frage ohne richtige Antwort ist eine Entscheidung (Knopf mit „weiter“/„ende“ oder "entscheidung": true)
+      if (m.antworten && !m.antworten.some(x => x && x.ok) && !m.entscheidung && !m.antworten.some(x => x && (x.weiter != null || x.ende))) f.push(`${wn}: keine Antwort mit "ok": true (für eine Entscheidung ohne richtig/falsch: "entscheidung": true oder „weiter“ an den Antworten)`);
+      if (m.zahl && typeof m.zahl.l !== 'number') f.push(`${wn}: „zahl“ braucht „l“ (Lösung als Zahl)`);
+      if (m.id != null && (!istText(m.id) || ids.filter(x => x === m.id).length > 1)) f.push(`${wn}: „id“ muss ein Text sein und darf nur einmal vorkommen`);
+      ziel(m, '');
+      (m.antworten || []).forEach((x, k) => { if (x && typeof x === 'object') ziel(x, `, Antwort ${k + 1}`); });
     });
     if (a.typ === 'buchungssatz' && Array.isArray(a.soll) && Array.isArray(a.haben) && Array.isArray(a.konten)) {
       const summe = l => r2(l.reduce((s, x) => s + (Array.isArray(x) ? Number(x[1]) || 0 : 0), 0));
@@ -162,6 +182,73 @@
       });
       if (!felder) f.push(`${wo}: keine Felder zum Anklicken ({"l": true/false}) in der Tabelle`);
       if (a.werte != null && !(Array.isArray(a.werte) && a.werte.length === 2 && a.werte.every(istText))) f.push(`${wo}: „werte“ braucht genau zwei Wörter, z. B. ["ja", "nein"]`);
+    }
+    const texte = (l, was, min) => {
+      if (!Array.isArray(l) || l.length < min || !l.every(istText)) { f.push(`${wo}: „${was}“ braucht mindestens ${min} Texte`); return false; }
+      return true;
+    };
+    if (a.typ === 'reihenfolge') {
+      if (texte(a.karten, 'karten', 2) && new Set(a.karten).size < 2) f.push(`${wo}: Die Karten sind alle gleich – es gibt nichts zu ordnen`);
+    }
+    if (a.typ === 'offen') {
+      if (!istText(a.muster)) f.push(`${wo}: „muster“ (Musterlösung) fehlt`);
+      if (a.kriterien != null && !(Array.isArray(a.kriterien) && a.kriterien.every(istText))) f.push(`${wo}: „kriterien“ muss eine Liste von Texten sein`);
+      ['zeilen', 'min'].forEach(k => { if (a[k] != null && !(Number.isInteger(a[k]) && a[k] > 0 && a[k] <= 2000)) f.push(`${wo}: „${k}“ muss eine ganze Zahl größer 0 sein`); });
+    }
+    if (a.typ === 'markieren' && a.text != null) {
+      if (typeof a.text !== 'string' || !/\[\[[\s\S]*?\S[\s\S]*?\]\]/.test(a.text)) f.push(`${wo}: keine gesuchte Stelle [[…]] im Text`);
+      if (a.einheit != null && !['wort', 'zeile'].includes(a.einheit)) f.push(`${wo}: „einheit“ ist "wort" oder "zeile"`);
+    }
+    if (a.typ === 'verbessern' && a.text != null) {
+      const l = typeof a.text === 'string' ? a.text.match(/\[\[[\s\S]*?\]\]/g) || [] : [];
+      if (!l.length) f.push(`${wo}: kein Fehler [[falsch|richtig]] im Text`);
+      l.forEach(x => {
+        const t = x.slice(2, -2).split('|');
+        if (/\n/.test(x)) f.push(`${wo}: Fehler ${x.replace(/\n/g, '↵')} darf nicht über das Zeilenende gehen`);
+        else if (t.length < 2 || !t[0].trim()) f.push(`${wo}: Fehler ${x} braucht erst das Falsche, dann die Verbesserung: [[falsch|richtig]]`);
+        else if (t.slice(1).some(r => r.trim() === t[0].trim())) f.push(`${wo}: Fehler ${x}: Verbesserung und Fehler sind gleich`);
+      });
+    }
+    if (a.typ === 'beschriften') {
+      if (a.bild != null && !(typeof a.bild === 'string' && BILD.test(a.bild))) f.push(`${wo}: „bild“ muss ein eingebettetes Bild sein (data:image/png, jpeg, gif, webp oder svg+xml, base64)`);
+      else if (a.bild && a.bild.length > MAX_BILD) f.push(`${wo}: Das Bild ist zu groß (${Math.round(a.bild.length / 1000)} kB, höchstens ${MAX_BILD / 1000} kB) – bitte verkleinern`);
+      if (a.punkte != null && !(Array.isArray(a.punkte) && a.punkte.length)) f.push(`${wo}: „punkte“ braucht mindestens einen Punkt`);
+      else (a.punkte || []).forEach((p, i) => {
+        if (!p || !istText(p.t)) f.push(`${wo}, Punkt ${i + 1}: Der Begriff („t“) fehlt`);
+        else if (![p.x, p.y].every(v => typeof v === 'number' && v >= 0 && v <= 100)) f.push(`${wo}, Punkt „${p.t}“: „x“ und „y“ sind Prozentwerte von 0 bis 100`);
+      });
+      if (a.extra != null && !(Array.isArray(a.extra) && a.extra.every(istText))) f.push(`${wo}: „extra“ muss eine Liste von Begriffen sein`);
+      if (a.alt != null && typeof a.alt !== 'string') f.push(`${wo}: „alt“ (Bildbeschreibung) muss ein Text sein`);
+    }
+    if (a.typ === 'bloecke' && texte(a.bloecke, 'bloecke', 2)) {
+      const L = a.loesungen != null ? a.loesungen : a.loesung != null ? [a.loesung] : null;
+      if (!Array.isArray(L) || !L.length) f.push(`${wo}: „loesung“ fehlt (Liste der Blöcke in der richtigen Reihenfolge)`);
+      else L.forEach((l, i) => {
+        const wl = a.loesungen != null ? `Lösung ${i + 1}` : 'Lösung';
+        if (!Array.isArray(l) || !l.length) return f.push(`${wo}: ${wl} muss eine Liste von Blöcken sein`);
+        l.forEach(x => { if (!a.bloecke.includes(x)) f.push(`${wo}: ${wl} enthält „${x}“, diesen Block gibt es im Vorrat nicht`); });
+        if (a.einmal) [...new Set(l)].forEach(x => { if (l.filter(y => y === x).length > a.bloecke.filter(y => y === x).length) f.push(`${wo}: ${wl} braucht „${x}“ öfter, als der Vorrat hergibt ("einmal": true)`); });
+      });
+      if (a.gleichwertig && Formel && Array.isArray(L) && Array.isArray(L[0])) L[0].join(' ').split('=').forEach(t => { const e = Formel.pruefe(t); if (e) f.push(`${wo}: „gleichwertig“ braucht eine Formel als Lösung – ${e}`); });
+      if (a.start != null && typeof a.start !== 'string') f.push(`${wo}: „start“ muss ein Text sein`);
+    }
+    if (a.typ === 'karteikarten') {
+      if (!Array.isArray(a.karten) || !a.karten.length) f.push(`${wo}: „karten“ braucht mindestens eine Karte`);
+      else a.karten.forEach((k, i) => { if (!k || !istText(k.v) || !istText(k.r)) f.push(`${wo}, Karte ${i + 1}: braucht Vorderseite („v“) und Rückseite („r“)`); });
+    }
+    if (a.typ === 'kreuzwort') {
+      if (!Array.isArray(a.woerter) || a.woerter.length < 2) f.push(`${wo}: „woerter“ braucht mindestens zwei Wörter`);
+      else {
+        if (a.woerter.length > 25) f.push(`${wo}: höchstens 25 Wörter`);
+        const gesehen = [];
+        a.woerter.forEach((x, i) => {
+          const w = kwWort(x && x.w);
+          if (!x || !istText(x.w) || !istText(x.t)) f.push(`${wo}, Wort ${i + 1}: braucht das Wort („w“) und den Hinweis („t“)`);
+          else if (w.length < 2 || w.length > 20) f.push(`${wo}, Wort „${x.w}“: 2 bis 20 Buchstaben (A–Z, Ä, Ö, Ü; ß wird SS)`);
+          else if (gesehen.includes(w)) f.push(`${wo}, Wort „${x.w}“ kommt doppelt vor`);
+          gesehen.push(w);
+        });
+      }
     }
     if (a.typ === 'kombi' && Array.isArray(a.teile)) {
       if (a.teile.length < 2) f.push(`${wo}: Eine kombinierte Aufgabe braucht mindestens zwei Teile`);
@@ -209,7 +296,7 @@
   function pruefe(j) {   // danach-Ketten prüft sie schon als Kombi (normalisiere)
     const f = [];
     if (!j || typeof j !== 'object' || Array.isArray(j)) return ['Das ist kein Aufgaben-JSON (Objekt mit „titel“ und „schritte“ erwartet).'];
-    const roh = JSON.stringify(j);
+    const roh = JSON.stringify(j, (k, v) => k === 'bild' && typeof v === 'string' ? '' : v);   // Bilder zählen eigens (MAX_BILD)
     if (roh.length > MAX) f.push(`Zu groß (${Math.round(roh.length / 1000)} kB, höchstens ${MAX / 1000} kB).`);
     if (/<\s*script|\bon[a-z]+\s*=|javascript:|<\s*iframe|<\s*object|<\s*embed/i.test(roh)) f.push('Eigenes JavaScript (script, onclick=, javascript:, iframe …) ist nicht erlaubt.');
     if (j.titel != null) alleTexte(j.titel, 'Titel', f);
@@ -330,7 +417,7 @@ Aufgaben.sequenz({el:'#app', key:${JSON.stringify(id)}, schritte:DATEN.schritte}
     return {fehler, html, titel, skripte: skripte.length, zeilen};
   }
 
-  const Seite = {TYPEN, ERLAUBT, normalisiere, ohneDanach, pruefe, toolId, seiteHTML, eigeneSeite, MAX, MAX_EIGEN};
+  const Seite = {TYPEN, EXPERIMENTELL, ROH, ERLAUBT, normalisiere, ohneDanach, pruefe, toolId, seiteHTML, eigeneSeite, MAX, MAX_EIGEN, MAX_BILD};
   if (typeof module !== 'undefined' && module.exports) module.exports = Seite;
   else window.Seite = Seite;
 })();
