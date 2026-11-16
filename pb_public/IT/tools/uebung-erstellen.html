@@ -36,6 +36,7 @@ document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: da
 <script src="../../BWR/kontenplan.js"></script>
 <script src="../../vorlage-typen.js"></script>
 <script src="../../vorlage-typen-beta.js"></script>
+<script src="../../vorlage-szenario.js"></script>
 <script src="../../vorlage-training.js"></script>
 <script src="../python/lib/codemirror.min.js"></script>
 <script src="../../vorlage-json.js"></script>
@@ -169,6 +170,42 @@ dialog.kp-dialog:not([open]){display:none}
 .kp-dialog>.hinweis{margin:4px 16px}
 .kp-weitere{border-top:1px solid var(--border);padding:10px 16px 14px;background:var(--panel2)}
 .kp-eigen{flex:1 1 220px;max-width:360px}
+/* Szenario visuell bauen (vorlage-szenario.js): Bausteine | Fläche mit Kästen und Pfeilen | Eigenschaften */
+dialog.sz-dialog{width:min(1500px,calc(100vw - 24px));height:calc(100vh - 24px)}
+.sz-hilfe{flex:1 1 300px;margin:0}
+.sz-arbeit{flex:1;min-height:0;display:grid;grid-template-columns:190px minmax(0,1fr) 320px}
+.sz-leiste{display:flex;flex-direction:column;gap:6px;padding:10px;border-right:1px solid var(--border);overflow:auto}
+.sz-flaeche{overflow:auto;background:var(--panel2) radial-gradient(var(--border) 1px,transparent 1px) 0 0/18px 18px}
+.sz-innen{position:relative;min-width:100%;min-height:100%}
+.sz-eig{display:flex;flex-direction:column;gap:6px;padding:10px 12px;border-left:1px solid var(--border);overflow:auto}
+.sz-eig h3{margin:0;font-size:15px}.sz-eig .feld{width:100%;min-width:0}.sz-eig .reihe{display:flex;gap:6px;align-items:center}.sz-eig .reihe .feld{flex:1}
+.sz-ant{display:flex;flex-direction:column;gap:4px;border:1px solid var(--border);border-radius:8px;padding:6px;background:var(--panel2)}
+@media (max-width:900px){.sz-arbeit{grid-template-columns:minmax(0,1fr);grid-template-rows:auto minmax(280px,1fr) auto;overflow:auto}.sz-leiste{flex-direction:row;flex-wrap:wrap;border-right:0;border-bottom:1px solid var(--border)}.sz-leiste .hinweis,.sz-leiste .leiste-trenn{display:none}.sz-eig{border-left:0;border-top:1px solid var(--border)}}
+.sz-n{position:absolute;width:230px;background:var(--panel);border:2px solid var(--border);border-radius:10px;padding:6px 8px 12px;font-size:13px;cursor:pointer;user-select:none}
+.sz-n.frage{border-color:color-mix(in srgb,var(--accent) 55%,var(--border))}
+.sz-n.sel{border-color:var(--marke);box-shadow:0 0 0 3px color-mix(in srgb,var(--marke) 25%,transparent)}
+.sz-n.ziel{border-color:var(--accent);box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 35%,transparent)}
+.sz-n.lose{border-style:dashed}
+.sz-kopf{display:flex;gap:6px;align-items:center;font:700 11.5px system-ui,sans-serif;color:var(--muted);margin-bottom:2px}
+.sz-kopf b{background:var(--accent);color:#fff;border-radius:999px;padding:0 7px;font-size:10.5px}.sz-kopf b.warn{background:var(--err)}.sz-kopf small{margin-left:auto;font-weight:400}
+[data-theme=dark] .sz-kopf b{color:#2e3440}
+.sz-text{overflow-wrap:anywhere}
+.sz-a{position:relative;margin:4px -4px 0 0;padding:2px 22px 2px 8px;border:1px solid var(--accent);border-radius:999px;color:var(--accent-text,var(--accent));background:var(--panel)}
+.sz-a.sz-ein{border-style:dashed;color:var(--muted);border-color:var(--border)}
+.sz-port{position:absolute;width:16px;height:16px;border-radius:50%;background:var(--accent);border:2px solid var(--panel);cursor:crosshair;touch-action:none;z-index:2}
+.sz-port:hover,.sz-port.ziel{transform:scale(1.35)}
+.sz-port.unten{left:50%;bottom:-9px;margin-left:-8px;background:var(--muted)}
+.sz-a .sz-port{right:2px;top:50%;margin-top:-8px}
+.sz-port.erbt{background:var(--panel);border-color:var(--border)}
+.sz-port.stopp{border-radius:3px;background:var(--text)}
+.sz-port.aus{display:none}
+.sz-svg{position:absolute;left:0;top:0;pointer-events:none;overflow:visible}
+.sz-pf{fill:none;stroke:var(--muted);stroke-width:2}.sz-pf.ant{stroke:var(--accent)}.sz-pf.quer{stroke-dasharray:6 5}
+.sz-sp{fill:var(--muted)}.sz-sp.a{fill:var(--accent)}
+.sz-zug{fill:none;stroke:var(--marke);stroke-width:2.5;stroke-dasharray:4 4}
+.sz-teil{touch-action:none}
+.sz-geist{position:fixed;z-index:10;pointer-events:none;opacity:.9;box-shadow:0 8px 20px rgba(0,0,0,.25)}
+.sz-leer{position:absolute;left:20px;top:20px}
 
 /* Training-Schritt (vorlage-training.js) */
 .tkarte{background:var(--panel);border:2px solid var(--border);border-left:6px solid #5e81ac;border-radius:10px;padding:10px 12px;cursor:pointer}
