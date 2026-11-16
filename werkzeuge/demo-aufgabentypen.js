@@ -1,5 +1,6 @@
 // Erzeugt pb_public/IT/tools/demo-aufgabentypen.html (Demo der experimentellen Aufgabentypen und des Szenarios).
 // Aufruf im Hauptordner: node werkzeuge/demo-aufgabentypen.js – Texte und Aufgaben hier ändern, nicht in der erzeugten Seite.
+// Oben ein Umschalter für die Designs aus lib/designs.js (UMSCHALTER unten, einziger eigener Code der Seite).
 // Je Seite ein Typ: Anleitung (wofür, Bedienung, Erstellen im Baukasten und im JSON) und eine Aufgabe, deren Inhalt den Typ erklärt.
 const fs = require('fs'), H = __dirname + '/../pb_public/', S = require(H + 'lib/seite.js');
 const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -104,5 +105,35 @@ const schritte = [
 ];
 const j = {titel: 'Demo Aufgabentypen', kurztext: 'Neue Aufgabentypen (experimentell) und das Szenario: Jede Seite zeigt einen Typ und erklärt, wie du ihn erstellst.', schritte};
 const f = S.pruefe(j); if (f.length) { console.log(f.join('\n')); process.exit(1); }
-fs.writeFileSync(H + 'IT/tools/demo-aufgabentypen.html', S.seiteHTML(j, {pfad: 'IT/tools', toolId: 'demo-typen'}).replace('(Übung erstellen, eingereicht)', '(werkzeuge/demo-aufgabentypen.js)').replace('Inhalt bearbeiten: nur DATEN unten ändern', 'Inhalt bearbeiten: im Skript ändern und neu erzeugen'));
+// Umschalter für die Designs (lib/designs.js): gilt nur auf dieser Seite und bis zum Neuladen, die Einstellung im Konto bleibt unberührt
+const UMSCHALTER = `<script src="../../lib/designs.js"></script>
+<style>.demo-design{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;margin-top:8px;font-size:14px}.demo-design select{max-width:100%}</style>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  if (!window.Designs) return;
+  var L = Designs.liste().filter(function (d) { return d.id !== 'standard'; }), root = document.documentElement, esc = Aufgaben.esc;
+  var opt = function (d) { return '<option value="' + esc(d.id) + '">' + esc(d.gruppe ? d.kurz : d.name) + '</option>'; };
+  var gruppen = L.map(function (d) { return d.gruppe; }).filter(function (g, i, a) { return g && a.indexOf(g) === i; });
+  var box = document.createElement('div'); box.className = 'demo-design';
+  box.innerHTML = '<label for="demoDesign"><b>Design ausprobieren:</b></label> <select class="feld" id="demoDesign"><option value="standard">Standard</option>'
+    + L.filter(function (d) { return !d.gruppe; }).map(opt).join('')
+    + gruppen.map(function (g) { return '<optgroup label="' + esc(g) + '">' + L.filter(function (d) { return d.gruppe === g; }).map(opt).join('') + '</optgroup>'; }).join('')
+    + '</select> <span class="muted" id="demoDesignText"></span>';
+  document.querySelector('.bar').appendChild(box);
+  var wahl = box.querySelector('select'), text = box.querySelector('#demoDesignText');
+  if (root.dataset.design && Designs.hole(root.dataset.design)) wahl.value = root.dataset.design;   // im Konto gewähltes Design
+  function zeige() { var d = Designs.hole(wahl.value); text.textContent = d ? d.beschreibung || '' : 'So sieht die Seite ohne Design aus.'; }
+  wahl.addEventListener('change', function () {
+    Designs.anwenden(wahl.value);
+    if (!Designs.hole(wahl.value) || !Designs.hole(wahl.value).modus) {   // Design ohne festes Hell/Dunkel: Wahl des Geräts wiederherstellen
+      var t = null; try { t = localStorage.getItem('wenn-theme'); } catch (e) {}
+      root.dataset.theme = t || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    }
+    zeige();
+  });
+  zeige();
+});
+</script>
+</head>`;
+fs.writeFileSync(H + 'IT/tools/demo-aufgabentypen.html', S.seiteHTML(j, {pfad: 'IT/tools', toolId: 'demo-typen'}).replace('(Übung erstellen, eingereicht)', '(werkzeuge/demo-aufgabentypen.js)').replace('Inhalt bearbeiten: nur DATEN unten ändern', 'Inhalt bearbeiten: im Skript ändern und neu erzeugen').replace('</head>', UMSCHALTER));
 console.log('geschrieben,', JSON.stringify(j).length, 'Zeichen');

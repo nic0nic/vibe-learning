@@ -20,6 +20,34 @@
 <script src="../../lib/aufgaben.js"></script>
 <script src="../../lib/formel.js"></script>
 <style>.info{border-left:4px solid var(--accent);padding:2px 0 2px 12px;margin:0 0 12px}.wrap{max-width:1000px}table{border-collapse:collapse}td,th{border:1px solid var(--border);padding:4px 8px}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin:0 0 10px;font:13px/1.5 var(--mono)}</style>
+<script src="../../lib/designs.js"></script>
+<style>.demo-design{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;margin-top:8px;font-size:14px}.demo-design select{max-width:100%}</style>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  if (!window.Designs) return;
+  var L = Designs.liste().filter(function (d) { return d.id !== 'standard'; }), root = document.documentElement, esc = Aufgaben.esc;
+  var opt = function (d) { return '<option value="' + esc(d.id) + '">' + esc(d.gruppe ? d.kurz : d.name) + '</option>'; };
+  var gruppen = L.map(function (d) { return d.gruppe; }).filter(function (g, i, a) { return g && a.indexOf(g) === i; });
+  var box = document.createElement('div'); box.className = 'demo-design';
+  box.innerHTML = '<label for="demoDesign"><b>Design ausprobieren:</b></label> <select class="feld" id="demoDesign"><option value="standard">Standard</option>'
+    + L.filter(function (d) { return !d.gruppe; }).map(opt).join('')
+    + gruppen.map(function (g) { return '<optgroup label="' + esc(g) + '">' + L.filter(function (d) { return d.gruppe === g; }).map(opt).join('') + '</optgroup>'; }).join('')
+    + '</select> <span class="muted" id="demoDesignText"></span>';
+  document.querySelector('.bar').appendChild(box);
+  var wahl = box.querySelector('select'), text = box.querySelector('#demoDesignText');
+  if (root.dataset.design && Designs.hole(root.dataset.design)) wahl.value = root.dataset.design;   // im Konto gewähltes Design
+  function zeige() { var d = Designs.hole(wahl.value); text.textContent = d ? d.beschreibung || '' : 'So sieht die Seite ohne Design aus.'; }
+  wahl.addEventListener('change', function () {
+    Designs.anwenden(wahl.value);
+    if (!Designs.hole(wahl.value) || !Designs.hole(wahl.value).modus) {   // Design ohne festes Hell/Dunkel: Wahl des Geräts wiederherstellen
+      var t = null; try { t = localStorage.getItem('wenn-theme'); } catch (e) {}
+      root.dataset.theme = t || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    }
+    zeige();
+  });
+  zeige();
+});
+</script>
 </head>
 <body>
 <div class="wrap">
