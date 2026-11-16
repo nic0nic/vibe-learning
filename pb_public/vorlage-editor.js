@@ -451,7 +451,13 @@
     if (!el) return null;
     if (q.art === 'chip') { const lt = el.closest('[data-lt]'); return lt === q.lt ? {art: 'text', el: lt} : null; }
     const z = el.closest('[data-ziel]');
-    if (!z) return null;
+    if (!z) {   // Lücke zwischen zwei Aufgaben oder freie Fläche des Schritts: Einfügestelle nach der Höhe des Zeigers
+      const al = (q.art === 'aufgabe' || (q.art === 'neu' && !istSchrittBaustein(q.baustein))) && (el.closest('.aliste') || (el.closest('.schrittflaeche') && E.mitte.querySelector('.aliste')));
+      if (!al) return null;
+      const karten = [...al.children].filter(k => k.classList.contains('akarte'));
+      const k = karten.find(c => { const r = c.getBoundingClientRect(); return y < r.top + r.height / 2; });
+      return k ? {art: 'karte', el: k, s: +k.dataset.s, i: +k.dataset.i, tiefe: 0, nach: false} : {art: 'liste', el: al.querySelector('.ende'), s: sel.s};
+    }
     const d = z.dataset, r = z.getBoundingClientRect(), art = d.ziel;
     const o = {art, el: z, s: +d.s, i: +d.i, tiefe: +d.tiefe, liste: d.liste, f: d.f};
     o.nach = art === 'reiter' ? x > r.left + r.width / 2 : y > r.top + r.height / 2;
@@ -463,8 +469,16 @@
   }
   function markiere(z) {
     document.querySelectorAll('.z-vor,.z-nach,.z-in').forEach(x => x.classList.remove('z-vor', 'z-nach', 'z-in'));
+    document.querySelectorAll('.z-marke').forEach(x => x.remove());
     if (!z || z.art === 'text') return;
-    const zwischen = ['karte', 'zeile', 'teilkarte'].includes(z.art) || (z.art === 'reiter' && zug && (zug.q.art === 'schritt' || istSchrittBaustein(zug.q.baustein)));
+    if (['karte', 'zeile', 'teilkarte'].includes(z.art)) {
+      // eine Marke genau zwischen den beiden Nachbarn – „hinter A“ und „vor B“ zeigen dieselbe Stelle
+      const r = z.el.getBoundingClientRect(), nb = z.nach ? z.el.nextElementSibling : z.el.previousElementSibling, n = nb && nb.getBoundingClientRect();
+      const y = z.nach ? (n && n.height ? (r.bottom + n.top) / 2 : r.bottom + 4) : (n && n.height ? (n.bottom + r.top) / 2 : r.top - 4);
+      const m = document.createElement('div'); m.className = 'z-marke'; m.style.cssText = `left:${r.left}px;width:${r.width}px;top:${y - 2}px`;
+      return void document.body.appendChild(m);
+    }
+    const zwischen = z.art === 'reiter' && zug && (zug.q.art === 'schritt' || istSchrittBaustein(zug.q.baustein));
     z.el.classList.add(zwischen ? (z.nach ? 'z-nach' : 'z-vor') : 'z-in');
   }
   function start(e) {
@@ -495,6 +509,7 @@
     }
     e.preventDefault();
     zug.geist.style.left = e.clientX + 'px'; zug.geist.style.top = e.clientY + 'px';
+    if (e.clientY < 70) window.scrollBy(0, -14); else if (e.clientY > window.innerHeight - 70) window.scrollBy(0, 14);   // am Rand mitrollen
     zug.ziel = zielVon(e.clientX, e.clientY, zug.q);
     zug.geist.classList.toggle('nein', !zug.ziel);
     markiere(zug.ziel);
@@ -503,10 +518,11 @@
     if (!zug) return;
     const z = zug; zug = null;
     if (!z.geist) return;
+    // Ziel bestimmen, solange die Ablagezonen noch sichtbar sind (ohne bk-zieht verschwinden sie, und der Punkt träfe etwas anderes)
+    const ziel = e.type === 'pointerup' ? zielVon(e.clientX, e.clientY, z.q) : null;
     z.geist.remove(); document.body.classList.remove('bk-zieht'); markiere(null);
     if (z.q.el) z.q.el.classList.remove('quelle');
     setTimeout(() => { zieht = false; }, 0);
-    const ziel = e.type === 'pointerup' ? zielVon(e.clientX, e.clientY, z.q) : null;
     if (!ziel) return;
     if (z.q.art === 'chip') return chipVerschieben(z.q, e);
     if (z.q.art === 'zeile') return zeileVerschieben(z.q.liste, z.q.i, ziel.i + (ziel.nach ? 1 : 0));

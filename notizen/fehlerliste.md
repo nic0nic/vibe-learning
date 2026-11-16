@@ -48,6 +48,11 @@ Gesammelt im Thread „Aufbau der Seite“. Umgesetzt wird erst, wenn die Lehrkr
     Nachtrag 16.11.: Die Demoseite zeigt das Training auf vier Seiten mit allen Optionen (23 Seiten insgesamt): feste Runde mit mehreren Versuchen und `ziel` (Szenarien mit allen Formen von `werte`, `bedingung`, `runden`, `einheit`, `{=…}`), endlos auf Zeit mit Auswählen (`zeit`, `falsch`), Vokabeln (`woerterbuch`, `richtung`, `tippfehler`, mehrere richtige Antworten), Stufen mit eigener Antwortform und Zeit (`zeit: null`). Getestet in Chromium (Webseite und Einzeldatei): Runde 6 von 6 mit zweitem Versuch, Serie auf Zeit und Ablauf der Zeit, Vokabeln mit Tippfehler in beiden Richtungen, fünf Stufen mit der jeweils richtigen Antwortform und Zeit.
     **Offen:** Rückmeldung aus dem Unterricht; danach je Typ entscheiden, ob er nach `main` kommt. Bekannte Grenzen: lange Listen zum Ziehen erschweren am Handy das Scrollen; Kreuzworträtsel am Handy mit Bildschirmtastatur ungetestet; `verbessern` trennt Stellen nur an Leerzeichen und Klammern.
 
+71. **Baukasten: Ablegen auf „Aufgabe hierher ziehen“ und eine Marke zwischen zwei Aufgaben** (gemeldet 16.11., Branch `beta`)
+    Ursache: Beim Loslassen wurde `bk-zieht` entfernt, bevor das Ziel bestimmt war. Damit verschwanden die Zonen „Teil 2 anhängen“, die Karten schrumpften, und unter dem Zeiger lag etwas anderes als angezeigt (die Zone am Ende wurde verfehlt, „Teil 2 anhängen“ fügte nur ein). Zusätzlich verschob sich die Liste schon beim Beginn des Ziehens.
+    `vorlage-editor.js`: Ziel wird vor dem Ausblenden bestimmt; Lücken zwischen Aufgaben und die freie Fläche des Schritts zählen als Ablagestelle (nach der Höhe des Zeigers); statt zwei Strichen an den Karten gibt es eine Marke `.z-marke` genau zwischen den Nachbarn (auch bei Teilen einer Kombi und Zeilen im Formular); am Fensterrand rollt die Seite mit. CSS: Die Zone „Teil 2 anhängen“ liegt beim Ziehen über der rechten unteren Ecke der Karte, nichts verschiebt sich mehr.
+    Getestet in Chromium: Baustein und vorhandene Aufgabe auf die Zone am Ende, in die Lücke, vor die erste Aufgabe, untere Hälfte von Karte 1 und obere Hälfte von Karte 2 (dieselbe Marke, dasselbe Ergebnis), „Teil 2 anhängen“ ergibt eine Kombi, Zeilen umsortieren. Nicht getestet: Touch, Mitrollen bei langen Listen.
+
 ## Erledigt
 
 ### Version vom 14.11.

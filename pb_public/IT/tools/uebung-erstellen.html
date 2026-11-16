@@ -227,9 +227,13 @@ dialog.tr-dialog{width:min(720px,calc(100vw - 24px));max-height:calc(100vh - 24p
 .ak-kurz{font-size:12.5px;color:var(--muted);margin:2px 0 0 28px}
 .danach-zone{display:none;margin:8px 0 0 14px;border:2px dashed var(--border);border-radius:9px;padding:6px 10px;font-size:12.5px;color:var(--muted)}
 .danach-zone.zeigen,.bk-zieht .danach-zone{display:block}
+/* beim Ziehen liegt die Zone über dem unteren Rand der Karte, damit sich nichts verschiebt (sonst wandert das Ziel weg) */
+.bk-zieht .danach-zone:not(.zeigen){position:absolute;left:45%;right:8px;bottom:4px;margin:0;padding:3px 10px;background:var(--panel);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;z-index:1}
 .ende,.leer-start{border:2px dashed var(--border);border-radius:10px;padding:14px;text-align:center;color:var(--muted);font-size:14px}
 .leer-start{margin:30px 10px;padding:40px 14px}
 .z-in{border-color:var(--marke)!important;background:color-mix(in srgb,var(--marke) 12%,var(--panel))!important}
+.z-marke{position:fixed;z-index:90;height:4px;border-radius:2px;background:var(--marke);pointer-events:none}
+.z-marke::before{content:"";position:absolute;left:-6px;top:-4px;width:12px;height:12px;border-radius:50%;background:var(--marke)}
 .z-vor{box-shadow:0 -4px 0 var(--marke)!important}
 .z-nach{box-shadow:0 4px 0 var(--marke)!important}
 .reiter.z-vor{box-shadow:-4px 0 0 var(--marke)!important}
