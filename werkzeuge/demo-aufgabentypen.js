@@ -9,7 +9,7 @@ const json = a => '<pre>' + esc(JSON.stringify(a, (k, v) => k === 'bild' ? 'data
 const WO = '<p><b>Im Baukasten:</b> Tools → Übung erstellen, links unter „Experimentell (β)“ den Baustein ';
 const seite = (kurz, titel, wofuer, bedienung, baukasten, felder, aufgaben, extra) => ({kurz, titel,
   html: `<h2>${titel}</h2><p class="info">${wofuer}</p><h3>So arbeiten die Schüler</h3><p>${bedienung}</p><h3>So erstellst du die Aufgabe</h3>${WO}${baukasten}</p>`
-    + `<p><b>Im JSON:</b></p><ul>${felder.map(f => `<li>${f}</li>`).join('')}</ul>${extra || ''}<p>Die ${aufgaben.length > 1 ? 'erste Aufgabe' : 'Aufgabe'} unten sieht als JSON so aus:</p>${json(aufgaben[0])}<h3>Ausprobieren</h3>`,
+    + `<p><b>Im JSON:</b></p><ul>${felder.map(f => `<li>${f}</li>`).join('')}</ul>${extra || ''}<details><summary>JSON der ${aufgaben.length > 1 ? 'ersten Aufgabe' : 'Aufgabe'} unten anzeigen</summary>${json(aufgaben[0])}</details><h3>Ausprobieren</h3>`,
   aufgaben});
 const bild = 'data:image/svg+xml;base64,' + Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="640" height="400" viewBox="0 0 640 400" font-family="sans-serif">
 <rect width="640" height="400" fill="#f6f8fb"/><rect x="20" y="20" width="600" height="360" rx="14" fill="#fff" stroke="#cdd3de" stroke-width="2"/>
@@ -19,6 +19,35 @@ const bild = 'data:image/svg+xml;base64,' + Buffer.from(`<svg xmlns="http://www.
 <circle cx="150" cy="200" r="15" fill="#fff" stroke="#2e3440" stroke-width="2"/><circle cx="330" cy="160" r="15" fill="#fff" stroke="#2e3440" stroke-width="2"/>
 <rect x="44" y="324" width="110" height="38" rx="9" fill="#5e81ac"/>
 </svg>`).toString('base64');
+
+// Szenario als Baum (verschachtelte Liste): Nachrichten der Reihe nach, Antworten als Äste; Sprünge zu schon gezeigten Nachrichten als Verweis
+function baum(a) {
+  const N = a.nachrichten, kurz = m => { const t = String(typeof m === 'string' ? m : m.bot).replace(/<[^>]+>/g, '').replace(/&[a-z]+;/g, ' '); return esc(t.length > 58 ? t.slice(0, 56).replace(/\s+\S*$/, '') + ' …' : t); };
+  const ziel = id => N.findIndex(n => n && typeof n === 'object' && n.id === id), gezeigt = new Set();
+  const nach = (m, i, x) => (x && x.ende) || (m && typeof m === 'object' && m.ende && !(x && x.weiter != null)) ? N.length
+    : (j => j >= 0 ? j : i + 1)(ziel(x && x.weiter != null ? x.weiter : m && typeof m === 'object' ? m.weiter : null));
+  const ENDE = '<li><span class="b-ende">■ Ende</span></li>';
+  function folge(i) {
+    let h = '';
+    for (;;) {
+      if (i >= N.length) return h + ENDE;
+      const m = N[i], obj = m && typeof m === 'object';
+      if (gezeigt.has(i)) return h + `<li><span class="b-sprung">↩ weiter bei „${kurz(m)}“</span></li>`;
+      gezeigt.add(i);
+      const marke = obj && m.id ? ` <span class="b-marke">⚑ ${esc(m.id)}</span>` : '';
+      if (!obj || !(m.antworten || m.zahl || m.freitext)) { h += `<li><span class="b-bot">${kurz(m)}</span>${marke}</li>`; i = nach(m, i); continue; }
+      const wahl = m.antworten && !m.antworten.some(x => x.ok);
+      const A = m.antworten ? m.antworten.map(x => ({t: `„${esc(x.t)}“` + (wahl ? '' : x.ok ? ' ✓' : ' ✗'), eigen: x.weiter != null || x.ende, x}))
+        : [{t: m.zahl ? `Zahl: ${m.zahl.l}${m.zahl.e ? ' ' + esc(m.zahl.e) : ''}` : 'Begriff eintippen', eigen: false}];
+      const offen = A.some(y => !y.eigen);
+      h += `<li><span class="b-frage">${wahl ? 'Entscheidung' : 'Frage'}: ${kurz(m)}</span>${marke}<ul>`
+        + A.map(y => `<li><span class="b-antwort">${y.t}</span>${y.eigen ? `<ul>${folge(nach(m, i, y.x))}</ul>` : ''}</li>`).join('') + '</ul></li>';
+      if (!offen) return h;
+      i = nach(m, i);
+    }
+  }
+  return `<ul class="baum">${folge(0)}</ul>`;
+}
 
 const schritte = [
   seite('Reihenfolge', 'Reihenfolge (reihenfolge)',
@@ -103,11 +132,23 @@ const schritte = [
       {id: 'schluss', bot: 'Eine Nachricht mit <code>"ende": true</code> beendet den Chat – so wie diese. Mit „Noch einmal“ kannst du die anderen Wege gehen.', ende: true}]}],
     '<p><b>Achte darauf:</b> Jeder Zweig braucht ein Ende – entweder eine Nachricht mit „Ende“ oder einen Sprung zu einem gemeinsamen Schluss. Sonst läuft der Chat einfach in den nächsten Zweig weiter.</p>')
 ];
+// Baum des Szenarios vor dem JSON-Beispiel einfügen
+{ const s = schritte[schritte.length - 1];
+  s.html = s.html.replace('<details>', '<h3>Das Szenario unten als Baum</h3><p>Von oben nach unten: Nachrichten des Bots, darunter eingerückt die Antworten und was auf sie folgt. ⚑ = Marke, ↩ = Sprung zu einer Nachricht, die schon im Baum steht.</p>' + baum(s.aufgaben[0]) + '<details>'); }
 const j = {titel: 'Demo Aufgabentypen', kurztext: 'Neue Aufgabentypen (experimentell) und das Szenario: Jede Seite zeigt einen Typ und erklärt, wie du ihn erstellst.', schritte};
 const f = S.pruefe(j); if (f.length) { console.log(f.join('\n')); process.exit(1); }
 // Umschalter für die Designs (lib/designs.js): gilt nur auf dieser Seite und bis zum Neuladen, die Einstellung im Konto bleibt unberührt
 const UMSCHALTER = `<script src="../../lib/designs.js"></script>
-<style>.demo-design{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;margin-top:8px;font-size:14px}.demo-design select{max-width:100%}</style>
+<style>.demo-design{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;margin-top:8px;font-size:14px}.demo-design select{max-width:100%}
+/* Baum eines Szenarios (verschachtelte Liste mit Verbindungslinien) */
+.baum,.baum ul{list-style:none;margin:0;padding:0}.baum{margin:0 0 12px}.baum ul{margin:4px 0 0 14px}
+.baum li{position:relative;padding:4px 0 4px 18px;font-size:14px}
+.baum li::before{content:"";position:absolute;left:0;top:0;bottom:0;border-left:2px solid var(--border)}
+.baum li:last-child::before{bottom:auto;height:17px}
+.baum li::after{content:"";position:absolute;left:0;top:17px;width:13px;border-top:2px solid var(--border)}
+.baum span{display:inline-block;border:1px solid var(--border);border-radius:8px;padding:1px 8px;background:var(--panel2)}
+.baum .b-frage{border-color:var(--accent);font-weight:600}.baum .b-antwort{border-radius:999px;background:var(--panel);border-color:var(--accent);color:var(--accent-text,var(--accent))}
+.baum .b-sprung,.baum .b-ende{border-style:dashed;color:var(--muted);background:none}.baum .b-marke{border:0;background:none;padding:0 2px;color:var(--muted);font-size:12.5px}</style>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
   if (!window.Designs) return;

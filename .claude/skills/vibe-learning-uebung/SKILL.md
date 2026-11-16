@@ -184,7 +184,7 @@ API
   Seite.normalisiere(json)        → {titel, kurztext, design, schritte} (Schritte bekommen id und kurz, danach → kombi)
   Seite.ohneDanach(aufgabe)       → Aufgabe mit danach-Kette als {"typ": "kombi", "teile": […]} (sonst unverändert)
   Seite.pruefe(json)              → Liste von Fehlern (leer = in Ordnung), deutsch, mit Fundstelle
-      HTML in Texten nur nach Erlaubtliste (Seite.ERLAUBT): Tags wie p, b, ul, table … mit höchstens class
+      HTML in Texten nur nach Erlaubtliste (Seite.ERLAUBT): Tags wie p, b, ul, table, details/summary (zum Aufklappen) … mit höchstens class
       (td/th auch colspan, rowspan); jedes andere „<“ + Buchstabe, „</“, „<!“ oder „<?“ wird abgelehnt.
   Seite.toolId(titel, zufall)     → id für katalog.js (a–z, 0–9, -, höchstens 20 Zeichen)
   Seite.eigeneSeite(html, {pfad, toolId}) → {fehler, html, titel, skripte, zeilen}: eigene Seite (HTML mit eigenem Code)

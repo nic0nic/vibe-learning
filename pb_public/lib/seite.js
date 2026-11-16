@@ -30,7 +30,7 @@
  *   Seite.normalisiere(json)        → {titel, kurztext, design, schritte} (Schritte bekommen id und kurz, danach → kombi)
  *   Seite.ohneDanach(aufgabe)       → Aufgabe mit danach-Kette als {"typ": "kombi", "teile": […]} (sonst unverändert)
  *   Seite.pruefe(json)              → Liste von Fehlern (leer = in Ordnung), deutsch, mit Fundstelle
- *       HTML in Texten nur nach Erlaubtliste (Seite.ERLAUBT): Tags wie p, b, ul, table … mit höchstens class
+ *       HTML in Texten nur nach Erlaubtliste (Seite.ERLAUBT): Tags wie p, b, ul, table, details/summary (zum Aufklappen) … mit höchstens class
  *       (td/th auch colspan, rowspan); jedes andere „<“ + Buchstabe, „</“, „<!“ oder „<?“ wird abgelehnt.
  *   Seite.toolId(titel, zufall)     → id für katalog.js (a–z, 0–9, -, höchstens 20 Zeichen)
  *   Seite.eigeneSeite(html, {pfad, toolId}) → {fehler, html, titel, skripte, zeilen}: eigene Seite (HTML mit eigenem Code)
@@ -59,7 +59,7 @@
   const MAX = 150000;
   // Erlaubtliste für HTML in eingereichten Texten (alles andere wird abgelehnt, auch unvollständige Tags)
   const ERLAUBT = ['p', 'br', 'b', 'strong', 'i', 'em', 'u', 's', 'sub', 'sup', 'small', 'mark', 'span', 'div', 'hr',
-    'ul', 'ol', 'li', 'h2', 'h3', 'h4', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'code', 'pre', 'blockquote'];
+    'ul', 'ol', 'li', 'h2', 'h3', 'h4', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'code', 'pre', 'blockquote', 'details', 'summary'];   // details/summary: Abschnitt zum Aufklappen
   const TAG = /^<(\/?)([a-zA-Z][a-zA-Z0-9]*)((?:\s+[a-z]+="[a-z0-9 _-]*")*)\s*(\/?)>/;
   // Fehler im HTML eines Textes (leer = in Ordnung)
   function htmlFehler(s) {
@@ -335,7 +335,8 @@
     + '.btn.klein{font-size:13px;padding:4px 9px}.feld{font:14px system-ui,sans-serif;background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 8px}.muted{color:var(--muted)}';
   const SEITE_CSS = '.info{border-left:4px solid var(--accent);padding:2px 0 2px 12px;margin:0 0 12px}'
     + '.wrap{max-width:1000px}table{border-collapse:collapse}td,th{border:1px solid var(--border);padding:4px 8px}'
-    + 'pre{white-space:pre-wrap;overflow-wrap:anywhere;background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin:0 0 10px;font:13px/1.5 var(--mono)}';
+    + 'pre{white-space:pre-wrap;overflow-wrap:anywhere;background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;margin:0 0 10px;font:13px/1.5 var(--mono)}'
+    + 'details{margin:0 0 10px}summary{cursor:pointer;font-weight:600;color:var(--accent-text,var(--accent))}details[open]>summary{margin-bottom:6px}';
   const THEME = "(function(){var t=null;try{t=localStorage.getItem('wenn-theme');}catch(e){}document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');})();";
 
   function seiteHTML(json, opt) {
