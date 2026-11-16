@@ -102,7 +102,7 @@ window.KATALOG = {
             {id: 'strukto', gruppe: 'Struktogramm', datei: 'struktogramm.html', titel: 'Struktogramm-Editor', text: 'Struktogramme mit der Maus zusammensetzen und als SVG, HTML oder JPG exportieren.'},
             {id: 'pystrukto', gruppe: 'Struktogramm', datei: 'python-struktogramm.html', titel: 'Python → Struktogramm', text: 'Python-Code eingeben, das Struktogramm entsteht sofort daneben – zum Export oder zum Weiterbearbeiten im Editor.'},
             {id: 'uebung-erstellen', gruppe: 'Übungen', datei: 'uebung-erstellen.html', titel: 'Übung erstellen', text: 'Eigene Übungen im Baukasten zusammenstellen, testen und als Datei oder als Lernpaket für ByCS herunterladen.'},
-            {id: 'demo-typen', gruppe: 'Übungen', datei: 'demo-aufgabentypen.html', titel: 'Demo Aufgabentypen', text: 'Die neuen, experimentellen Aufgabentypen zum Ausprobieren – jede Seite zeigt einen Typ und erklärt, wie man ihn erstellt.'}
+            {id: 'demo-typen', gruppe: 'Übungen', datei: 'demo-aufgabentypen.html', titel: 'Demo Aufgabentypen', text: 'Alle Aufgabentypen zum Ausprobieren – jede Seite zeigt einen Typ und erklärt, wie man ihn erstellt.'}
           ]
         }
       ]

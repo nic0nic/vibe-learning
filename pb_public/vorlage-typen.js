@@ -294,6 +294,35 @@
     stand(); d.showModal(); d.querySelector('.kp-suche').focus();
   }
 
+  /* ---------- Fehler verbessern, Kreuzworträtsel ---------- */
+  const schalter = (tun, an, text, titel) => `<label class="schalter" title="${titel || ''}"><input type="checkbox" data-tun="${tun}"${an ? ' checked' : ''}><span></span> ${text}</label>`;
+  const um = k => a => { if (a[k]) delete a[k]; else a[k] = true; };
+  B.typ('verbessern', {
+    name: 'Fehler verbessern', symbol: '🩹',
+    neu: () => ({typ: 'verbessern', frage: 'Finde und verbessere die Fehler.', text: 'Gestern [[gehe|ging]] ich in die Schule.\nDort traf ich meine Freunde.'}),
+    kurz: a => `${n((String(a.text).match(/\[\[/g) || []).length, 'Fehler', 'Fehler')} in ${n(String(a.text).split('\n').length, 'Zeile', 'Zeilen')}`,
+    form(a, H) {
+      return `<div class="schalterleiste">${schalter('mono', a.mono, 'Code', 'Schreibmaschinenschrift')}${schalter('gross', a.gross === false, 'Groß/klein egal')}</div>
+        ${H.feld('text', 'Text mit Fehlern: [[falsch|richtig]]', {art: 'area', pflicht: true, zeilen: 7})}
+        <p class="hinweis">Angezeigt wird das Falsche. Weitere richtige Schreibweisen mit <code>|</code> anhängen: <code>[[falsch|richtig|auch richtig]]</code>. <code>[[zu viel|]]</code> = Stelle soll gelöscht werden.
+          Ablauf: Zeile anklicken → falsche Stellen anklicken → verbessern. Stellen sind Wörter (durch Leerzeichen getrennt) und die Klammern.</p>
+        ${H.feld('h', 'Hinweis bei falscher Verbesserung (optional)')}`;
+    },
+    tun: {mono: um('mono'), gross(a) { if (a.gross === false) delete a.gross; else a.gross = false; }}
+  });
+
+  B.typ('kreuzwort', {
+    name: 'Kreuzworträtsel', symbol: '🔠',
+    neu: () => ({typ: 'kreuzwort', frage: 'Löse das Kreuzworträtsel.', woerter: [{w: 'Bilanz', t: 'Gegenüberstellung von Vermögen und Kapital'}, {w: 'Inventur', t: 'Bestandsaufnahme'}, {w: 'Aktiva', t: 'linke Seite der Bilanz'}]}),
+    kurz: a => n((a.woerter || []).length, 'Wort', 'Wörter'),
+    form(a, H) {
+      return `<label class="klein">Wörter: Lösungswort – Hinweis</label>
+        ${(a.woerter || []).map((k, i) => H.zeile('woerter', i, `<div class="reihe">${H.feld(`woerter.${i}.w`, '', {pflicht: true, ph: 'Wort'})}${H.feld(`woerter.${i}.t`, '', {pflicht: true, ph: 'Hinweis'})}${weg('wweg', {i})}</div>`)).join('')}${plus('wplus', 'Wort')}
+        <p class="hinweis">Das Gitter entsteht von selbst (Vorschau). Buchstaben A–Z, Ä, Ö, Ü; ß wird SS, Leerzeichen entfallen. Wörter ohne gemeinsamen Buchstaben stehen einzeln darunter.</p>`;
+    },
+    tun: {wplus(a) { a.woerter.push({w: '', t: ''}); }, wweg(a, d) { a.woerter.splice(+d.i, 1); }}
+  });
+
   /* ---------- Kombinierte Aufgabe ---------- */
   B.typ('kombi', {
     name: 'Kombinierte Aufgabe', symbol: '🧩',

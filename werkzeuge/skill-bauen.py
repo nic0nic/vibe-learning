@@ -12,7 +12,7 @@ BIBLIOTHEKEN = [
     ("katalog.js", "Inhaltsverzeichnis: hier wird jede Übung eingetragen"),
     ("sync.js", "Anmeldung und Speichern"),
     ("lib/seite.js", "Übungsseiten aus Aufgaben-JSON prüfen und bauen (Übung erstellen, Einreichen)"),
-    ("lib/aufgaben.js", "Aufgabenbausteine für alle Fächer: Multiple Choice, Zahlen, Lückentext, Zuordnen, Buchungssatz, Lern-Chat mit Szenario, Erarbeitung; experimentell: Reihenfolge, offene Antwort, Markieren, Verbessern, Beschriften, Blöcke, Karteikarten, Kreuzworträtsel (dazu aufgaben.css)"),
+    ("lib/aufgaben.js", "Aufgabenbausteine für alle Fächer: Multiple Choice, Zahlen, Lückentext, Zuordnen, Buchungssatz, Lern-Chat mit Szenario, Fehler verbessern, Kreuzworträtsel, Erarbeitung; experimentell: Reihenfolge, offene Antwort, Markieren, Beschriften, Blöcke, Karteikarten (dazu aufgaben.css)"),
     ("lib/szenario.js", "Szenario (verzweigter Lern-Chat) als Bild aus Kästen und Pfeilen zeigen (dazu szenario.css)"),
     ("IT/excel/basis.js", "Excel: Grundlage aller Excel-Übungen (dazu basis.css)"),
     ("IT/excel/bausteine.js", "Excel: Formeln aus Bausteinen (wie WENN, UND/ODER; dazu bausteine.css)"),

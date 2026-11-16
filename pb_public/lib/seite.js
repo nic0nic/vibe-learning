@@ -19,8 +19,8 @@
  *     Wörterbuch: {"sprachen": ["Englisch", "Deutsch"], "richtung": "a-b" | "b-a" | "beide", "tippfehler": false,
  *       "eintraege": [["house", "Haus|Gebäude"], …]}   (| = mehrere richtige Antworten)
  *   Altes Format {"typ": …, "danach": {…}} wandelt normalisiere in eine Kombi um (Seite.ohneDanach).
- *   Experimentelle Typen (Seite.EXPERIMENTELL, Format in lib/aufgaben.js): reihenfolge, offen, markieren, verbessern,
- *     beschriften, bloecke, karteikarten, kreuzwort. Reiner Text (darf „<p>“ enthalten, wird nicht als HTML geprüft): Seite.ROH.
+ *   Weitere Typen (Format in lib/aufgaben.js): verbessern, kreuzwort; experimentell (Seite.EXPERIMENTELL): reihenfolge, offen,
+ *     markieren, beschriften, bloecke, karteikarten. Reiner Text (darf „<p>“ enthalten, wird nicht als HTML geprüft): Seite.ROH.
  *     "bild" (beschriften) nur eingebettet als data:image/png|jpeg|gif|webp|svg+xml;base64,… (höchstens Seite.MAX_BILD Zeichen,
  *     zählt nicht zu den 150 kB).
  *
@@ -49,7 +49,7 @@
     freitext: ['felder', 'antworten'], chat: ['nachrichten'], buchungssatz: ['konten', 'soll', 'haben'], kombi: ['teile'], tabelle: ['spalten', 'zeilen'], wahrheit: ['spalten', 'zeilen'],
     reihenfolge: ['karten'], offen: ['muster'], markieren: ['text'], verbessern: ['text'], beschriften: ['bild', 'punkte'], bloecke: ['bloecke'], karteikarten: ['karten'], kreuzwort: ['woerter']
   };
-  const EXPERIMENTELL = ['reihenfolge', 'offen', 'markieren', 'verbessern', 'beschriften', 'bloecke', 'karteikarten', 'kreuzwort'];
+  const EXPERIMENTELL = ['reihenfolge', 'offen', 'markieren', 'beschriften', 'bloecke', 'karteikarten'];
   // Felder, die als reiner Text angezeigt werden (kein HTML): dürfen „<p>“ enthalten
   const ROH = {markieren: ['text'], verbessern: ['text'], bloecke: ['bloecke', 'loesung', 'loesungen', 'start'], beschriften: ['bild', 'punkte', 'extra', 'alt'],
     kreuzwort: [], reihenfolge: a => a.mono ? ['karten'] : []};

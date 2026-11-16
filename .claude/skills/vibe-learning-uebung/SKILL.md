@@ -173,8 +173,8 @@ Aufgaben-JSON (reine Daten, kein JavaScript; Aufgabentypen wie in lib/aufgaben.j
     Wörterbuch: {"sprachen": ["Englisch", "Deutsch"], "richtung": "a-b" | "b-a" | "beide", "tippfehler": false,
       "eintraege": [["house", "Haus|Gebäude"], …]}   (| = mehrere richtige Antworten)
   Altes Format {"typ": …, "danach": {…}} wandelt normalisiere in eine Kombi um (Seite.ohneDanach).
-  Experimentelle Typen (Seite.EXPERIMENTELL, Format in lib/aufgaben.js): reihenfolge, offen, markieren, verbessern,
-    beschriften, bloecke, karteikarten, kreuzwort. Reiner Text (darf „<p>“ enthalten, wird nicht als HTML geprüft): Seite.ROH.
+  Weitere Typen (Format in lib/aufgaben.js): verbessern, kreuzwort; experimentell (Seite.EXPERIMENTELL): reihenfolge, offen,
+    markieren, beschriften, bloecke, karteikarten. Reiner Text (darf „<p>“ enthalten, wird nicht als HTML geprüft): Seite.ROH.
     "bild" (beschriften) nur eingebettet als data:image/png|jpeg|gif|webp|svg+xml;base64,… (höchstens Seite.MAX_BILD Zeichen,
     zählt nicht zu den 150 kB).
 
@@ -197,7 +197,7 @@ API
             Bibliotheken eingebettet, wie in werkzeuge/bycs-pakete.py (dort statt sync.js)
 ```
 
-### lib/aufgaben.js – Aufgabenbausteine für alle Fächer: Multiple Choice, Zahlen, Lückentext, Zuordnen, Buchungssatz, Lern-Chat mit Szenario, Erarbeitung; experimentell: Reihenfolge, offene Antwort, Markieren, Verbessern, Beschriften, Blöcke, Karteikarten, Kreuzworträtsel (dazu aufgaben.css)
+### lib/aufgaben.js – Aufgabenbausteine für alle Fächer: Multiple Choice, Zahlen, Lückentext, Zuordnen, Buchungssatz, Lern-Chat mit Szenario, Fehler verbessern, Kreuzworträtsel, Erarbeitung; experimentell: Reihenfolge, offene Antwort, Markieren, Beschriften, Blöcke, Karteikarten (dazu aufgaben.css)
 
 ```text
 aufgaben.js – Aufgabenbausteine für alle Fächer: Aufgaben als Daten, Prüfung und Rückmeldung eingebaut
@@ -259,6 +259,12 @@ Formeln mit Bruchstrich in jedem HTML-Text: <span class="bruch"><span>Zähler</s
                Konto eintippen: Liste filtert nach Nummer oder Kürzel (z. B. „ve“ → 4400 VE).
                „an“ steht wie im Heft auf der Zeile des letzten Soll-Kontos neben dem ersten Haben-Konto.
                prüft: Konten, Soll/Haben vertauscht, fehlende Steuer, Beträge; Lösung im Skill-Format
+  verbessern   Fehlersuche: text mit Zeilen (\n), Fehler als [[falsch|richtig|auch richtig]] (falsch wird angezeigt;
+               [[zu viel|]] = Stelle löschen). Ablauf je Fehlerzeile: Zeile anklicken → alle falschen Stellen anklicken
+               (nochmal = abwählen) → Prüfen → Stellen verbessern → Prüfen. Bei nur einer Zeile entfällt die Zeilenwahl.
+               Stellen sind durch Leerzeichen getrennte Wörter bzw. die Klammern. mono:true (Code), gross:false (Groß/klein egal), h.
+  kreuzwort    woerter:[{w:'Bilanz', t:'Hinweis'}] – das Gitter entsteht von selbst (immer gleich); Buchstaben A–Z, Ä, Ö, Ü,
+               ß wird SS, Leerzeichen und Bindestriche entfallen. Wörter ohne gemeinsamen Buchstaben stehen einzeln darunter.
 
 EXPERIMENTELL (Branch beta, Liste in Aufgaben.EXPERIMENTELL): Format und Bedienung können sich noch ändern.
   reihenfolge  karten:['erster Schritt', 'zweiter Schritt', …] in der richtigen Reihenfolge (HTML erlaubt), werden gemischt;
@@ -270,10 +276,6 @@ EXPERIMENTELL (Branch beta, Liste in Aufgaben.EXPERIMENTELL): Format und Bedienu
   markieren    text:'Der [[Hund]] bellt.' – Stellen in [[…]] sind gesucht; angeklickt werden Wörter (Satzzeichen nicht) oder
                mit einheit:'zeile' ganze Zeilen (Zeile mit [[ ist gesucht). Reiner Text, Zeilenumbruch mit \n.
                mono:true (Code: Schreibmaschinenschrift, Trennung nur an Leerzeichen), anzahl:false (Anzahl nicht verraten), h.
-  verbessern   Fehlersuche: text mit Zeilen (\n), Fehler als [[falsch|richtig|auch richtig]] (falsch wird angezeigt;
-               [[zu viel|]] = Stelle löschen). Ablauf je Fehlerzeile: Zeile anklicken → alle falschen Stellen anklicken
-               (nochmal = abwählen) → Prüfen → Stellen verbessern → Prüfen. Bei nur einer Zeile entfällt die Zeilenwahl.
-               Stellen sind durch Leerzeichen getrennte Wörter bzw. die Klammern. mono:true (Code), gross:false (Groß/klein egal), h.
   beschriften  bild (Adresse oder data:image/…), alt, punkte:[{x:25, y:40, t:'Begriff'}] (x, y in Prozent des Bildes),
                extra:['Ablenker']; Begriffe aus der Wortbank auf die nummerierten Punkte ziehen (oder antippen).
   bloecke      Blöcke wie beim blockbasierten Programmieren zu einer Formel oder einem Ablauf zusammensetzen:
@@ -283,8 +285,6 @@ EXPERIMENTELL (Branch beta, Liste in Aufgaben.EXPERIMENTELL): Format und Bedienu
                senkrecht:true (Blöcke untereinander), mono:true, h.
   karteikarten karten:[{v:'Vorderseite', r:'Rückseite'}] (HTML), mischen:false; umdrehen, „Gewusst“/„Nicht gewusst“ –
                nicht gewusste Karten kommen wieder, gelöst, wenn alle gewusst sind.
-  kreuzwort    woerter:[{w:'Bilanz', t:'Hinweis'}] – das Gitter entsteht von selbst (immer gleich); Buchstaben A–Z, Ä, Ö, Ü,
-               ß wird SS, Leerzeichen und Bindestriche entfallen. Wörter ohne gemeinsamen Buchstaben stehen einzeln darunter.
   Eigene Typen können klick(ctx, ziel), eingabe(ctx, feld) → true = erledigt, taste(ctx, ereignis) → true = erledigt
   und legen(z, karte, zone, a) mitbringen (siehe die experimentellen Typen).
 

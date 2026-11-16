@@ -57,6 +57,12 @@
  *                Konto eintippen: Liste filtert nach Nummer oder Kürzel (z. B. „ve“ → 4400 VE).
  *                „an“ steht wie im Heft auf der Zeile des letzten Soll-Kontos neben dem ersten Haben-Konto.
  *                prüft: Konten, Soll/Haben vertauscht, fehlende Steuer, Beträge; Lösung im Skill-Format
+ *   verbessern   Fehlersuche: text mit Zeilen (\n), Fehler als [[falsch|richtig|auch richtig]] (falsch wird angezeigt;
+ *                [[zu viel|]] = Stelle löschen). Ablauf je Fehlerzeile: Zeile anklicken → alle falschen Stellen anklicken
+ *                (nochmal = abwählen) → Prüfen → Stellen verbessern → Prüfen. Bei nur einer Zeile entfällt die Zeilenwahl.
+ *                Stellen sind durch Leerzeichen getrennte Wörter bzw. die Klammern. mono:true (Code), gross:false (Groß/klein egal), h.
+ *   kreuzwort    woerter:[{w:'Bilanz', t:'Hinweis'}] – das Gitter entsteht von selbst (immer gleich); Buchstaben A–Z, Ä, Ö, Ü,
+ *                ß wird SS, Leerzeichen und Bindestriche entfallen. Wörter ohne gemeinsamen Buchstaben stehen einzeln darunter.
  *
  * EXPERIMENTELL (Branch beta, Liste in Aufgaben.EXPERIMENTELL): Format und Bedienung können sich noch ändern.
  *   reihenfolge  karten:['erster Schritt', 'zweiter Schritt', …] in der richtigen Reihenfolge (HTML erlaubt), werden gemischt;
@@ -68,10 +74,6 @@
  *   markieren    text:'Der [[Hund]] bellt.' – Stellen in [[…]] sind gesucht; angeklickt werden Wörter (Satzzeichen nicht) oder
  *                mit einheit:'zeile' ganze Zeilen (Zeile mit [[ ist gesucht). Reiner Text, Zeilenumbruch mit \n.
  *                mono:true (Code: Schreibmaschinenschrift, Trennung nur an Leerzeichen), anzahl:false (Anzahl nicht verraten), h.
- *   verbessern   Fehlersuche: text mit Zeilen (\n), Fehler als [[falsch|richtig|auch richtig]] (falsch wird angezeigt;
- *                [[zu viel|]] = Stelle löschen). Ablauf je Fehlerzeile: Zeile anklicken → alle falschen Stellen anklicken
- *                (nochmal = abwählen) → Prüfen → Stellen verbessern → Prüfen. Bei nur einer Zeile entfällt die Zeilenwahl.
- *                Stellen sind durch Leerzeichen getrennte Wörter bzw. die Klammern. mono:true (Code), gross:false (Groß/klein egal), h.
  *   beschriften  bild (Adresse oder data:image/…), alt, punkte:[{x:25, y:40, t:'Begriff'}] (x, y in Prozent des Bildes),
  *                extra:['Ablenker']; Begriffe aus der Wortbank auf die nummerierten Punkte ziehen (oder antippen).
  *   bloecke      Blöcke wie beim blockbasierten Programmieren zu einer Formel oder einem Ablauf zusammensetzen:
@@ -81,8 +83,6 @@
  *                senkrecht:true (Blöcke untereinander), mono:true, h.
  *   karteikarten karten:[{v:'Vorderseite', r:'Rückseite'}] (HTML), mischen:false; umdrehen, „Gewusst“/„Nicht gewusst“ –
  *                nicht gewusste Karten kommen wieder, gelöst, wenn alle gewusst sind.
- *   kreuzwort    woerter:[{w:'Bilanz', t:'Hinweis'}] – das Gitter entsteht von selbst (immer gleich); Buchstaben A–Z, Ä, Ö, Ü,
- *                ß wird SS, Leerzeichen und Bindestriche entfallen. Wörter ohne gemeinsamen Buchstaben stehen einzeln darunter.
  *   Eigene Typen können klick(ctx, ziel), eingabe(ctx, feld) → true = erledigt, taste(ctx, ereignis) → true = erledigt
  *   und legen(z, karte, zone, a) mitbringen (siehe die experimentellen Typen).
  *
@@ -413,8 +413,8 @@ const TYPEN = {
   }
 };
 
-/* ---------- Experimentelle Typen (Branch beta): Format kann sich noch ändern ---------- */
-const EXPERIMENTELL = ['reihenfolge', 'offen', 'markieren', 'verbessern', 'beschriften', 'bloecke', 'karteikarten', 'kreuzwort'];
+/* ---------- Neue Typen (Branch beta); experimentell sind die in EXPERIMENTELL: ihr Format kann sich noch ändern ---------- */
+const EXPERIMENTELL = ['reihenfolge', 'offen', 'markieren', 'beschriften', 'bloecke', 'karteikarten'];
 // Aufgabe als gelöst melden (für Typen mit eigenem Ablauf statt „Prüfen“)
 function loese(ctx, t){
   const z = ctx.z, neu = !z.geloest;
