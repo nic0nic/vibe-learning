@@ -2,8 +2,8 @@
  *
  * Öffnet wie der Kontenplan und „Szenario bauen“ ein Fenster über dem Baukasten (Knopf mit data-prompt-bau neben der
  * Umschaltung Editor/JSON in uebung-erstellen.html). Links die Bausteine (Schritt mit Erklärung, Training, Aufgabentypen
- * aus Baukasten.TYPEN; anklicken = in den markierten Schritt, ziehen = in einen beliebigen Schritt), in der Mitte die
- * Struktur als Schritt-Karten, rechts Thema, Ergebnis-Weg und der fertige Prompt. Der Prompt verweist auf den Skill
+ * aus Baukasten.TYPEN; anklicken = in den offenen Schritt, ziehen = auf einen Reiter, den offenen Schritt oder ＋), in der
+ * Mitte oben die Schritte als Reiter wie im Editor und darunter der offene Schritt, rechts Thema, Ergebnis-Weg und der fertige Prompt. Der Prompt verweist auf den Skill
  * vibe-learning-seite-erstellen (github.com/nic0nic/vibe-learning-skills); die Antwort (JSON-Block) fügt man in der
  * Ansicht „JSON“ ein. „Gerüst in den Editor“ legt die Struktur stattdessen direkt als Übung mit leeren Aufgaben
  * (Typ.neu()) an und ersetzt dabei den Entwurf; laden muss die Seite setzen: Baukasten.prompt.laden = d => … (wie „Neu“).
@@ -120,7 +120,7 @@
       + '<button type="button" class="teil sz-teil" data-pg-neu="training"><span class="sym">⏱</span><span>Training (Zeit / endlos)</span></button>'
       + namen.map((k, i) => (!i || rang(namen[i - 1]) !== rang(k) ? `<div class="leiste-trenn">${['Aufgaben', 'Kombinieren', 'Experimentell (β)'][rang(k)]}</div>` : '')
         + `<button type="button" class="teil sz-teil" data-pg-neu="${esc(k)}"><span class="sym">${typSym(k)}</span><span>${esc(typName(k))}</span></button>`).join('')
-      + '<p class="hinweis">Anklicken: kommt in den markierten Schritt. Ziehen: in einen beliebigen Schritt oder auf die freie Fläche (neuer Schritt).</p>';
+      + '<p class="hinweis">Anklicken: kommt in den offenen Schritt. Ziehen: auf einen Reiter oben, in den offenen Schritt oder auf ＋ (neuer Schritt).</p>';
     d.innerHTML = `<div class="kp-oben"><div><b>Prompt erstellen</b> <span class="kp-titel">für Claude mit dem Skill vibe-learning-seite-erstellen</span></div>
         <span class="hinweis sz-hilfe">Thema wählen, Aufbau aus Bausteinen legen, Prompt kopieren und in Claude einfügen. Den JSON-Block aus der Antwort fügst du hier in der Ansicht „JSON“ ein.</span>
         <button type="button" class="btn pg-geruest" title="Die Struktur direkt im Editor anlegen (leere Aufgaben zum selbst Ausfüllen)">Gerüst in den Editor</button><button type="button" class="btn pg-kopieren">Prompt kopieren</button><button type="button" class="btn haupt sz-fertig">Fertig</button></div>
@@ -150,24 +150,29 @@
       const b = BER.find(x => x.id === S.bereich);
       d.querySelector('#pgThemen').innerHTML = (b ? b.tools : []).map(t => `<option value="${esc(t)}">`).join('');
     }
-    function zeichne() {
-      mitte.innerHTML = S.schritte.map((x, i) => `<div class="pg-schritt${i === sel ? ' sel' : ''}${x.training ? ' training' : ''}" data-i="${i}">
+    const kurzTitel = t => t.length > 22 ? t.slice(0, 21) + '…' : t;
+    const reiterHtml = () => S.schritte.map((x, i) => `<button type="button" class="reiter pg-reiter${i === sel ? ' on' : ''}" data-i="${i}" title="${esc((x.titel || 'Schritt ' + (i + 1)) + (x.typen.length ? ': ' + x.typen.map(typName).join(', ') : ''))}">${x.training ? '⏱ ' : ''}${i + 1}${x.titel.trim() ? ' ' + esc(kurzTitel(x.titel.trim())) : ''}${!x.training && x.typen.length ? ` <span class="pg-anzahl">${x.typen.length}</span>` : ''}</button>`).join('')
+        + '<button type="button" class="reiter plus pg-reiter" data-pg-plus title="Neuer Schritt">＋</button>';
+    function zeichne() {   // oben die Schritte als Reiter (wie im Editor), darunter der markierte Schritt
+      const x = S.schritte[sel], i = sel;
+      const inhalt = !x ? '<div class="pg-leer" data-pg-flaeche>Noch kein Aufbau: Dann wählt Claude ihn selbst.<br>Lege links Schritte und Aufgabentypen an (anklicken oder hierher ziehen), wenn du ihn vorgeben willst.</div>'
+        : `<div class="pg-schritt${x.training ? ' training' : ''}" data-i="${i}" data-pg-flaeche>
           <div class="pg-skopf"><span class="pg-nr">${i + 1}</span><span class="sym">${x.training ? '⏱' : '📄'}</span>
             <input class="feld" data-pg-titel="${i}" value="${esc(x.titel)}" placeholder="${x.training ? 'Training zu …' : 'Teilthema (leer = Claude wählt)'}" aria-label="Teilthema von Schritt ${i + 1}">
-            <button type="button" class="btn klein" data-pg-hoch="${i}" title="Nach oben"${i ? '' : ' disabled'}>↑</button>
-            <button type="button" class="btn klein" data-pg-runter="${i}" title="Nach unten"${i < S.schritte.length - 1 ? '' : ' disabled'}>↓</button>
+            <button type="button" class="btn klein" data-pg-hoch="${i}" title="Reiter nach links"${i ? '' : ' disabled'}>←</button>
+            <button type="button" class="btn klein" data-pg-runter="${i}" title="Reiter nach rechts"${i < S.schritte.length - 1 ? '' : ' disabled'}>→</button>
             <button type="button" class="btn klein x" data-pg-weg="${i}" title="Schritt entfernen">✕</button></div>
           ${x.training ? `<div class="pg-optionen">
               <label><input type="radio" name="pgA${i}" data-pg-tr="${i}" data-k="antwort" value="eingabe"${x.training.antwort !== 'mc' ? ' checked' : ''}> eintippen</label>
               <label><input type="radio" name="pgA${i}" data-pg-tr="${i}" data-k="antwort" value="mc"${x.training.antwort === 'mc' ? ' checked' : ''}> auswählen</label>
               <label><input type="checkbox" data-pg-tr="${i}" data-k="zeit"${x.training.zeit ? ' checked' : ''}> auf Zeit</label>
-              <label><input type="checkbox" data-pg-tr="${i}" data-k="endlos"${x.training.endlos ? ' checked' : ''}> endlos</label></div>`
+              <label><input type="checkbox" data-pg-tr="${i}" data-k="endlos"${x.training.endlos ? ' checked' : ''}> endlos</label></div>
+            <p class="hinweis">Aufgabentypen, die du hierher legst, kommen in einen neuen Schritt dahinter.</p>`
           : `<div class="pg-optionen"><label><input type="checkbox" data-pg-erkl="${i}"${x.erklaerung ? ' checked' : ''}> mit Erklärung</label></div>
-            <div class="pg-chips">${x.typen.map((k, j) => `<span class="pg-chip${(B.TYPEN[k] || {}).experimentell ? ' exp' : ''}"><span class="sym">${typSym(k)}</span>${esc(typName(k))}<button type="button" data-pg-chipweg="${i}:${j}" aria-label="${esc(typName(k))} entfernen">×</button></span>`).join('')
-              || '<span class="hinweis">Aufgabentyp links anklicken oder hierher ziehen</span>'}</div>`}
-        </div>`).join('')
-        + `<button type="button" class="pg-plus" data-pg-plus>＋ Schritt</button>`
-        + (S.schritte.length ? '' : '<p class="hinweis pg-leer">Noch kein Aufbau: Dann wählt Claude ihn selbst. Lege links Schritte und Aufgabentypen an, wenn du ihn vorgeben willst.</p>');
+            <div class="pg-chips">${x.typen.map((k, j) => `<span class="pg-chip${(B.TYPEN[k] || {}).experimentell ? ' exp' : ''}"><span class="sym">${typSym(k)}</span>${esc(typName(k))}<button type="button" data-pg-chipweg="${i}:${j}" aria-label="${esc(typName(k))} entfernen">×</button></span>`).join('')}
+              <span class="pg-zone">＋ Aufgabentyp links anklicken oder hierher ziehen</span></div>`}
+        </div>`;
+      mitte.innerHTML = `<div class="reiterleiste pg-reiterleiste">${reiterHtml()}</div><div class="pg-flaeche">${inhalt}</div>`;
       aktualisiere();
     }
     function aktualisiere() { aus.value = prompt(S); merken(S); }
@@ -198,17 +203,16 @@
         [S.schritte[i], S.schritte[j]] = [S.schritte[j], S.schritte[i]]; sel = j; return zeichne();
       }
       if (q('[data-pg-chipweg]')) { const [i, j] = q('[data-pg-chipweg]').dataset.pgChipweg.split(':').map(Number); S.schritte[i].typen.splice(j, 1); sel = i; return zeichne(); }
-      const k = q('.pg-schritt');
-      if (k && +k.dataset.i !== sel && !q('input,button,label')) { sel = +k.dataset.i; zeichne(); }
-    });
-    d.addEventListener('focusin', e => {   // Tippen ins Teilthema markiert den Schritt, ohne neu zu zeichnen
-      const k = e.target.closest && e.target.closest('.pg-schritt'); if (!k || +k.dataset.i === sel) return;
-      sel = +k.dataset.i; mitte.querySelectorAll('.pg-schritt').forEach(x => x.classList.toggle('sel', x === k));
+      const k = q('.pg-reiter[data-i]');
+      if (k && +k.dataset.i !== sel) { sel = +k.dataset.i; zeichne(); const f = mitte.querySelector('[data-pg-titel]'); if (f && !f.value) f.focus(); }
     });
     d.addEventListener('input', e => {
       const t = e.target;
       if (t.dataset.pg) { S[t.dataset.pg] = t.value; if (t.dataset.pg === 'bereich') themen(); return aktualisiere(); }
-      if (t.dataset.pgTitel != null) { S.schritte[+t.dataset.pgTitel].titel = t.value; return aktualisiere(); }
+      if (t.dataset.pgTitel != null) {   // Reiter-Beschriftung mitziehen, ohne das Feld neu zu zeichnen
+        S.schritte[+t.dataset.pgTitel].titel = t.value; aktualisiere();
+        mitte.querySelector('.pg-reiterleiste').innerHTML = reiterHtml(); return;
+      }
     });
     d.addEventListener('change', e => {
       const t = e.target;
@@ -227,7 +231,7 @@
       if (!zug.bewegt && Math.hypot(e.clientX - zug.x, e.clientY - zug.y) < 6) return;
       zug.bewegt = true; e.preventDefault();
       mitte.querySelectorAll('.ziel').forEach(k => k.classList.remove('ziel'));
-      const z = ziel(e.clientX, e.clientY), k = z && (z.closest('.pg-schritt') || z.closest('.pg-mitte'));
+      const z = ziel(e.clientX, e.clientY), k = z && (z.closest('.pg-reiter') || z.closest('.pg-flaeche'));
       if (k) k.classList.add('ziel');
       if (!zug.geist) { zug.geist = zug.el.cloneNode(true); zug.geist.classList.add('sz-geist'); d.appendChild(zug.geist); }
       zug.geist.style.left = (e.clientX + 8) + 'px'; zug.geist.style.top = (e.clientY + 8) + 'px';
@@ -236,11 +240,13 @@
       const g = zug; if (!g) return;
       setTimeout(() => { zug = null; }, 0);   // der Klick danach soll nichts auslösen
       if (g.geist) g.geist.remove();
-      mitte.querySelectorAll('.ziel').forEach(k => k.classList.remove('ziel')); mitte.classList.remove('ziel');
+      mitte.querySelectorAll('.ziel').forEach(k => k.classList.remove('ziel'));
       if (!g.bewegt) return dazu(g.was);
-      const z = ziel(e.clientX, e.clientY), k = z && z.closest('.pg-schritt');
-      if (k) { const i = +k.dataset.i; if (g.was === 'schritt' || g.was === 'training') { sel = i; return dazu(g.was); } return dazu(g.was, i); }
-      if (z && z.closest('.pg-mitte')) dazu(g.was, -1);
+      const z = ziel(e.clientX, e.clientY); if (!z) return;
+      const plus = z.closest('[data-pg-plus]'), tab = z.closest('.pg-reiter[data-i]');
+      if (plus) return dazu(g.was, -1);   // auf ＋: neuer Schritt am Ende
+      if (tab) { const i = +tab.dataset.i; if (g.was === 'schritt' || g.was === 'training') { sel = i; return dazu(g.was); } return dazu(g.was, i); }
+      if (z.closest('.pg-flaeche')) dazu(g.was);   // auf den offenen Schritt
     });
     d.addEventListener('pointercancel', () => { if (zug && zug.geist) zug.geist.remove(); zug = null; });
 
