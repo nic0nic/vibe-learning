@@ -4591,6 +4591,246 @@ Aufgaben.sequenz({el:'#app', key:${JSON.stringify(id)}, schritte:DATEN.schritte}
 })();
 
 </script>
+<script>/* ../../vorlage-prompt.js */
+/* vorlage-prompt.js – Prompt-Generator im Baukasten: Thema und Aufbau wählen, Prompt für Claude kopieren
+ *
+ * Öffnet wie der Kontenplan und „Szenario bauen“ ein Fenster über dem Baukasten (Knopf mit data-prompt-bau neben der
+ * Umschaltung Editor/JSON in uebung-erstellen.html). Links die Bausteine (Schritt mit Erklärung, Training, Aufgabentypen
+ * aus Baukasten.TYPEN; anklicken = in den markierten Schritt, ziehen = in einen beliebigen Schritt), in der Mitte die
+ * Struktur als Schritt-Karten, rechts Thema, Ergebnis-Weg und der fertige Prompt. Der Prompt verweist auf den Skill
+ * vibe-learning-seite-erstellen (github.com/nic0nic/vibe-learning-skills); die Antwort (JSON-Block) fügt man in der
+ * Ansicht „JSON“ ein. Am Baukasten selbst ändert das Fenster nichts.
+ * Stand im Browser: localStorage vorlage-prompt = {bereich, thema, klasse, hinweise, weg, schritte:[{titel, erklaerung,
+ *   training: null | {antwort, zeit, endlos}, typen:[typ, …]}]}.
+ * Einbinden nach vorlage-typen.js (und vorlage-typen-beta.js); braucht katalog.js. Fenster-Layout: .pg-… in uebung-erstellen.html.
+ */
+(function () {
+  'use strict';
+  const B = window.Baukasten;
+  const SKILL = 'https://github.com/nic0nic/vibe-learning-skills';
+  const SKILL_ORDNER = SKILL + '/tree/main/vibe-learning-seite-erstellen';
+  const EDITOR = 'https://vl.nimals.de/IT/tools/uebung-erstellen.html';
+  const KEY = 'vorlage-prompt';
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+  const WEGE = [
+    ['editor', 'JSON für den Editor', 'Weg A: genau ein JSON-Block, den ich auf ' + EDITOR + ' in der Ansicht „JSON“ einfüge.'],
+    ['html', 'HTML-Datei', 'Weg C: eine fertige HTML-Datei (läuft per Doppelklick), zusätzlich das Aufgaben-JSON als .json-Datei.'],
+    ['bycs', 'ByCS-Paket (ZIP)', 'Weg C: ein ByCS-Paket (SCORM-ZIP, Aktivität „Lernpaket“), zusätzlich das Aufgaben-JSON als .json-Datei.']
+  ];
+
+  const leer = () => ({bereich: '', thema: '', klasse: '', hinweise: '', weg: 'editor', schritte: []});
+  function laden() {
+    let s = null;
+    try { s = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { s = null; }
+    s = Object.assign(leer(), s && typeof s === 'object' ? s : {});
+    if (!Array.isArray(s.schritte)) s.schritte = [];
+    if (!s.bereich) try { s.bereich = (JSON.parse(localStorage.getItem('vorlage-entwurf') || '{}') || {}).bereich || ''; } catch (e) { /* egal */ }
+    if (!s.thema) try { s.thema = (B.daten() || {}).titel || ''; } catch (e) { /* egal */ }
+    return s;
+  }
+  const merken = s => { try { localStorage.setItem(KEY, JSON.stringify(s)); } catch (e) { /* privates Fenster: dann eben nicht */ } };
+
+  function bereiche() {
+    const K = window.KATALOG, l = [];
+    if (K && K.gruppen) K.gruppen.forEach(g => g.bereiche.forEach(b => l.push({id: b.id, pfad: b.pfad, name: g.titel + ' › ' + b.titel,
+      tools: (b.tools || []).map(t => t.titel)})));
+    return l;
+  }
+  const typName = k => (B.TYPEN[k] || {}).name || k;
+  const typSym = k => (B.TYPEN[k] || {}).symbol || '•';
+  const neuerSchritt = (training) => ({titel: '', erklaerung: !training, training: training ? {antwort: 'eingabe', zeit: true, endlos: true} : null, typen: []});
+
+  /* ---------- Prompt ---------- */
+  function prompt(s) {
+    const b = bereiche().find(x => x.id === s.bereich), z = [];
+    z.push('Erstelle eine Übung für die Lernplattform vibe learning (https://vl.nimals.de).');
+    z.push(`Nutze dafür den Skill „vibe-learning-seite-erstellen“ aus ${SKILL} (Ordner: ${SKILL_ORDNER}). `
+      + 'Ist der Skill nicht installiert, lies dort SKILL.md und references/typen.md und halte dich genau an das Aufgaben-JSON und die Prüfregeln.');
+    z.push('');
+    if (b) z.push(`Fach und Bereich: ${b.name} (Ordner ${b.pfad})`);
+    if (s.thema.trim()) z.push(`Thema: ${s.thema.trim()}`);
+    if (s.klasse.trim()) z.push(`Klasse / Niveau: ${s.klasse.trim()}`);
+    if (!b && !s.thema.trim()) z.push('Thema: bitte bei mir nachfragen.');
+    z.push('');
+    const exp = new Set();
+    if (!s.schritte.length) z.push('Aufbau: wähle selbst einen sinnvollen Aufbau (Erklärung, Übungen, evtl. Training).');
+    else {
+      z.push('Aufbau (Schritte in dieser Reihenfolge; ein Schritt ist ein Knopf oben auf der Seite):');
+      s.schritte.forEach((x, i) => {
+        const t = x.titel.trim() ? `„${x.titel.trim()}“` : '(Teilthema wählst du passend)';
+        if (x.training) {
+          const tr = x.training;
+          z.push(`${i + 1}. ${t} – Training: Aufgaben nacheinander, Antwort ${tr.antwort === 'mc' ? 'auswählen' : 'eintippen'}, `
+            + `${tr.zeit ? 'auf Zeit' : 'ohne Zeit'}, ${tr.endlos ? 'endlos (Serie und Bestleistung)' : 'feste Anzahl (z. B. 20)'}. Aufgaben als Szenarien mit Zufallswerten oder als Wörterbuch.`);
+          return;
+        }
+        const teile = [];
+        if (x.erklaerung) teile.push('kurze Erklärung (html)');
+        const gruppen = [];   // gleiche Typen hintereinander zusammenfassen: „2× Multiple Choice (mc)“
+        x.typen.forEach(k => { const g = gruppen[gruppen.length - 1]; if (g && g.k === k) g.n++; else gruppen.push({k, n: 1}); if ((B.TYPEN[k] || {}).experimentell) exp.add(k); });
+        if (gruppen.length) teile.push('Aufgaben: ' + gruppen.map(g => `${g.n > 1 ? g.n + '× ' : ''}${typName(g.k)} (${g.k})`).join(', '));
+        else if (!x.erklaerung) teile.push('Aufgaben: passende Typen wählst du');
+        z.push(`${i + 1}. ${t} – ${teile.join('; ')}`);
+      });
+      z.push('Halte dich an diese Typen und Reihenfolge. Wo kein Teilthema steht, wähle es passend zum Thema.');
+    }
+    if (exp.size) z.push(`Experimentelle Typen (${[...exp].join(', ')}): Format steht am Ende von references/typen.md.`);
+    if (s.hinweise.trim()) { z.push(''); z.push('Weitere Wünsche: ' + s.hinweise.trim()); }
+    z.push('');
+    z.push('Ergebnis: ' + (WEGE.find(w => w[0] === s.weg) || WEGE[0])[2]);
+    z.push('Prüfe das JSON vor der Ausgabe und halte den Text knapp.');
+    return z.join('\n');
+  }
+
+  /* ---------- Fenster ---------- */
+  function oeffnen() {
+    const S = laden(), BER = bereiche();
+    let sel = S.schritte.length ? 0 : -1, zug = null;
+    const d = document.createElement('dialog'); d.className = 'kp-dialog sz-dialog pg-dialog';
+    const rang = k => B.TYPEN[k].experimentell ? 2 : k === 'kombi' ? 1 : 0;
+    const namen = Object.keys(B.TYPEN).sort((x, y) => rang(x) - rang(y));
+    const leiste = '<div class="leiste-trenn">Schritte</div>'
+      + '<button type="button" class="teil sz-teil" data-pg-neu="schritt"><span class="sym">📄</span><span>Schritt / Erklärung</span></button>'
+      + '<button type="button" class="teil sz-teil" data-pg-neu="training"><span class="sym">⏱</span><span>Training (Zeit / endlos)</span></button>'
+      + namen.map((k, i) => (!i || rang(namen[i - 1]) !== rang(k) ? `<div class="leiste-trenn">${['Aufgaben', 'Kombinieren', 'Experimentell (β)'][rang(k)]}</div>` : '')
+        + `<button type="button" class="teil sz-teil" data-pg-neu="${esc(k)}"><span class="sym">${typSym(k)}</span><span>${esc(typName(k))}</span></button>`).join('')
+      + '<p class="hinweis">Anklicken: kommt in den markierten Schritt. Ziehen: in einen beliebigen Schritt oder auf die freie Fläche (neuer Schritt).</p>';
+    d.innerHTML = `<div class="kp-oben"><div><b>Prompt erstellen</b> <span class="kp-titel">für Claude mit dem Skill vibe-learning-seite-erstellen</span></div>
+        <span class="hinweis sz-hilfe">Thema wählen, Aufbau aus Bausteinen legen, Prompt kopieren und in Claude einfügen. Den JSON-Block aus der Antwort fügst du hier in der Ansicht „JSON“ ein.</span>
+        <button type="button" class="btn pg-kopieren">Prompt kopieren</button><button type="button" class="btn haupt sz-fertig">Fertig</button></div>
+      <div class="sz-arbeit pg-arbeit"><div class="sz-leiste">${leiste}</div>
+        <div class="pg-mitte"></div>
+        <div class="sz-eig pg-eig">
+          <h3>Thema</h3>
+          <label class="klein" for="pgBereich">Fach, Jahrgangsstufe und Bereich</label>
+          <select class="feld" id="pgBereich" data-pg="bereich"><option value="">– frei –</option>${BER.map(b => `<option value="${esc(b.id)}"${b.id === S.bereich ? ' selected' : ''}>${esc(b.name)}</option>`).join('')}</select>
+          <label class="klein" for="pgThema">Thema</label>
+          <input class="feld" id="pgThema" data-pg="thema" list="pgThemen" value="${esc(S.thema)}" placeholder="z. B. Zinsrechnung, WENN-Funktion …"><datalist id="pgThemen"></datalist>
+          <label class="klein" for="pgKlasse">Klasse / Niveau (optional)</label>
+          <input class="feld" id="pgKlasse" data-pg="klasse" value="${esc(S.klasse)}" placeholder="z. B. 9b, Grundlagen, schwächere Klasse">
+          <label class="klein" for="pgHinweise">Weitere Wünsche (optional)</label>
+          <textarea class="feld" id="pgHinweise" data-pg="hinweise" rows="3" placeholder="z. B. Beispiele aus dem Alltag, Zahlen bis 1000, Vorwissen …">${esc(S.hinweise)}</textarea>
+          <label class="klein">Ergebnis</label>
+          <div class="pg-wege">${WEGE.map(([k, t]) => `<label><input type="radio" name="pgWeg" value="${k}"${S.weg === k ? ' checked' : ''}> ${t}</label>`).join('')}</div>
+          <h3>Prompt</h3>
+          <textarea class="feld pg-prompt" readonly rows="12" aria-label="Prompt"></textarea>
+          <div class="reihe wrap"><button type="button" class="btn haupt pg-kopieren">Prompt kopieren</button><a class="btn" href="${SKILL_ORDNER}" target="_blank" rel="noopener">Skill auf GitHub</a></div>
+          <p class="hinweis pg-meldung"></p>
+        </div></div>`;
+    document.body.appendChild(d);
+    const mitte = d.querySelector('.pg-mitte'), aus = d.querySelector('.pg-prompt'), msg = d.querySelector('.pg-meldung');
+
+    function themen() {
+      const b = BER.find(x => x.id === S.bereich);
+      d.querySelector('#pgThemen').innerHTML = (b ? b.tools : []).map(t => `<option value="${esc(t)}">`).join('');
+    }
+    function zeichne() {
+      mitte.innerHTML = S.schritte.map((x, i) => `<div class="pg-schritt${i === sel ? ' sel' : ''}${x.training ? ' training' : ''}" data-i="${i}">
+          <div class="pg-skopf"><span class="pg-nr">${i + 1}</span><span class="sym">${x.training ? '⏱' : '📄'}</span>
+            <input class="feld" data-pg-titel="${i}" value="${esc(x.titel)}" placeholder="${x.training ? 'Training zu …' : 'Teilthema (leer = Claude wählt)'}" aria-label="Teilthema von Schritt ${i + 1}">
+            <button type="button" class="btn klein" data-pg-hoch="${i}" title="Nach oben"${i ? '' : ' disabled'}>↑</button>
+            <button type="button" class="btn klein" data-pg-runter="${i}" title="Nach unten"${i < S.schritte.length - 1 ? '' : ' disabled'}>↓</button>
+            <button type="button" class="btn klein x" data-pg-weg="${i}" title="Schritt entfernen">✕</button></div>
+          ${x.training ? `<div class="pg-optionen">
+              <label><input type="radio" name="pgA${i}" data-pg-tr="${i}" data-k="antwort" value="eingabe"${x.training.antwort !== 'mc' ? ' checked' : ''}> eintippen</label>
+              <label><input type="radio" name="pgA${i}" data-pg-tr="${i}" data-k="antwort" value="mc"${x.training.antwort === 'mc' ? ' checked' : ''}> auswählen</label>
+              <label><input type="checkbox" data-pg-tr="${i}" data-k="zeit"${x.training.zeit ? ' checked' : ''}> auf Zeit</label>
+              <label><input type="checkbox" data-pg-tr="${i}" data-k="endlos"${x.training.endlos ? ' checked' : ''}> endlos</label></div>`
+          : `<div class="pg-optionen"><label><input type="checkbox" data-pg-erkl="${i}"${x.erklaerung ? ' checked' : ''}> mit Erklärung</label></div>
+            <div class="pg-chips">${x.typen.map((k, j) => `<span class="pg-chip${(B.TYPEN[k] || {}).experimentell ? ' exp' : ''}"><span class="sym">${typSym(k)}</span>${esc(typName(k))}<button type="button" data-pg-chipweg="${i}:${j}" aria-label="${esc(typName(k))} entfernen">×</button></span>`).join('')
+              || '<span class="hinweis">Aufgabentyp links anklicken oder hierher ziehen</span>'}</div>`}
+        </div>`).join('')
+        + `<button type="button" class="pg-plus" data-pg-plus>＋ Schritt</button>`
+        + (S.schritte.length ? '' : '<p class="hinweis pg-leer">Noch kein Aufbau: Dann wählt Claude ihn selbst. Lege links Schritte und Aufgabentypen an, wenn du ihn vorgeben willst.</p>');
+      aktualisiere();
+    }
+    function aktualisiere() { aus.value = prompt(S); merken(S); }
+    function dazu(was, i) {   // was = 'schritt' | 'training' | Typ; i = Zielschritt (undefined = markierter, -1 = neuer am Ende)
+      if (was === 'schritt' || was === 'training') {
+        const pos = i === -1 || sel < 0 ? S.schritte.length : sel + 1;
+        S.schritte.splice(pos, 0, neuerSchritt(was === 'training')); sel = pos; return zeichne();
+      }
+      let z = i === undefined ? sel : i;
+      if (z < 0 || z >= S.schritte.length || S.schritte[z].training) {   // kein passender Schritt: neuer ohne Erklärung
+        z = z >= 0 && z < S.schritte.length ? z + 1 : S.schritte.length;
+        S.schritte.splice(z, 0, Object.assign(neuerSchritt(false), {erklaerung: false}));
+      }
+      S.schritte[z].typen.push(was); sel = z; zeichne();
+    }
+
+    d.addEventListener('click', e => {
+      const t = e.target, q = s => t.closest(s);
+      if (q('.sz-fertig') || t === d) return d.close();
+      if (q('.pg-kopieren')) return kopieren();
+      if (zug && zug.bewegt) return;
+      if (q('[data-pg-plus]')) return dazu('schritt', -1);
+      if (q('[data-pg-weg]')) { const i = +q('[data-pg-weg]').dataset.pgWeg; S.schritte.splice(i, 1); sel = Math.min(sel, S.schritte.length - 1); return zeichne(); }
+      if (q('[data-pg-hoch]') || q('[data-pg-runter]')) {
+        const hoch = !!q('[data-pg-hoch]'), i = +(hoch ? q('[data-pg-hoch]').dataset.pgHoch : q('[data-pg-runter]').dataset.pgRunter), j = hoch ? i - 1 : i + 1;
+        if (j < 0 || j >= S.schritte.length) return;
+        [S.schritte[i], S.schritte[j]] = [S.schritte[j], S.schritte[i]]; sel = j; return zeichne();
+      }
+      if (q('[data-pg-chipweg]')) { const [i, j] = q('[data-pg-chipweg]').dataset.pgChipweg.split(':').map(Number); S.schritte[i].typen.splice(j, 1); sel = i; return zeichne(); }
+      const k = q('.pg-schritt');
+      if (k && +k.dataset.i !== sel && !q('input,button,label')) { sel = +k.dataset.i; zeichne(); }
+    });
+    d.addEventListener('focusin', e => {   // Tippen ins Teilthema markiert den Schritt, ohne neu zu zeichnen
+      const k = e.target.closest && e.target.closest('.pg-schritt'); if (!k || +k.dataset.i === sel) return;
+      sel = +k.dataset.i; mitte.querySelectorAll('.pg-schritt').forEach(x => x.classList.toggle('sel', x === k));
+    });
+    d.addEventListener('input', e => {
+      const t = e.target;
+      if (t.dataset.pg) { S[t.dataset.pg] = t.value; if (t.dataset.pg === 'bereich') themen(); return aktualisiere(); }
+      if (t.dataset.pgTitel != null) { S.schritte[+t.dataset.pgTitel].titel = t.value; return aktualisiere(); }
+    });
+    d.addEventListener('change', e => {
+      const t = e.target;
+      if (t.name === 'pgWeg') { S.weg = t.value; return aktualisiere(); }
+      if (t.dataset.pgErkl != null) { S.schritte[+t.dataset.pgErkl].erklaerung = t.checked; return aktualisiere(); }
+      if (t.dataset.pgTr != null) { const tr = S.schritte[+t.dataset.pgTr].training; tr[t.dataset.k] = t.type === 'radio' ? t.value : t.checked; return aktualisiere(); }
+    });
+    // Ziehen: Baustein → Schritt (oder freie Fläche = neuer Schritt am Ende)
+    d.addEventListener('pointerdown', e => {
+      const teil = e.button > 0 ? null : e.target.closest('[data-pg-neu]');
+      if (teil) zug = {was: teil.dataset.pgNeu, el: teil, x: e.clientX, y: e.clientY, bewegt: false};
+    });
+    const ziel = (x, y) => { const z = document.elementFromPoint(x, y); return z && d.contains(z) ? z : null; };
+    d.addEventListener('pointermove', e => {
+      if (!zug) return;
+      if (!zug.bewegt && Math.hypot(e.clientX - zug.x, e.clientY - zug.y) < 6) return;
+      zug.bewegt = true; e.preventDefault();
+      mitte.querySelectorAll('.ziel').forEach(k => k.classList.remove('ziel'));
+      const z = ziel(e.clientX, e.clientY), k = z && (z.closest('.pg-schritt') || z.closest('.pg-mitte'));
+      if (k) k.classList.add('ziel');
+      if (!zug.geist) { zug.geist = zug.el.cloneNode(true); zug.geist.classList.add('sz-geist'); d.appendChild(zug.geist); }
+      zug.geist.style.left = (e.clientX + 8) + 'px'; zug.geist.style.top = (e.clientY + 8) + 'px';
+    });
+    d.addEventListener('pointerup', e => {
+      const g = zug; if (!g) return;
+      setTimeout(() => { zug = null; }, 0);   // der Klick danach soll nichts auslösen
+      if (g.geist) g.geist.remove();
+      mitte.querySelectorAll('.ziel').forEach(k => k.classList.remove('ziel')); mitte.classList.remove('ziel');
+      if (!g.bewegt) return dazu(g.was);
+      const z = ziel(e.clientX, e.clientY), k = z && z.closest('.pg-schritt');
+      if (k) { const i = +k.dataset.i; if (g.was === 'schritt' || g.was === 'training') { sel = i; return dazu(g.was); } return dazu(g.was, i); }
+      if (z && z.closest('.pg-mitte')) dazu(g.was, -1);
+    });
+    d.addEventListener('pointercancel', () => { if (zug && zug.geist) zug.geist.remove(); zug = null; });
+
+    async function kopieren() {
+      try { await navigator.clipboard.writeText(aus.value); msg.textContent = '✓ Kopiert. In claude.ai (mit dem Skill) einfügen, den JSON-Block aus der Antwort hier unter „JSON“ einfügen.'; }
+      catch (e) { aus.focus(); aus.select(); msg.textContent = 'Kopieren hat nicht geklappt – der Prompt ist markiert, kopiere ihn mit Strg+C.'; }
+    }
+
+    d.addEventListener('close', () => d.remove());
+    themen(); zeichne(); d.showModal();
+  }
+
+  document.addEventListener('click', e => { if (e.target.closest && e.target.closest('[data-prompt-bau]')) oeffnen(); });
+  B.prompt = {oeffnen, text: prompt};
+})();
+
+</script>
 <script>/* ../../vorlage-training.js */
 /* vorlage-training.js – Formular für Training-Schritte im Baukasten (vorlage-editor.js), Format: lib/seite.js
  *
@@ -5231,6 +5471,29 @@ dialog.sz-dialog{width:min(1500px,calc(100vw - 24px));height:calc(100vh - 24px)}
 .sz-teil{touch-action:none}
 .sz-geist{position:fixed;z-index:10;pointer-events:none;opacity:.9;box-shadow:0 8px 20px rgba(0,0,0,.25)}
 .sz-leer{position:absolute;left:20px;top:20px}
+/* Prompt-Generator (vorlage-prompt.js) */
+.pg-arbeit{grid-template-columns:190px minmax(0,1fr) 360px}
+.pg-mitte{overflow:auto;padding:12px;display:flex;flex-direction:column;gap:10px;background:var(--bg)}
+.pg-mitte.ziel{outline:2px dashed var(--marke);outline-offset:-4px}
+.pg-schritt{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:6px}
+.pg-schritt.sel{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.pg-schritt.ziel{border-color:var(--marke);box-shadow:0 0 0 2px var(--marke)}
+.pg-schritt.training{background:color-mix(in srgb,var(--marke) 7%,var(--panel))}
+.pg-skopf{display:flex;align-items:center;gap:6px}.pg-skopf .feld{flex:1;min-width:0}
+.pg-nr{font:700 13px system-ui,sans-serif;color:var(--muted);min-width:18px;text-align:right}
+.pg-optionen{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:13px;color:var(--muted);padding-left:52px}
+.pg-chips{display:flex;flex-wrap:wrap;gap:6px;padding-left:52px;min-height:28px;align-items:center}
+.pg-chip{display:inline-flex;align-items:center;gap:4px;background:var(--panel2);border:1px solid var(--border);border-radius:999px;padding:2px 4px 2px 8px;font:600 13px system-ui,sans-serif}
+.pg-chip.exp{border-style:dashed}
+.pg-chip .sym{width:auto}
+.pg-chip button{border:0;background:none;color:var(--muted);cursor:pointer;font-size:15px;line-height:1;padding:0 4px}
+.pg-chip button:hover{color:var(--err)}
+.pg-plus{border:2px dashed var(--border);border-radius:10px;background:none;color:var(--muted);font:600 14px system-ui,sans-serif;padding:10px;cursor:pointer}
+.pg-plus:hover{border-color:var(--accent);color:var(--text)}
+.pg-wege{display:flex;flex-direction:column;gap:3px;font-size:14px}
+.pg-prompt{font:12.5px/1.45 var(--mono);resize:vertical}
+.pg-eig .reihe.wrap{flex-wrap:wrap}.pg-eig a.btn{text-decoration:none}
+@media (max-width:900px){.pg-arbeit{grid-template-columns:minmax(0,1fr)}.pg-optionen,.pg-chips{padding-left:0}}
 
 /* Training-Schritt (vorlage-training.js) */
 .tkarte{background:var(--panel);border:2px solid var(--border);border-left:6px solid #5e81ac;border-radius:10px;padding:10px 12px;cursor:pointer}
@@ -5390,6 +5653,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
   </div>
   <div class="kopfzeile">
     <div class="seg" role="group" aria-label="Ansicht"><button class="btn on" type="button" data-modus="editor">Editor</button><button class="btn" type="button" data-modus="json">JSON</button></div>
+    <button class="btn" type="button" data-prompt-bau title="Thema und Aufbau wählen, Prompt für Claude (Skill vibe-learning-seite-erstellen) kopieren">✨ Prompt</button>
     <button class="btn" id="rueck" type="button" title="Rückgängig (Strg+Z)">↶</button>
     <button class="btn" id="vor" type="button" title="Wiederholen (Strg+Y)">↷</button>
     <button class="btn" id="neu" type="button">Neu</button>
@@ -5422,6 +5686,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
       <ol class="schritte-liste">
         <li>Im Claude-Chat mit dem Skill <b>vibe-learning-seite-erstellen</b> Aufgaben erzeugen lassen und den JSON-Block hier einfügen.</li>
         <li><b>Im Editor öffnen</b> und dort weiterbearbeiten.</li>
+        <li>Tipp: Mit <b>✨ Prompt</b> Thema und Aufbau wählen und den fertigen Prompt für Claude kopieren.</li>
         <li>Zum Sichern des Standes das JSON wieder <b>kopieren</b> (oder oben „Speichern“).</li>
       </ol>
       <div class="knoepfe"><button class="btn haupt" type="button" id="zumEditor">Im Editor öffnen</button><button class="btn" type="button" id="kopieren">Kopieren</button><button class="btn" type="button" id="beispiel">Beispiel laden</button></div>

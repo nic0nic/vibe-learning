@@ -39,6 +39,7 @@ document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: da
 <script src="../../vorlage-typen-beta.js"></script>
 <script src="../../lib/szenario.js"></script>
 <script src="../../vorlage-szenario.js"></script>
+<script src="../../vorlage-prompt.js"></script>
 <script src="../../vorlage-training.js"></script>
 <script src="../python/lib/codemirror.min.js"></script>
 <script src="../../vorlage-json.js"></script>
@@ -185,6 +186,29 @@ dialog.sz-dialog{width:min(1500px,calc(100vw - 24px));height:calc(100vh - 24px)}
 .sz-teil{touch-action:none}
 .sz-geist{position:fixed;z-index:10;pointer-events:none;opacity:.9;box-shadow:0 8px 20px rgba(0,0,0,.25)}
 .sz-leer{position:absolute;left:20px;top:20px}
+/* Prompt-Generator (vorlage-prompt.js) */
+.pg-arbeit{grid-template-columns:190px minmax(0,1fr) 360px}
+.pg-mitte{overflow:auto;padding:12px;display:flex;flex-direction:column;gap:10px;background:var(--bg)}
+.pg-mitte.ziel{outline:2px dashed var(--marke);outline-offset:-4px}
+.pg-schritt{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:6px}
+.pg-schritt.sel{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.pg-schritt.ziel{border-color:var(--marke);box-shadow:0 0 0 2px var(--marke)}
+.pg-schritt.training{background:color-mix(in srgb,var(--marke) 7%,var(--panel))}
+.pg-skopf{display:flex;align-items:center;gap:6px}.pg-skopf .feld{flex:1;min-width:0}
+.pg-nr{font:700 13px system-ui,sans-serif;color:var(--muted);min-width:18px;text-align:right}
+.pg-optionen{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:13px;color:var(--muted);padding-left:52px}
+.pg-chips{display:flex;flex-wrap:wrap;gap:6px;padding-left:52px;min-height:28px;align-items:center}
+.pg-chip{display:inline-flex;align-items:center;gap:4px;background:var(--panel2);border:1px solid var(--border);border-radius:999px;padding:2px 4px 2px 8px;font:600 13px system-ui,sans-serif}
+.pg-chip.exp{border-style:dashed}
+.pg-chip .sym{width:auto}
+.pg-chip button{border:0;background:none;color:var(--muted);cursor:pointer;font-size:15px;line-height:1;padding:0 4px}
+.pg-chip button:hover{color:var(--err)}
+.pg-plus{border:2px dashed var(--border);border-radius:10px;background:none;color:var(--muted);font:600 14px system-ui,sans-serif;padding:10px;cursor:pointer}
+.pg-plus:hover{border-color:var(--accent);color:var(--text)}
+.pg-wege{display:flex;flex-direction:column;gap:3px;font-size:14px}
+.pg-prompt{font:12.5px/1.45 var(--mono);resize:vertical}
+.pg-eig .reihe.wrap{flex-wrap:wrap}.pg-eig a.btn{text-decoration:none}
+@media (max-width:900px){.pg-arbeit{grid-template-columns:minmax(0,1fr)}.pg-optionen,.pg-chips{padding-left:0}}
 
 /* Training-Schritt (vorlage-training.js) */
 .tkarte{background:var(--panel);border:2px solid var(--border);border-left:6px solid #5e81ac;border-radius:10px;padding:10px 12px;cursor:pointer}
@@ -344,6 +368,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
   </div>
   <div class="kopfzeile">
     <div class="seg" role="group" aria-label="Ansicht"><button class="btn on" type="button" data-modus="editor">Editor</button><button class="btn" type="button" data-modus="json">JSON</button></div>
+    <button class="btn" type="button" data-prompt-bau title="Thema und Aufbau wählen, Prompt für Claude (Skill vibe-learning-seite-erstellen) kopieren">✨ Prompt</button>
     <button class="btn" id="rueck" type="button" title="Rückgängig (Strg+Z)">↶</button>
     <button class="btn" id="vor" type="button" title="Wiederholen (Strg+Y)">↷</button>
     <button class="btn" id="neu" type="button">Neu</button>
@@ -376,6 +401,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
       <ol class="schritte-liste">
         <li>Im Claude-Chat mit dem Skill <b>vibe-learning-seite-erstellen</b> Aufgaben erzeugen lassen und den JSON-Block hier einfügen.</li>
         <li><b>Im Editor öffnen</b> und dort weiterbearbeiten.</li>
+        <li>Tipp: Mit <b>✨ Prompt</b> Thema und Aufbau wählen und den fertigen Prompt für Claude kopieren.</li>
         <li>Zum Sichern des Standes das JSON wieder <b>kopieren</b> (oder oben „Speichern“).</li>
       </ol>
       <div class="knoepfe"><button class="btn haupt" type="button" id="zumEditor">Im Editor öffnen</button><button class="btn" type="button" id="kopieren">Kopieren</button><button class="btn" type="button" id="beispiel">Beispiel laden</button></div>
