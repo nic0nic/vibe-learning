@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="de" data-trainer="kalk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kalkulationen – vibe learning</title>
+<!--
+  Kalkulationen (BWR gesamt, Bereich Kalkulation): Einkaufs- und Verkaufskalkulation, jeweils vorwärts, rückwärts
+  und als Differenzkalkulation. Darstellung nach der ISB-Handreichung zur Leistungskorrektur: Fachbegriffe in jeder Zeile,
+  Einheit € im Schema, Prozentspalten mit dem Prozentzusammenhang (Treppe bei vermindertem/vermehrtem Grundwert),
+  jeder Schritt kaufmännisch auf Cent gerundet.
+  Erarbeitung: Überblick → je Kalkulation Erklärung mit Beispiel und Übung → Zusammenfassung.
+  Endlos: eine Stufe; welche Kalkulationen vorkommen, wählt man oben aus (kalk-auswahl).
+  Erweitern: neuen Eintrag in KALK (zufall, rechne, zeilen, frage, weg, tipp) und einen Schritt in SCHRITTE ergänzen;
+  die Auswahl im Endlos-Modus entsteht aus KALK (gruppe = Überschrift, art = Kästchen).
+  Gespeichert: kalk-stand {schritt, erledigt}, kalk-endlos {stufe, rekord}, kalk-modus, kalk-auswahl [ids].
+-->
+<script src="../../../katalog.js"></script>
+<script src="../../../nav.js"></script>
+<script src="../../../sync.js"></script>
+<script>
+(function(){var t=null;try{t=localStorage.getItem('wenn-theme');}catch(e){}
+document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');})();
+</script>
+<link rel="stylesheet" href="../../bwr.css">
+<link rel="stylesheet" href="../../../lib/aufgaben.css">
+<script src="../../../lib/aufgaben.js"></script>
+<style>
+.wrap{max-width:1000px}
+.modi{display:inline-flex;gap:4px;margin-left:auto}
+.info{border-left:4px solid var(--accent);padding:2px 0 2px 12px;margin:0 0 12px}
+.korrektur{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:8px 14px;margin:0 0 12px}
+.korrektur b:first-child{display:block;font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.korrektur ul{margin:4px 0;padding-left:20px}
+.wrap .af-tabelle td:nth-child(2){text-align:left}
+.wrap .af-tabelle td:first-child{font-weight:700;width:2em}
+.schema td b{color:var(--accent-text,var(--accent))}
+.richtungen{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px;margin:0 0 12px}
+.richtungen div{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:8px 10px;font-size:14px}
+.richtungen b{display:block}
+.rw{font-family:var(--mono);font-size:14px;line-height:1.7}
+.af-tabelle.schema+.rw{margin:0 0 16px}
+details.tipp{margin:8px 0 0;font-size:14px}
+details.tipp summary{cursor:pointer;color:var(--muted)}
+.auswahl{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:10px 14px;margin:0 0 12px;display:flex;flex-wrap:wrap;gap:6px 24px;align-items:flex-start}
+.auswahl fieldset{border:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center}
+.auswahl legend{font-weight:700;padding:0;margin:0 0 2px;width:100%}
+.auswahl label{display:inline-flex;gap:5px;align-items:center;cursor:pointer;font-size:14px}
+.auswahl .hint{flex-basis:100%;margin:0}
+#endlos .af-flammen,#endlos .af-stufe{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="bar"><div class="brand">Kalku<span>lationen</span></div>
+    <div class="modi" role="group" aria-label="Modus"><button class="btn" type="button" data-modus="lernen">Erarbeitung</button><button class="btn" type="button" data-modus="endlos">Endlos ∞</button></div></div>
+  <div id="app"></div>
+  <div id="endlosBox" hidden>
+    <div class="auswahl" id="auswahl"></div>
+    <div id="endlos"></div>
+  </div>
+</div>
+<script>
+'use strict';
+const {eur, esc} = Aufgaben;
+const ri = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+const pick = l => l[Math.floor(Math.random() * l.length)];
+const r2 = x => Math.round(x * 100 + (x >= 0 ? 1e-7 : -1e-7)) / 100;   // kaufmännisch auf Cent
+const zz = n => String(r2(n)).replace('.', ',');                         // 2.5 → „2,5“
+const pz = n => zz(n) + '\u00a0%';   // geschütztes Leerzeichen: „15 %“ bricht nicht um
+const betrag = n => eur(n).replace(/\s*€$/, '');                          // 1.234,50 (Einheit steht im Spaltenkopf)
+const L = l => ({l});                                                     // Eingabefeld mit Lösung
+const cent = (a, b) => ri(a, b) + pick([0, 0, 0.5, 0.9, ri(1, 99) / 100]);
+
+/* ================= Schemata ================= */
+// Zeilen: [Rechenzeichen, Fachbegriff, Betrag, %…]; gegeben = Liste der bekannten Größen, alles andere wird Eingabefeld.
+function ekZeilen(w, gegeben, rabattsatzGesucht){
+  const g = k => gegeben.includes(k) ? w[k] : L(w[k]);
+  return [
+    ['', 'Listeneinkaufspreis', g('lep'), '100 %', ''],
+    ['−', 'Liefererrabatt', g('rab'), rabattsatzGesucht ? L(w.r) : pz(w.r), ''],
+    ['=', 'Zieleinkaufspreis', g('zep'), rabattsatzGesucht ? '' : pz(100 - w.r), '100 %'],
+    ['−', 'Liefererskonto', g('sko'), '', pz(w.s)],
+    ['=', 'Bareinkaufspreis', g('bep'), '', pz(100 - w.s)],
+    ['+', 'Bezugskosten', g('bk'), '', ''],
+    ['=', 'Einstandspreis', g('ep'), '', '']];
+}
+function vkZeilen(w, gegeben, gewinnsatzGesucht){
+  const g = k => gegeben.includes(k) ? w[k] : L(w[k]);
+  return [
+    ['', 'Selbstkosten', g('sk'), '100 %', '', ''],
+    ['+', 'Gewinn', g('gew'), gewinnsatzGesucht ? L(w.g) : pz(w.g), '', ''],
+    ['=', 'Barverkaufspreis', g('bvp'), gewinnsatzGesucht ? '' : pz(100 + w.g), pz(100 - w.s), ''],
+    ['+', 'Kundenskonto', g('sko'), '', pz(w.s), ''],
+    ['=', 'Zielverkaufspreis', g('zvp'), '', '100 %', pz(100 - w.r)],
+    ['+', 'Kundenrabatt', g('rab'), '', '', pz(w.r)],
+    ['=', 'Listenverkaufspreis', g('lvp'), '', '', '100 %']];
+}
+const SPALTEN = n => ['', 'Kalkulationsschema', 'Betrag in €', ...Array(n).fill('%')];
+// Fertig gerechnetes Schema als Tabelle (Beispiele): gesuchte Werte fett
+function schemaHTML(zeilen){
+  const n = zeilen[0].length - 3, kopf = SPALTEN(n).map(s => `<th>${s}</th>`).join('');
+  const zelle = (c, j) => {
+    if (c && typeof c === 'object') return `<td${j === 2 ? ' class="zahl"' : ''}><b>${j === 2 ? betrag(c.l) : pz(c.l)}</b></td>`;
+    return typeof c === 'number' ? `<td class="zahl">${betrag(c)}</td>` : `<td>${c}</td>`;
+  };
+  return `<div class="af-tabelle schema"><table><thead><tr>${kopf}</tr></thead><tbody>${zeilen.map(r => '<tr>' + r.map(zelle).join('') + '</tr>').join('')}</tbody></table></div>`;
+}
+const zeilenWeg = l => `<div class="rw">${l.join('<br>')}</div>`;
+
+/* ================= Kalkulationen =================
+   zufall() → p (Angabe), rechne(p) → w (alle Werte, auf Cent gerundet), zeilen(w) → Schema mit Eingabefeldern,
+   frage(p, w) → Angabe (HTML), weg(p, w) → Nebenrechnungen (Zeilen), tipp → Hilfe zum Aufklappen */
+const WAREN = [['Tonabnehmer', 'Stück', 9, 45], ['Sätze Gitarrensaiten', 'Satz', 3, 9], ['Sets Stimmmechaniken', 'Set', 12, 34],
+  ['Bretter Ahornholz', 'Brett', 18, 65], ['Liter Klarlack', 'Liter', 16, 38], ['Lautsprecher', 'Stück', 25, 90]];
+const LIEFERER = ['Holz-Huber KG', 'Elektro Brandl GmbH', 'Tonwerk AG', 'Saitenfabrik Moser e. K.', 'Lackwerk Seidl OHG'];
+const PRODUKTE = [['E-Gitarre „Thunder“', 320, 900], ['Akustikgitarre „Folk“', 180, 520], ['Bassverstärker „Deep 60“', 240, 700],
+  ['Ukulele „Sunny“', 40, 95], ['Gitarrenkoffer „Safe“', 55, 150]];
+const KUNDEN = ['Musikhaus Lang', 'Music Store Regensburg', 'Gitarrenladen Bauer', 'Musik Meier GmbH'];
+const BEZUG = [['Fracht', 20, 180], ['Transportversicherung', 5, 30], ['Verpackung', 8, 45]];
+function bezugskosten(){
+  const n = Math.random() < 0.5 ? 1 : 2, l = [...BEZUG].sort(() => Math.random() - 0.5).slice(0, n);
+  return l.map(([t, a, b]) => [t, cent(a, b)]);
+}
+const bkText = bk => bk.map(([t, x]) => `${t} ${eur(x)}`).join(' und ');
+const bkWeg = (bk, w) => bk.length > 1 ? [`Bezugskosten: ${bk.map(x => eur(x[1])).join(' + ')} = ${eur(w.bk)}`] : [];
+const ekVor = w => [`Liefererrabatt: ${eur(w.lep)} · ${zz(w.r)} : 100 = ${eur(w.rab)}`, `Liefererskonto: ${eur(w.zep)} · ${zz(w.s)} : 100 = ${eur(w.sko)}`];
+const ekRueck = w => [`Bareinkaufspreis: ${eur(w.ep)} − ${eur(w.bk)} = ${eur(w.bep)}`,
+  `Zieleinkaufspreis: ${pz(100 - w.s)} ≙ ${eur(w.bep)} → 100 % = ${eur(w.bep)} · 100 : ${zz(100 - w.s)} = ${eur(w.zep)}`,
+  `Liefererskonto: ${eur(w.zep)} − ${eur(w.bep)} = ${eur(w.sko)}`];
+const vkVor = w => [`Gewinn: ${eur(w.sk)} · ${zz(w.g)} : 100 = ${eur(w.gew)}`,
+  `Zielverkaufspreis: ${pz(100 - w.s)} ≙ ${eur(w.bvp)} → 100 % = ${eur(w.bvp)} · 100 : ${zz(100 - w.s)} = ${eur(w.zvp)}`,
+  `Kundenskonto: ${eur(w.zvp)} − ${eur(w.bvp)} = ${eur(w.sko)}`,
+  `Listenverkaufspreis: ${pz(100 - w.r)} ≙ ${eur(w.zvp)} → 100 % = ${eur(w.zvp)} · 100 : ${zz(100 - w.r)} = ${eur(w.lvp)}`,
+  `Kundenrabatt: ${eur(w.lvp)} − ${eur(w.zvp)} = ${eur(w.rab)}`];
+const vkRueck = w => [`Kundenrabatt: ${eur(w.lvp)} · ${zz(w.r)} : 100 = ${eur(w.rab)}`, `Kundenskonto: ${eur(w.zvp)} · ${zz(w.s)} : 100 = ${eur(w.sko)}`];
+
+const KALK = [
+  {id:'ek-vor', gruppe:'Einkaufskalkulation', art:'vorwärts',
+    zufall(){
+      const [ware, einheit, a, b] = pick(WAREN), menge = Math.random() < 0.6 ? ri(4, 30) * 5 : 0;
+      return {lieferer:pick(LIEFERER), ware, einheit, menge, preis:menge ? cent(a, b) : 0, lep:menge ? 0 : ri(40, 900) * 10,
+        r:pick([5, 8, 10, 12, 15, 20, 25]), s:pick([1, 2, 2, 3]), bkl:bezugskosten()};
+    },
+    rechne(p){
+      const w = {r:p.r, s:p.s, lep:p.menge ? r2(p.menge * p.preis) : p.lep};
+      w.rab = r2(w.lep * p.r / 100); w.zep = r2(w.lep - w.rab); w.sko = r2(w.zep * p.s / 100); w.bep = r2(w.zep - w.sko);
+      w.bk = r2(p.bkl.reduce((s, x) => s + x[1], 0)); w.ep = r2(w.bep + w.bk);
+      return w;
+    },
+    zeilen:(w, p) => ekZeilen(w, p.menge ? [] : ['lep']),
+    frage:(p, w) => `<p>Saitgig erhält von der ${p.lieferer} ein Angebot über ${p.menge ? `${p.menge} ${p.ware} zu je ${eur(p.preis)}` : `${p.ware} zum Listenpreis von ${eur(w.lep)}`} (netto). `
+      + `Der Lieferer gewährt ${pz(p.r)} Rabatt und bei Zahlung innerhalb von 10 Tagen ${pz(p.s)} Skonto. Für die Lieferung fallen ${bkText(p.bkl)} an.</p>`
+      + `<p><b>Berechne den Einstandspreis</b> mit dem Kalkulationsschema.</p>`,
+    weg:(p, w) => [...(p.menge ? [`Listeneinkaufspreis: ${p.menge} · ${eur(p.preis)} = ${eur(w.lep)}`] : []), ...ekVor(w), ...bkWeg(p.bkl, w)],
+    tipp:'Von oben nach unten rechnen. Rabatt vom Listeneinkaufspreis, Skonto vom <i>Zieleinkaufspreis</i> (beide sind dort 100 %). Bezugskosten sind Euro-Beträge ohne Prozentsatz.'},
+
+  {id:'ek-rueck', gruppe:'Einkaufskalkulation', art:'rückwärts',
+    zufall:() => ({lieferer:pick(LIEFERER), ware:pick(WAREN)[0], ep:ri(30, 900) * 10, r:pick([5, 8, 10, 12, 15, 20, 25]), s:pick([1, 2, 2, 3]), bkl:bezugskosten()}),
+    rechne(p){
+      const w = {r:p.r, s:p.s, ep:p.ep, bk:r2(p.bkl.reduce((s, x) => s + x[1], 0))};
+      w.bep = r2(w.ep - w.bk); w.zep = r2(w.bep * 100 / (100 - p.s)); w.sko = r2(w.zep - w.bep);
+      w.lep = r2(w.zep * 100 / (100 - p.r)); w.rab = r2(w.lep - w.zep);
+      return w;
+    },
+    zeilen:w => ekZeilen(w, ['ep']),
+    frage:(p, w) => `<p>Saitgig möchte bei der ${p.lieferer} ${p.ware} bestellen. Der Einstandspreis darf höchstens ${eur(w.ep)} betragen. `
+      + `Der Lieferer gewährt ${pz(p.r)} Rabatt und ${pz(p.s)} Skonto. Für die Lieferung fallen ${bkText(p.bkl)} an.</p>`
+      + `<p><b>Berechne den Listeneinkaufspreis</b> (netto), den der Lieferer höchstens verlangen darf.</p>`,
+    weg:(p, w) => [...bkWeg(p.bkl, w), ...ekRueck(w),
+      `Listeneinkaufspreis: ${pz(100 - w.r)} ≙ ${eur(w.zep)} → 100 % = ${eur(w.zep)} · 100 : ${zz(100 - w.r)} = ${eur(w.lep)}`,
+      `Liefererrabatt: ${eur(w.lep)} − ${eur(w.zep)} = ${eur(w.rab)}`],
+    tipp:'Von unten nach oben rechnen, aus Minus wird Plus. Achtung, verminderter Grundwert: Der Bareinkaufspreis ist nur 98 % (bei 2 % Skonto) des Zieleinkaufspreises. Also <span class="rw">Bareinkaufspreis · 100 : 98</span>, nicht 2 % vom Bareinkaufspreis dazuzählen.'},
+
+  {id:'ek-diff', gruppe:'Einkaufskalkulation', art:'Differenz',
+    zufall(){
+      const p = {lieferer:pick(LIEFERER), ware:pick(WAREN)[0], lep:ri(40, 900) * 10, s:pick([1, 2, 2, 3]), bkl:bezugskosten()};
+      const r = ri(5, 25), bk = p.bkl.reduce((s, x) => s + x[1], 0), zep = r2(p.lep * (100 - r) / 100);
+      p.ep = Math.floor(r2(zep - r2(zep * p.s / 100) + bk));   // Obergrenze in ganzen Euro → Rabattsatz krumm
+      return p;
+    },
+    rechne(p){
+      const w = {lep:p.lep, s:p.s, ep:p.ep, bk:r2(p.bkl.reduce((s, x) => s + x[1], 0))};
+      w.bep = r2(w.ep - w.bk); w.zep = r2(w.bep * 100 / (100 - p.s)); w.sko = r2(w.zep - w.bep);
+      w.rab = r2(w.lep - w.zep); w.r = r2(w.rab * 100 / w.lep);
+      return w;
+    },
+    zeilen:w => ekZeilen(w, ['lep', 'ep'], true),
+    frage:(p, w) => `<p>Die ${p.lieferer} bietet Saitgig ${p.ware} zum Listenpreis von ${eur(w.lep)} (netto) an, bei Zahlung innerhalb von 10 Tagen mit ${pz(p.s)} Skonto. `
+      + `Für die Lieferung fallen ${bkText(p.bkl)} an. Saitgig will höchstens ${eur(w.ep)} Einstandspreis bezahlen.</p>`
+      + `<p><b>Berechne den Rabatt in Euro und in Prozent</b>, den Saitgig mindestens aushandeln muss.</p>`,
+    weg:(p, w) => [...bkWeg(p.bkl, w), ...ekRueck(w), `Liefererrabatt: ${eur(w.lep)} − ${eur(w.zep)} = ${eur(w.rab)}`,
+      `Rabattsatz: ${eur(w.rab)} · 100 : ${eur(w.lep)} = ${pz(w.r)}`],
+    tipp:'Von unten rückwärts bis zum Zieleinkaufspreis rechnen. Der Rabatt ist dann die Differenz zum Listeneinkaufspreis. Rabattsatz = Rabatt · 100 : Listeneinkaufspreis (Grundwert ist der Listeneinkaufspreis).'},
+
+  {id:'vk-vor', gruppe:'Verkaufskalkulation', art:'vorwärts',
+    zufall(){ const [produkt, a, b] = pick(PRODUKTE);
+      return {produkt, kunde:pick(KUNDEN), sk:cent(a, b), g:pick([10, 12, 15, 20, 25, 30]), s:pick([2, 2, 3]), r:pick([5, 10, 15, 20])}; },
+    rechne(p){
+      const w = {sk:p.sk, g:p.g, s:p.s, r:p.r};
+      w.gew = r2(p.sk * p.g / 100); w.bvp = r2(p.sk + w.gew); w.zvp = r2(w.bvp * 100 / (100 - p.s)); w.sko = r2(w.zvp - w.bvp);
+      w.lvp = r2(w.zvp * 100 / (100 - p.r)); w.rab = r2(w.lvp - w.zvp);
+      return w;
+    },
+    zeilen:w => vkZeilen(w, ['sk']),
+    frage:(p, w) => `<p>Die Selbstkosten für ein Stück ${p.produkt} betragen ${eur(w.sk)}. Saitgig rechnet mit ${pz(p.g)} Gewinn. `
+      + `Dem Großkunden ${p.kunde} gewährt Saitgig ${pz(p.r)} Rabatt und ${pz(p.s)} Skonto.</p>`
+      + `<p><b>Berechne den Listenverkaufspreis</b> (netto) mit dem Kalkulationsschema.</p>`,
+    weg:(p, w) => vkVor(w),
+    tipp:'Gewinn auf die Selbstkosten (100 %). Skonto und Rabatt rechnet der Kunde später <i>vom</i> höheren Preis ab: Der Barverkaufspreis ist nur 98 % (bei 2 % Skonto) des Zielverkaufspreises, der Zielverkaufspreis nur 90 % (bei 10 % Rabatt) des Listenverkaufspreises. Also <span class="rw">· 100 : 98</span> bzw. <span class="rw">· 100 : 90</span>.'},
+
+  {id:'vk-rueck', gruppe:'Verkaufskalkulation', art:'rückwärts',
+    zufall(){ const [produkt, a, b] = pick(PRODUKTE);
+      return {produkt, lvp:Math.round(ri(Math.round(a * 1.3), Math.round(b * 1.6)) / 10) * 10 - pick([0, 1, 0.1]), g:pick([10, 12, 15, 20, 25]), s:pick([2, 2, 3]), r:pick([5, 10, 15, 20])}; },
+    rechne(p){
+      const w = {lvp:r2(p.lvp), g:p.g, s:p.s, r:p.r};
+      w.rab = r2(w.lvp * p.r / 100); w.zvp = r2(w.lvp - w.rab); w.sko = r2(w.zvp * p.s / 100); w.bvp = r2(w.zvp - w.sko);
+      w.sk = r2(w.bvp * 100 / (100 + p.g)); w.gew = r2(w.bvp - w.sk);
+      return w;
+    },
+    zeilen:w => vkZeilen(w, ['lvp']),
+    frage:(p, w) => `<p>Die Konkurrenz bietet ein vergleichbares Produkt wie ${p.produkt} für ${eur(w.lvp)} (netto) an. Saitgig will denselben Listenverkaufspreis verlangen, `
+      + `den Kunden ${pz(p.r)} Rabatt und ${pz(p.s)} Skonto gewähren und ${pz(p.g)} Gewinn erzielen.</p>`
+      + `<p><b>Berechne, wie hoch die Selbstkosten höchstens sein dürfen.</b></p>`,
+    weg:(p, w) => [...vkRueck(w), `Selbstkosten: ${pz(100 + w.g)} ≙ ${eur(w.bvp)} → 100 % = ${eur(w.bvp)} · 100 : ${zz(100 + w.g)} = ${eur(w.sk)}`,
+      `Gewinn: ${eur(w.bvp)} − ${eur(w.sk)} = ${eur(w.gew)}`],
+    tipp:'Von unten nach oben: Rabatt und Skonto sind hier vom bekannten Preis (100 %) zu rechnen und abzuziehen. Achtung beim Gewinn, vermehrter Grundwert: Der Barverkaufspreis ist 100 % + Gewinnsatz der Selbstkosten, also <span class="rw">Barverkaufspreis · 100 : 120</span> bei 20 % Gewinn.'},
+
+  {id:'vk-diff', gruppe:'Verkaufskalkulation', art:'Differenz',
+    zufall(){ const [produkt, a, b] = pick(PRODUKTE), sk = cent(a, b), s = pick([2, 2, 3]), r = pick([5, 10, 15, 20]);
+      const roh = sk * (100 + ri(6, 32)) / (100 - s) / (100 - r) * 100, st = roh > 200 ? 10 : 1;   // runder Marktpreis, Gewinn bleibt positiv
+      const lvp = Math.round(roh / st) * st - (st > 1 ? pick([0, 1, 0.1]) : pick([0, 0.1]));
+      return {produkt, kunde:pick(KUNDEN), sk, s, r, lvp}; },
+    rechne(p){
+      const w = {sk:p.sk, lvp:r2(p.lvp), s:p.s, r:p.r};
+      w.rab = r2(w.lvp * p.r / 100); w.zvp = r2(w.lvp - w.rab); w.sko = r2(w.zvp * p.s / 100); w.bvp = r2(w.zvp - w.sko);
+      w.gew = r2(w.bvp - w.sk); w.g = r2(w.gew * 100 / w.sk);
+      return w;
+    },
+    zeilen:w => vkZeilen(w, ['sk', 'lvp'], true),
+    frage:(p, w) => `<p>Die Selbstkosten für ein Stück ${p.produkt} betragen ${eur(w.sk)}. Der Markt lässt einen Listenverkaufspreis von ${eur(w.lvp)} (netto) zu. `
+      + `${p.kunde} erhält ${pz(p.r)} Rabatt und ${pz(p.s)} Skonto.</p>`
+      + `<p><b>Berechne den Gewinn in Euro und in Prozent.</b></p>`,
+    weg:(p, w) => [...vkRueck(w), `Gewinn: ${eur(w.bvp)} − ${eur(w.sk)} = ${eur(w.gew)}`, `Gewinnsatz: ${eur(w.gew)} · 100 : ${eur(w.sk)} = ${pz(w.g)}`],
+    tipp:'Oben vorwärts, unten rückwärts: Vom Listenverkaufspreis bis zum Barverkaufspreis zurückrechnen. Gewinn = Barverkaufspreis − Selbstkosten, Gewinnsatz = Gewinn · 100 : Selbstkosten.'}
+];
+const NAME = k => `${k.gruppe} (${k.art === 'Differenz' ? 'Differenzkalkulation' : k.art})`;
+
+// Aufgabe (Typ tabelle) aus einer Kalkulation und einer Angabe
+function aufgabe(k, p, nr){
+  const w = k.rechne(p), zeilen = k.zeilen(w, p), n = zeilen[0].length - 3;
+  return {typ:'tabelle', nr, tol:0.011,
+    frage:(nr ? '' : `<h3>${NAME(k)}</h3>`) + k.frage(p, w) + '<p class="muted">Auf Cent runden. Eingabe ohne €, Prozentsätze ohne %.</p>'
+      + `<details class="tipp"><summary>Tipp</summary>${k.tipp}</details>`,
+    spalten:SPALTEN(n), zeilen,
+    hinweise:{2:'Prüfe die Nebenrechnungen; jeder Betrag wird für sich auf Cent gerundet.', 3:'Satz = Betrag · 100 : Grundwert (der Wert mit 100 %).', 4:'Satz = Betrag · 100 : Grundwert (der Wert mit 100 %).'},
+    ok:'Richtig! Nebenrechnungen:' + zeilenWeg(k.weg(p, w))};
+}
+const K = id => KALK.find(k => k.id === id);
+const beispiel = (id, p) => { const k = K(id), w = k.rechne(p); return {w, html:k.frage(p, w).replace(/<p><b>[^<]*<\/b>[^<]*<\/p>$/, '') + schemaHTML(k.zeilen(w, p)) + zeilenWeg(k.weg(p, w))}; };
+
+/* ================= Erarbeitung ================= */
+const KORREKTUR = `<div class="korrektur"><b>Darauf achtet die Korrektur</b><ul>
+  <li>Jede Zeile des Schemas trägt ihren <b>Fachbegriff</b>. Für das vollständige Schema (mehr als vier Zeilen) gibt es einen eigenen Punkt.</li>
+  <li>Im Kalkulationsschema die <b>Einheit €</b> angeben.</li>
+  <li>Die <b>Prozentspalte</b> zeigt den Zusammenhang (z. B. 98 % ≙ 100 %). Fehlt er beim verminderten oder vermehrten Grundwert: −0,5 Punkte.</li>
+  <li>Jeden Betrag <b>kaufmännisch auf zwei Nachkommastellen</b> runden, Euro immer mit zwei Stellen (24,00 €). Falsch gerundet: −0,5 Punkte.</li>
+  <li><b>Nebenrechnungen</b> gehören zum Lösungsweg.</li></ul></div>`;
+
+const B1 = beispiel('ek-vor', {lieferer:'Elektro Brandl GmbH', ware:'Tonabnehmer', menge:50, preis:24.80, r:10, s:2, bkl:[['Fracht', 36.5]]});
+const B2 = beispiel('ek-rueck', {lieferer:'Holz-Huber KG', ware:'Bretter Ahornholz', ep:2000, r:20, s:2, bkl:[['Fracht', 40]]});
+const B3 = beispiel('ek-diff', {lieferer:'Tonwerk AG', ware:'Lautsprecher', lep:3000, s:2, ep:2600, bkl:[['Fracht', 60]]});
+const B4 = beispiel('vk-vor', {produkt:'E-Gitarre „Thunder“', kunde:'Musikhaus Lang', sk:490, g:20, s:2, r:10});
+const B5 = beispiel('vk-rueck', {produkt:'Akustikgitarre „Folk“', lvp:500, g:25, s:2, r:10});
+const B6 = beispiel('vk-diff', {produkt:'Bassverstärker „Deep 60“', kunde:'Gitarrenladen Bauer', sk:400, s:3, r:15, lvp:620});
+
+const SCHRITTE = [
+  {id:'start', kurz:'Überblick', titel:'Kalkulieren: vorwärts, rückwärts, Differenz', html:`<h2>Warum kalkulieren?</h2>
+    <p class="info"><b>Einkaufskalkulation:</b> Was kostet uns die Ware wirklich, bis sie bei uns im Lager liegt? Ergebnis ist der <b>Einstandspreis</b>.<br>
+    <b>Verkaufskalkulation:</b> Welchen Preis schreiben wir in die Preisliste, damit nach Rabatt und Skonto die Kosten gedeckt sind und Gewinn bleibt? Ergebnis ist der <b>Listenverkaufspreis</b>.</p>
+    <p>Beide Schemata kann man in drei Richtungen rechnen:</p>
+    <div class="richtungen">
+      <div><b>⬇ vorwärts</b>Der Anfang ist bekannt (Listeneinkaufspreis bzw. Selbstkosten). Gesucht ist das Ende.</div>
+      <div><b>⬆ rückwärts</b>Das Ende ist vorgegeben (höchster Einstandspreis, Preis der Konkurrenz). Gesucht ist der Anfang.</div>
+      <div><b>⬇ Differenz ⬆</b>Anfang und Ende sind bekannt. Von beiden Seiten rechnen, bis sich die Lücke in der Mitte zeigt (Rabatt bzw. Gewinn).</div>
+    </div>
+    <p>Alle Preise sind Nettopreise, die Umsatzsteuer spielt in der Kalkulation keine Rolle.</p>${KORREKTUR}`},
+
+  {id:'ek-vor', kurz:'EK ⬇', titel:'Einkaufskalkulation vorwärts', html:`<h2>Einkaufskalkulation vorwärts</h2>
+    <p>Der Lieferer nennt einen <b>Listeneinkaufspreis</b>. Davon gehen ab: der <b>Liefererrabatt</b> (sofortiger Preisnachlass, z. B. Mengenrabatt) und der <b>Liefererskonto</b> (Nachlass bei Zahlung innerhalb der Skontofrist). Dazu kommen die <b>Bezugskosten</b> (Fracht, Verpackung, Transportversicherung).</p>
+    <p class="info">Wichtig: Der Skonto wird vom <b>Zieleinkaufspreis</b> berechnet, nicht vom Listeneinkaufspreis. Darum fängt die Prozentspalte dort neu bei 100 % an.</p>
+    <p><b>Beispiel:</b></p>${B1.html}`, aufgaben:[
+    {typ:'luecken', nr:'1', ziehen:true, frage:'Ziehe die Fachbegriffe an die richtige Stelle im Schema.',
+      text:'<div class="rw">Listeneinkaufspreis<br>− [[Liefererrabatt]]<br>= [[Zieleinkaufspreis]]<br>− [[Liefererskonto]]<br>= [[Bareinkaufspreis]]<br>+ [[Bezugskosten]]<br>= [[Einstandspreis]]</div>', extra:['Kundenskonto', 'Gewinn']},
+    aufgabe(K('ek-vor'), {lieferer:'Lackwerk Seidl OHG', ware:'Liter Klarlack', menge:40, preis:18.75, r:15, s:3, bkl:[['Fracht', 42], ['Verpackung', 12.5]]}, '2')]},
+
+  {id:'ek-rueck', kurz:'EK ⬆', titel:'Einkaufskalkulation rückwärts', html:`<h2>Einkaufskalkulation rückwärts</h2>
+    <p>Saitgig weiß, wie viel die Ware höchstens kosten darf (Einstandspreis). Welchen Listenpreis darf der Lieferer dann höchstens verlangen? Man rechnet das Schema <b>von unten nach oben</b>, aus Minus wird Plus.</p>
+    <p class="info"><b>Verminderter Grundwert:</b> Der Bareinkaufspreis ist nicht 100 %, sondern nur 98 % (bei 2 % Skonto). Gesucht ist der Wert mit 100 %:
+      <span class="rw">Zieleinkaufspreis = Bareinkaufspreis · 100 : 98</span></p>
+    <p><b>Beispiel:</b></p>${B2.html}`, aufgaben:[
+    {typ:'mc', nr:'1', frage:`Der Bareinkaufspreis beträgt ${eur(B2.w.bep)}, der Lieferer gewährt 2 % Skonto. Wie berechnest du den Zieleinkaufspreis?`,
+      options:[`${eur(B2.w.bep)} · 100 : 98`, `${eur(B2.w.bep)} + 2 % von ${eur(B2.w.bep)}`, `${eur(B2.w.bep)} · 1,02`],
+      correct:[0], why:{1:'Die 2 % Skonto beziehen sich auf den Zieleinkaufspreis, nicht auf den Bareinkaufspreis. So kommt man auf einen zu kleinen Wert.', 2:'Das ist dasselbe wie „+ 2 % vom Bareinkaufspreis“. Der Bareinkaufspreis ist aber 98 %, nicht 100 %.'}},
+    aufgabe(K('ek-rueck'), {lieferer:'Saitenfabrik Moser e. K.', ware:'Sätze Gitarrensaiten', ep:1500, r:25, s:3, bkl:[['Fracht', 28.6], ['Transportversicherung', 9.9]]}, '2')]},
+
+  {id:'ek-diff', kurz:'EK ⬍', titel:'Einkaufskalkulation als Differenzkalkulation', html:`<h2>Einkaufskalkulation als Differenzkalkulation</h2>
+    <p>Bekannt sind der <b>Listeneinkaufspreis</b> aus dem Angebot und der <b>Einstandspreis</b>, den Saitgig höchstens zahlen will. Welcher Rabatt muss dafür ausgehandelt werden?</p>
+    <p class="info">Von unten <b>rückwärts</b> bis zum Zieleinkaufspreis rechnen. Der Rabatt ist die <b>Differenz</b> zum Listeneinkaufspreis:<br>
+      <span class="rw">Rabatt = Listeneinkaufspreis − Zieleinkaufspreis<br>Rabattsatz = Rabatt · 100 : Listeneinkaufspreis</span></p>
+    <p><b>Beispiel:</b></p>${B3.html}`, aufgaben:[
+    aufgabe(K('ek-diff'), {lieferer:'Holz-Huber KG', ware:'Bretter Ahornholz', lep:2400, s:2, ep:2100, bkl:[['Fracht', 55]]}, '1')]},
+
+  {id:'vk-vor', kurz:'VK ⬇', titel:'Verkaufskalkulation vorwärts', html:`<h2>Verkaufskalkulation vorwärts</h2>
+    <p>Ausgangspunkt sind die <b>Selbstkosten</b> eines Stücks (alle Kosten, bis es verkauft ist). Darauf kommt der <b>Gewinn</b>. Weil der Kunde später <b>Kundenskonto</b> und <b>Kundenrabatt</b> abzieht, schlägt Saitgig beides vorher auf.</p>
+    <p class="info"><b>Verminderter Grundwert:</b> Der Kunde rechnet Skonto vom Zielverkaufspreis und Rabatt vom Listenverkaufspreis. Für Saitgig ist der Barverkaufspreis darum 98 % (bei 2 % Skonto), der Zielverkaufspreis 90 % (bei 10 % Rabatt):<br>
+      <span class="rw">Zielverkaufspreis = Barverkaufspreis · 100 : 98<br>Listenverkaufspreis = Zielverkaufspreis · 100 : 90</span></p>
+    <p><b>Beispiel:</b></p>${B4.html}`, aufgaben:[
+    {typ:'luecken', nr:'1', ziehen:true, frage:'Ziehe die Fachbegriffe an die richtige Stelle im Schema.',
+      text:'<div class="rw">Selbstkosten<br>+ [[Gewinn]]<br>= [[Barverkaufspreis]]<br>+ [[Kundenskonto]]<br>= [[Zielverkaufspreis]]<br>+ [[Kundenrabatt]]<br>= [[Listenverkaufspreis]]</div>', extra:['Bezugskosten', 'Liefererskonto']},
+    {typ:'mc', nr:'2', frage:`Der Barverkaufspreis beträgt ${eur(B4.w.bvp)}, der Kunde erhält 2 % Skonto. Mit welcher Rechnung bekommst du den Zielverkaufspreis?`,
+      options:[`${eur(B4.w.bvp)} · 100 : 98`, `${eur(B4.w.bvp)} · 102 : 100`, `${eur(B4.w.bvp)} · 98 : 100`],
+      correct:[0], why:{1:`So wären es 2 % vom Barverkaufspreis. Der Kunde zieht aber 2 % vom (höheren) Zielverkaufspreis ab – Saitgig bekäme zu wenig.`, 2:'Damit würde der Preis kleiner. Skonto muss in der Verkaufskalkulation aufgeschlagen werden.'}},
+    aufgabe(K('vk-vor'), {produkt:'Gitarrenkoffer „Safe“', kunde:'Music Store Regensburg', sk:84.6, g:15, s:3, r:20}, '3')]},
+
+  {id:'vk-rueck', kurz:'VK ⬆', titel:'Verkaufskalkulation rückwärts', html:`<h2>Verkaufskalkulation rückwärts</h2>
+    <p>Oft gibt der Markt den Preis vor: Was die Konkurrenz verlangt, kann Saitgig kaum überschreiten. Dann rechnet man vom <b>Listenverkaufspreis</b> nach oben und erfährt, wie hoch die <b>Selbstkosten</b> höchstens sein dürfen.</p>
+    <p class="info">Rabatt und Skonto werden jetzt vom bekannten Preis (100 %) gerechnet und abgezogen. <b>Vermehrter Grundwert</b> beim Gewinn: Der Barverkaufspreis ist 100 % + Gewinnsatz der Selbstkosten:<br>
+      <span class="rw">Selbstkosten = Barverkaufspreis · 100 : 125</span> (bei 25 % Gewinn)</p>
+    <p><b>Beispiel:</b></p>${B5.html}`, aufgaben:[
+    {typ:'mc', nr:'1', frage:`Der Barverkaufspreis beträgt ${eur(B5.w.bvp)}, Saitgig rechnet mit 25 % Gewinn. Wie berechnest du die Selbstkosten?`,
+      options:[`${eur(B5.w.bvp)} · 100 : 125`, `${eur(B5.w.bvp)} − 25 % von ${eur(B5.w.bvp)}`, `${eur(B5.w.bvp)} · 75 : 100`],
+      correct:[0], why:{1:'Der Gewinn bezieht sich auf die Selbstkosten, nicht auf den Barverkaufspreis.', 2:'Das ist dasselbe wie „− 25 % vom Barverkaufspreis“. Der Barverkaufspreis ist aber 125 %, nicht 100 %.'}},
+    aufgabe(K('vk-rueck'), {produkt:'Ukulele „Sunny“', lvp:89.9, g:20, s:2, r:5}, '2')]},
+
+  {id:'vk-diff', kurz:'VK ⬍', titel:'Verkaufskalkulation als Differenzkalkulation', html:`<h2>Verkaufskalkulation als Differenzkalkulation</h2>
+    <p>Selbstkosten und Listenverkaufspreis stehen fest. Wie viel <b>Gewinn</b> bleibt übrig?</p>
+    <p class="info">Oben steht die Selbstkosten, unten der Listenverkaufspreis. Von unten <b>rückwärts</b> bis zum Barverkaufspreis rechnen, dann:<br>
+      <span class="rw">Gewinn = Barverkaufspreis − Selbstkosten<br>Gewinnsatz = Gewinn · 100 : Selbstkosten</span></p>
+    <p><b>Beispiel:</b></p>${B6.html}`, aufgaben:[
+    aufgabe(K('vk-diff'), {produkt:'E-Gitarre „Thunder“', kunde:'Musik Meier GmbH', sk:612.4, s:2, r:10, lvp:849}, '1')]},
+
+  {id:'ende', kurz:'Merke', titel:'Zusammenfassung', html:`<h2>Zusammenfassung</h2>
+    <div class="af-tabelle"><table><thead><tr><th>Kalkulation</th><th>bekannt</th><th>gesucht</th><th>Achtung</th></tr></thead><tbody>
+      <tr><td>Einkauf vorwärts</td><td>Listeneinkaufspreis</td><td>Einstandspreis</td><td style="text-align:left">Skonto vom Zieleinkaufspreis</td></tr>
+      <tr><td>Einkauf rückwärts</td><td>Einstandspreis</td><td>Listeneinkaufspreis</td><td style="text-align:left">· 100 : 98 (verminderter Grundwert)</td></tr>
+      <tr><td>Einkauf Differenz</td><td>beide</td><td>Rabatt (€, %)</td><td style="text-align:left">Rabattsatz vom Listeneinkaufspreis</td></tr>
+      <tr><td>Verkauf vorwärts</td><td>Selbstkosten</td><td>Listenverkaufspreis</td><td style="text-align:left">Skonto, Rabatt: · 100 : 98 bzw. · 100 : 90</td></tr>
+      <tr><td>Verkauf rückwärts</td><td>Listenverkaufspreis</td><td>Selbstkosten</td><td style="text-align:left">Gewinn: · 100 : 120 (vermehrter Grundwert)</td></tr>
+      <tr><td>Verkauf Differenz</td><td>beide</td><td>Gewinn (€, %)</td><td style="text-align:left">Gewinnsatz von den Selbstkosten</td></tr>
+    </tbody></table></div>${KORREKTUR}
+    <p>Weiter üben: oben <b>Endlos ∞</b> wählen und einstellen, welche Kalkulationen vorkommen sollen.</p>`}
+];
+
+/* ================= Endlos mit Auswahl ================= */
+let auswahl = KALK.map(k => k.id);
+try { const a = JSON.parse(localStorage.getItem('kalk-auswahl')); if (Array.isArray(a) && a.some(id => K(id))) auswahl = a.filter(id => K(id)); } catch (e) {}
+function zeigeAuswahl(){
+  const gruppen = [...new Set(KALK.map(k => k.gruppe))];
+  document.getElementById('auswahl').innerHTML = gruppen.map(g => `<fieldset><legend>${esc(g)}</legend>`
+    + KALK.filter(k => k.gruppe === g).map(k => `<label><input type="checkbox" value="${k.id}"${auswahl.includes(k.id) ? ' checked' : ''}> ${esc(k.art === 'Differenz' ? 'Differenzkalkulation' : k.art)}</label>`).join('') + '</fieldset>').join('')
+    + '<p class="hint">Wähle aus, welche Kalkulationen im Endlos-Modus vorkommen. Die Aufgaben kommen gemischt.</p>';
+}
+const STUFE = {get name(){ return auswahl.length === KALK.length ? 'Alle Kalkulationen' : auswahl.map(id => NAME(K(id))).join(', '); },
+  neu(){ const k = K(pick(auswahl)); return aufgabe(k, k.zufall()); }};
+let endlos = null, modus = 'lernen';
+document.getElementById('auswahl').addEventListener('change', e => {
+  const neu = [...document.querySelectorAll('#auswahl input:checked')].map(i => i.value);
+  if (!neu.length){ e.target.checked = true; return; }   // mindestens eine Kalkulation bleibt
+  auswahl = neu;
+  try { localStorage.setItem('kalk-auswahl', JSON.stringify(auswahl)); } catch (err) {}
+  if (window.TrainerSync) TrainerSync.changed();
+  if (endlos) endlos.neu();
+});
+
+/* ================= Modus wechseln ================= */
+try { modus = localStorage.getItem('kalk-modus') === 'endlos' ? 'endlos' : 'lernen'; } catch (e) {}
+function setModus(m){
+  modus = m; try { localStorage.setItem('kalk-modus', m); } catch (e) {}
+  document.getElementById('app').hidden = m !== 'lernen';
+  document.getElementById('endlosBox').hidden = m !== 'endlos';
+  document.querySelectorAll('[data-modus]').forEach(b => { b.classList.toggle('on', b.dataset.modus === m); b.setAttribute('aria-pressed', b.dataset.modus === m); });
+  if (m === 'endlos' && !endlos){ zeigeAuswahl(); endlos = Aufgaben.endlos({el:'#endlos', key:'kalk', stufen:[STUFE]}); }
+}
+document.querySelector('.modi').addEventListener('click', e => { const b = e.target.closest('[data-modus]'); if (b) setModus(b.dataset.modus); });
+Aufgaben.sequenz({el:'#app', key:'kalk', schritte:SCHRITTE});
+setModus(modus);
+</script>
+</body>
+</html>

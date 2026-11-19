@@ -55,6 +55,13 @@ Gesammelt im Thread „Aufbau der Seite“. Umgesetzt wird erst, wenn die Lehrkr
 
 ## Erledigt
 
+### Version vom 19.11.
+
+72. **BWR Gesamt: Seite Kalkulationen** (gewünscht 19.11.)
+    Neue Stufe `gesamt` (Fach-Menü „Gesamt“) mit Bereich `kalkulation`, Tool `kalk` (`BWR/gesamt/kalkulation/kalkulationen.html`). Erarbeitung in 8 Schritten: Überblick (vorwärts/rückwärts/Differenz, Korrekturregeln der ISB-Handreichung) → Einkaufskalkulation vorwärts, rückwärts, Differenz (gesucht: Rabatt in € und %) → Verkaufskalkulation vorwärts, rückwärts, Differenz (gesucht: Gewinn in € und %) → Zusammenfassung; je Schritt Beispiel mit Schema und Nebenrechnungen, Übung als Tabelle (Typ tabelle), dazu Fachbegriffe ziehen und MC zum verminderten/vermehrten Grundwert. Schema mit Prozent-Treppe, Einheit € im Kopf, jeder Schritt auf Cent gerundet.
+    Endlos: eine Stufe, Kalkulationen per Kästchen wählbar (gemischt, gespeichert in `kalk-auswahl`). Weitere Kalkulationen: Eintrag in `KALK` + Schritt in `SCHRITTE`, die Auswahl entsteht von selbst.
+    Getestet in Chromium: je 500 Zufallsaufgaben pro Kalkulation nachgerechnet, alle Übungen der Erarbeitung (falsch erkannt, richtig gelöst), Endlos mit Teilauswahl, dunkel, Handybreite. Nicht mit PocketBase, nicht auf Touch-Geräten, ByCS-Paket nicht in ByCS.
+
 ### Version vom 14.11.
 
 69. **Eigene Seiten einreichen, als „eigener Code“ markiert** (gewünscht 14.11.)
