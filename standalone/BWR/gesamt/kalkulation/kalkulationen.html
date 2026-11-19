@@ -3054,7 +3054,7 @@ const SCHRITTE = [
     <p>Der Lieferer nennt einen <b>Listeneinkaufspreis</b>. Davon gehen ab: der <b>Liefererrabatt</b> (sofortiger Preisnachlass, z. B. Mengenrabatt) und der <b>Liefererskonto</b> (Nachlass bei Zahlung innerhalb der Skontofrist). Dazu kommen die <b>Bezugskosten</b> (Fracht, Verpackung, Transportversicherung).</p>
     <p class="info">Wichtig: Der Skonto wird vom <b>Zieleinkaufspreis</b> berechnet, nicht vom Listeneinkaufspreis. Darum fängt die Prozentspalte dort neu bei 100 % an.</p>
     <p><b>Beispiel:</b></p>${B1.html}`, aufgaben:[
-    {typ:'luecken', nr:'1', ziehen:true, frage:'Ziehe die Fachbegriffe an die richtige Stelle im Schema.',
+    {typ:'luecken', nr:'1', ziehen:true, frage:'Baue zuerst das Kalkulationsschema: Ziehe die Fachbegriffe an die richtige Stelle.',
       text:'<div class="rw">Listeneinkaufspreis<br>− [[Liefererrabatt]]<br>= [[Zieleinkaufspreis]]<br>− [[Liefererskonto]]<br>= [[Bareinkaufspreis]]<br>+ [[Bezugskosten]]<br>= [[Einstandspreis]]</div>', extra:['Kundenskonto', 'Gewinn']},
     aufgabe(K('ek-vor'), {lieferer:'Lackwerk Seidl OHG', ware:'Liter Klarlack', menge:40, preis:18.75, r:15, s:3, bkl:[['Fracht', 42], ['Verpackung', 12.5]]}, '2')]},
 
@@ -3080,7 +3080,7 @@ const SCHRITTE = [
     <p class="info"><b>Verminderter Grundwert:</b> Der Kunde rechnet Skonto vom Zielverkaufspreis und Rabatt vom Listenverkaufspreis. Für Saitgig ist der Barverkaufspreis darum 98 % (bei 2 % Skonto), der Zielverkaufspreis 90 % (bei 10 % Rabatt):<br>
       <span class="rw">Zielverkaufspreis = Barverkaufspreis · 100 : 98<br>Listenverkaufspreis = Zielverkaufspreis · 100 : 90</span></p>
     <p><b>Beispiel:</b></p>${B4.html}`, aufgaben:[
-    {typ:'luecken', nr:'1', ziehen:true, frage:'Ziehe die Fachbegriffe an die richtige Stelle im Schema.',
+    {typ:'luecken', nr:'1', ziehen:true, frage:'Baue zuerst das Kalkulationsschema: Ziehe die Fachbegriffe an die richtige Stelle.',
       text:'<div class="rw">Selbstkosten<br>+ [[Gewinn]]<br>= [[Barverkaufspreis]]<br>+ [[Kundenskonto]]<br>= [[Zielverkaufspreis]]<br>+ [[Kundenrabatt]]<br>= [[Listenverkaufspreis]]</div>', extra:['Bezugskosten', 'Liefererskonto']},
     {typ:'mc', nr:'2', frage:`Der Barverkaufspreis beträgt ${eur(B4.w.bvp)}, der Kunde erhält 2 % Skonto. Mit welcher Rechnung bekommst du den Zielverkaufspreis?`,
       options:[`${eur(B4.w.bvp)} · 100 : 98`, `${eur(B4.w.bvp)} · 102 : 100`, `${eur(B4.w.bvp)} · 98 : 100`],
@@ -3115,6 +3115,9 @@ const SCHRITTE = [
     </tbody></table></div>${KORREKTUR}
     <p>Weiter üben: oben <b>Endlos ∞</b> wählen und einstellen, welche Kalkulationen vorkommen sollen.</p>`}
 ];
+
+// Mehrere Aufgaben eines Schritts nacheinander (Kombi): erst Schema bauen bzw. Rechenweg wählen, danach erscheint die komplette Kalkulation
+SCHRITTE.forEach(st => { if (st.aufgaben && st.aufgaben.length > 1) st.aufgaben = [{typ:'kombi', teile:st.aufgaben.map(a => { const t = {...a}; delete t.nr; return t; })}]; });
 
 /* ================= Endlos mit Auswahl ================= */
 let auswahl = KALK.map(k => k.id);
