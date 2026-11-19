@@ -591,6 +591,8 @@ function laden(d){
   knoepfe();
 }
 const aktuell = () => modus === 'editor' ? Baukasten.daten() : jsonLesen();
+// Prompt-Generator (vorlage-prompt.js): „Gerüst in den Editor“ ersetzt den Entwurf wie „Neu“ und zeigt den Editor
+if (Baukasten.prompt) Baukasten.prompt.laden = d => { if (modus !== 'editor') zeige('editor'); laden(d); meldung(true, ''); };
 $('#neu').addEventListener('click', () => { if (confirm('Neue, leere Übung anfangen? Der jetzige Stand geht verloren (vorher „Speichern“).')) laden({titel:'', schritte:[]}); });
 $('#speichern').addEventListener('click', () => {
   const d = aktuell(); if (!d) return;

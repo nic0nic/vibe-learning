@@ -4599,7 +4599,8 @@ Aufgaben.sequenz({el:'#app', key:${JSON.stringify(id)}, schritte:DATEN.schritte}
  * aus Baukasten.TYPEN; anklicken = in den markierten Schritt, ziehen = in einen beliebigen Schritt), in der Mitte die
  * Struktur als Schritt-Karten, rechts Thema, Ergebnis-Weg und der fertige Prompt. Der Prompt verweist auf den Skill
  * vibe-learning-seite-erstellen (github.com/nic0nic/vibe-learning-skills); die Antwort (JSON-Block) fügt man in der
- * Ansicht „JSON“ ein. Am Baukasten selbst ändert das Fenster nichts.
+ * Ansicht „JSON“ ein. „Gerüst in den Editor“ legt die Struktur stattdessen direkt als Übung mit leeren Aufgaben
+ * (Typ.neu()) an und ersetzt dabei den Entwurf; laden muss die Seite setzen: Baukasten.prompt.laden = d => … (wie „Neu“).
  * Stand im Browser: localStorage vorlage-prompt = {bereich, thema, klasse, hinweise, weg, schritte:[{titel, erklaerung,
  *   training: null | {antwort, zeit, endlos}, typen:[typ, …]}]}.
  * Einbinden nach vorlage-typen.js (und vorlage-typen-beta.js); braucht katalog.js. Fenster-Layout: .pg-… in uebung-erstellen.html.
@@ -4682,6 +4683,25 @@ Aufgaben.sequenz({el:'#app', key:${JSON.stringify(id)}, schritte:DATEN.schritte}
     return z.join('\n');
   }
 
+  /* ---------- Gerüst: Struktur als Aufgaben-JSON mit leeren Aufgaben der gewählten Typen ---------- */
+  function geruest(s) {
+    const schritte = s.schritte.map((x, i) => {
+      const titel = x.titel.trim() || (x.training ? 'Training' : 'Schritt ' + (i + 1));
+      if (x.training && B.training) {
+        const t = B.training.neu(), o = x.training;
+        t.antwort = o.antwort === 'mc' ? 'mc' : 'eingabe';
+        if (!o.zeit) delete t.zeit;
+        if (o.endlos) delete t.anzahl; else t.anzahl = t.anzahl || 20;
+        return {kurz: 'Training', titel, html: '<p>Löse so viele Aufgaben wie möglich.</p>', training: t};
+      }
+      const y = {titel};
+      if (x.erklaerung) y.html = '<p>Erklärtext</p>';
+      y.aufgaben = x.typen.filter(k => B.TYPEN[k]).map(k => B.TYPEN[k].neu());
+      return y;
+    });
+    return {titel: s.thema.trim(), kurztext: '', schritte};
+  }
+
   /* ---------- Fenster ---------- */
   function oeffnen() {
     const S = laden(), BER = bereiche();
@@ -4697,7 +4717,7 @@ Aufgaben.sequenz({el:'#app', key:${JSON.stringify(id)}, schritte:DATEN.schritte}
       + '<p class="hinweis">Anklicken: kommt in den markierten Schritt. Ziehen: in einen beliebigen Schritt oder auf die freie Fläche (neuer Schritt).</p>';
     d.innerHTML = `<div class="kp-oben"><div><b>Prompt erstellen</b> <span class="kp-titel">für Claude mit dem Skill vibe-learning-seite-erstellen</span></div>
         <span class="hinweis sz-hilfe">Thema wählen, Aufbau aus Bausteinen legen, Prompt kopieren und in Claude einfügen. Den JSON-Block aus der Antwort fügst du hier in der Ansicht „JSON“ ein.</span>
-        <button type="button" class="btn pg-kopieren">Prompt kopieren</button><button type="button" class="btn haupt sz-fertig">Fertig</button></div>
+        <button type="button" class="btn pg-geruest" title="Die Struktur direkt im Editor anlegen (leere Aufgaben zum selbst Ausfüllen)">Gerüst in den Editor</button><button type="button" class="btn pg-kopieren">Prompt kopieren</button><button type="button" class="btn haupt sz-fertig">Fertig</button></div>
       <div class="sz-arbeit pg-arbeit"><div class="sz-leiste">${leiste}</div>
         <div class="pg-mitte"></div>
         <div class="sz-eig pg-eig">
@@ -4762,6 +4782,7 @@ Aufgaben.sequenz({el:'#app', key:${JSON.stringify(id)}, schritte:DATEN.schritte}
       const t = e.target, q = s => t.closest(s);
       if (q('.sz-fertig') || t === d) return d.close();
       if (q('.pg-kopieren')) return kopieren();
+      if (q('.pg-geruest')) return uebernehmen();
       if (zug && zug.bewegt) return;
       if (q('[data-pg-plus]')) return dazu('schritt', -1);
       if (q('[data-pg-weg]')) { const i = +q('[data-pg-weg]').dataset.pgWeg; S.schritte.splice(i, 1); sel = Math.min(sel, S.schritte.length - 1); return zeichne(); }
@@ -4817,6 +4838,13 @@ Aufgaben.sequenz({el:'#app', key:${JSON.stringify(id)}, schritte:DATEN.schritte}
     });
     d.addEventListener('pointercancel', () => { if (zug && zug.geist) zug.geist.remove(); zug = null; });
 
+    function uebernehmen() {
+      if (!S.schritte.length) { msg.textContent = 'Lege zuerst links Schritte und Aufgabentypen an.'; return; }
+      const alt = B.daten() || {}, voll = (alt.schritte || []).some(x => x.html || x.training || (x.aufgaben || []).length);
+      if (voll && !confirm('Das Gerüst ersetzt die Übung im Editor. Der jetzige Stand geht verloren (vorher „Speichern“). Weiter?')) return;
+      if (typeof B.prompt.laden !== 'function') { msg.textContent = 'Übernehmen geht auf dieser Seite nicht.'; return; }
+      B.prompt.laden(geruest(S)); d.close();
+    }
     async function kopieren() {
       try { await navigator.clipboard.writeText(aus.value); msg.textContent = '✓ Kopiert. In claude.ai (mit dem Skill) einfügen, den JSON-Block aus der Antwort hier unter „JSON“ einfügen.'; }
       catch (e) { aus.focus(); aus.select(); msg.textContent = 'Kopieren hat nicht geklappt – der Prompt ist markiert, kopiere ihn mit Strg+C.'; }
@@ -4827,7 +4855,7 @@ Aufgaben.sequenz({el:'#app', key:${JSON.stringify(id)}, schritte:DATEN.schritte}
   }
 
   document.addEventListener('click', e => { if (e.target.closest && e.target.closest('[data-prompt-bau]')) oeffnen(); });
-  B.prompt = {oeffnen, text: prompt};
+  B.prompt = {oeffnen, text: prompt, geruest, laden: null};
 })();
 
 </script>
@@ -5876,6 +5904,8 @@ function laden(d){
   knoepfe();
 }
 const aktuell = () => modus === 'editor' ? Baukasten.daten() : jsonLesen();
+// Prompt-Generator (vorlage-prompt.js): „Gerüst in den Editor“ ersetzt den Entwurf wie „Neu“ und zeigt den Editor
+if (Baukasten.prompt) Baukasten.prompt.laden = d => { if (modus !== 'editor') zeige('editor'); laden(d); meldung(true, ''); };
 $('#neu').addEventListener('click', () => { if (confirm('Neue, leere Übung anfangen? Der jetzige Stand geht verloren (vorher „Speichern“).')) laden({titel:'', schritte:[]}); });
 $('#speichern').addEventListener('click', () => {
   const d = aktuell(); if (!d) return;
