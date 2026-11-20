@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="de" data-trainer="sqlacc">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Abfragen in Access – vibe learning</title>
+<script src="../../katalog.js"></script>
+<script src="../../nav.js"></script>
+<script src="../../sync.js"></script>
+<script>
+(function(){var t=null;try{t=localStorage.getItem('wenn-theme');}catch(e){}
+document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');})();
+</script>
+<link rel="stylesheet" href="../python/lib/codemirror.css">
+<link rel="stylesheet" href="lib/show-hint.min.css">
+<link rel="stylesheet" href="../excel/basis.css">
+<link rel="stylesheet" href="../../lib/aufgaben.css">
+<link rel="stylesheet" href="abfragen.css">
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <linearGradient id="fg" x1="0" y1="1" x2="0" y2="0">
+    <stop offset="0" stop-color="#d9230f"/><stop offset=".55" stop-color="#ff7a00"/><stop offset="1" stop-color="#ffd23f"/>
+  </linearGradient></defs></svg>
+
+<header>
+  <div class="hdr-left">
+    <div class="brand"><span>&gt;</span>Access<span>;</span></div>
+    <div class="modes" role="group" aria-label="Modus">
+      <button data-mode="lernen">Erarbeitung</button><button data-mode="pfad">Übungen</button><button data-mode="endlos">Endlos</button>
+    </div>
+  </div>
+  <div class="hdr-right">
+    <button class="iconbtn" id="themeBtn" aria-label="Hell/Dunkel umschalten"></button>
+    <div class="flames" id="flames" aria-label="Stufe wählen"></div>
+  </div>
+</header>
+
+<main>
+  <section class="card">
+    <div class="meta">
+      <span class="lvlname" id="lvlname"></span>
+      <span id="taskmeta"></span>
+    </div>
+    <div class="tasktext" id="tasktext"></div>
+  </section>
+
+  <section class="card" id="workcard">
+    <div class="worktitle" id="worktitle"></div>
+    <div id="work"></div>
+  </section>
+
+  <div class="actions">
+    <button class="btn" id="runBtn" title="Abfrage ausführen (Strg + Enter)">▶ Ausführen</button>
+    <button class="btn primary" id="checkBtn" title="Prüfen (Strg + Shift + Enter)">Prüfen</button>
+    <button class="btn" id="resetBtn">Zurücksetzen</button>
+    <button class="btn" id="tabBtn"></button>
+    <span class="spacer"></span>
+    <button class="btn" id="skipBtn" title="Neue Aufgabe – die Serie beginnt wieder bei 0">Andere Aufgabe</button>
+    <button class="btn" id="prevBtn" aria-label="Vorherige Aufgabe">◀</button>
+    <button class="btn" id="nextBtn">Nächste Aufgabe ▶</button>
+  </div>
+  <div id="fb"></div>
+  <section class="card" id="ergebnis" style="display:none"></section>
+</main>
+
+<div class="dock" id="dock"></div>
+
+<script src="filme.js"></script>
+<script src="lib/sql-asm.js"></script>
+<script src="../python/lib/codemirror.min.js"></script>
+<script src="lib/show-hint.min.js"></script>
+<script src="../excel/basis.js"></script>
+<script src="../../lib/aufgaben.js"></script>
+<script>
+/* Abfragen in Access: dieselben Abfragen wie mit SQL-Blöcken, jetzt in der Access-Entwurfsansicht.
+   Nur ein Kriterium je Abfrage (kein UND/ODER – das kommt in und_oder_datenight.html).
+   Aufgaben: frage, felder (angezeigt), where (Musterlösung in SQL), sort, tipp. Die Access-Kriterien baut abfragen.js daraus. */
+const AUFGABEN = [
+  {frage:'Herr Maier will eine Liste aller Einträge mit Titel und Erscheinungsjahr.', felder:['titel', 'jahr'],
+   tipp:'Ohne Kriterium erscheinen alle Datensätze. Wähle nur die Felder aus.'},
+  {frage:'Welche Einträge dauern am längsten? Er will Titel, Regie und Laufzeit sehen, die längsten oben.', felder:['titel', 'regie', 'laufzeit'], sort:'laufzeit DESC',
+   tipp:'Die Sortierung stellst du in der Zeile „Sortierung:“ unter dem Feld ein: absteigend = groß → klein.'},
+  {frage:'Welche Filme von David Fincher stehen in der Sammlung?', felder:['titel', 'jahr'], where:"regie = 'David Fincher'",
+   tipp:'Das Feld <code>regie</code> brauchst du nur für das Kriterium – nimm bei „Anzeigen:“ den Haken weg. Text steht in Access in doppelten Anführungszeichen: <code>"David Fincher"</code>.'},
+  {frage:'Welche Fernsehserien stehen in der Sammlung?', felder:['titel', 'jahr'], where:"art = 'Fernsehserie'"},
+  {frage:'Welche Einträge fand Herr Maier perfekt? Er hat ihnen eine 10 gegeben.', felder:['titel', 'eigene_bewertung'], where:'eigene_bewertung = 10',
+   tipp:'Für „genau gleich“ reicht in Access der Wert allein: <code>10</code>. Zahlen ohne Anführungszeichen.'},
+  {frage:'Welche Einträge sind vor 1970 erschienen? Die ältesten sollen oben stehen.', felder:['titel', 'jahr'], where:'jahr < 1970', sort:'jahr ASC',
+   tipp:'Vergleichszeichen stehen vor der Zahl: <code>&lt;1970</code>.'},
+  {frage:'Welche Einträge dauern länger als drei Stunden (180 Minuten)?', felder:['titel', 'laufzeit'], where:'laufzeit > 180'},
+  {frage:'Welche Einträge haben auf IMDb mindestens 8,8 Punkte? Die besten sollen oben stehen.', felder:['titel', 'imdb_bewertung'], where:'imdb_bewertung >= 8.8', sort:'imdb_bewertung DESC',
+   tipp:'Kommazahlen schreibst du in Access mit Komma: <code>&gt;=8,8</code>.'},
+  {frage:'Was fand Herr Maier richtig schlecht? Gesucht sind alle Einträge, denen er höchstens 3 Punkte gegeben hat.', felder:['titel', 'eigene_bewertung', 'imdb_bewertung'], where:'eigene_bewertung <= 3'},
+  {frage:'Welche Einträge sind keine Filme?', felder:['titel', 'art'], where:"art <> 'Film'",
+   tipp:'<code>&lt;&gt;</code> bedeutet „ungleich“: <code>&lt;&gt;"Film"</code>.'},
+  {frage:'Welche Einträge sind 2019 erschienen? Sortiere die Titel von A bis Z.', felder:['titel', 'art'], where:'jahr = 2019', sort:'titel ASC'},
+  {frage:'Herr Maier sucht alle Harry-Potter-Filme, die ältesten zuerst.', felder:['titel', 'jahr'], where:"titel LIKE 'Harry Potter%'", sort:'jahr ASC',
+   tipp:'<code>Wie</code> vergleicht mit einem Muster, <code>*</code> steht für beliebig viele Zeichen: <code>Wie "Harry Potter*"</code> heißt „beginnt mit Harry Potter“.'},
+  {frage:'Welche Einträge gehören (auch) zum Genre Horror?', felder:['titel', 'jahr', 'genres'], where:"genres LIKE '%Horror%'",
+   tipp:'<code>Wie "*Horror*"</code> findet Horror an jeder Stelle, auch wenn noch andere Genres dabeistehen.'},
+  {frage:'Bei welchen Einträgen war Quentin Tarantino an der Regie beteiligt – allein oder zusammen mit anderen?', felder:['titel', 'regie'], where:"regie LIKE '%Tarantino%'"},
+  {frage:'Welche Filme hat Christopher Nolan gedreht? Die auf IMDb am besten bewerteten sollen oben stehen.', felder:['titel', 'imdb_bewertung'], where:"regie = 'Christopher Nolan'", sort:'imdb_bewertung DESC'},
+  {frage:'Bei welchen Einträgen ist keine Regie eingetragen? Sortiere nach dem Titel von A bis Z.', felder:['titel', 'art'], where:'regie IS NULL', sort:'titel ASC',
+   tipp:'Leere Felder findest du in Access mit <code>Ist Null</code>.'}
+];
+
+/* Endlos: je Vorlage eine Zufallsaufgabe mit genau einem Kriterium (oder keinem), manchmal mit Sortierung.
+   Z.liste(sql) liefert die erste Spalte aller Zeilen. */
+const q = s => "'" + s.replace(/'/g, "''") + "'";
+const komma = x => String(x).replace('.', ',');
+const extra = (r, Z, pflicht, pool, n) => pflicht.concat(Z.shuffle(pool.filter(f => !pflicht.includes(f)), r).slice(0, n));
+// sortiert in gut einem Drittel der Fälle nach einem angezeigten Feld (den Auftrag dazu schreibt abfragen.js)
+const sortiere = (r, felder, f, ab) => r() < 0.4 && felder.includes(f) ? f + (ab ? ' DESC' : ' ASC') : undefined;
+const ENDLOS = [
+  (r, Z) => { const f = extra(r, Z, ['titel'], ['jahr', 'laufzeit', 'imdb_bewertung', 'eigene_bewertung'], 1 + Z.ri(r, 0, 1));
+    return {frage:'Herr Maier will eine sortierte Liste aller Einträge.', felder:f, sort:Z.pick1(r, f) + (r() < 0.5 ? ' DESC' : ' ASC')}; },
+  (r, Z) => { const d = Z.pick1(r, Z.liste("SELECT regie FROM filme WHERE regie NOT LIKE '%,%' GROUP BY regie HAVING COUNT(*) >= 3 AND COUNT(*) = (SELECT COUNT(*) FROM filme f WHERE f.regie LIKE '%' || filme.regie || '%')"));
+    const f = extra(r, Z, ['titel'], ['jahr', 'imdb_bewertung', 'eigene_bewertung'], 1 + Z.ri(r, 0, 1)), sort = sortiere(r, f, 'jahr', r() < 0.5);
+    return {frage:`Bei welchen Einträgen hat ${d} Regie geführt?`, felder:f, where:`regie = ${q(d)}`, sort}; },
+  (r, Z) => { const a = Z.pick1(r, ['Fernsehserie', 'Miniserie', 'Kurzfilm', 'Video']), nicht = a === 'Fernsehserie' && r() < 0.3;
+    const f = extra(r, Z, ['titel'], ['jahr', 'imdb_bewertung', 'laufzeit'], 1);
+    return {frage: nicht ? 'Welche Einträge sind <b>keine</b> Fernsehserien?' : `Welche Einträge der Art „${a}“ stehen in der Sammlung?`, felder:f, where:`art ${nicht ? '<>' : '='} ${q(a)}`}; },
+  (r, Z) => { const y = Z.pick1(r, [1960, 1970, 1975, 1980, 1985, 1990]); const f = extra(r, Z, ['titel', 'jahr'], ['regie', 'eigene_bewertung'], Z.ri(r, 0, 1)), sort = sortiere(r, f, 'jahr', r() < 0.5);
+    return {frage:`Welche Einträge sind vor ${y} erschienen?`, felder:f, where:`jahr < ${y}`, sort}; },
+  (r, Z) => { const y = Z.pick1(r, [2020, 2021, 2022, 2023]); const f = extra(r, Z, ['titel', 'jahr'], ['art', 'imdb_bewertung'], Z.ri(r, 0, 1)), sort = sortiere(r, f, 'jahr', r() < 0.5);
+    return {frage:`Welche Einträge sind ${y} oder später erschienen?`, felder:f, where:`jahr >= ${y}`, sort}; },
+  (r, Z) => { const y = Z.pick1(r, Z.liste('SELECT jahr FROM filme GROUP BY jahr HAVING COUNT(*) BETWEEN 4 AND 40'));
+    const f = extra(r, Z, ['titel'], ['art', 'regie', 'imdb_bewertung'], 1 + Z.ri(r, 0, 1)), sort = sortiere(r, f, 'titel', false);
+    return {frage:`Welche Einträge sind im Jahr ${y} erschienen?`, felder:f, where:`jahr = ${y}`, sort}; },
+  (r, Z) => { const kurz = r() < 0.5, m = kurz ? Z.pick1(r, [80, 85, 90]) : Z.pick1(r, [150, 160, 170]);
+    const f = extra(r, Z, ['titel', 'laufzeit'], ['art', 'jahr'], Z.ri(r, 0, 1)), sort = sortiere(r, f, 'laufzeit', !kurz);
+    return {frage:(kurz ? `Welche Einträge dauern weniger als ${m} Minuten?` : `Welche Einträge dauern länger als ${m} Minuten?`), felder:f, where:`laufzeit ${kurz ? '<' : '>'} ${m}`, sort}; },
+  (r, Z) => { const x = Z.pick1(r, ['8.3', '8.5', '8.6', '8.8']); const f = extra(r, Z, ['titel', 'imdb_bewertung'], ['jahr', 'eigene_bewertung'], Z.ri(r, 0, 1)), sort = sortiere(r, f, 'imdb_bewertung', true);
+    return {frage:`Welche Einträge haben auf IMDb mindestens ${komma(x)} Punkte?`, felder:f, where:`imdb_bewertung >= ${x}`, sort}; },
+  (r, Z) => { const v = Z.pick1(r, [['= 10', 'genau 10 Punkte'], ['= 9', 'genau 9 Punkte'], ['<= 3', 'höchstens 3 Punkte'], ['<= 4', 'höchstens 4 Punkte'], ['< 3', 'weniger als 3 Punkte'], ['= 2', 'genau 2 Punkte']]);
+    const f = extra(r, Z, ['titel'], ['jahr', 'regie', 'imdb_bewertung', 'eigene_bewertung'], 1);
+    return {frage:`Welchen Einträgen hat Herr Maier ${v[1]} gegeben?`, felder:f, where:`eigene_bewertung ${v[0]}`}; },
+  (r, Z) => { const g = Z.pick1(r, ['Western', 'Horror', 'Animation', 'Musical', 'Kriegsfilm', 'Sportfilm', 'Biografie', 'Fantasy', 'Dokumentarfilm', 'Geschichte']);
+    const f = extra(r, Z, ['titel', 'genres'], ['jahr', 'imdb_bewertung'], Z.ri(r, 0, 1)), sort = sortiere(r, f, 'jahr', r() < 0.5);
+    return {frage:`Welche Einträge gehören (auch) zum Genre ${g}?`, felder:f, where:`genres LIKE ${q('%' + g + '%')}`, sort}; },
+  (r, Z) => { const t = Z.pick1(r, Z.liste("SELECT titel FROM filme WHERE art = 'Film' AND regie IS NOT NULL"));
+    const f = extra(r, Z, ['titel'], ['jahr', 'regie', 'laufzeit', 'eigene_bewertung'], 2);
+    return {frage:`Herr Maier will mehr über den Film „${t}“ wissen.`, felder:f, where:`titel = ${q(t)}`}; },
+  (r, Z) => { const n = Z.pick1(r, ['Coen', 'Nolan', 'Kubrick', 'Spielberg', 'Scorsese', 'Fincher', 'Leone', 'Jackson']);
+    const f = extra(r, Z, ['titel'], ['regie', 'jahr', 'imdb_bewertung'], 1 + Z.ri(r, 0, 1)), sort = sortiere(r, f, 'jahr', r() < 0.5);
+    return {frage:`Bei welchen Einträgen hat jemand mit dem Nachnamen ${n} Regie geführt?`, felder:f, where:`regie LIKE ${q('%' + n + '%')}`, sort}; },
+  (r, Z) => { const w = Z.pick1(r, ['Der', 'Die', 'Das', 'Star', 'Harry Potter', 'Batman']);
+    const f = extra(r, Z, ['titel'], ['jahr', 'art'], 1), sort = sortiere(r, f, 'titel', false);
+    return {frage:`Welche Titel beginnen mit „${w}“?`, felder:f, where:`titel LIKE ${q(w + ' %')}`, sort}; }
+];
+
+/* Erarbeitung: von SQL (bekannt aus den SQL-Blöcken) zur Access-Entwurfsansicht, Schritt für Schritt. */
+const sql = s => `<pre class="sqlv cm-s-default">${s}</pre>`;
+// Entwurfsraster als Bild: spalten = [[Feld, Sortierung, Anzeigen (true/false), Kriterium]]
+const raster = (titel, spalten) => `<div class="mini"><div class="mtitel">${titel}</div><div class="agridw"><table class="agrid">` +
+  [['Feld:', s => s[0]], ['Tabelle:', () => 'filme'], ['Sortierung:', s => s[1] || ''], ['Anzeigen:', s => s[2] ? '☑' : '☐'], ['Kriterien:', s => s[3] || ''], ['oder:', () => '']]
+    .map(([th, f], i) => `<tr${i > 3 ? ' class="krit"' : ''}><th>${th}</th>${spalten.map(s => `<td${i === 3 ? ' class="ashow"' : ''}>${f(s)}</td>`).join('')}</tr>`).join('') + '</table></div></div>';
+const ERARBEITUNG = [
+  {titel:'Abfragen in Access', html:`<p>Abfragen kennst du schon: Mit den SQL-Blöcken hast du Herrn Maiers Filmsammlung (Tabelle <code>filme</code>) befragt. In Microsoft Access baut man dieselben Abfragen meist nicht als SQL, sondern in der <b>Entwurfsansicht</b> – einem Raster, in das man Felder, Sortierung und Kriterien einträgt.</p>
+   <div class="minis"><div class="mini"><div class="mtitel">SQL</div>${sql("SELECT titel, jahr\nFROM filme\nWHERE art = 'Fernsehserie'\nORDER BY jahr DESC")}</div>
+   ${raster('Access-Entwurfsansicht', [['titel', '', true, ''], ['jahr', 'Absteigend', true, ''], ['art', '', false, '"Fernsehserie"']])}</div>
+   <p>Beide Abfragen liefern dasselbe Ergebnis. Vergleiche sie genau: Wo steht in Access, was in SQL hinter <code>SELECT</code>, <code>FROM</code>, <code>WHERE</code> und <code>ORDER BY</code> steht?</p>
+   <p>Jeder Schritt erklärt etwas oder stellt eine Aufgabe. Erst wenn sie richtig gelöst ist, geht es mit <b>Weiter</b> zum nächsten Schritt.</p>`},
+
+  {titel:'SQL und Entwurf vergleichen', arbeit:'Zuordnen',
+   html:`<div class="minis"><div class="mini"><div class="mtitel">SQL</div>${sql("SELECT titel, jahr\nFROM filme\nWHERE art = 'Fernsehserie'\nORDER BY jahr DESC")}</div>
+   ${raster('Access-Entwurfsansicht', [['titel', '', true, ''], ['jahr', 'Absteigend', true, ''], ['art', '', false, '"Fernsehserie"']])}</div>`,
+   aufgabe:{typ:'zuordnen', frage:'In welcher Zeile der Entwurfsansicht steht das?',
+     felder:[['feld', 'Feld: und Anzeigen:'], ['tab', 'Tabelle:'], ['krit', 'Kriterien:'], ['sort', 'Sortierung:']],
+     karten:[
+       {t:'SELECT titel, jahr – die Felder, die im Ergebnis zu sehen sind', z:'feld'},
+       {t:'ein Feld, das nur für das Kriterium gebraucht wird (Haken weg)', z:'feld'},
+       {t:'FROM filme – woher die Daten kommen', z:'tab'},
+       {t:'WHERE art = \'Fernsehserie\' – welche Datensätze erscheinen', z:'krit'},
+       {t:'ORDER BY jahr DESC – in welcher Reihenfolge', z:'sort'}]},
+   nachher:'Genau! In Access steht jedes Feld in einer eigenen Spalte. Darunter steht, wie nach diesem Feld sortiert wird, ob es angezeigt wird und welches Kriterium für dieses Feld gilt.'},
+
+  {titel:'Felder auswählen', krit:'bloecke',
+   html:`<p>Jetzt bist du dran. Ein Feld kommt in den Entwurf, wenn du es links im Fenster der Tabelle <code>filme</code> anklickst – oder oben bei „Feld:“ aus der Liste wählst. Mit <b>▶ Ausführen</b> siehst du jederzeit das Ergebnis (in Access heißt es <b>Datenblattansicht</b>).</p>`,
+   access:{frage:'Herr Maier will eine Liste aller Einträge mit Titel und Erscheinungsjahr.', felder:['titel', 'jahr'],
+     tipp:'Ohne Kriterium erscheinen alle Datensätze. Das ist wie eine SQL-Abfrage ohne WHERE.'},
+   nachher:'Das Häkchen bei „Anzeigen:“ entspricht SELECT: Nur Felder mit Haken stehen im Ergebnis.'},
+
+  {titel:'Sortieren', krit:'bloecke',
+   html:`<p>Die Sortierung stellst du unter dem Feld ein, nach dem sortiert werden soll: <b>Aufsteigend</b> (A → Z, 1 → 9, wie <code>ASC</code>) oder <b>Absteigend</b> (Z → A, 9 → 1, wie <code>DESC</code>).</p>`,
+   access:{frage:'Welche Einträge dauern am längsten? Herr Maier will Titel und Laufzeit sehen, die längsten oben.', felder:['titel', 'laufzeit'], sort:'laufzeit DESC',
+     tipp:'Bei <code>laufzeit</code> in der Zeile „Sortierung:“ <b>Absteigend</b> wählen.'},
+   nachher:'Die größte Laufzeit steht oben – absteigend sortiert, wie <code>ORDER BY laufzeit DESC</code>.'},
+
+  {titel:'Ein Kriterium', krit:'bloecke',
+   html:`<p>In SQL steht die Bedingung hinter <code>WHERE</code>: <code>imdb_bewertung &gt;= 9</code>. In Access steht das <b>Feld</b> schon oben in der Spalte. In die Zeile „Kriterien:“ darunter kommt deshalb nur noch der Rest: <code>&gt;=9</code>.</p>`,
+   access:{frage:'Welche Einträge haben auf IMDb mindestens 9 Punkte?', felder:['titel', 'imdb_bewertung'], where:'imdb_bewertung >= 9',
+     tipp:'Wähle die Felder aus und ziehe das Kriterium in die Zeile „Kriterien:“ unter das Feld, zu dem es gehört. Der kleine Feldname am Baustein hilft dir.'},
+   nachher:'Das Kriterium gilt immer für das Feld, unter dem es steht.'},
+
+  {titel:'Kriterien in Access schreiben', arbeit:'Zuordnen',
+   html:`<p>Access schreibt Kriterien etwas anders als SQL:</p>
+   <table class="teile"><tr><td>Text</td><td>in <b>doppelten</b> Anführungszeichen: <code>"Film"</code></td></tr>
+   <tr><td>gleich</td><td>das <code>=</code> darf fehlen: <code>10</code> heißt „gleich 10“</td></tr>
+   <tr><td>Kommazahl</td><td>mit <b>Komma</b>: <code>&gt;=8,5</code></td></tr>
+   <tr><td>Muster</td><td><code>Wie</code> statt LIKE und <code>*</code> statt %: <code>Wie "*Horror*"</code></td></tr>
+   <tr><td>leer</td><td><code>Ist Null</code> statt IS NULL</td></tr></table>`,
+   aufgabe:{typ:'zuordnen', frage:'Welches Access-Kriterium gehört zu welcher SQL-Bedingung?',
+     felder:[['a', 'art = \'Film\''], ['b', 'jahr &lt; 1970'], ['c', 'eigene_bewertung = 10'], ['d', 'imdb_bewertung &gt;= 8.5'], ['e', 'genres LIKE \'%Horror%\''], ['f', 'regie IS NULL']],
+     karten:[{t:'"Film"', z:'a'}, {t:'&lt;1970', z:'b'}, {t:'10', z:'c'}, {t:'&gt;=8,5', z:'d'}, {t:'Wie "*Horror*"', z:'e'}, {t:'Ist Null', z:'f'}]},
+   nachher:'Der Feldname fehlt in jedem Access-Kriterium – er steht ja schon oben bei „Feld:“.'},
+
+  {titel:'Feld nur für das Kriterium', krit:'bloecke',
+   html:`<p>Manchmal brauchst du ein Feld nur für das Kriterium, angezeigt werden soll es nicht. Dann kommt es trotzdem in den Entwurf – aber ohne Haken bei „Anzeigen:“.</p>`,
+   access:{frage:'Welche Miniserien stehen in der Sammlung?', felder:['titel', 'jahr'], where:"art = 'Miniserie'",
+     tipp:'Nimm auch das Feld <code>art</code> in den Entwurf, setze das Kriterium darunter und nimm bei „Anzeigen:“ den Haken weg.'},
+   nachher:'In SQL steht <code>art</code> nur hinter WHERE, nicht hinter SELECT – in Access steht es im Entwurf, aber ohne Haken.'},
+
+  {titel:'Muster mit Wie', krit:'bloecke',
+   html:`<p>Ein Eintrag hat oft mehrere Genres, z. B. „Western, Drama“. Mit <code>"Western"</code> fände Access nur die Einträge, bei denen <b>nur</b> Western steht. <code>Wie "*Western*"</code> findet Western an jeder Stelle.</p>`,
+   access:{frage:'Welche Einträge gehören (auch) zum Genre Western? Die ältesten sollen oben stehen.', felder:['titel', 'jahr', 'genres'], where:"genres LIKE '%Western%'", sort:'jahr ASC'},
+   nachher:'Wie mit SQL: Der Stern <code>*</code> steht für beliebig viele Zeichen, auch für keins.'},
+
+  {titel:'Das richtige Kriterium finden', krit:'falsch',
+   html:`<p>Ab jetzt steht der Feldname nicht mehr am Baustein, und es gibt <b>mehr Kriterien als nötig</b>. Nur eins passt – überlege genau, welches Vergleichszeichen gemeint ist.</p>`,
+   access:{frage:'Welchen Einträgen hat Herr Maier <b>mindestens</b> 9 Punkte gegeben? Die besten sollen oben stehen.', felder:['titel', 'eigene_bewertung'], where:'eigene_bewertung >= 9', sort:'eigene_bewertung DESC'},
+   nachher:'„mindestens 9“ schließt die 9 ein – deshalb <code>&gt;=9</code>. Mit <code>&gt;9</code> blieben nur die Zehner übrig.'},
+
+  {titel:'Noch ein Muster', krit:'falsch',
+   html:`<p>Achte darauf, wo im Muster der Stern stehen muss.</p>`,
+   access:{frage:'Herr Maier sucht alle Einträge, deren Titel mit „Harry Potter“ <b>beginnt</b>.', felder:['titel', 'jahr'], where:"titel LIKE 'Harry Potter%'"},
+   nachher:'<code>Wie "Harry Potter*"</code>: Vorne steht der Text, dahinter darf beliebig viel folgen.'},
+
+  {titel:'Selbst eintippen: Text', krit:'text', beispiele:['"Film"', '<>"Film"', 'Wie "*Horror*"'],
+   html:`<p>Jetzt ohne Bausteine: Tippe das Kriterium selbst in die Zelle. Text schreibst du in Anführungszeichen.</p>`,
+   access:{frage:'Welche Fernsehserien stehen in der Sammlung? Sortiere die Titel von A bis Z.', felder:['titel', 'jahr'], where:"art = 'Fernsehserie'", sort:'titel ASC',
+     tipp:'Feld <code>art</code> ohne Haken, darunter <code>"Fernsehserie"</code>.'}},
+
+  {titel:'Selbst eintippen: Zahl', krit:'text', beispiele:['10', '<1970', '>=8,5'],
+   html:`<p>Und jetzt eine Kommazahl.</p>`,
+   access:{frage:'Welche Einträge haben auf IMDb <b>mehr als</b> 8,7 Punkte? Die besten sollen oben stehen.', felder:['titel', 'imdb_bewertung'], where:'imdb_bewertung > 8.7', sort:'imdb_bewertung DESC'},
+   nachher:'In Access mit Komma: <code>&gt;8,7</code>. Ein Punkt (<code>&gt;8.7</code>) wird übrigens auch verstanden.'},
+
+  {titel:'Geschafft!', final:true, html:`<p>Du kannst jetzt Abfragen mit einem Kriterium in der Access-Entwurfsansicht bauen:</p>
+   <table class="teile"><tr><td>Feld:</td><td>alle Felder, die du brauchst – zum Anzeigen <b>und</b> für Kriterien (wie SELECT)</td></tr>
+   <tr><td>Anzeigen:</td><td>Haken = im Ergebnis zu sehen; Felder nur für Kriterien ohne Haken</td></tr>
+   <tr><td>Sortierung:</td><td>Aufsteigend oder Absteigend (wie ORDER BY … ASC/DESC)</td></tr>
+   <tr><td>Kriterien:</td><td>unter dem passenden Feld, ohne Feldnamen: <code>"Film"</code>, <code>&gt;=9</code>, <code>Wie "*Horror*"</code>, <code>Ist Null</code> (wie WHERE)</td></tr></table>
+   <p>In den <b>Übungen</b> und im Modus <b>Endlos</b> gibt es drei Stufen: Kriterien einsetzen (Stufe 1), das richtige Kriterium unter mehreren finden (Stufe 2) und Kriterien selbst eintippen (Stufe 3).</p>
+   <p><button class="btn primary" data-mode-go="pfad">Zu den Übungen</button> <button class="btn" data-mode-go="endlos">Endlos üben</button></p>`}
+];
+
+const BEISPIELE = ['"Film"', '<>"Film"', '>=9', '<1970', '8,5', 'Wie "*Horror*"', 'Ist Null'];
+window.SQLKURS = {
+  id: 'sqlacc',
+  tabelle: DB_FILME,
+  stufen: [null,
+    {name:'Kriterien einsetzen',            ui:'access', krit:'bloecke'},
+    {name:'Das richtige Kriterium finden',  ui:'access', krit:'falsch'},
+    {name:'Kriterien selbst eintippen',     ui:'access', krit:'text', beispiele:BEISPIELE}
+  ],
+  erarbeitung: ERARBEITUNG,
+  aufgaben: AUFGABEN,
+  endlos: ENDLOS
+};
+</script>
+<script src="abfragen.js"></script>
+</body>
+</html>

@@ -626,7 +626,9 @@ SQLKURS = {
                                      'sql'    SQL-Editor; vorlage: 'erklaert' | 'geruest' | 'leer'
                                      'access' Access-Entwurf (Feld, Sortierung, Anzeigen, Kriterien/oder);
                                               krit: 'bloecke' nur die nötigen Kriterien (mit Feldname),
-                                              'falsch' dazu falsche, 'text' selbst eintippen (Access-Schreibweise)
+                                              'falsch' dazu falsche (mindestens drei), 'text' selbst eintippen
+                                              (Access-Schreibweise); beispiele:['"Film"', …] = Beispiele unter dem
+                                              Entwurf bei 'text'. Aufgabe ohne where: kein Kriterien-Pool
   ansichten: {access:{name, stufen}, sql:{name, stufen}}   statt stufen: Umschalter in der Kopfzeile
            (Knöpfe mit data-ansicht="…"); Stufe, Fortschritt und Modus je Ansicht getrennt (id-ansicht-…).
            An den Server wird die Stufe durchgezählt gemeldet (Access 1–3, dann SQL 4–8),
@@ -642,7 +644,7 @@ SQLKURS = {
              nur html                       Info-Schritt (gilt beim Anzeigen als erledigt), final:true = Abschluss;
                                             Knöpfe mit data-mode-go="pfad|endlos" wechseln den Modus
              aufgabe:{typ, …}               Baustein aus lib/aufgaben.js (Seite bindet ../../lib/aufgaben.js/.css ein)
-             access:{frage, felder, where, sort, tipp, auch}, krit:'bloecke'|'falsch'|'text'
+             access:{frage, felder, where, sort, tipp, auch}, krit:'bloecke'|'falsch'|'text', beispiele (bei 'text')
                                             Abfrage im Access-Entwurf, geprüft wie eine Übung
              entwurf:{frage, felder, where, sort, tipp, auch}, ui:'block'|'zieh'
                                             Abfrage im SQL-Entwurf (SELECT durch Anklicken im Tabfenster).

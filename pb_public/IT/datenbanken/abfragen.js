@@ -16,7 +16,9 @@
  *                                      'sql'    SQL-Editor; vorlage: 'erklaert' | 'geruest' | 'leer'
  *                                      'access' Access-Entwurf (Feld, Sortierung, Anzeigen, Kriterien/oder);
  *                                               krit: 'bloecke' nur die nötigen Kriterien (mit Feldname),
- *                                               'falsch' dazu falsche, 'text' selbst eintippen (Access-Schreibweise)
+ *                                               'falsch' dazu falsche (mindestens drei), 'text' selbst eintippen
+ *                                               (Access-Schreibweise); beispiele:['"Film"', …] = Beispiele unter dem
+ *                                               Entwurf bei 'text'. Aufgabe ohne where: kein Kriterien-Pool
  *   ansichten: {access:{name, stufen}, sql:{name, stufen}}   statt stufen: Umschalter in der Kopfzeile
  *            (Knöpfe mit data-ansicht="…"); Stufe, Fortschritt und Modus je Ansicht getrennt (id-ansicht-…).
  *            An den Server wird die Stufe durchgezählt gemeldet (Access 1–3, dann SQL 4–8),
@@ -32,7 +34,7 @@
  *              nur html                       Info-Schritt (gilt beim Anzeigen als erledigt), final:true = Abschluss;
  *                                             Knöpfe mit data-mode-go="pfad|endlos" wechseln den Modus
  *              aufgabe:{typ, …}               Baustein aus lib/aufgaben.js (Seite bindet ../../lib/aufgaben.js/.css ein)
- *              access:{frage, felder, where, sort, tipp, auch}, krit:'bloecke'|'falsch'|'text'
+ *              access:{frage, felder, where, sort, tipp, auch}, krit:'bloecke'|'falsch'|'text', beispiele (bei 'text')
  *                                             Abfrage im Access-Entwurf, geprüft wie eine Übung
  *              entwurf:{frage, felder, where, sort, tipp, auch}, ui:'block'|'zieh'
  *                                             Abfrage im SQL-Entwurf (SELECT durch Anklicken im Tabfenster).
@@ -531,7 +533,7 @@ function schrittGeschafft(){
 function zeigeSchritt(){
   lernIdx = Math.min(ER().length - 1, Math.max(0, lernIdx)); speichereLernen();
   const st = schritt(), art = schrittArt(st);
-  LST = art === 'entwurf' ? {name:'Erarbeitung', ui:st.ui || 'zieh'} : {name:'Erarbeitung', ui:'access', krit:st.krit || 'bloecke'};
+  LST = art === 'entwurf' ? {name:'Erarbeitung', ui:st.ui || 'zieh'} : {name:'Erarbeitung', ui:'access', krit:st.krit || 'bloecke', beispiele:st.beispiele};
   CUR = mitAbfrage(st) || null;
   if (art === 'info' && !lernDone.has(lernIdx)){ lernDone.add(lernIdx); speichereLernen(); }
   setup();
@@ -645,6 +647,7 @@ function accZellen(where){
 function accFalsch(text){
   const tausch = {'>=':'>', '>':'>=', '<=':'<', '<':'<='};
   let m;
+  if ((m = text.match(/^<>(.*)$/))) return m[1];
   if ((m = text.match(/^(>=|<=|>|<)(.*)$/))) return tausch[m[1]] + m[2];
   if ((m = text.match(/^(Nicht )?Wie "\*?(.*?)\*?"$/))) return (m[1] || '') + 'Wie "' + m[2] + '"';
   if (text === 'Ist Null') return 'Ist Nicht Null';
@@ -653,6 +656,17 @@ function accFalsch(text){
   if ((m = text.match(/^"(.*)"$/))) return '<>"' + m[1] + '"';
   if ((m = text.match(/^(.*) Und (.*)$/))) return accFalsch(m[1]) + ' Und ' + m[2];
   return null;
+}
+// weitere falsche Kriterien, falls eine Aufgabe nur ein oder zwei Kriterien hat (typische Fehler)
+function accFalschAlle(text){
+  let m;
+  if ((m = text.match(/^(<>|>=|<=|>|<)(.*)$/))) return ['>=', '>', '<=', '<', '<>'].filter(o => o !== m[1]).map(o => o + m[2]).concat(m[2]);
+  if ((m = text.match(/^(-?\d+(?:,\d+)?)$/))) return ['<' + m[1], '>' + m[1], '<>' + m[1]];
+  if ((m = text.match(/^Wie "(\*?)(.*?)(\*?)"$/))) return ['Wie "' + m[2] + '"', '"' + m[1] + m[2] + m[3] + '"', 'Nicht Wie "' + m[1] + m[2] + m[3] + '"', m[1] ? 'Wie "' + m[2] + '*"' : 'Wie "*' + m[2] + '*"'];
+  if ((m = text.match(/^"(.*)"$/))) return ['<>"' + m[1] + '"', '"*' + m[1] + '*"', '>"' + m[1] + '"'];
+  if (text === 'Ist Null') return ['Ist Nicht Null', '""', '0'];
+  if (text === 'Ist Nicht Null') return ['Ist Null', '<>""'];
+  return [];
 }
 
 /* ---------- Access-Kriterien lesen (deutsch und englisch) → SQL ---------- */
@@ -723,6 +737,8 @@ function neuAccess(L){
     if (L.krit === 'falsch'){
       const r = rng(endSeed + pfadIdx * 31 + 7), schon = new Set(echt.map(z => z.text));
       shuffle(echt, r).forEach(z => { const v = accFalsch(z.text); if (v && !schon.has(v) && A.pool.length < echt.length + 4){ schon.add(v); mk(v, z.f); } });
+      // mindestens drei falsche: bei wenigen Kriterien weitere typische Fehler dazu
+      shuffle(echt.flatMap(z => accFalschAlle(z.text).map(v => [v, z.f])), r).forEach(([v, f]) => { if (!schon.has(v) && A.pool.length < echt.length + 3){ schon.add(v); mk(v, f); } });
     }
     A.pool = shuffle(A.pool, rng(rand()));
   }
@@ -774,8 +790,8 @@ function accessHTML(){
     }).join('') + '</tr>';
   });
   h += `</table></div><button class="btn klein" id="addCol" title="weitere Spalte">+ Spalte</button></div></div>`;
-  if (L.krit !== 'text') h += `<div class="pool" data-drop="apool"><div class="pool-title">Kriterien – in die richtige Zelle ziehen${L.krit === 'falsch' ? ' (nicht alle werden gebraucht)' : ''}</div><div class="pool-items">${A.pool.filter(id => !frei.has(id)).map(accBlock).join('') || '<span class="ph">alle eingesetzt</span>'}</div></div>`;
-  else h += `<div class="edhint">Beispiele: ${['"Film"', '>=9', 'Wie "*Mystery*"', 'Zwischen 1960 Und 1969', 'Ist Null', '<=4 Oder >=9'].map(c).join(' · ')}</div>`;
+  if (L.krit !== 'text' && !(CUR && !CUR.where && !A.pool.length)) h += `<div class="pool" data-drop="apool"><div class="pool-title">Kriterien – in die richtige Zelle ziehen${L.krit === 'falsch' ? ' (nicht alle werden gebraucht)' : ''}</div><div class="pool-items">${A.pool.filter(id => !frei.has(id)).map(accBlock).join('') || '<span class="ph">alle eingesetzt</span>'}</div></div>`;
+  else if (L.krit === 'text') h += `<div class="edhint">Beispiele: ${(L.beispiele || ['"Film"', '>=9', 'Wie "*Mystery*"', 'Zwischen 1960 Und 1969', 'Ist Null', '<=4 Oder >=9']).map(c).join(' · ')}</div>`;
   return h;
 }
 
