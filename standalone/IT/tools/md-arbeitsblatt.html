@@ -1,0 +1,2314 @@
+<!doctype html>
+<html lang="de" data-trainer="mdblatt">
+<head>
+<script>window.PF_EINZELDATEI = true;</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Markdown → Arbeitsblatt – vibe learning</title>
+<!--
+  Markdown → Arbeitsblatt: Markdown mit Warnungsblöcken (> [!AUFTRAG], > [!ALLTAG] …) wird ein A4-Arbeitsblatt
+  im Layout der Selbstlernhefte (Schüler, Lehrkraft, Lösungsblätter). Umwandlung und Umbruch: arbeitsblatt.js.
+  Zwei Ansichten derselben Daten: Markdown-Text und Block-Editor (Blöcke ziehen, Typ/Attribute/eigenes HTML).
+  Gespeichert wird im Browser (mdblatt-text), über PocketBase pro Benutzer.
+-->
+<script>/* ../../katalog.js */
+/* Inhaltsverzeichnis der Übungsplattform
+ *
+ * Das ist die einzige Stelle, an der ein neues Tool eingetragen werden muss.
+ * Menüleiste, Startseite, Bereichsseiten, Speichern und Lehrerbereich lesen von hier.
+ *
+ * Aufbau:   Fach → (Jahrgangsstufe) → Bereich → Tool. Ordner in pb_public: <Fach>/<Bereich>/
+ *           bzw. <Fach>/<Stufe>/<Bereich>/, z. B. IT/excel/wenn.html, BWR/9II/anlagen/…
+ * Fach:     id      = Ordnername (z. B. IT, BWR), titel = Anzeige im Fach-Menü, text = Untertitel der Startseite
+ *           bereiche = [Bereich] oder stufen = [{id (Ordner, z. B. 9II), titel (Fach-Menü), kurz (oben in der
+ *           Leiste, z. B. 9), text, bereiche}] für Fächer mit Jahrgangsstufen
+ *           tools = optional bei Fächern mit Stufen: Tools für alle Jahrgangsstufen (Datei direkt in <Fach>/, z. B.
+ *           Englisch/vokabeltrainer.html), im Fach-Menü unter den Stufen und auf der Fachseite; farbe/farbeHell wie beim Bereich.
+ *           Intern ein eigener Bereich (id = Fach klein, fachweit: true, pfad = Fach) ohne Eintrag in KATALOG.gruppen
+ * Bereich:  id      = Name des Unterordners (nur a–z, 0–9, -), über alle Fächer eindeutig
+ *           titel   = Text in der Menüleiste
+ *           farbe   = Akzentfarbe im dunklen Design (Nord-Farben, nordtheme.com),
+ *           farbeHell = dunklerer Ton derselben Farbe für das helle Design (sonst schlecht lesbar)
+ *           farbeSchrift = optional: hellerer Ton für Schrift im dunklen Design, wenn farbe dort zu wenig Kontrast hat
+ *           Ohne farbe bekommt der Bereich das neutrale Nord-Blau.
+ * Tool:     id      = Kürzel für Speicherstand und Auswertung, über alle Fächer eindeutig (nie mehr ändern,
+ *                     sonst geht der gespeicherte Fortschritt verloren)
+ *           datei   = HTML-Datei im Ordner des Bereichs
+ *           titel, text = Anzeige im Menü und auf den Übersichtsseiten
+ *           bedingt = true: nur sichtbar, wenn der Server es für den angemeldeten Schüler freigibt
+ *                     (z. B. Tipp-Aufgabe, siehe /api/trainer/sichtbar in pb_hooks/tippen.pb.js)
+ *           stufen  = Stufen der Übungen für die Auswertung (lehrer.html): Anzahl oder Liste
+ *                     mit Kurznamen, wenn die Nummern allein missverständlich wären
+ *           gruppe  = optional: Untermenü im Menü (aufklappen beim Darüberfahren) und
+ *                     Zwischenüberschrift auf der Bereichsseite (Tools derselben Gruppe direkt hintereinander)
+ * Bereich mit auswertung: false (z. B. Tools ohne Aufgaben) erscheint nicht im Lehrerbereich.
+ *
+ * In der HTML-Datei eines Tools steht dieselbe id: <html lang="de" data-trainer="…">.
+ * Übersichtsseiten: Bereich <html data-bereich="IT/excel">, Fach bzw. Stufe <html data-gruppe="IT">
+ * bzw. data-gruppe="BWR/9II" mit <div id="pf-start">, Fach mit Stufen <html data-fach="BWR"> mit <div id="pf-fach">.
+ *
+ * Eingereichte Übungen (IT/tools/uebung-erstellen.html → Pull Request) stehen unten zwischen EINREICHUNGEN-ANFANG und -ENDE als
+ * reines JSON: [{"bereich": "<Bereich-id>", "tool": {id, datei, titel, text}}]. Der Server (pb_hooks/einreichen.pb.js)
+ * ergänzt dort; von Hand nur gültiges JSON eintragen. Sie werden an das Ende des Bereichs angehängt.
+ *
+ * Am Ende berechnet: KATALOG.gruppen = [{pfad, fach, stufe, titel, text, bereiche}] (Fach bzw. Fach + Stufe)
+ * und KATALOG.bereiche = alle Bereiche aller Fächer, jeweils mit pfad (Ordner) und gruppe.
+ */
+window.KATALOG = {
+  name: 'vibe learning',
+  untertitel: 'Übungen für den Unterricht. Wähle oben Fach und Bereich aus.',
+  faecher: [
+    {id: 'IT', titel: 'IT', text: 'Informationstechnologie: Tabellenkalkulation, Programmieren, Webseiten, Datenbanken, Tippen und Werkzeuge.',
+      bereiche: [
+        {id: 'grundlagen', titel: 'Grundlagen', farbe: '#ebcb8b', farbeHell: '#8a6d1f', text: 'Wie Computer Informationen darstellen: Zahlensysteme und mehr.',
+          tools: [
+            {id: 'zahlensysteme', stufen: ['Auswählen', 'Auswählen auf Zeit', 'Eintippen', 'Eintippen auf Zeit'], datei: 'zahlensysteme.html', titel: 'Zahlensysteme', text: 'Dezimal, binär und hexadezimal: Stellenwerte verstehen, Bits schalten, umrechnen – mit Endlos-Modus in vier Stufen (auswählen oder eintippen, mit oder ohne Zeit).'}
+          ]
+        },
+        {
+          id: 'excel', titel: 'Excel', farbe: '#a3be8c', farbeHell: '#5e8a45',
+          text: 'Tabellenkalkulation: Funktionen, Bedingungen und Verknüpfungen.',
+          tools: [
+            {id: 'fn',   stufen: 5, datei: 'funktionen_1_6.html', titel: 'SUMME, MIN, MAX …', text: 'SUMME, MITTELWERT, MIN, MAX, ANZAHL und ANZAHL2 – mit Erklärung, Übungen und Endlos-Modus.'},
+            {id: 'wenn', stufen: 9, datei: 'wenn.html',       titel: 'WENN-Funktion',     text: 'Die WENN-Funktion üben – von Bausteinen bis zur eigenen Formel.'},
+            {id: 'wbz', stufen: 6, datei: 'wenn-bezuege.html', titel: 'WENN mit $', text: 'WENN-Formeln auf ganze Spalten übertragen: Grenzwerte mit $ festhalten – Zellen in der Tabelle auswählen wie in Excel.'},
+            {id: 'uo',   stufen: 9, datei: 'und-oder.html',   titel: 'UND / ODER',        text: 'Bedingungen verknüpfen – mit Erarbeitung, Übungen und Endlos-Modus.'},
+            {id: 'uobz', stufen: 6, datei: 'und-oder-bezuege.html', titel: 'UND / ODER mit $', text: 'WENN mit UND/ODER auf ganze Spalten übertragen: Grenzwerte mit $ festhalten – Zellen in der Tabelle auswählen wie in Excel.'},
+            {id: 'bz',   stufen: 6, datei: 'bezuege.html',    titel: 'Zellbezüge $',      text: 'Relative und absolute Bezüge: Formeln übertragen und $-Zeichen richtig setzen.'}
+          ]
+        },
+        {id: 'python',      titel: 'Python', farbe: '#b48ead', farbeHell: '#8a5f84', text: 'Programmieren mit Python.',
+          tools: [
+            {id: 'py', datei: 'editor.html', titel: 'Python-Editor', text: 'Python direkt im Browser schreiben und ausführen – mit Terminal für Ein- und Ausgabe.'},
+            {id: 'pyif', stufen: 3, datei: 'bedingungen.html', titel: 'Bedingte Anweisung', text: 'if, elif und else: 10 Aufgaben mit Erklärung und automatischer Prüfung.'},
+            {id: 'pyfehler', datei: 'fehlersuche.html', titel: 'Fehlersuche', text: 'Syntax-, Laufzeit- und Logikfehler finden und verbessern: In einer Zeile steckt ein Fehler – endlos neue Aufgaben.'}
+          ]
+        },
+        {id: 'html', titel: 'HTML', farbe: '#e8a5c0', farbeHell: '#ad4c7a', text: 'Webseiten gestalten mit HTML und CSS.',
+          tools: [
+            {id: 'htmled', datei: 'editor.html', titel: 'HTML-Editor', text: 'HTML und CSS schreiben und sofort die Vorschau sehen – mit Regelprüfung, Handy-Ansicht und Download der fertigen Seite.'},
+            {id: 'htmlaufbau', gruppe: 'Kurs', stufen: 3, datei: '01-aufbau-webseite.html', titel: '1 Aufbau einer Webseite', text: 'Tags, Elemente, Attribute und das Grundgerüst: 6 Aufgaben an der Webseite der Band Mouse Rat.'},
+            {id: 'htmltext', gruppe: 'Kurs', stufen: 3, datei: '02-text-strukturieren.html', titel: '2 Text strukturieren', text: 'Überschriften, Absätze, Zeilenumbruch, Aufzählung und nummerierte Liste.'},
+            {id: 'htmllinks', gruppe: 'Kurs', stufen: 3, datei: '03-links-bilder.html', titel: '3 Links und Bilder', text: 'Hyperlinks, Sprungmarken und Bilder mit Alternativtext.'},
+            {id: 'htmlcss', gruppe: 'Kurs', stufen: 3, datei: '04-css-grundlagen.html', titel: '4 CSS-Grundlagen', text: 'Stilvorlagen: Regeln aus Selektor, Attribut und Attributwert – Farbe, Schrift, Ausrichtung.'},
+            {id: 'htmlklassen', gruppe: 'Kurs', stufen: 3, datei: '05-klassen-abstaende.html', titel: '5 Klassen und Abstände', text: 'Klassenselektor, Rahmen, Innen- und Außenabstand (Boxmodell).'},
+            {id: 'htmldesign', gruppe: 'Kurs', stufen: 3, datei: '06-design-projekt.html', titel: '6 Design und Projekt', text: 'Gute Gestaltung: Inhalt, Bedienbarkeit, Barrierefreiheit, verschiedene Geräte – dann die eigene Seite entwerfen und herunterladen.'},
+            {id: 'htmlfehler', datei: 'fehlersuche.html', titel: 'Fehlersuche', text: 'Fehler in HTML und CSS finden und verbessern: In einer Zeile steckt ein Fehler – endlos neue Aufgaben.'}
+          ]
+        },
+        {id: 'datenbanken', titel: 'Datenbanken', farbe: '#bf616a', farbeHell: '#a3434c', farbeSchrift: '#e0959b', text: 'Tabellen, Beziehungen und SQL-Abfragen.',
+          tools: [
+            {id: 'sqlfrei', datei: 'filmdatenbank.html', titel: 'Film-Datenbank', text: 'Eigene Abfragen an die Filmdatenbank stellen, ohne Aufgaben – mit Entwurfsansicht oder in SQL.'},
+            {id: 'sql', stufen: 5, datei: 'abfragen.html', titel: 'SQL-Abfragen', text: 'SELECT, FROM, WHERE und ORDER BY an einer Filmdatenbank – mit Erarbeitung (Abfragen ansehen, abändern, Bedingungen ziehen) und Tooltipps, vom Entwurf bis zur eigenen SQL-Abfrage.'},
+            {id: 'sqlacc', stufen: ['Kriterien einsetzen', 'Richtiges Kriterium finden', 'Kriterien eintippen'], datei: 'abfragen_access.html', titel: 'Abfragen in Access', text: 'Dieselben Abfragen wie mit SQL, jetzt in der Access-Entwurfsansicht: Felder, Sortierung, Anzeigen und ein Kriterium – Kriterien einsetzen, unter mehreren das richtige finden oder selbst eintippen.'},
+            {id: 'sqluo', stufen: ['Access 1', 'Access 2', 'Access 3', 'SQL 1', 'SQL 2', 'SQL 3', 'SQL 4', 'SQL 5'], datei: 'und_oder_datenight.html', titel: 'Datenight: UND / ODER', text: 'Drei Wochen Dates mit immer verrückteren Filmwünschen: Kriterien mit UND und ODER – mit Erarbeitung für Access (Zeilen und Wahrheitstabelle), im Access-Entwurf oder mit Blöcken und SQL.'},
+            {id: 'bericht', datei: 'bericht.html', titel: 'Bericht (Versuch)', text: 'Berichte aus einer Abfrage entwerfen wie in Access: als Liste oder eine Seite je Datensatz, mit Seitenansicht als PDF.'}
+          ]
+        },
+        {id: 'tippen', titel: 'Tippen', farbe: '#8db3ee', farbeHell: '#2b579a', text: 'Schnell und sicher tippen mit zehn Fingern.',
+          tools: [
+            {id: 'tippen', datei: 'pockettype.html', titel: 'pockettype', text: 'Tipptrainer: Wörter und Anschläge pro Minute, Genauigkeit, Bestwerte und Verlauf. Eigenes Projekt auf Basis von Monkeytype (GPL-3.0).'},
+            {id: 'lektionen', datei: 'lektionen.html', titel: 'Lektion üben', text: 'Die 17 Lektionen aus TIPP10 in fester Reihenfolge: von der Grundreihe asdf jklö bis zu Ziffern und Sonderzeichen.'},
+            {id: 'tippaufgabe', bedingt: true, datei: 'aufgabe.html', titel: 'Aufgabe', text: 'Den Text abschreiben, den deine Lehrkraft aufgegeben hat – so oft du willst.'}
+          ]
+        },
+        {id: 'tools', titel: 'Tools', farbe: '#b4bdcc', farbeHell: '#4c566a', auswertung: false, text: 'Werkzeuge für den Unterricht, ohne Aufgaben.',
+          tools: [
+            {id: 'strukto', gruppe: 'Struktogramm', datei: 'struktogramm.html', titel: 'Struktogramm-Editor', text: 'Struktogramme mit der Maus zusammensetzen und als SVG, HTML oder JPG exportieren.'},
+            {id: 'pystrukto', gruppe: 'Struktogramm', datei: 'python-struktogramm.html', titel: 'Python → Struktogramm', text: 'Python-Code eingeben, das Struktogramm entsteht sofort daneben – zum Export oder zum Weiterbearbeiten im Editor.'},
+            {id: 'uebung-erstellen', gruppe: 'Übungen', datei: 'uebung-erstellen.html', titel: 'Übung erstellen', text: 'Eigene Übungen im Baukasten zusammenstellen, testen und als Datei oder als Lernpaket für ByCS herunterladen.'},
+            {id: 'demo-typen', gruppe: 'Übungen', datei: 'demo-aufgabentypen.html', titel: 'Demo Aufgabentypen', text: 'Alle Aufgabentypen zum Ausprobieren – jede Seite zeigt einen Typ und erklärt, wie man ihn erstellt.'},
+            {id: 'mdblatt', gruppe: 'Arbeitsblätter', datei: 'md-arbeitsblatt.html', titel: 'Markdown → Arbeitsblatt', text: 'Markdown mit Blöcken wie [!AUFTRAG] oder [!ALLTAG] wird ein A4-Arbeitsblatt im Heft-Layout, mit Lehrkraftfassung, Lösungsblättern und Block-Editor.'}
+          ]
+        }
+      ]
+    },
+    {id: 'BWR', titel: 'BWR', text: 'Betriebswirtschaftslehre/Rechnungswesen.',
+      stufen: [
+        {id: '7II', titel: 'Jahrgangsstufe 7', kurz: '7', text: 'BWR, Jahrgangsstufe 7 (Wahlpflichtfächergruppe II).',
+          bereiche: [
+            {id: 'aufwand-ertrag', titel: 'Aufwendungen und Erträge', farbe: '#88c0d0', farbeHell: '#3b7f8c', text: 'Aufwands- und Ertragskonten: Einkauf und Verkauf buchen.',
+              tools: [
+                {id: 'chat-uefe', datei: 'lernchat-verkauf-eigener-erzeugnisse.html', titel: 'Lern-Chat: Verkauf eigener Erzeugnisse', text: 'Im Chat Schritt für Schritt den Buchungssatz für einen Verkauf erarbeiten: BK an UEFE, UST.'}
+              ]}
+          ]
+        },
+        {id: '9II', titel: 'Jahrgangsstufe 9', kurz: '9', text: 'BWR, Jahrgangsstufe 9 (Wahlpflichtfächergruppe II).',
+          bereiche: [
+            {id: 'unternehmensfuehrung', titel: 'Unternehmensführung', farbe: '#81a1c1', farbeHell: '#4f73a3', text: 'Übungen zur Unternehmensführung.', tools: []},
+            {id: 'anlagen', titel: 'Anlagen', farbe: '#a3be8c', farbeHell: '#5e8a45', text: 'Übungen zu Anlagen.', tools: []},
+            {id: 'finanzierung', titel: 'Finanzierung', farbe: '#ebcb8b', farbeHell: '#8a6d1f', text: 'Übungen zur Finanzierung.',
+              tools: [
+                {id: 'bilanz', stufen: ['Bilanzposten', 'AV/UV · EK/FK', 'Goldene Regel'], datei: 'bilanz.html', titel: 'Bilanz-Modell', text: 'Wie Buchungen die Bilanz verändern: Aktivtausch, Passivtausch, Aktiv-Passiv-Mehrung und -Minderung – eingeteilt nach Bilanzposten, nach AV/UV und EK/FK oder nach der Goldenen Finanzierungsregel.'},
+                {id: 'bankkredit', datei: 'kredite-bank.html', titel: 'Kredite bei der Bank', text: 'Erarbeitung (Heft Kap. 5): Kreditfähigkeit und Kreditwürdigkeit zuordnen, Sicherheiten nennen, Disagio und Auszahlungsbetrag berechnen.'},
+                {id: 'zins', datei: 'zinsrechnung.html', titel: 'Zinsrechnung', text: 'Von der Prozentrechnung zur Tageszinsformel: Jahreszinsen, Tageszinsen, Zinstage und Umstellen nach K, p und t selbstständig erarbeiten – mit Endlos-Modus (Heft Zinsrechnung).'},
+                {id: 'effzins', datei: 'effektiver-zinssatz.html', titel: 'Effektiver Zinssatz', text: 'Kreditangebote mit Disagio vergleichen: tatsächliche Kreditkosten, effektiven Zinssatz berechnen, Kreditaufnahme buchen – mit Endlos-Modus (Heft Effektiver Zinssatz).'},
+                {id: 'darlehen', datei: 'darlehensarten.html', titel: 'Darlehensarten', text: 'Abzahlungs-, Annuitäten- und Festdarlehen: Tilgungspläne als Formular ausfüllen, Zinskosten vergleichen und das passende Darlehen wählen (Heft Darlehensarten).'},
+                {id: 'kurzkredit', datei: 'kurzfristige-kredite.html', titel: 'Kontokorrent-, Dispo- und Lieferantenkredit', text: 'Erarbeitung zu kurzfristigen Krediten (Heft Kap. 7): Lieferantenkredit auf der Zeitleiste ausprobieren, Merkmale zuordnen, Skonto berechnen und Kosten vergleichen.'}
+              ]},
+            {id: 'kapitalanlage', titel: 'Kapitalanlage', farbe: '#b48ead', farbeHell: '#8a5f84', text: 'Übungen zur Kapitalanlage.', tools: []},
+            {id: 'forderungen', titel: 'Forderungen', farbe: '#bf616a', farbeHell: '#a3434c', farbeSchrift: '#e0959b', text: 'Übungen zu Forderungen.', tools: []}
+          ]
+        },
+        {id: 'gesamt', titel: 'Gesamt', kurz: 'Gesamt', text: 'BWR über alle Jahrgangsstufen: Rechenverfahren, die immer wieder gebraucht werden.',
+          bereiche: [
+            {id: 'kalkulation', titel: 'Kalkulation', farbe: '#8fbcbb', farbeHell: '#3d7a78', text: 'Kalkulationsschemata erklären und üben.',
+              tools: [
+                {id: 'kalk', datei: 'kalkulationen.html', titel: 'Kalkulationen', text: 'Einkaufs- und Verkaufskalkulation, jeweils vorwärts, rückwärts und als Differenzkalkulation: Schemata erklärt und nach den Korrekturregeln geübt – mit Endlos-Modus, in dem du die Kalkulationen auswählst.'}
+              ]}
+          ]
+        }
+      ]
+    },
+    {id: 'Englisch', titel: 'Englisch', text: 'Englisch: Wortschatz und mehr.', farbe: '#d08770', farbeHell: '#a65a32',
+      tools: [
+        {id: 'vokabeltrainer', datei: 'vokabeltrainer.html', titel: 'Vokabeltrainer', text: 'Eigene Vokabeln eintragen oder einfügen, Modus wählen (Richtung, schreiben oder auswählen, einmal alle oder endlos, mit oder ohne Zeit) und los geht’s.'}
+      ],
+      stufen: [
+        {id: '5th-grade', titel: '5th grade', kurz: '5th grade', text: 'Englisch, 5th grade.',
+          bereiche: [
+            {id: 'vocab-5', titel: 'Vocab', farbe: '#d08770', farbeHell: '#a65a32', text: 'Vokabeln üben: anklicken, schreiben, auf Zeit.',
+              tools: [
+                {id: 'vokabel-demo', datei: 'vokabel-demo.html', titel: 'Vokabel-Demo', text: '50 Grundwörter in fünf Themen (Familie, Schule, Tiere, Essen, Farben und Zahlen): erst anklicken, dann schreiben, dann gemischt auf Zeit.'}
+              ]}
+          ]
+        },
+        {id: '6th-grade', titel: '6th grade', kurz: '6th grade', text: 'Englisch, 6th grade.',
+          bereiche: [
+            {id: 'vocab-6', titel: 'Vocab', farbe: '#d08770', farbeHell: '#a65a32', text: 'Vokabeln üben: anklicken, schreiben, auf Zeit.',
+              tools: []}
+          ]
+        },
+        {id: '7th-grade', titel: '7th grade', kurz: '7th grade', text: 'Englisch, 7th grade.',
+          bereiche: [
+            {id: 'vocab-7', titel: 'Vocab', farbe: '#d08770', farbeHell: '#a65a32', text: 'Vokabeln üben: anklicken, schreiben, auf Zeit.',
+              tools: []}
+          ]
+        },
+        {id: '8th-grade', titel: '8th grade', kurz: '8th grade', text: 'Englisch, 8th grade.',
+          bereiche: [
+            {id: 'vocab-8', titel: 'Vocab', farbe: '#d08770', farbeHell: '#a65a32', text: 'Vokabeln üben: anklicken, schreiben, auf Zeit.',
+              tools: []}
+          ]
+        },
+        {id: '9th-grade', titel: '9th grade', kurz: '9th grade', text: 'Englisch, 9th grade.',
+          bereiche: [
+            {id: 'vocab-9', titel: 'Vocab', farbe: '#d08770', farbeHell: '#a65a32', text: 'Vokabeln üben: anklicken, schreiben, auf Zeit.',
+              tools: []}
+          ]
+        },
+        {id: '10th-grade', titel: '10th grade', kurz: '10th grade', text: 'Englisch, 10th grade.',
+          bereiche: [
+            {id: 'vocab-10', titel: 'Vocab', farbe: '#d08770', farbeHell: '#a65a32', text: 'Vokabeln üben: anklicken, schreiben, auf Zeit.',
+              tools: []}
+          ]
+        }
+      ]
+    }
+  ]
+};
+
+window.KATALOG.einreichungen = /* EINREICHUNGEN-ANFANG */ [] /* EINREICHUNGEN-ENDE */;
+
+// Gruppen (Fach bzw. Fach + Jahrgangsstufe) und alle Bereiche mit Ordner, für nav.js, sync.js und lehrer.html
+(function (K) {
+  K.gruppen = [];
+  K.faecher.forEach(f => (f.stufen
+    ? f.stufen.map(s => ({pfad: f.id + '/' + s.id, fach: f, stufe: s, titel: f.titel + ' ' + (s.kurz || s.titel), text: s.text || f.text, bereiche: s.bereiche}))
+    : [{pfad: f.id, fach: f, stufe: null, titel: f.titel, text: f.text, bereiche: f.bereiche}]).forEach(g => K.gruppen.push(g)));
+  K.bereiche = [].concat(...K.gruppen.map(g => g.bereiche.map(b => Object.assign(b, {pfad: g.pfad + '/' + b.id, gruppe: g}))));
+  // Tools eines Fachs für alle Jahrgangsstufen (Fach.tools): eigener Bereich mit Ordner = Fach
+  K.faecher.forEach(f => {
+    if (!f.stufen || !f.tools || !f.tools.length) return;
+    const g = {pfad: f.id, fach: f, stufe: null, titel: f.titel, text: f.text, bereiche: []};
+    K.bereiche.push({id: f.id.toLowerCase(), titel: f.titel, text: f.text, farbe: f.farbe, farbeHell: f.farbeHell, farbeSchrift: f.farbeSchrift,
+      tools: f.tools, pfad: f.id, gruppe: g, fachweit: true});
+  });
+  (K.einreichungen || []).forEach(e => {
+    const b = K.bereiche.find(x => x.id === e.bereich);
+    if (b && e.tool && !b.tools.some(t => t.id === e.tool.id)) b.tools.push(e.tool);
+  });
+})(window.KATALOG);
+
+</script>
+<script>/* ../../nav.js */
+/* Menüleiste der Übungsplattform
+ *
+ * Baut oben auf jeder Seite die Leiste: vorne das Fach-Menü (IT, BWR › Jahrgangsstufe 9 …),
+ * dahinter die Bereiche des gewählten Fachs aus katalog.js.
+ * Fährt man mit der Maus über einen Bereich (am Handy: antippen), klappen
+ * dessen Übungen auf. Außerdem füllt das Skript die Startseite bzw. Fachseite (#pf-start),
+ * die Auswahl der Jahrgangsstufe (#pf-fach) und die Übersichtsseite eines Bereichs (#pf-bereich).
+ * Das zuletzt gewählte Fach merkt sich der Browser (localStorage pf-fach) für die Startseite.
+ *
+ * Fehlt katalog.js oder nav.js, läuft das Tool trotzdem – nur ohne Menüleiste.
+ * Tools mit gruppe (katalog.js) stehen im Menü in einem Untermenü (klappt beim Darüberfahren auf)
+ * und auf der Bereichsseite unter einer Zwischenüberschrift.
+ * Tools mit bedingt: true (katalog.js) sind zunächst ausgeblendet; sync.js blendet sie ein,
+ * wenn der Server sie für den angemeldeten Schüler freigibt (Klasse pf-sichtbar).
+ * In Einzeldateien (werkzeuge/einzeldateien.py, window.PF_EINZELDATEI) zeigt die
+ * Leiste nur Name und Hell/Dunkel-Knopf, weil es keine anderen Seiten gibt.
+ * Rechts in der Leiste sitzt auf jeder Seite ein Vollbild-Knopf (auch in Einzeldateien und ByCS-Paketen).
+ * Läuft die Seite in einem iframe ohne allowfullscreen (z. B. Moodle-Player), wird das iframe-Element
+ * im übergeordneten Fenster bildschirmfüllend, solange es denselben Ursprung hat. Geht beides nicht
+ * (z. B. iPhone), fehlt der Knopf. Browser beenden Vollbild bei jedem Seitenwechsel (dauerhaft: F11).
+ * Läuft die Seite in einem iframe gleichen Ursprungs (ByCS/Moodle-Player), gibt es daneben „Großansicht“:
+ * Das oberste erreichbare iframe-Element wird per CSS über das ganze Fenster gelegt. Geht auch dort, wo
+ * Vollbild nicht klappt (iPad, Apps); bleibt für die Sitzung eingeschaltet (sessionStorage pf-gross), Esc beendet.
+ * Design (lib/designs.js): Haben Angemeldete im Konto-Menü (sync.js) ein anderes Design gewählt (localStorage pf-design),
+ * lädt nav.js designs.js nach und schaltet es ein – außer die Seite bringt selbst ein Design mit (html[data-design]).
+ * Experimentell: handgebaute Seiten (Excel, SQL …) sehen dann nur teilweise anders aus.
+ * Unten auf jeder Seite (außer Einzeldateien) stehen Links zu Impressum und Datenschutz (pb_public/impressum.html, datenschutz.html).
+ */
+(function () {
+  'use strict';
+  const K = window.KATALOG;
+  if (!K) return;
+
+  // Wurzel der Plattform = Ordner, in dem nav.js liegt (funktioniert auch per Doppelklick)
+  const me = document.currentScript && document.currentScript.src;
+  const BASE = me ? me.replace(/[^/]*$/, '') : '';
+  const root = document.documentElement;
+  const TOOL = root.dataset.trainer || '';
+  // Aktueller Bereich: über das Tool oder <html data-bereich="IT/excel">.
+  // Aktuelle Gruppe (Fach bzw. Fach + Jahrgangsstufe): über den Bereich, <html data-gruppe="BWR/9II">
+  // oder <html data-fach="BWR">, sonst die zuletzt gewählte (localStorage pf-fach), sonst die erste.
+  const BER = K.bereiche.find(b => b.tools.some(t => t.id === TOOL)) || K.bereiche.find(b => b.pfad === root.dataset.bereich) || null;
+  const BEREICH = BER ? BER.id : '';
+  // gewähltes Design (Einstellung im Konto-Menü) nachladen; Seiten mit eigenem Design behalten es
+  let wunsch = null; try { wunsch = localStorage.getItem('pf-design'); } catch (e) {}
+  if (wunsch && wunsch !== 'standard' && !root.dataset.design){
+    root.dataset.design = wunsch;
+    const s = document.createElement('script'); s.src = BASE + 'lib/designs.js';
+    s.onload = () => { if (window.Designs) Designs.anwenden(wunsch); };
+    document.head.appendChild(s);
+  }
+  const FACHSEITE = K.faecher.find(f => f.id === root.dataset.fach) || null;
+  let GRUPPE = BER ? BER.gruppe : K.gruppen.find(g => g.pfad === root.dataset.gruppe) || (FACHSEITE && K.gruppen.find(g => g.fach === FACHSEITE));
+  if (GRUPPE){ try { localStorage.setItem('pf-fach', GRUPPE.pfad); } catch (e) {} }
+  else {
+    let zuletzt = null;
+    try { zuletzt = localStorage.getItem('pf-fach'); } catch (e) {}
+    GRUPPE = K.gruppen.find(g => g.pfad === zuletzt) || K.gruppen[0];
+  }
+
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+  const bereichUrl = b => BASE + b.pfad + '/index.html';
+  const toolUrl = (b, t) => BASE + b.pfad + '/' + t.datei;
+  const gruppeUrl = g => BASE + g.pfad + '/index.html';
+  const fachUrl = f => BASE + f.id + '/index.html';
+
+  const CSS = `
+.pf-fuss{max-width:1400px;margin:28px auto 0;padding:14px 16px 22px;text-align:center;font:13px system-ui,sans-serif;color:var(--muted,#5b6578)}
+.pf-fuss a{color:inherit}
+.pf-nav{background:var(--panel,#f6f8fb);color:var(--text,#2e3440);border-bottom:1px solid var(--border,#cdd3de);position:relative;z-index:60;font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.pf-in{max-width:1400px;margin:0 auto;display:flex;align-items:center;gap:6px;padding:0 16px;min-height:50px}
+.pf-brand{font:800 18px ui-monospace,Consolas,"Liberation Mono",monospace;color:inherit;text-decoration:none;margin-right:14px;white-space:nowrap}
+.pf-brand span{color:var(--accent-text,var(--accent,#5e81ac))}
+.pf-menu{display:flex;gap:2px;list-style:none;margin:0;padding:0}
+.pf-item{position:relative;--bc:#5e81ac}
+html[data-theme=dark] .pf-item{--bc:#88c0d0}
+.pf-item>a{display:flex;align-items:center;gap:5px;padding:14px 11px;color:inherit;text-decoration:none;font-weight:600;border-bottom:3px solid transparent;white-space:nowrap}
+.pf-item>a::after{content:"";width:6px;height:6px;border:solid currentColor;border-width:0 2px 2px 0;transform:rotate(45deg) translateY(-2px);opacity:.5}
+.pf-item:hover>a,.pf-item.open>a{color:var(--bc)}
+.pf-item>a[aria-current]{border-bottom-color:var(--bc)}
+.pf-drop{display:none;position:absolute;top:100%;left:0;min-width:280px;background:var(--panel,#f6f8fb);border:1px solid var(--border,#cdd3de);border-radius:0 0 12px 12px;box-shadow:0 14px 30px rgba(0,0,0,.18);padding:6px;list-style:none;margin:0}
+.pf-item:hover .pf-drop,.pf-item:focus-within .pf-drop,.pf-item.open .pf-drop{display:block}
+.pf-drop a{display:block;padding:8px 10px;border-radius:8px;color:inherit;text-decoration:none}
+.pf-drop a:hover,.pf-drop a:focus{background:var(--panel2,#eceff4);outline:none}
+.pf-drop a[aria-current]{color:var(--bc);font-weight:600}
+.pf-drop small{display:block;color:var(--muted,#5b6578);font-size:13px}
+.pf-drop .pf-all{font-size:13px;color:var(--muted,#5b6578);border-top:1px solid var(--border,#cdd3de);border-radius:0 0 8px 8px;margin-top:4px}
+.pf-fach{margin-right:8px}
+.pf-fach>a{border:1px solid var(--border,#cdd3de);border-radius:10px;background:var(--panel2,#eceff4);padding:6px 10px!important;margin:6px 0}
+.pf-fach>a small{font-weight:500;color:var(--muted,#5b6578);margin-right:2px}
+.pf-sub{position:relative}
+.pf-sub>a{display:flex!important;align-items:center;justify-content:space-between;gap:12px}
+.pf-sub>a::after{content:"";width:6px;height:6px;border:solid currentColor;border-width:0 2px 2px 0;transform:rotate(-45deg);opacity:.5;flex:none}
+.pf-drop2{display:none;position:absolute;left:100%;top:-7px;min-width:250px;background:var(--panel,#f6f8fb);border:1px solid var(--border,#cdd3de);border-radius:12px;box-shadow:0 14px 30px rgba(0,0,0,.18);padding:6px;list-style:none;margin:0}
+.pf-sub.links>.pf-drop2{left:auto;right:100%}
+.pf-drop2 li:not(.pf-fachtool)+.pf-fachtool{border-top:1px solid var(--border,#cdd3de);margin-top:4px;padding-top:4px}
+.pf-sub:hover>.pf-drop2,.pf-sub:focus-within>.pf-drop2,.pf-sub.open>.pf-drop2{display:block}
+.pf-drop .pf-leer{padding:8px 10px;color:var(--muted,#5b6578);font-style:italic}
+.pf-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.pf-btn{background:var(--panel2,#eceff4);border:1px solid var(--border,#cdd3de);color:inherit;border-radius:10px;width:38px;height:38px;display:grid;place-items:center;cursor:pointer;font-size:17px;padding:0}
+.pf-burger{display:none}
+.pf-einzeln .pf-menu{display:none!important}
+.pf-bedingt:not(.pf-sichtbar){display:none!important}
+@media (max-width:760px){
+  .pf-burger{display:grid}
+  .pf-menu{display:none;position:absolute;top:100%;left:0;right:0;flex-direction:column;background:var(--panel,#f6f8fb);border-bottom:1px solid var(--border,#cdd3de);box-shadow:0 14px 30px rgba(0,0,0,.18);padding:6px 16px 12px;max-height:80vh;overflow:auto}
+  .pf-nav.open .pf-menu{display:flex}
+  .pf-item>a{padding:10px 0 4px;border:0}
+  .pf-item>a::after{display:none}
+  .pf-drop{display:block;position:static;min-width:0;border:0;box-shadow:none;padding:0 0 4px 10px}
+  .pf-drop2{display:block;position:static;min-width:0;border:0;box-shadow:none;padding:0 0 0 12px}
+  .pf-sub>a::after{display:none}
+}
+.pf-knapp .ts-badge.gast .ts-lang{display:none}
+/* dasselbe, wenn die Leiste zu voll ist (nav.js setzt pf-eng) */
+.pf-eng .pf-burger{display:grid}
+.pf-eng .pf-menu{display:none;position:absolute;top:100%;left:0;right:0;flex-direction:column;background:var(--panel,#f6f8fb);border-bottom:1px solid var(--border,#cdd3de);box-shadow:0 14px 30px rgba(0,0,0,.18);padding:6px 16px 12px;max-height:80vh;overflow:auto}
+.pf-eng.open .pf-menu{display:flex}
+.pf-eng .pf-item>a{padding:10px 0 4px;border:0}
+.pf-eng .pf-item>a::after{display:none}
+.pf-eng .pf-drop{display:block;position:static;min-width:0;border:0;box-shadow:none;padding:0 0 4px 10px}
+.pf-eng .pf-drop2{display:block;position:static;min-width:0;border:0;box-shadow:none;padding:0 0 0 12px}
+.pf-eng .pf-sub>a::after{display:none}
+.pf-fade,.pf-fade *{transition:background-color .35s,color .35s,border-color .35s,fill .35s!important}
+.pf-gesperrt{opacity:.5;cursor:default!important}
+@media print{.pf-nav{display:none}}`;
+
+  // Farben der Bereiche (katalog.js: farbe = dunkles Design, farbeHell = helles Design,
+  // farbeSchrift = optional hellerer Ton für Schrift im dunklen Design).
+  // --accent gilt für die ganze Seite des aktuellen Bereichs, --bc nur für den eigenen Menüpunkt.
+  function akzentCss(){
+    let css = '';
+    K.bereiche.forEach(b => {
+      if (!b.farbe) return;
+      const dunkel = b.farbeSchrift || b.farbe;
+      css += `\n.pf-item[data-b="${b.id}"]{--bc:${b.farbeHell || b.farbe}}\nhtml[data-theme=dark] .pf-item[data-b="${b.id}"]{--bc:${dunkel}}`;
+      if (b.id === BEREICH) css += `\nhtml[data-theme]{--accent:${b.farbeHell || b.farbe};--accent-text:${b.farbeHell || b.farbe}}\nhtml[data-theme=dark]{--accent:${b.farbe};--accent-text:${dunkel}}`;
+    });
+    return css;
+  }
+
+  const SONNE = '☀', MOND = '☾';
+
+  /* ---------- Vollbild ---------- */
+  const VOLL_AN = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg>';
+  const VOLL_AUS = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4v5H4M20 9h-5V4M15 20v-5h5M4 15h5v5"/></svg>';
+  const darfVoll = d => { try { return !!(d.fullscreenEnabled || d.webkitFullscreenEnabled); } catch (e) { return false; } };
+  const vollElement = d => { try { return d.fullscreenElement || d.webkitFullscreenElement || null; } catch (e) { return null; } };
+  // Element, das in Vollbild geht: die Seite selbst oder, im iframe ohne Erlaubnis, das iframe-Element
+  // im nächsthöheren Fenster gleichen Ursprungs, das Vollbild erlaubt
+  function vollZiel(){
+    if (darfVoll(document)) return document.documentElement;
+    let w = window;
+    try {
+      while (w.frameElement){
+        const el = w.frameElement, d = el.ownerDocument;
+        if (darfVoll(d)) return el;
+        w = d.defaultView;
+      }
+    } catch (e) {}                                   // fremder Ursprung
+    return null;
+  }
+  const VOLL = vollZiel();
+  const imVoll = () => !!VOLL && vollElement(VOLL.ownerDocument) === VOLL;
+  function vollUmschalten(){
+    const d = VOLL.ownerDocument;
+    try {
+      if (imVoll()) (d.exitFullscreen || d.webkitExitFullscreen).call(d);
+      else { const r = (VOLL.requestFullscreen || VOLL.webkitRequestFullscreen).call(VOLL); if (r && r.catch) r.catch(() => {}); }
+    } catch (e) {}
+  }
+  function vollKnopf(btn){
+    const an = imVoll();
+    btn.innerHTML = an ? VOLL_AUS : VOLL_AN;
+    btn.setAttribute('aria-label', an ? 'Vollbild beenden' : 'Vollbild');
+    btn.title = an ? 'Vollbild beenden (Esc)' : 'Vollbild – gilt für diese Seite, für alle Seiten F11';
+    btn.setAttribute('aria-pressed', an);
+  }
+
+  /* ---------- Großansicht (nur im iframe): iframe-Element im obersten erreichbaren Fenster über alles legen ---------- */
+  const GROSS_AN = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M20 4l-7 7M10 20H4v-6M4 20l7-7"/></svg>';
+  const GROSS_AUS = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10h-6V4M14 10l7-7M4 14h6v6M10 14l-7 7"/></svg>';
+  const GROSS = (() => {
+    let el = null, w = window;
+    try { while (w.frameElement){ el = w.frameElement; w = el.ownerDocument.defaultView; } } catch (e) {}   // fremder Ursprung: bis hierher
+    return el;
+  })();
+  const GROSS_CSS = {position: 'fixed', top: '0', left: '0', width: '100%', height: '100%', 'max-width': 'none', 'max-height': 'none',
+    margin: '0', border: '0', 'z-index': '2147483000', background: '#fff'};
+  const ss = {
+    get(k){ try { return sessionStorage.getItem(k); } catch (e) { return null; } },
+    set(k, v){ try { if (v == null) sessionStorage.removeItem(k); else sessionStorage.setItem(k, v); } catch (e) {} }
+  };
+  const imGross = () => { try { return !!GROSS && GROSS.dataset.pfGross === '1'; } catch (e) { return false; } };
+  function gross(an){
+    if (!GROSS) return;
+    try {
+      const body = GROSS.ownerDocument.body;
+      if (an && !imGross()){
+        GROSS.dataset.pfGrossStil = GROSS.getAttribute('style') || '';
+        GROSS.dataset.pfGrossBody = body.style.overflow || '';
+        Object.keys(GROSS_CSS).forEach(k => GROSS.style.setProperty(k, GROSS_CSS[k], 'important'));
+        body.style.overflow = 'hidden';
+        GROSS.dataset.pfGross = '1';
+      } else if (!an && imGross()){
+        GROSS.setAttribute('style', GROSS.dataset.pfGrossStil);
+        body.style.overflow = GROSS.dataset.pfGrossBody;
+        ['pfGross', 'pfGrossStil', 'pfGrossBody'].forEach(k => delete GROSS.dataset[k]);
+      }
+    } catch (e) {}
+    ss.set('pf-gross', an ? '1' : null);
+    const b = document.getElementById('pfGross'); if (b) grossKnopf(b);
+  }
+  function grossKnopf(btn){
+    const an = imGross();
+    btn.innerHTML = an ? GROSS_AUS : GROSS_AN;
+    btn.setAttribute('aria-label', an ? 'Großansicht beenden' : 'Großansicht');
+    btn.title = an ? 'Großansicht beenden (Esc)' : 'Großansicht – Übung füllt das ganze Fenster (gut auf dem iPad)';
+    btn.setAttribute('aria-pressed', an);
+  }
+  if (GROSS && ss.get('pf-gross') === '1') gross(true);   // in dieser Sitzung schon eingeschaltet
+  if (GROSS) document.addEventListener('keydown', e => { if (e.key === 'Escape' && imGross() && !vollElement(document)) gross(false); });
+
+  function theme(){ return root.dataset.theme === 'dark' ? 'dark' : 'light'; }
+
+  // Tools derselben gruppe (katalog.js) hintereinander → [{name, tools}], ohne gruppe: name ''
+  function gruppen(b){
+    const out = [];
+    b.tools.forEach(t => {
+      const g = out[out.length - 1];
+      if (g && g.name === (t.gruppe || '')) g.tools.push(t); else out.push({name: t.gruppe || '', tools: [t]});
+    });
+    return out;
+  }
+  // Tools eines Fachs für alle Jahrgangsstufen (katalog.js Fach.tools) → [[Bereich, Tool]]
+  const fachTools = f => K.bereiche.filter(b => b.fachweit && b.gruppe.fach === f).flatMap(b => b.tools.map(t => [b, t]));
+  const toolLi = (b, t, extra) => `<li${t.bedingt ? ` class="pf-bedingt" data-tool="${esc(t.id)}"` : extra || ''}><a href="${toolUrl(b, t)}"${t.id === TOOL ? ' aria-current="page"' : ''}>${esc(t.titel)}</a></li>`;
+
+  // Fach-Menü: Fächer ohne Stufen direkt, Fächer mit Jahrgangsstufen als Untermenü (wie gruppe bei Tools)
+  function fachMenue(){
+    const eintrag = (g, text) => `<li><a href="${gruppeUrl(g)}"${g === GRUPPE ? ' aria-current="page"' : ''}>${esc(text)}</a></li>`;
+    return `<li class="pf-item pf-fach"><a href="${gruppeUrl(GRUPPE)}" aria-haspopup="true" title="Fach wechseln"><small>Fach</small> ${esc(GRUPPE.titel)}</a>
+      <ul class="pf-drop">${K.faecher.map(f => f.stufen
+        ? `<li class="pf-sub"><a href="${fachUrl(f)}"${GRUPPE.fach === f ? ' aria-current="true"' : ''} aria-haspopup="true">${esc(f.titel)}</a><ul class="pf-drop2">${f.stufen.map(st => eintrag(K.gruppen.find(g => g.stufe === st), st.titel)).join('')}${fachTools(f).map(([b, t]) => toolLi(b, t, ' class="pf-fachtool"')).join('')}</ul></li>`
+        : eintrag(K.gruppen.find(g => g.fach === f), f.titel)).join('')}</ul></li>`;
+  }
+
+  function buildNav(){
+    const s = document.createElement('style'); s.textContent = CSS + akzentCss(); document.head.appendChild(s);
+    const nav = document.createElement('nav');
+    nav.className = 'pf-nav' + (window.PF_EINZELDATEI ? ' pf-einzeln' : '');
+    nav.setAttribute('aria-label', 'Bereiche');
+    const name = esc(K.name).replace(/^(\S+)/, '<span>$1</span>');
+    const EINZELN = !!window.PF_EINZELDATEI;
+    nav.innerHTML = `<div class="pf-in">
+      ${EINZELN ? `<span class="pf-brand">${name}</span>` : `<a class="pf-brand" href="${BASE}index.html">${name}</a>`}
+      <ul class="pf-menu">${fachMenue()}${GRUPPE.bereiche.map(b => `
+        <li class="pf-item" data-b="${esc(b.id)}">
+          <a href="${bereichUrl(b)}"${b.id === BEREICH ? ' aria-current="true"' : ''}>${esc(b.titel)}</a>
+          <ul class="pf-drop">${b.tools.length
+            ? gruppen(b).map(g => g.name
+              ? `<li class="pf-sub"><a href="${bereichUrl(b)}"${g.tools.some(t => t.id === TOOL) ? ' aria-current="true"' : ''} aria-haspopup="true">${esc(g.name)}</a><ul class="pf-drop2">${g.tools.map(t => toolLi(b, t)).join('')}</ul></li>`
+              : g.tools.map(t => toolLi(b, t)).join('')).join('')
+              + `<li><a class="pf-all" href="${bereichUrl(b)}">Alle Übungen zu ${esc(b.titel)}</a></li>`
+            : '<li class="pf-leer">Hier entstehen bald Übungen.</li>'}
+          </ul>
+        </li>`).join('')}
+      </ul>
+      <div class="pf-right">
+        ${GROSS ? '<button class="pf-btn" id="pfGross" type="button"></button>' : ''}
+        ${VOLL ? '<button class="pf-btn" id="pfVoll" type="button"></button>' : ''}
+        ${document.getElementById('themeBtn') ? '' : `<button class="pf-btn" id="pfTheme" type="button" aria-label="Hell/Dunkel umschalten">${theme() === 'dark' ? SONNE : MOND}</button>`}
+        ${EINZELN ? '' : '<button class="pf-btn pf-burger" type="button" aria-label="Menü">☰</button>'}
+      </div>
+    </div>`;
+    document.body.insertBefore(nav, document.body.firstChild);
+    if (!EINZELN){
+      const fuss = document.createElement('footer');
+      fuss.className = 'pf-fuss';
+      fuss.innerHTML = `<a href="${BASE}impressum.html">Impressum</a> · <a href="${BASE}datenschutz.html">Datenschutz</a>`;
+      document.body.appendChild(fuss);
+    }
+
+    // Passt die Leiste nicht in die Breite (Fach-Menü, lange Bereichsnamen, Anmeldung), kommt das Menü hinter ☰
+    const innen = nav.querySelector('.pf-in');
+    // Erst den Zusatz „– Fortschritt wird nicht gespeichert“ weglassen (pf-knapp), erst dann ☰ (pf-eng)
+    const voll = () => innen.scrollWidth > innen.clientWidth + 1;
+    const platz = () => {
+      nav.classList.remove('pf-eng', 'pf-knapp');
+      if (EINZELN || !voll()) return;
+      nav.classList.add('pf-knapp');
+      if (voll()) nav.classList.add('pf-eng');
+    };
+    platz();
+    addEventListener('resize', platz);
+    new MutationObserver(platz).observe(nav.querySelector('.pf-right'), {childList: true, subtree: true, characterData: true});
+    if (document.fonts) document.fonts.ready.then(platz);
+    const schmal = () => matchMedia('(max-width:760px)').matches || nav.classList.contains('pf-eng');
+
+    const burger = nav.querySelector('.pf-burger');
+    if (burger) burger.addEventListener('click', () => nav.classList.toggle('open'));
+    const gb = nav.querySelector('#pfGross');
+    if (gb){ grossKnopf(gb); gb.addEventListener('click', () => gross(!imGross())); }
+    const vb = nav.querySelector('#pfVoll');
+    if (vb){
+      vollKnopf(vb);
+      vb.addEventListener('click', vollUmschalten);
+      new Set([document, VOLL.ownerDocument]).forEach(d => ['fullscreenchange', 'webkitfullscreenchange'].forEach(ev => d.addEventListener(ev, () => vollKnopf(vb))));
+    }
+    const tb = nav.querySelector('#pfTheme');
+    if (tb) tb.addEventListener('click', () => {
+      const t = theme() === 'dark' ? 'light' : 'dark';
+      root.dataset.theme = t; tb.textContent = t === 'dark' ? SONNE : MOND;
+      try { localStorage.setItem('wenn-theme', t); } catch (e) {}
+    });
+
+    // Geräte ohne Maus: erstes Antippen klappt auf, zweites öffnet die Bereichsseite
+    const items = [...nav.querySelectorAll('.pf-item')];
+    if (matchMedia('(hover: none)').matches) items.forEach(li => li.firstElementChild.addEventListener('click', e => {
+      if (schmal() || li.classList.contains('open')) return;
+      e.preventDefault();
+      items.forEach(x => x.classList.toggle('open', x === li));
+    }));
+    // Untermenüs (gruppe): nach links aufklappen, wenn rechts kein Platz ist; ohne Maus erst antippen
+    nav.querySelectorAll('.pf-sub').forEach(sub => {
+      sub.addEventListener('mouseenter', () => {
+        const r = sub.getBoundingClientRect();
+        sub.classList.toggle('links', r.right + 260 > innerWidth);
+      });
+      if (matchMedia('(hover: none)').matches) sub.firstElementChild.addEventListener('click', e => {
+        if (schmal() || sub.classList.contains('open')) return;
+        e.preventDefault();
+        const r = sub.getBoundingClientRect();
+        sub.classList.toggle('links', r.right + 260 > innerWidth);
+        sub.classList.add('open');
+      });
+    });
+    document.addEventListener('click', e => { if (!nav.contains(e.target)){ nav.querySelectorAll('.pf-sub.open').forEach(x => x.classList.remove('open')); items.forEach(x => x.classList.remove('open')); nav.classList.remove('open'); } });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape'){ items.forEach(x => x.classList.remove('open')); nav.classList.remove('open'); } });
+  }
+
+  /* ---------- Übersichtsseiten ---------- */
+  // Tools mit gruppe (katalog.js) stehen unter einer gemeinsamen Zwischenüberschrift
+  function kacheln(b){
+    if (!b.tools.length) return '<p class="pf-hinweis">Hier entstehen bald Übungen.</p>';
+    const kachel = t => `<a class="pf-tile${t.bedingt ? ' pf-bedingt' : ''}"${t.bedingt ? ` data-tool="${esc(t.id)}"` : ''} href="${toolUrl(b, t)}"><b>${esc(t.titel)}</b><span>${esc(t.text)}</span></a>`;
+    return gruppen(b).map(g => (g.name ? `<h3 class="pf-gruppe">${esc(g.name)}</h3>` : '') + `<div class="pf-grid">${g.tools.map(kachel).join('')}</div>`).join('');
+  }
+  function buildPages(){
+    const start = document.getElementById('pf-start');
+    if (start){
+      const gruppenseite = !!root.dataset.gruppe;
+      if (gruppenseite) document.title = GRUPPE.titel + ' – ' + K.name;
+      start.innerHTML = `<h1>${esc(gruppenseite ? GRUPPE.titel : K.name)}</h1><p class="pf-lead">${esc(GRUPPE.text)}${gruppenseite ? '' : ' ' + esc(K.untertitel)}</p>`
+        + GRUPPE.bereiche.map(b => `<section class="pf-sec"><h2><a href="${bereichUrl(b)}">${esc(b.titel)}</a></h2><p class="pf-text">${esc(b.text)}</p>${kacheln(b)}</section>`).join('');
+    }
+    // Fach mit Jahrgangsstufen: Auswahl der Stufe
+    const fach = document.getElementById('pf-fach');
+    if (fach && FACHSEITE){
+      document.title = FACHSEITE.titel + ' – ' + K.name;
+      fach.innerHTML = `<h1>${esc(FACHSEITE.titel)}</h1><p class="pf-lead">${esc(FACHSEITE.text)} Wähle die Jahrgangsstufe.</p><div class="pf-grid">`
+        + K.gruppen.filter(g => g.fach === FACHSEITE).map(g => `<a class="pf-tile" href="${gruppeUrl(g)}"><b>${esc(g.stufe.titel)}</b><span>${esc(g.text)}</span></a>`).join('') + '</div>'
+        + (fachTools(FACHSEITE).length ? `<section class="pf-sec pf-fachtools"><h2>Für alle Jahrgangsstufen</h2><div class="pf-grid">${fachTools(FACHSEITE).map(([b, t]) => `<a class="pf-tile" href="${toolUrl(b, t)}"><b>${esc(t.titel)}</b><span>${esc(t.text)}</span></a>`).join('')}</div></section>` : '');
+    }
+    const be = document.getElementById('pf-bereich');
+    const b = BER;
+    if (be && b){
+      document.title = b.titel + ' – ' + K.name;
+      be.innerHTML = `<h1>${esc(b.titel)}</h1><p class="pf-lead">${esc(b.text)}</p>${kacheln(b)}`;
+    }
+  }
+
+  // Hell/Dunkel höchstens einmal pro Sekunde umschalten und weich überblenden – kein Flackern beim schnellen Klicken
+  let themeSperre = 0;
+  document.addEventListener('click', e => {
+    const btn = e.target.closest('#themeBtn,#pfTheme');
+    if (!btn) return;
+    if (Date.now() < themeSperre){ e.stopImmediatePropagation(); e.preventDefault(); return; }
+    themeSperre = Date.now() + 1000;
+    root.classList.add('pf-fade'); btn.classList.add('pf-gesperrt');
+    setTimeout(() => root.classList.remove('pf-fade'), 400);
+    setTimeout(() => btn.classList.remove('pf-gesperrt'), 1000);
+  }, true);
+
+  function init(){ buildNav(); buildPages(); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();
+
+</script>
+<script>/* ../../sync.js */
+/* vibe learning – Anmeldung und Anbindung an PocketBase
+ *
+ * Läuft die Seite über den PocketBase-Server, erscheint beim ersten Öffnen ein
+ * Anmeldefenster: ein Feld für Code oder Benutzername (bei Benutzernamen folgt das
+ * Passwort), alternativ „Seite ohne Anmeldung nutzen“. Oben rechts in der Leiste
+ * steht danach, wer angemeldet ist; dort meldet man sich auch an und ab.
+ *
+ * Schüler: Fortschritt wird auf dem Server gespeichert, jede gelöste Aufgabe protokolliert.
+ * Lehrkraft/Admin: Anmeldung gilt bis zum Schließen des Browsers, im Menü steht
+ * der Link zur Verwaltung (lehrer.html).
+ * Wird die HTML-Datei direkt geöffnet (oder läuft kein PocketBase dahinter),
+ * passiert nichts davon – die Seite speichert dann wie bisher nur im Browser.
+ *
+ * Bedingte Menüpunkte (katalog.js: bedingt) blendet das Skript nach der Anmeldung ein,
+ * wenn der Server sie für diesen Schüler freigibt (/api/trainer/sichtbar).
+ *
+ * Die Seite ruft auf:
+ *   TrainerSync.changed()      nach jeder Änderung am gespeicherten Stand
+ *   TrainerSync.event({...})   wenn eine Aufgabe richtig gelöst wurde
+ */
+(function () {
+  'use strict';
+
+  const CONFIG = {
+    api: '/api/trainer',
+    verwaltung: 'lehrer.html'   // relativ zum Ordner von sync.js
+  };
+
+  const me = document.currentScript && document.currentScript.src;
+  const BASE = me ? me.replace(/[^/]*$/, '') : '';
+  const PAGE = document.documentElement.dataset.trainer || '';          // Tool-id aus katalog.js, leer auf Übersichtsseiten
+  const TOOL_IDS = window.KATALOG ? [].concat(...window.KATALOG.bereiche.map(b => b.tools.map(t => t.id))) : [];
+  const ALL_PREFIXES = [...new Set(['wenn', 'uo', 'fn', PAGE].concat(TOOL_IDS))].filter(Boolean).map(id => id + '-');
+  const OWN = PAGE + '-';
+  const SKIP = ['wenn-theme'];                                             // Hell/Dunkel bleibt pro Gerät
+  const K = {code: 'ts-code', anzeige: 'ts-anzeige', klasse: 'ts-klasse', queue: 'ts-queue', stand: 'ts-stand-' + PAGE};
+  const SS = {gast: 'ts-gast', lehrer: 'ts-lehrer'};                      // gilt nur bis zum Schließen des Browsers
+
+  const ls = {
+    get(k){ try { return localStorage.getItem(k); } catch (e) { return null; } },
+    set(k, v){ try { localStorage.setItem(k, v); } catch (e) {} },
+    del(k){ try { localStorage.removeItem(k); } catch (e) {} },
+    keys(){ try { return Object.keys(localStorage); } catch (e) { return []; } }
+  };
+  const ss = {
+    get(k){ try { return sessionStorage.getItem(k); } catch (e) { return null; } },
+    set(k, v){ try { sessionStorage.setItem(k, v); } catch (e) {} },
+    del(k){ try { sessionStorage.removeItem(k); } catch (e) {} }
+  };
+  function lehrerSitzung(){ try { return JSON.parse(ss.get(SS.lehrer) || 'null'); } catch (e) { return null; } }
+
+  const hosted = /^https?:$/.test(location.protocol);
+  let aktiv = false, pushTimer = null, pushPending = false, menuEl = null, lastSnap = '';
+
+  /* ---------- Hilfen ---------- */
+  function api(path, opt){
+    opt = opt || {};
+    return fetch(CONFIG.api + path, {
+      method: opt.method || 'GET',
+      keepalive: !!opt.keepalive,
+      headers: {'Content-Type': 'application/json', 'X-Trainer-Code': ls.get(K.code) || ''},
+      body: opt.body ? JSON.stringify(opt.body) : undefined
+    }).then(async r => {
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok){ const err = new Error(j.message || ('HTTP ' + r.status)); err.status = r.status; err.data = j; throw err; }
+      return j;
+    });
+  }
+  const trainerKeys = prefix => ls.keys().filter(k => k.startsWith(prefix) && !SKIP.includes(k));
+  function snapshot(prefix){ prefix = prefix || OWN; const d = {}; trainerKeys(prefix).sort().forEach(k => { d[k] = ls.get(k); }); return d; }
+  function applySnapshot(d, prefix){
+    prefix = prefix || OWN;
+    trainerKeys(prefix).forEach(k => ls.del(k));
+    Object.keys(d || {}).forEach(k => { if (k.startsWith(prefix) && !SKIP.includes(k) && typeof d[k] === 'string') ls.set(k, d[k]); });
+  }
+  function wipeLocal(){
+    ALL_PREFIXES.forEach(p => trainerKeys(p).forEach(k => ls.del(k)));
+    ls.keys().filter(k => k.startsWith('ts-stand-')).forEach(k => ls.del(k));
+    [K.queue, K.code, K.klasse, K.anzeige].forEach(k => ls.del(k));
+  }
+  function reloadOnce(){
+    let last = 0; try { last = +sessionStorage.getItem('ts-reload') || 0; } catch (e) {}
+    if (Date.now() - last < 8000) return;
+    try { sessionStorage.setItem('ts-reload', Date.now()); } catch (e) {}
+    location.reload();
+  }
+
+  /* ---------- Fortschritt abgleichen ---------- */
+  async function pull(){
+    if (!PAGE){ setStatus('ok'); return; }
+    const r = await api('/state?seite=' + PAGE);
+    const local = +ls.get(K.stand) || 0, server = +r.stand || 0;
+    if (r.daten && server > local){
+      const before = JSON.stringify(snapshot());
+      applySnapshot(r.daten);
+      ls.set(K.stand, server);
+      lastSnap = JSON.stringify(snapshot());
+      if (lastSnap !== before) reloadOnce();
+    } else if (local > server) await push();
+    setStatus('ok');
+  }
+
+  async function push(keepalive){
+    clearTimeout(pushTimer); pushPending = false;
+    if (!aktiv || !PAGE) return;
+    const stand = +ls.get(K.stand) || Date.now();
+    setStatus('saving');
+    try {
+      await api('/state', {method: 'POST', body: {seite: PAGE, daten: snapshot(), stand}, keepalive});
+      setStatus('ok');
+    } catch (err){
+      if (err.status === 409){ await pull().catch(() => setStatus('offline')); }
+      else if (err.status === 401) abgelaufen();
+      else { pushPending = true; setStatus('offline'); }
+    }
+  }
+
+  function changed(){
+    if (!PAGE) return;
+    // Seiten schreiben ihren Stand auch beim Öffnen neu – nur echte Änderungen zählen,
+    // sonst würde ein frisch geöffnetes Gerät einen neueren Stand vom Server überschreiben.
+    const snap = JSON.stringify(snapshot());
+    if (snap === lastSnap) return;
+    lastSnap = snap;
+    ls.set(K.stand, Date.now());
+    if (!aktiv) return;
+    pushPending = true;
+    clearTimeout(pushTimer);
+    pushTimer = setTimeout(push, 700);
+  }
+
+  /* ---------- Protokoll gelöster Aufgaben ---------- */
+  function queue(){ try { return JSON.parse(ls.get(K.queue) || '[]'); } catch (e) { return []; } }
+  function event(ev){
+    if (!aktiv || !PAGE) return;
+    const q = queue(); q.push(Object.assign({seite: PAGE}, ev)); ls.set(K.queue, JSON.stringify(q.slice(-500)));
+    flush();
+  }
+  let flushing = false;
+  async function flush(keepalive){
+    if (!aktiv || flushing) return;
+    const q = queue(); if (!q.length) return;
+    flushing = true;
+    try {
+      await api('/events', {method: 'POST', body: {events: q.slice(0, 200)}, keepalive});
+      ls.set(K.queue, JSON.stringify(queue().slice(Math.min(q.length, 200))));
+    } catch (err){
+      if (err.status === 401) abgelaufen(); else setStatus('offline');
+    } finally { flushing = false; }
+    if (queue().length && !keepalive) setTimeout(flush, 2000);
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden' && aktiv){ if (pushPending) push(true); flush(true); }
+  });
+  window.addEventListener('online', () => { if (aktiv){ flush(); if (pushPending) push(); else pull().catch(() => {}); } });
+
+
+  /* ---------- Gast-Fortschritt beim Anmelden übernehmen ---------- */
+  // Für jede Übung: Ist das Konto dort noch leer, wird der Stand dieses Geräts hochgeladen,
+  // sonst gilt der Stand vom Server.
+  async function uebernehmen(){
+    for (const p of ALL_PREFIXES){
+      const id = p.slice(0, -1), lokal = snapshot(p);
+      const st = await api('/state?seite=' + id);
+      const leer = !st.daten || !Object.keys(st.daten).length;
+      if (leer){
+        if (!Object.keys(lokal).length) continue;
+        const stand = Date.now();
+        await api('/state', {method: 'POST', body: {seite: id, daten: lokal, stand}});
+        ls.set('ts-stand-' + id, stand);
+      } else {
+        applySnapshot(st.daten, p);
+        ls.set('ts-stand-' + id, +st.stand || 0);
+      }
+    }
+  }
+
+  /* ---------- Oberfläche: Anmeldefenster + Menü oben rechts ---------- */
+  const CSS = `
+.ts-ov{position:fixed;inset:0;z-index:2000;background:rgba(20,24,32,.6);backdrop-filter:blur(3px);display:grid;place-items:center;padding:16px}
+.ts-box{position:relative;background:var(--panel,#f6f8fb);color:var(--text,#2e3440);border:1px solid var(--border,#cdd3de);border-radius:16px;padding:24px;width:min(420px,100%);box-shadow:0 20px 50px rgba(0,0,0,.3);font:16px/1.5 system-ui,sans-serif}
+.ts-box h2{margin:0 0 6px;font-size:21px}
+.ts-box p{margin:0 0 14px;color:var(--muted,#5b6578)}
+.ts-x{position:absolute;top:10px;right:10px;width:34px;height:34px;border-radius:9px;border:0;background:none;color:var(--muted,#5b6578);font-size:22px;line-height:1;cursor:pointer}
+.ts-x:hover{background:var(--panel2,#eceff4);color:var(--text,#2e3440)}
+.ts-in{width:100%;box-sizing:border-box;font:700 20px ui-monospace,Consolas,monospace;letter-spacing:.03em;padding:12px 14px;border-radius:10px;border:2px solid var(--slot-border,var(--border,#a7b1c2));background:var(--slot,var(--panel2,#eceff4));color:var(--text,#2e3440);outline:none}
+.ts-in:focus{border-color:var(--accent,#5e81ac)}
+.ts-btn{margin-top:12px;width:100%;font:600 17px system-ui,sans-serif;padding:12px;border-radius:10px;border:1px solid color-mix(in srgb,var(--accent,#5e81ac) 50%,var(--panel,#f6f8fb));background:color-mix(in srgb,var(--accent,#5e81ac) 22%,var(--panel,#f6f8fb));color:color-mix(in srgb,var(--accent,#5e81ac) 60%,var(--text,#2e3440));cursor:pointer}
+.ts-btn:disabled{opacity:.6;cursor:wait}
+.ts-err{color:var(--err,#a8434d);min-height:1.4em;margin-top:8px;font-size:14px}
+.ts-zurueck{background:none;border:0;padding:0;margin-top:10px;color:var(--muted,#5b6578);text-decoration:underline;cursor:pointer;font-size:14px}
+.ts-gast{display:block;width:100%;margin-top:18px;padding:12px;border-radius:10px;border:1px solid var(--border,#cdd3de);background:var(--panel2,#eceff4);color:var(--text,#2e3440);font:600 16px system-ui,sans-serif;cursor:pointer}
+.ts-gast small{display:block;font-weight:400;font-size:13px;color:var(--muted,#5b6578)}
+.ts-wrap{position:relative}
+.ts-badge{display:inline-flex;align-items:center;gap:6px;font:600 13px system-ui,sans-serif;padding:7px 11px;border-radius:999px;border:1px solid var(--border,#cdd3de);background:var(--panel2,#eceff4);color:var(--text,#2e3440);cursor:pointer;white-space:nowrap}
+.ts-badge .ts-dot{width:8px;height:8px;border-radius:50%;background:#8a95ab}
+.ts-badge.ok .ts-dot{background:var(--then,#a3be8c)}
+.ts-badge.saving .ts-dot{background:#ebcb8b}
+.ts-badge.offline .ts-dot{background:var(--else,#bf616a)}
+.ts-badge.gast{border-color:color-mix(in srgb,#d08770 60%,var(--border,#cdd3de));background:color-mix(in srgb,#d08770 16%,var(--panel,#f6f8fb))}
+.ts-badge.gast .ts-dot{background:#d08770}
+.ts-dd{display:none;position:absolute;right:0;top:calc(100% + 6px);min-width:240px;z-index:70;background:var(--panel,#f6f8fb);color:var(--text,#2e3440);border:1px solid var(--border,#cdd3de);border-radius:12px;box-shadow:0 14px 30px rgba(0,0,0,.18);padding:6px;font:14px/1.4 system-ui,sans-serif}
+.ts-wrap.open .ts-dd{display:block}
+.ts-einst{padding:8px 10px;border-bottom:1px solid var(--border,#cdd3de);margin-bottom:4px}
+.ts-dd .ts-dw{display:flex;align-items:center;gap:8px;font-weight:600;padding:6px 8px;margin:-6px -8px 0;width:calc(100% + 16px)}
+.ts-dw .ts-akt{margin-left:auto;font-weight:400;color:var(--muted,#5b6578);display:flex;align-items:center;gap:6px}
+.ts-pfeil{color:var(--muted,#5b6578)}
+.ts-dwm{display:none;position:absolute;right:calc(100% + 4px);top:0;min-width:200px;margin:0;padding:6px;list-style:none;background:var(--panel,#f6f8fb);border:1px solid var(--border,#cdd3de);border-radius:12px;box-shadow:0 14px 30px rgba(0,0,0,.18)}
+.ts-dwm.auf{display:block}
+.ts-dwm li{position:relative}
+.ts-dwm .ts-dwm{top:-7px}
+.ts-dd .ts-dwm button{display:flex;align-items:center;gap:8px;white-space:nowrap;padding:7px 10px}
+.ts-dwm button[aria-checked=true]{font-weight:700}
+.ts-dwm button[aria-checked=true]::before{content:"✓";width:12px;color:var(--accent,#5e81ac)}
+.ts-dwm button[aria-checked=false]::before{content:"";width:12px}
+.ts-dwm .ts-pfeil{margin-left:auto;padding-left:14px}
+.ts-dd .ts-dwm button.offen{background:var(--panel2,#eceff4)}
+.ts-farbe{width:14px;height:14px;border-radius:4px;border:1px solid rgba(0,0,0,.25);flex:none}
+.ts-einst{position:relative}
+@media (max-width:760px){.ts-dwm{position:static;box-shadow:none;border:0;border-left:2px solid var(--border,#cdd3de);border-radius:0;margin:4px 0 0 8px;padding:2px 0 2px 6px;min-width:0}.ts-dwm .ts-dwm{margin-left:12px}}
+.ts-einst small{display:block;margin-top:4px;color:var(--muted,#5b6578);font-size:12px;line-height:1.35}
+.ts-dd .ts-info{padding:8px 10px;color:var(--muted,#5b6578);border-bottom:1px solid var(--border,#cdd3de);margin-bottom:4px}
+.ts-dd .ts-info b{color:var(--text,#2e3440)}
+.ts-dd a,.ts-dd button{display:block;width:100%;text-align:left;padding:8px 10px;border-radius:8px;border:0;background:none;color:inherit;font:inherit;text-decoration:none;cursor:pointer}
+.ts-dd a:hover,.ts-dd button:hover{background:var(--panel2,#eceff4)}
+@media (max-width:640px){.ts-badge .ts-lang{display:none}}`;
+
+  function injectCss(){ const s = document.createElement('style'); s.textContent = CSS; document.head.appendChild(s); }
+  const escH = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+
+  function setStatus(st){
+    const b = menuEl && menuEl.querySelector('.ts-badge');
+    if (!b || !aktiv) return;
+    b.className = 'ts-badge ' + st;
+    const t = {ok: 'Fortschritt gespeichert', saving: 'Wird gespeichert …', offline: 'Keine Verbindung – wird später gespeichert'}[st] || '';
+    b.title = t;
+    const i = menuEl.querySelector('.ts-status'); if (i) i.textContent = t;
+  }
+
+  // Einstellung „Design“ (lib/designs.js, nur für Angemeldete, gilt auf diesem Gerät; nav.js schaltet es ein)
+  // Untermenü mit allen Designs; Varianten mit gruppe (z. B. Titelkarte) als weiteres Untermenü mit Farbfeldern
+  const DESIGN_HTML = `<div class="ts-einst"><button class="ts-dw" type="button" aria-haspopup="menu" aria-expanded="false">Design <span class="ts-akt">Standard</span><span class="ts-pfeil">›</span></button>
+    <ul class="ts-dwm" role="menu" aria-label="Design"></ul>
+    <small>Experimentell – nicht alle Übungen sind dafür gebaut. Gilt auf diesem Gerät.</small></div>`;
+  const designZu = () => { if (!menuEl) return; menuEl.querySelectorAll('.ts-dwm.auf').forEach(u => u.classList.remove('auf'));
+    menuEl.querySelectorAll('.ts-dw,.ts-gruppe').forEach(b => { b.setAttribute('aria-expanded', 'false'); b.classList.remove('offen'); }); };
+  function designWahl(){
+    const knopf = menuEl && menuEl.querySelector('.ts-dw'); if (!knopf) return;
+    const menue = menuEl.querySelector('.ts-einst > .ts-dwm');
+    const farbe = d => d.farbe ? `<span class="ts-farbe" style="background:${escH(d.farbe)}"></span>` : '';
+    let akt = 'standard'; try { akt = localStorage.getItem('pf-design') || 'standard'; } catch (e) {}
+    const fuellen = () => {
+      if (!window.Designs) return;
+      const L = Designs.liste(), d = L.find(x => x.id === akt) || L[0];
+      knopf.querySelector('.ts-akt').innerHTML = farbe(d) + escH(d.name);
+      const punkt = (x, text) => `<li role="none"><button type="button" role="menuitemradio" aria-checked="${x.id === akt}" data-design="${escH(x.id)}" title="${escH(x.beschreibung)}">${farbe(x)}${escH(text)}</button></li>`;
+      const gesehen = new Set();
+      menue.innerHTML = L.map(x => {
+        if (!x.gruppe) return punkt(x, x.name);
+        if (gesehen.has(x.gruppe)) return ''; gesehen.add(x.gruppe);
+        const teile = L.filter(y => y.gruppe === x.gruppe);
+        return `<li role="none"><button type="button" class="ts-gruppe" role="menuitem" aria-haspopup="menu" aria-expanded="false" aria-checked="${teile.some(y => y.id === akt)}">${escH(x.gruppe)}<span class="ts-pfeil">›</span></button>`
+          + `<ul class="ts-dwm" role="menu" aria-label="${escH(x.gruppe)}">${teile.map(y => punkt(y, y.kurz)).join('')}</ul></li>`;
+      }).join('');
+    };
+    if (window.Designs) fuellen();
+    else { const s = document.createElement('script'); s.src = BASE + 'lib/designs.js'; s.onload = fuellen; document.head.appendChild(s); }
+    const schmal = () => matchMedia('(max-width:760px)').matches, hover = () => matchMedia('(hover: hover)').matches && !schmal();
+    const gruppe = (g, auf) => {
+      menue.querySelectorAll('.ts-gruppe').forEach(x => { const an = x === g && auf; x.classList.toggle('offen', an); x.setAttribute('aria-expanded', String(an)); x.nextElementSibling.classList.toggle('auf', an); });
+    };
+    const oeffne = auf => { menue.classList.toggle('auf', auf); knopf.setAttribute('aria-expanded', String(auf)); if (!auf) gruppe(null, false); };
+    knopf.addEventListener('click', e => { e.stopPropagation(); oeffne(!menue.classList.contains('auf')); });
+    knopf.addEventListener('mouseenter', () => { if (hover()) oeffne(true); });
+    menuEl.querySelector('.ts-einst').addEventListener('mouseleave', () => { if (hover()) oeffne(false); });
+    menue.addEventListener('mouseover', e => {
+      if (!hover()) return;
+      const b = e.target.closest('button'); if (!b) return;
+      if (b.classList.contains('ts-gruppe')) gruppe(b, true);
+      else if (b.closest('.ts-dwm') === menue) gruppe(null, false);
+    });
+    menue.addEventListener('click', e => {
+      e.stopPropagation();
+      const b = e.target.closest('button'); if (!b) return;
+      if (b.classList.contains('ts-gruppe')) { gruppe(b, schmal() ? !b.classList.contains('offen') : true); return; }
+      const id = b.dataset.design;
+      try { if (id === 'standard') localStorage.removeItem('pf-design'); else localStorage.setItem('pf-design', id); } catch (e) {}
+      location.reload();
+    });
+    menuEl.addEventListener('keydown', e => {
+      if (e.key !== 'Escape' || !menue.classList.contains('auf')) return;
+      e.stopPropagation(); oeffne(false); knopf.focus();
+    });
+  }
+  // Menü oben rechts: angemeldet (Dropdown mit Abmelden) oder Gast (Klick öffnet die Anmeldung)
+  function showMenu(){
+    if (menuEl) menuEl.remove();
+    const host = document.querySelector('.pf-right') || document.querySelector('.hdr-right') || document.querySelector('header') || document.body;
+    const L = lehrerSitzung();
+    menuEl = document.createElement('div');
+    menuEl.className = 'ts-wrap';
+    if (aktiv){
+      const klasse = ls.get(K.klasse);
+      menuEl.innerHTML = `<button class="ts-badge saving" type="button"><span class="ts-dot"></span>👤 <span class="ts-lang">${escH(ls.get(K.anzeige) || ls.get(K.code))}</span></button>
+        <div class="ts-dd"><div class="ts-info">Angemeldet als <b>${escH(ls.get(K.anzeige) || ls.get(K.code))}</b>${klasse ? ' (Klasse ' + escH(klasse) + ')' : ''}<br><span class="ts-status"></span></div>
+        ${DESIGN_HTML}<button type="button" data-a="ab">Abmelden</button></div>`;
+    } else if (L){
+      menuEl.innerHTML = `<button class="ts-badge" type="button">👤 <span class="ts-lang">${escH(L.name)}</span></button>
+        <div class="ts-dd"><div class="ts-info">Angemeldet als <b>${escH(L.name)}</b> (${L.rolle === 'admin' ? 'Admin' : 'Lehrkraft'})</div>
+        <a href="${BASE + CONFIG.verwaltung}">Verwaltung: Klassen und Auswertung</a>
+        ${DESIGN_HTML}<button type="button" data-a="ab">Abmelden</button></div>`;
+    } else {
+      menuEl.innerHTML = `<button class="ts-badge gast" type="button" title="Fortschritt wird nicht gespeichert. Klicken zum Anmelden."><span class="ts-dot"></span>Nicht angemeldet<span class="ts-lang">&nbsp;– Fortschritt wird nicht gespeichert</span></button>`;
+    }
+    host.insertBefore(menuEl, host.firstChild);
+    menuEl.querySelector('.ts-badge').addEventListener('click', () => {
+      if (!aktiv && !L){ showLogin(); return; }
+      menuEl.classList.toggle('open');
+      if (!menuEl.classList.contains('open')) designZu();
+    });
+    const ab = menuEl.querySelector('[data-a="ab"]');
+    if (ab) ab.addEventListener('click', abmelden);
+    designWahl();
+    document.addEventListener('click', e => { if (menuEl && !menuEl.contains(e.target)) { menuEl.classList.remove('open'); designZu(); } });
+  }
+
+  function showLogin(msg){
+    if (document.querySelector('.ts-ov')) return;
+    const ov = document.createElement('div');
+    ov.className = 'ts-ov';
+    ov.innerHTML = `<div class="ts-box" role="dialog" aria-modal="true" aria-label="Anmelden">
+      <button class="ts-x" type="button" aria-label="Schließen und ohne Anmeldung nutzen" title="Ohne Anmeldung nutzen">×</button>
+      <form class="ts-f1" autocomplete="off">
+        <h2>Anmelden</h2>
+        <p>Gib deinen Zugangscode oder deinen Benutzernamen ein.</p>
+        <input class="ts-in" name="kennung" placeholder="Code oder Benutzername" autocapitalize="none" spellcheck="false" aria-label="Code oder Benutzername">
+        <button class="ts-btn" type="submit">Weiter</button>
+      </form>
+      <form class="ts-f2" hidden>
+        <h2>Passwort</h2>
+        <p>für <b class="ts-wer"></b></p>
+        <input class="ts-in" name="passwort" type="password" autocomplete="current-password" aria-label="Passwort">
+        <button class="ts-btn" type="submit">Anmelden</button>
+        <button class="ts-zurueck" type="button">Anderen Namen eingeben</button>
+      </form>
+      <div class="ts-err">${msg || ''}</div>
+      <button class="ts-gast" type="button">Seite ohne Anmeldung nutzen<small>Dein Fortschritt wird dann nur in diesem Browser gespeichert.</small></button>
+    </div>`;
+    document.body.appendChild(ov);
+    const f1 = ov.querySelector('.ts-f1'), f2 = ov.querySelector('.ts-f2'), err = ov.querySelector('.ts-err');
+    const k = f1.kennung, pw = f2.passwort;
+    setTimeout(() => k.focus(), 50);
+
+    const gast = () => { ss.set(SS.gast, '1'); ov.remove(); document.removeEventListener('keydown', esc); };
+    const esc = e => { if (e.key === 'Escape') gast(); };
+    document.addEventListener('keydown', esc);
+    ov.querySelector('.ts-x').addEventListener('click', gast);
+    ov.querySelector('.ts-gast').addEventListener('click', gast);
+    ov.querySelector('.ts-zurueck').addEventListener('click', () => { f2.hidden = true; f1.hidden = false; err.textContent = ''; k.select(); });
+
+    async function senden(btn, body){
+      btn.disabled = true; err.textContent = '';
+      try {
+        const r = await fetch(CONFIG.api + '/login', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)})
+          .then(async x => { const j = await x.json().catch(() => ({})); if (!x.ok) throw new Error(x.status === 429 ? 'Zu viele Versuche – bitte kurz warten.' : (j.message || 'Anmeldung fehlgeschlagen.')); return j; });
+        if (r.passwort){ f1.hidden = true; f2.hidden = false; ov.querySelector('.ts-wer').textContent = body.kennung; pw.value = ''; pw.focus(); return; }
+        if (r.rolle === 'schueler'){
+          ls.set(K.code, r.cred); ls.set(K.anzeige, r.anzeige); ls.set(K.klasse, r.klasse || '');
+          ss.del(SS.lehrer); ss.del('ts-reload');
+          aktiv = true;
+          await uebernehmen().catch(() => {});
+        } else {
+          ss.set(SS.lehrer, JSON.stringify({rolle: r.rolle, token: r.token, name: r.name}));
+        }
+        location.reload();
+      } catch (x){
+        err.textContent = x.message || 'Anmeldung fehlgeschlagen.';
+        (f2.hidden ? k : pw).select();
+      } finally { btn.disabled = false; }
+    }
+    f1.addEventListener('submit', e => {
+      e.preventDefault();
+      const v = k.value.trim();
+      if (!v){ err.textContent = 'Bitte gib deinen Code oder Benutzernamen ein.'; return; }
+      senden(f1.querySelector('.ts-btn'), {kennung: v});
+    });
+    f2.addEventListener('submit', e => {
+      e.preventDefault();
+      if (!pw.value){ err.textContent = 'Bitte gib dein Passwort ein.'; return; }
+      senden(f2.querySelector('.ts-btn'), {kennung: k.value.trim(), passwort: pw.value});
+    });
+  }
+
+  async function abmelden(){
+    const ohneDesign = () => { try { localStorage.removeItem('pf-design'); } catch (e) {} };   // Design gilt nur für Angemeldete
+    if (lehrerSitzung()){ ohneDesign(); ss.del(SS.lehrer); ss.del(SS.gast); location.reload(); return; }
+    if (!confirm(`Abmelden?\n\nAngemeldet als ${ls.get(K.anzeige) || ls.get(K.code)}. Dein Fortschritt bleibt auf dem Server gespeichert.`)) return;
+    if (pushPending) await push();
+    await flush();
+    if (queue().length && !confirm('Einige gelöste Aufgaben konnten noch nicht übertragen werden (keine Verbindung). Trotzdem abmelden?')) return;
+    ohneDesign(); wipeLocal(); ss.del(SS.gast); ss.del('ts-sichtbar');
+    location.reload();
+  }
+  function abgelaufen(){
+    aktiv = false;
+    wipeLocal(); ss.del('ts-sichtbar');
+    showMenu();
+    showLogin('Deine Anmeldung ist nicht mehr gültig. Bitte melde dich neu an.');
+  }
+
+  /* ---------- Bedingte Menüpunkte (z. B. Tipp-Aufgabe nur mit aufgegebener Aufgabe) ---------- */
+  function zeigeTools(ids){
+    // Tool-ids bestehen nur aus a–z, 0–9 und - (katalog.js); andere werden ignoriert
+    ids.filter(id => /^[a-z0-9-]+$/.test(id)).forEach(id => document.querySelectorAll(`[data-tool="${id}"]`).forEach(el => el.classList.add('pf-sichtbar')));
+  }
+  async function sichtbar(){
+    try { zeigeTools(JSON.parse(ss.get('ts-sichtbar') || '[]')); } catch (e) {}   // Stand der letzten Seite, ohne Flackern
+    try { const r = await api('/sichtbar'); ss.set('ts-sichtbar', JSON.stringify(r.tools || [])); zeigeTools(r.tools || []); } catch (e) {}
+  }
+
+  /* ---------- Start ---------- */
+  async function start(){
+    if (!hosted || window.PF_EINZELDATEI) return;          // Einzeldatei: immer ohne Anmeldung, Fortschritt nur im Browser
+    try {
+      const h = await fetch('/api/health', {cache: 'no-store'});
+      if (!h.ok) return;                                    // kein PocketBase: Seite läuft nur lokal
+    } catch (e){ return; }
+    injectCss();
+    aktiv = !!ls.get(K.code);
+    showMenu();
+    if (!aktiv){
+      if (!lehrerSitzung() && !ss.get(SS.gast)) showLogin();
+      return;
+    }
+    sichtbar();
+    try { await pull(); flush(); }
+    catch (err){ if (err.status === 401) abgelaufen(); else setStatus('offline'); }
+  }
+
+  lastSnap = JSON.stringify(snapshot());   // Stand beim Laden der Seite (vor deren Initialisierung)
+  window.TrainerSync = {changed, event, anmelden: () => showLogin(), get aktiv(){ return aktiv; }, get lehrer(){ return lehrerSitzung(); }, abmelden};
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
+})();
+
+</script>
+<script>
+(function(){var t=null;try{t=localStorage.getItem('wenn-theme');}catch(e){}
+document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');})();
+</script>
+<style>/* struktogramm.css */
+/* struktogramm.css – Aussehen von struktogramm.html und python-struktogramm.html (Nord-Farben, hell und dunkel) */
+:root{--bg:#e5e9f0;--panel:#f6f8fb;--panel2:#eceff4;--text:#2e3440;--muted:#5b6578;--border:#cdd3de;--accent:#5e81ac;--marke:#c05a1c;--err:#a8434d;--mono:ui-monospace,Consolas,"Liberation Mono",monospace;
+  --ed-bg:#f6f8fb;--gutter:#e5e9f0;--gutter-text:#7b88a1;--active:#e9ecf2;--sel:#d8dee9;
+  --kw:#8a5f84;--str:#5e8a45;--num:#b0631f;--com:#7b88a1;--def:#4f73a3;--builtin:#3b7f8c;--op:#4c566a}
+[data-theme=dark]{--bg:#2e3440;--panel:#3b4252;--panel2:#434c5e;--text:#eceff4;--muted:#a9b3c4;--border:#4c566a;--accent:#88c0d0;--marke:#d8dee9;--err:#d4848b;
+  --ed-bg:#2e3440;--gutter:#2a2f3a;--gutter-text:#616e88;--active:#353b49;--sel:#434c5e;
+  --kw:#b48ead;--str:#a3be8c;--num:#d08770;--com:#7b88a1;--def:#88c0d0;--builtin:#8fbcbb;--op:#81a1c1}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;min-height:100vh}
+.wrap{width:min(1400px,100%);margin:0 auto;padding:14px 16px 24px}
+.bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:12px}
+.brand{font:800 20px var(--mono);letter-spacing:-.5px;margin-right:8px}
+.brand span{color:var(--accent-text,var(--accent))}
+.spacer{flex:1}
+.btn{font:600 14px system-ui,sans-serif;background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:7px 12px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;text-decoration:none}
+.btn:hover{border-color:var(--accent)}
+.btn:disabled{opacity:.45;cursor:default;border-color:var(--border)}
+.btn.haupt{background:var(--accent);border-color:var(--accent);color:#fff}
+[data-theme=dark] .btn.haupt{color:#2e3440}
+.feld{font:14px system-ui,sans-serif;background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:7px 10px}
+.feld:focus,.btn:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+label.klein{font-size:13px;color:var(--muted);display:inline-flex;align-items:center;gap:6px}
+.gruppe{display:inline-flex;gap:4px;align-items:center}
+.gruppe .hint{font-size:13px;color:var(--muted);margin-right:2px}
+.pane{background:var(--panel);border:1px solid var(--border);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;min-height:0}
+.pane-head{display:flex;align-items:center;gap:10px;padding:5px 12px;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700;border-bottom:1px solid var(--border);background:var(--panel2)}
+.pane-head .status{margin-left:auto;text-transform:none;letter-spacing:0;font-weight:600}
+.status.fehler{color:var(--err)}
+.leinwand{overflow:auto;padding:16px;flex:1;min-height:200px}
+.leinwand svg{display:block;max-width:none}
+.fehlerbox{margin:0 16px 12px;padding:8px 12px;border:1px solid var(--err);color:var(--err);border-radius:10px;font-size:14px}
+.fehlerbox:empty{display:none}
+.alt{opacity:.35}
+.zahnrad{padding:7px 9px;font-size:16px;line-height:1}
+.st-pop{position:absolute;z-index:80;background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:12px;box-shadow:0 14px 30px rgba(0,0,0,.2);padding:12px;display:flex;flex-direction:column;gap:8px;width:240px;font-size:14px}
+.st-pop label{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.st-pop input[type=color]{width:44px;height:30px;border:1px solid var(--border);border-radius:6px;background:none;padding:2px;cursor:pointer}
+.hinweis{font-size:13px;color:var(--muted)}
+@media print{.bar,.pf-nav,.seite{display:none}}
+
+</style>
+<script>/* arbeitsblatt.js */
+/* arbeitsblatt.js – Markdown → Arbeitsblatt im Layout der Selbstlernhefte (A4, schwarz-weiß)
+ *
+ * Arbeitsblatt.lesen(md)            → doc = {meta: {fach, fuss, kopf}, bloecke: [{typ, titel, text, name, attr}]}
+ * Arbeitsblatt.schreiben(doc)       → Markdown (Umkehrung von lesen, für den Block-Editor)
+ * Arbeitsblatt.seite(doc, modus, o) → komplettes HTML-Dokument (A4-Seiten, Umbruch per Skript beim Laden)
+ *                                     modus 's' Schüler (Lücken leer), 'l' Lehrkraft (Lösungen blau), 'lb' Lösungsblätter
+ *                                     o.vorschau = true: Klick auf einen Block meldet {blatt:'wahl', i} an das Elternfenster,
+ *                                     o.zoom = Verkleinerung am Bildschirm; nach dem Umbruch kommt {blatt:'fertig', seiten, zuGross}
+ * Arbeitsblatt.TYPEN                → [{typ, name, md}] für die Blockleiste
+ * Arbeitsblatt.leer(typ)            → neuer Block
+ *
+ * Markdown:
+ *   Vorspann     ---\nfach: BwR 9 · Finanzierung\nfuss: Fußzeile\nkopf: nein\n---   (alles optional)
+ *   # Titel      Kopfzeile Name/Klasse/Datum + Überschrift      ## Kapitel (nummeriert)      ### Zwischenüberschrift
+ *   ---          Seitenumbruch          normaler Text → Info-Block (Linie links)
+ *   > [!TYP|attr|attr] Titel            Warnungsblock, Inhalt in den folgenden >-Zeilen
+ *       TYP: AUFTRAG, ALLTAG, BEISPIEL, UEBERBLICK (MERKE), AUFGABEN, MATERIAL, FORMEL, HINWEIS, CHECK, PLAN,
+ *            LEGENDE, INFO, HTML (roh); GitHub: NOTE=Info, TIP=Beispiel, IMPORTANT=Überblick, WARNING=Auftrag,
+ *            CAUTION=Hinweis; unbekannte Namen werden ein grauer Kasten mit diesem Namen
+ *       attr: 2spaltig, zusammen (nie trennen), neue-seite, nr=3 (Lösungsblatt), klasse=…, stil=… (CSS)
+ *   ## Titel {neue-seite|stil=…}        Attribute für Überschriften
+ *   [[Antwort]] [[Antwort|30mm]]        Lücke (Schüler leer, Lehrkraft blau)
+ *   [[linien 3]] [[karo 4]]             Schreibplatz auf dem Blatt (eigene Zeile)
+ *   |||                                 eigene Zeile: Spaltenumbruch (zwei feste Spalten)
+ *   ![Text|60%](bild.png)               Bild mit Breite
+ *   Aufgaben: nummerierte Liste in [!AUFGABEN], Zeile „Lösung: …“ im Punkt erscheint nur in der Lehrkraftfassung
+ *   Rohes HTML (Zeile beginnt mit <div, <table, <svg, <style …) bleibt erhalten.
+ */
+(function () {
+  'use strict';
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+
+  const TYPEN = [
+    {typ: 'titel', name: 'Titel', md: '#'},
+    {typ: 'kap', name: 'Kapitel', md: '##'},
+    {typ: 'h3', name: 'Zwischentitel', md: '###'},
+    {typ: 'info', name: 'Info', md: 'INFO'},
+    {typ: 'auftrag', name: 'Auftrag', md: 'AUFTRAG'},
+    {typ: 'alltag', name: 'Alltag', md: 'ALLTAG'},
+    {typ: 'beispiel', name: 'Beispiel', md: 'BEISPIEL'},
+    {typ: 'ueberblick', name: 'Überblick', md: 'UEBERBLICK'},
+    {typ: 'aufgaben', name: 'Aufgaben', md: 'AUFGABEN'},
+    {typ: 'material', name: 'Material', md: 'MATERIAL'},
+    {typ: 'formel', name: 'Formel', md: 'FORMEL'},
+    {typ: 'hinweis', name: 'Hinweis', md: 'HINWEIS'},
+    {typ: 'check', name: 'Lösung vergleichen', md: 'CHECK'},
+    {typ: 'plan', name: 'Arbeitsplan', md: 'PLAN'},
+    {typ: 'legende', name: 'Legende', md: 'LEGENDE'},
+    {typ: 'html', name: 'Eigenes HTML', md: 'HTML'},
+    {typ: 'seite', name: 'Seitenumbruch', md: '---'}
+  ];
+  const MD = Object.fromEntries(TYPEN.map(t => [t.typ, t.md]));
+  const norm = s => String(s).trim().toUpperCase().replace(/Ä/g, 'AE').replace(/Ö/g, 'OE').replace(/Ü/g, 'UE').replace(/ß/g, 'SS').replace(/[^A-Z0-9]/g, '');
+  const ALIAS = Object.assign(Object.fromEntries(TYPEN.filter(t => /^[A-Z]/.test(t.md)).map(t => [t.md, t.typ])), {
+    NOTE: 'info', TIP: 'beispiel', IMPORTANT: 'ueberblick', WARNING: 'auftrag', CAUTION: 'hinweis',
+    MERKE: 'ueberblick', MERKKASTEN: 'ueberblick', UBERBLICK: 'ueberblick', AUFGABE: 'aufgaben', ARBEITSAUFTRAG: 'aufgaben',
+    SZENARIO: 'auftrag', KONTROLLE: 'check', ARBEITSPLAN: 'plan', ROH: 'html'
+  });
+  const OHNE_INHALT = ['seite', 'plan', 'legende', 'titel', 'kap', 'h3'];
+  const MIT_TITEL = ['titel', 'kap', 'h3', 'auftrag', 'alltag', 'beispiel', 'ueberblick', 'aufgaben', 'material', 'box'];
+  const MIT_NR = ['ueberblick', 'aufgaben', 'check'];
+
+  const leer = typ => ({typ, titel: '', text: '', name: '', attr: {}});
+
+  /* ---------- Attribute ---------- */
+  function attrLesen(s) {
+    const a = {};
+    String(s || '').split('|').map(x => x.trim()).filter(Boolean).forEach(x => {
+      const m = /^([\w-]+)\s*=\s*(.*)$/.exec(x);
+      const k = (m ? m[1] : x).toLowerCase();
+      if (['2spaltig', 'zweispaltig', 'spalten', 'cols'].includes(k)) a.spalten = true;
+      else if (['zusammen', 'keep'].includes(k)) a.zusammen = true;
+      else if (['neue-seite', 'neueseite', 'pb', 'umbruch'].includes(k)) a.seite = true;
+      else if (m && k === 'nr') a.nr = m[2];
+      else if (m && ['klasse', 'class'].includes(k)) a.klasse = m[2];
+      else if (m && ['stil', 'style'].includes(k)) a.stil = m[2];
+      else (a.rest = a.rest || []).push(x);
+    });
+    return a;
+  }
+  function attrText(a) {
+    a = a || {};
+    return [a.spalten && '2spaltig', a.zusammen && 'zusammen', a.seite && 'neue-seite', a.nr && 'nr=' + a.nr,
+      a.klasse && 'klasse=' + a.klasse, a.stil && 'stil=' + a.stil].concat(a.rest || []).filter(Boolean).join('|');
+  }
+  const hatAttr = a => !!attrText(a);
+
+  /* ---------- Markdown → Blöcke ---------- */
+  const HTML_START = /^<(div|table|svg|section|figure|style|aside|details|article|header|footer|p|ul|ol|img|hr|!--)\b/i;
+
+  function lesen(md) {
+    const z = String(md || '').replace(/\r\n?/g, '\n').split('\n');
+    const meta = {};
+    let i = 0;
+    if (z[0] === '---') {
+      const j = z.indexOf('---', 1);
+      if (j > 1 && z.slice(1, j).every(l => /^[\w-]+\s*:/.test(l) || !l.trim())) {
+        z.slice(1, j).forEach(l => { const m = /^([\w-]+)\s*:\s*(.*)$/.exec(l); if (m) meta[m[1].toLowerCase()] = m[2].trim(); });
+        i = j + 1;
+      }
+    }
+    const bloecke = [];
+    let puffer = [];
+    const leeren = () => {
+      while (puffer.length && !puffer[0].trim()) puffer.shift();
+      while (puffer.length && !puffer[puffer.length - 1].trim()) puffer.pop();
+      if (puffer.length) bloecke.push(Object.assign(leer('info'), {text: puffer.join('\n')}));
+      puffer = [];
+    };
+    for (; i < z.length; i++) {
+      const l = z[i];
+      let m;
+      if (/^\s*(```|~~~)/.test(l)) {                       // Codeblock bleibt im Text
+        puffer.push(l);
+        while (++i < z.length) { puffer.push(z[i]); if (/^\s*(```|~~~)/.test(z[i])) break; }
+      } else if ((m = /^(#{1,3})\s+(.*?)\s*(?:\{([^{}]*)\})?\s*$/.exec(l))) {
+        leeren();
+        bloecke.push(Object.assign(leer(['titel', 'kap', 'h3'][m[1].length - 1]), {titel: m[2], attr: attrLesen(m[3])}));
+      } else if (/^\s{0,3}([-*_])(\s*\1){2,}\s*$/.test(l)) {
+        leeren();
+        bloecke.push(leer('seite'));
+      } else if ((m = /^\s{0,3}>\s?\[!([^\]|]+)((?:\|[^\]]*)?)\]\s*(.*)$/.exec(l))) {
+        leeren();
+        const inhalt = [];
+        while (i + 1 < z.length && /^\s{0,3}>/.test(z[i + 1])) inhalt.push(z[++i].replace(/^\s{0,3}> ?/, ''));
+        while (inhalt.length && !inhalt[0].trim()) inhalt.shift();
+        while (inhalt.length && !inhalt[inhalt.length - 1].trim()) inhalt.pop();
+        const typ = ALIAS[norm(m[1])] || 'box';
+        bloecke.push({typ, titel: m[3].trim(), text: inhalt.join('\n'), name: m[1].trim(), attr: attrLesen(m[2].slice(1))});
+      } else if (HTML_START.test(l) && !(puffer.length && puffer[puffer.length - 1].trim())) {
+        leeren();
+        const roh = [l];
+        while (i + 1 < z.length && z[i + 1].trim()) roh.push(z[++i]);
+        bloecke.push(Object.assign(leer('html'), {text: roh.join('\n')}));
+      } else puffer.push(l);
+    }
+    leeren();
+    return {meta, bloecke};
+  }
+
+  /* ---------- Blöcke → Markdown ---------- */
+  function schreiben(doc) {
+    const teile = [];
+    const m = doc.meta || {};
+    const mz = ['fach', 'fuss', 'kopf'].filter(k => m[k]).map(k => k + ': ' + m[k]);
+    if (mz.length) teile.push('---\n' + mz.join('\n') + '\n---');
+    doc.bloecke.forEach(b => {
+      const a = attrText(b.attr);
+      if (b.typ === 'seite' && !a) teile.push('---');
+      else if (['titel', 'kap', 'h3'].includes(b.typ)) teile.push(MD[b.typ] + ' ' + (b.titel || '').trim() + (a ? ' {' + a + '}' : ''));
+      else if (b.typ === 'info' && !a && b.text.trim() && !/^\s*>|^\s*#|^\s{0,3}([-*_])(\s*\1){2,}\s*$/m.test(b.text) && !HTML_START.test(b.text.trim())) teile.push(b.text.trim());
+      else if (b.typ === 'html' && !a && HTML_START.test(b.text.trim()) && !/\n\s*\n/.test(b.text.trim())) teile.push(b.text.trim());
+      else {
+        let name = b.typ === 'box' ? (b.name || 'KASTEN') : MD[b.typ];
+        if (b.name && ALIAS[norm(b.name)] === b.typ) name = b.name;   // eigene Schreibweise (Auftrag, NOTE …) behalten
+        const kopf = '> [!' + name + (a ? '|' + a : '') + ']' + (b.titel ? ' ' + b.titel.trim() : '');
+        const inhalt = (b.text || '').trim();
+        teile.push(kopf + (inhalt ? '\n' + inhalt.split('\n').map(x => x ? '> ' + x : '>').join('\n') : ''));
+      }
+    });
+    return teile.join('\n\n') + '\n';
+  }
+
+  /* ---------- Markdown-Text → HTML ---------- */
+  function luecke(inhalt) {
+    const t = inhalt.split('|');
+    const w = t.length > 1 ? t.pop().trim() : '';
+    const text = t.join('|').trim();
+    return `<span class="a${text.length > 28 ? ' lang' : ''}"${w ? ` style="min-width:${esc(w)}"` : ''}>${inline(text, true)}</span>`;
+  }
+
+  function inline(s, ohneLuecken) {
+    const halt = [];
+    const merk = h => '\u0001' + (halt.push(h) - 1) + '\u0002';
+    s = s.replace(/`([^`]+)`/g, (x, c) => merk('<code>' + esc(c) + '</code>'));
+    if (!ohneLuecken) s = s.replace(/\[\[((?:(?!\]\]).)+)\]\]/g, (x, c) => merk(luecke(c)));
+    s = s.replace(/!\[([^\]]*)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g, (x, alt, src) => {
+      const t = alt.split('|');
+      const w = t.length > 1 ? t.pop().trim() : '';
+      return merk(`<img src="${esc(src)}" alt="${esc(t.join('|'))}"${w ? ` style="width:${esc(w)}"` : ''}>`);
+    });
+    s = s.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (x, t, u) => merk(`<a href="${esc(u)}">`) + t + merk('</a>'));
+    s = s.replace(/\*\*([^*]+)\*\*|__([^_]+)__/g, (x, a, b) => '<b>' + (a || b) + '</b>');
+    s = s.replace(/\*([^*\s][^*]*)\*/g, '<i>$1</i>').replace(/(^|[^\w])_([^_\s][^_]*)_(?!\w)/g, '$1<i>$2</i>');
+    s = s.replace(/==([^=]+)==/g, '<mark>$1</mark>');
+    s = s.replace(/( {2,}|\\)\n/g, '<br>\n');
+    return s.replace(/\u0001(\d+)\u0002/g, (x, n) => halt[n]);
+  }
+
+  function zellen(l) {
+    const out = [];
+    let cur = '', tief = 0;
+    l = l.trim().replace(/^\|/, '').replace(/\|$/, '');
+    for (let k = 0; k < l.length; k++) {
+      const c = l[k];
+      if (c === '\\' && l[k + 1] === '|') { cur += '|'; k++; continue; }
+      if (c === '[' && l[k + 1] === '[') tief++;
+      if (c === ']' && l[k + 1] === ']' && tief) tief--;
+      if (c === '|' && !tief) { out.push(cur.trim()); cur = ''; } else cur += c;
+    }
+    out.push(cur.trim());
+    return out;
+  }
+
+  const LISTE = /^(\s*)([-*+]|\d+[.)])\s+(.*)$/;
+  const PLATZ = /^\s*\[\[(linien|karo)\s+(\d+(?:[.,]\d+)?)\]\]\s*$/i;
+
+  function platz(art, n, inhalt) {
+    n = parseFloat(String(n).replace(',', '.'));
+    if (art.toLowerCase() === 'linien') return `<div class="ab" style="height:${n * 7.5}mm"><div class="at">${inhalt || ''}</div></div>`;
+    const W = 180, H = Math.round(n) * 5;
+    let d = '';
+    for (let y = 0; y <= H; y += 5) d += `M0 ${y}H${W}`;
+    for (let x = 0; x <= W; x += 5) d += `M${x} 0V${H}`;
+    return `<div class="karo" style="height:${H}mm"><svg class="grid" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" style="width:${W}mm;height:${H}mm"><path d="${d}" stroke="#8a8a8a" stroke-width="0.18" fill="none"/></svg><div class="at">${inhalt || ''}</div></div>`;
+  }
+
+  function block(md) {
+    const z = String(md || '').replace(/\r\n?/g, '\n').split('\n');
+    const teil = z.findIndex(l => l.trim() === '|||');
+    if (teil >= 0) return `<div class="zwei"><div>${block(z.slice(0, teil).join('\n'))}</div><div>${block(z.slice(teil + 1).join('\n'))}</div></div>`;
+    let out = '', i = 0;
+    while (i < z.length) {
+      const l = z[i];
+      let m;
+      if (!l.trim()) { i++; continue; }
+      if ((m = /^\s*(```|~~~)/.exec(l))) {
+        const code = [];
+        while (++i < z.length && !/^\s*(```|~~~)/.test(z[i])) code.push(z[i]);
+        i++;
+        out += `<pre class="code">${esc(code.join('\n'))}</pre>`;
+      } else if ((m = PLATZ.exec(l))) {
+        out += platz(m[1], m[2]); i++;
+      } else if ((m = /^(#{1,6})\s+(.*)$/.exec(l))) {
+        out += m[1].length <= 3 ? `<h3 class="h3">${inline(m[2])}</h3>` : `<h4>${inline(m[2])}</h4>`; i++;
+      } else if (/^\s*\|/.test(l) && i + 1 < z.length && /^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?\s*$/.test(z[i + 1])) {
+        const kopf = zellen(l);
+        i += 2;
+        let rows = '';
+        while (i < z.length && /^\s*\|/.test(z[i])) rows += '<tr>' + zellen(z[i++]).map(c => `<td>${inline(c)}</td>`).join('') + '</tr>';
+        const th = kopf.some(Boolean) ? '<tr>' + kopf.map(c => `<th>${inline(c)}</th>`).join('') + '</tr>' : '';
+        out += `<table class="t">${th}${rows}</table>`;
+      } else if (LISTE.test(l)) {
+        const zeilen = [];
+        while (i < z.length && (LISTE.test(z[i]) || /^\s+\S/.test(z[i]) || (!z[i].trim() && i + 1 < z.length && (LISTE.test(z[i + 1]) || /^\s+\S/.test(z[i + 1]))))) zeilen.push(z[i++]);
+        out += liste(zeilen);
+      } else if (/^\s*>/.test(l)) {
+        const q = [];
+        while (i < z.length && /^\s*>/.test(z[i])) q.push(z[i++].replace(/^\s*> ?/, ''));
+        out += `<blockquote>${block(q.join('\n'))}</blockquote>`;
+      } else if (HTML_START.test(l.trim())) {
+        const roh = [];
+        while (i < z.length && z[i].trim()) roh.push(z[i++]);
+        out += roh.join('\n');
+      } else {
+        const p = [];
+        while (i < z.length && z[i].trim() && !LISTE.test(z[i]) && !/^(#{1,6})\s|^\s*(```|~~~|>)/.test(z[i]) && !PLATZ.test(z[i]) &&
+          !(/^\s*\|/.test(z[i]) && p.length === 0)) p.push(z[i++]);
+        if (!p.length) { out += inline(z[i++]); continue; }
+        const t = p.join('\n');
+        const bild = /^\s*!\[[^\]]*\]\([^)]+\)\s*$/.test(t);
+        out += bild ? `<div class="fig">${inline(t.trim())}</div>` : `<p>${inline(t)}</p>`;
+      }
+    }
+    return out;
+  }
+
+  function liste(zeilen) {
+    const ein = zeilen.filter(l => LISTE.test(l)).map(l => LISTE.exec(l)[1].length);
+    const basis = Math.min(...ein);
+    const items = [];
+    let geordnet = false;
+    zeilen.forEach(l => {
+      const m = LISTE.exec(l);
+      if (m && m[1].length === basis) {
+        geordnet = geordnet || /\d/.test(m[2]);
+        items.push([m[3]]);
+      } else if (items.length) items[items.length - 1].push(l.replace(new RegExp('^\\s{0,' + (basis + 4) + '}'), ''));
+    });
+    const tag = geordnet ? 'ol' : 'ul';
+    return `<${tag}>` + items.map(it => `<li>${ohneP(block(it.join('\n')))}</li>`).join('') + `</${tag}>`;
+  }
+
+  const ohneP = h => { const m = /^<p>([\s\S]*?)<\/p>([\s\S]*)$/.exec(h); return m && !/<p>/.test(m[1]) ? m[1] + m[2] : h; };
+
+  /* ---------- Aufgaben ---------- */
+  function aufgaben(b, ctx, nrPrefix) {
+    const z = b.text.split('\n');
+    const vor = [], items = [];
+    let cur = null;
+    z.forEach(l => {
+      const m = /^(\d+)[.)]\s+(.*)$/.exec(l);
+      if (m) items.push(cur = [m[2]]);
+      else if (cur) cur.push(l.replace(/^( {1,4}|\t)/, ''));
+      else vor.push(l);
+    });
+    let out = '';
+    if (vor.join('').trim()) out += `<div class="avor" data-b="${ctx.i}">${block(vor.join('\n'))}</div>`;
+    items.forEach((it, k) => {
+      const nr = (nrPrefix ? nrPrefix + '.' : '') + (k + 1);
+      let li = it.findIndex(l => /^\s*L(ö|oe)sung\s*:/i.test(l));
+      const auf = li >= 0 ? it.slice(0, li) : it.slice();
+      const lsg = li >= 0 ? [it[li].replace(/^\s*L(ö|oe)sung\s*:\s*/i, '')].concat(it.slice(li + 1)).join('\n').trim() : '';
+      let raum = null;
+      for (let j = auf.length - 1; j >= 0; j--) {
+        const m = PLATZ.exec(auf[j]) || /\[\[(linien|karo)\s+(\d+(?:[.,]\d+)?)\]\]/i.exec(auf[j]);
+        if (m) { raum = m; auf[j] = auf[j].replace(m[0].trim(), ''); break; }
+      }
+      const lsgHtml = lsg && ctx.modus !== 's' ? ohneP(block(lsg)) : '';
+      let extra = '';
+      if (raum) extra = platz(raum[1], raum[2], lsgHtml);
+      else if (lsgHtml) extra = `<div class="lt"><div class="at">${lsgHtml}</div></div>`;
+      out += `<div class="task" data-b="${ctx.i}"><b class="tn">${nr}</b> ${ohneP(block(auf.join('\n')))}${extra}</div>`;
+    });
+    return out;
+  }
+
+  /* ---------- Blöcke → HTML ---------- */
+  const LEGENDE = `<div class="legende">
+<div><span class="mini mi">INFO</span> Lies den Text genau und markiere Fachbegriffe.</div>
+<div><span class="mini ma">ALLTAG</span> Vergleich mit dem echten Leben – hilft beim Verstehen.</div>
+<div><span class="mini mu">ÜBERBLICK</span> Ergänze die Lücken. Das ist dein Merkkasten zum Lernen.</div>
+<div><span class="mini mk">✎ AUFGABEN</span> Bearbeite sie selbstständig auf deinem Blockblatt.</div>
+<div><span class="mini mc">✔ L1</span> Hole dir das Lösungsblatt, vergleiche und korrigiere.</div></div>`;
+  const HINWEIS = '✎ Bearbeite alle Aufgaben auf einem <b>eigenen Blockblatt</b> (Aufgabennummer davor schreiben). <b>Ausnahme:</b> Lücken, Tabellen und Kästchen, die auf dem Blatt vorgegeben sind, füllst du direkt hier aus.';
+
+  function rendern(doc, modus) {
+    const ctx = {modus, kap: 0, lsg: {}, kapTitel: {}};
+    const kaps = [];
+    let k = 0;
+    doc.bloecke.forEach(b => { if (b.typ === 'kap') kaps.push([++k, b.titel]); });
+    const titel = (doc.bloecke.find(b => b.typ === 'titel') || {}).titel || '';
+    const teile = doc.bloecke.map((b, i) => {
+      ctx.i = i;
+      const a = b.attr || {};
+      const inhalt = h => a.spalten && b.typ !== 'info' ? `<div class="cols">${h}</div>` : h;
+      const nr = a.nr || ctx.kap || 1;
+      const kl = base => [base, a.spalten && b.typ === 'info' && 'cols', a.zusammen && 'keep', a.seite && 'pb', a.klasse].filter(Boolean).join(' ');
+      const st = a.stil ? ` style="${esc(a.stil)}"` : '';
+      const box = (base, h) => `<div class="${kl(base)}" data-b="${i}"${st}>${h}</div>`;
+      let h;
+      switch (b.typ) {
+        case 'titel':
+          h = box('blattkopf', ((doc.meta || {}).kopf || '').toLowerCase() === 'nein' ? '' :
+            '<div class="kopf"><span>Name: ______________________________</span><span>Klasse: ______</span><span>Datum: ______________</span></div>') +
+            `<div class="titel" data-b="${i}"><div>${doc.meta && doc.meta.fach ? `<div class="tsub">${inline(doc.meta.fach)}</div>` : ''}<h1>${inline(b.titel || '')}</h1></div></div>`;
+          if (h.startsWith('<div class="blattkopf" data-b="' + i + '"></div>')) h = h.replace(/^<div class="blattkopf"[^>]*><\/div>/, '');
+          break;
+        case 'kap':
+          ctx.kap++;
+          ctx.kapTitel[ctx.kap] = b.titel;
+          h = `<h2 class="${kl('kap')}" data-b="${i}"${st}><span class="kn">${ctx.kap}</span>${inline(b.titel || '')}</h2>`;
+          break;
+        case 'h3': h = `<h3 class="${kl('h3')}" data-b="${i}"${st}>${inline(b.titel || '')}</h3>`; break;
+        case 'info': h = box('info', block(b.text)); break;
+        case 'auftrag': h = box('szenario', `<div class="szt">${inline(b.titel || 'Dein Auftrag')}</div>${inhalt(block(b.text))}`); break;
+        case 'alltag': case 'beispiel': case 'box': {
+          const label = b.typ === 'alltag' ? 'AUS DEM ALLTAG' : b.typ === 'beispiel' ? 'BEISPIEL' : esc((b.name || 'Kasten').toUpperCase());
+          h = box('alltag', `<div class="allt">${label}${b.titel ? ' · ' + inline(b.titel) : ''}</div>${inhalt(block(b.text))}`);
+          break;
+        }
+        case 'ueberblick':
+          h = box('ueb', `<div class="uebt">ÜBERBLICK${b.titel ? ' · ' + inline(b.titel) : ''} <span>– ergänze die Lücken</span></div>${inhalt(block(b.text))}`);
+          (ctx.lsg[nr] = ctx.lsg[nr] || []).push(h);
+          break;
+        case 'aufgaben':
+          h = box('aufgaben', `<div class="ak" data-b="${i}">✎ ${b.titel ? inline(b.titel) : 'Aufgaben'}</div>` + inhalt(aufgaben(b, ctx, a.nr || (ctx.kap && kaps.length > 1 ? ctx.kap : ''))));
+          (ctx.lsg[nr] = ctx.lsg[nr] || []).push(h);
+          break;
+        case 'material': h = box('mat', `<div class="matt">Material${b.titel ? ': ' + inline(b.titel) : ''}</div>${inhalt(block(b.text))}`); break;
+        case 'formel': h = `<div class="${kl('formelz')}" data-b="${i}"${st}><div class="formel">${ohneP(block(b.text))}</div></div>`; break;
+        case 'hinweis': h = box('block', b.text.trim() ? ohneP(block(b.text)) : HINWEIS); break;
+        case 'check':
+          h = box('check', `<span class="cl">✔ L${esc(nr)}</span> Vergleiche jetzt deine Lösungen mit dem <b>Lösungsblatt L${esc(nr)}</b>. Korrigiere mit einer anderen Farbe. ${ohneP(block(b.text))}`);
+          break;
+        case 'plan':
+          h = box('planz', '<table class="plan"><tr><th>Nr.</th><th>Thema</th><th>Seite</th><th>Lösungsblatt</th><th>erledigt</th></tr>' +
+            kaps.map(([n, t]) => `<tr><td>${n}</td><td>${inline(t || '')}</td><td>?</td><td>L${n}</td><td class="cb">☐</td></tr>`).join('') + '</table>');
+          break;
+        case 'legende': h = box('legendez', LEGENDE); break;
+        case 'html': h = box('roh', b.text); break;
+        case 'seite': h = `<div class="pb umbruch" data-b="${i}"></div>`; break;
+        default: h = '';
+      }
+      return h;
+    });
+    return {html: teile.join('\n'), lsg: ctx.lsg, kapTitel: ctx.kapTitel, titel};
+  }
+
+  /* ---------- läuft im Blatt: Tabellenzeilen mit Schreiblinien + Seitenumbruch (aus paginate.py) ---------- */
+  function umbrechen(fuss) {
+    const mm = 3.7795;
+    document.querySelectorAll('tr').forEach(tr => {
+      const tds = [...tr.children].filter(td => td.tagName === 'TD');
+      if (!tr.querySelector('.a.lang') && !tds.some(td => td.querySelectorAll('.a').length >= 2)) return;
+      tds.forEach(td => { if (!td.querySelector('.a')) return; const d = document.createElement('div'); d.className = 'zl'; while (td.firstChild) d.appendChild(td.firstChild); td.appendChild(d); });
+    });
+    const body = document.body, pages = [], zuGross = [];
+    let pc = null;
+    const neu = (sec) => {
+      const p = document.createElement('div');
+      p.className = 'page ' + (sec.dataset.klasse || '');
+      if (sec.dataset.nr) p.insertAdjacentHTML('beforeend', '<div class="lnr">' + sec.dataset.nr + '</div>');
+      pc = document.createElement('div'); pc.className = 'pc'; p.appendChild(pc);
+      if (sec.dataset.kopf) pc.insertAdjacentHTML('beforeend', sec.dataset.kopf);
+      body.appendChild(p); pages.push(p);
+      return pc;
+    };
+    const over = () => pc.scrollHeight > pc.clientHeight + 1;
+    const kopfteil = c => c.classList.contains('lkopf') || c.classList.contains('lhinw');
+    const leerSeite = () => [...pc.children].every(kopfteil);
+    const nurKopf = () => [...pc.children].slice(0, -1).every(kopfteil);   // der zuletzt angehängte Block ist allein auf der Seite
+    [...document.querySelectorAll('#quelle > section')].forEach(sec => {
+      const blocks = [];
+      [...sec.children].forEach(c => {
+        if (c.classList.contains('aufgaben') && !c.classList.contains('keep') && !c.getAttribute('style')) [...c.children].forEach(x => blocks.push(x));
+        else blocks.push(c);
+      });
+      sec.remove();
+      neu(sec);
+      // Zeilenhöhe der Schreiblinien in Tabellen erst messen, wenn der Block auf einer Seite steht
+      for (let k = 0; k < blocks.length; k++) {
+        const b = blocks[k];
+        if (b.classList.contains('pb') && !leerSeite()) neu(sec);
+        pc.appendChild(b);
+        b.querySelectorAll('tr').forEach(tr => {
+          const z = [...tr.querySelectorAll('.zl')]; if (!z.length) return;
+          let h = Math.max(...z.map(e => e.getBoundingClientRect().height)); h = Math.ceil(h / (6 * mm) - 0.05) * 6 * mm;
+          z.forEach(e => e.style.minHeight = h + 'px');
+        });
+        if ((b.classList.contains('kap') || b.classList.contains('ak') || b.classList.contains('h3')) && k + 1 < blocks.length) {
+          const nx = blocks[k + 1]; pc.appendChild(nx);
+          const bad = over(); nx.remove();
+          if (bad && !nurKopf()) { b.remove(); neu(sec); pc.appendChild(b); }
+          continue;
+        }
+        if (!over()) continue;
+        if (b.classList.contains('info') && !b.classList.contains('keep') && b.children.length > 1) {
+          const rest = b.cloneNode(false);
+          while (over() && b.children.length > 0) rest.insertBefore(b.lastElementChild, rest.firstChild);
+          if (b.children.length === 0) b.remove();
+          neu(sec); pc.appendChild(rest);
+          if (over()) zuGross.push(+rest.dataset.b);
+          continue;
+        }
+        if (!nurKopf()) { b.remove(); neu(sec); pc.appendChild(b); }
+        if (over()) zuGross.push(+b.dataset.b);
+      }
+    });
+    const n = pages.length;
+    if (fuss !== null) pages.forEach((p, i) => { const f = document.createElement('div'); f.className = 'foot'; f.innerHTML = '<span></span><span>Seite ' + (i + 1) + ' von ' + n + '</span>'; f.firstChild.textContent = fuss; p.appendChild(f); });
+    const seite = {};
+    pages.forEach((p, i) => p.querySelectorAll('.kap .kn').forEach(e => { if (!seite[e.textContent.trim()]) seite[e.textContent.trim()] = i + 1; }));
+    document.querySelectorAll('.plan tr').forEach(tr => { const td = tr.children; if (td.length > 3 && seite[td[0].textContent.trim()]) td[2].textContent = seite[td[0].textContent.trim()]; });
+    return {seiten: n, zuGross: [...new Set(zuGross)].filter(x => x === x)};
+  }
+
+  function vorschau() {
+    document.addEventListener('click', e => {
+      const el = e.target.closest('[data-b]');
+      e.preventDefault();
+      if (el) parent.postMessage({blatt: 'wahl', i: +el.dataset.b}, '*');
+    });
+    window.addEventListener('message', e => {
+      const d = e.data || {};
+      if (d.blatt !== 'zeige') return;
+      document.querySelectorAll('.gewaehlt').forEach(x => x.classList.remove('gewaehlt'));
+      const els = [...document.querySelectorAll('[data-b="' + d.i + '"]')];
+      els.forEach(x => x.classList.add('gewaehlt'));
+      if (els[0] && d.scroll) els[0].scrollIntoView({block: 'nearest', behavior: 'smooth'});
+    });
+  }
+
+  function seite(doc, modus, o) {
+    o = o || {};
+    const r = rendern(doc, modus === 'lb' ? 'l' : modus);
+    const fuss = (doc.meta && doc.meta.fuss) || r.titel || '';
+    let quelle;
+    if (modus === 'lb') {
+      const nrn = Object.keys(r.lsg).sort((a, b) => a - b);
+      quelle = nrn.map(n => {
+        const kopf = `<div class="lkopf">Lösungsblatt ${esc(n)} · ${inline(r.kapTitel[n] || r.titel || '')}</div><div class="lhinw">Nicht hineinschreiben – bitte zurücklegen!</div>`;
+        return `<section data-klasse="lsheet" data-nr="L${esc(n)}" data-kopf="${esc(kopf)}">${r.lsg[n].join('\n')}</section>`;
+      }).join('') || '<section><p class="leerhinweis">Keine Überblicke oder Aufgaben – hier gibt es nichts für ein Lösungsblatt.</p></section>';
+    } else quelle = `<section>${r.html}</section>`;
+    const titel = (r.titel || 'Arbeitsblatt').replace(/<[^>]*>/g, '') + (modus === 'l' ? ' – Lehrkraft' : modus === 'lb' ? ' – Lösungsblätter' : '');
+    const skript = `(${umbrechen})(${JSON.stringify(modus === 'lb' ? null : fuss)})`;
+    const melden = o.vorschau ? `parent.postMessage(Object.assign({blatt:'fertig'},r),'*');(${vorschau})();` : '';
+    const zoom = o.zoom && o.zoom !== 1 ? `@media screen{body{zoom:${o.zoom}}}` : '';
+    return `<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(titel)}</title>` +
+      `<style>${CSS}${o.vorschau ? VORSCHAU_CSS : ''}${zoom}</style></head><body class="${modus === 's' ? 's' : 'l'}"><div id="quelle">${quelle}</div>` +
+      `<script>window.addEventListener('load',function(){var r=${skript};${melden}});<\/script></body></html>`;
+  }
+
+  /* Layout aus dem Skill „selbstlernheft-html“ (assets/style.css + paginate.py), dazu Ergänzungen fürs Arbeitsblatt */
+  const CSS = `@page{size:A4;margin:0}
+*{box-sizing:border-box}
+html{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body{margin:0;background:#888;font-family:Arial,Helvetica,"Liberation Sans",sans-serif;font-size:10.5pt;line-height:1.38;color:#000}
+.page{width:210mm;height:297mm;padding:11mm 14mm 15mm;background:#fff;margin:8mm auto;position:relative;overflow:hidden;break-after:page;page-break-after:always}
+@media print{body{background:#fff}.page{margin:0}}
+.foot{position:absolute;left:14mm;right:14mm;bottom:7mm;border-top:.6pt solid #000;padding-top:1mm;font-size:8pt;display:flex;justify-content:space-between}
+p{margin:0 0 2mm}ul{margin:0 0 2mm;padding-left:5mm}li{margin-bottom:.6mm}
+small{font-size:8.5pt}
+.klein{font-size:9pt}
+/* Kopf und Titel */
+.kopf{display:flex;justify-content:space-between;background:#e6e6e6;padding:2mm 3mm;font-size:9.5pt;margin-bottom:5mm}
+.titel{display:flex;justify-content:space-between;align-items:center;border-bottom:3pt solid #000;padding-bottom:2mm;margin-bottom:4mm}
+.titel h1{font-size:25pt;margin:0;letter-spacing:-.3pt}.tsub{font-size:10pt;text-transform:uppercase;letter-spacing:1pt}
+.h3{font-size:12pt;margin:4mm 0 1.5mm;border-bottom:1pt solid #000}
+.szenario{border:2pt solid #000;border-radius:3mm;padding:3mm 4mm 1mm;position:relative;margin:2mm 0 2mm;background:repeating-linear-gradient(135deg,#fff 0 6px,#f3f3f3 6px 7px)}
+.szt{position:absolute;top:-3.2mm;left:4mm;background:#000;color:#fff;font-weight:bold;font-size:9pt;padding:.3mm 2.5mm;border-radius:1mm}
+table{border-collapse:collapse}
+.steck{width:100%}.steck td{border:.6pt solid #000;padding:1.2mm 2mm}.steck td:first-child{width:45mm;font-weight:bold;background:#eee}
+.plan{width:100%;font-size:10pt}.plan th,.plan td{border:.6pt solid #000;padding:1mm 2mm}.plan th{background:#000;color:#fff}.plan td:nth-child(1),.plan td:nth-child(3),.plan td:nth-child(4),.plan td:nth-child(5){text-align:center;width:16mm}.cb{font-size:13pt}
+.legende div{margin:1.3mm 0}.mini{display:inline-block;width:30mm;font-size:8pt;font-weight:bold;text-align:center;padding:.5mm 0;margin-right:3mm}
+.mi{border-left:3pt solid #000}.ma{background:#e6e6e6;border-left:3pt solid #000}.mu{border:1.5pt solid #000;border-radius:2mm}.mk{border-bottom:1.5pt solid #000}.mc{border:1.5pt dashed #000}
+/* Kapitel */
+.kap{font-size:17pt;margin:0 0 3mm;display:flex;align-items:center;gap:3mm;border-bottom:2.5pt solid #000;padding-bottom:1.5mm}
+.kn{display:inline-flex;align-items:center;justify-content:center;width:10mm;height:10mm;border-radius:50%;background:#000;color:#fff;font-size:15pt}
+.info{border-left:2.5pt solid #000;padding-left:3mm;margin:0 0 2.5mm}
+.alltag{background:#ececec;border-radius:2mm;padding:2mm 3mm 0.5mm;margin:0 0 3mm;border-left:5pt solid #000}
+.allt{font-size:8.5pt;font-weight:bold;letter-spacing:.5pt;margin-bottom:1mm}
+.fig{margin:1mm auto 3mm;text-align:center}.fig80{width:82%}
+.formel{border:1.5pt solid #000;display:inline-block;padding:2mm 5mm;margin:1mm 0 2mm;font-weight:bold;font-size:11.5pt}
+.frac{display:inline-flex;flex-direction:column;vertical-align:middle;text-align:center;margin:0 1mm}.frac span:first-child{border-bottom:1pt solid #000;padding:0 1mm}
+.autos{display:flex;gap:6mm;margin-bottom:3mm}.auto{flex:1;border:1pt solid #000;border-radius:2mm;padding:2mm 3mm}.auto p{font-size:10pt;margin:1mm 0 0}
+.balken{display:flex;justify-content:center;gap:15mm}.balken div{width:58mm}
+.drei{display:flex;gap:4mm;margin-bottom:3mm}.drei div{flex:1}
+/* Überblick */
+.ueb{border:2pt solid #000;border-radius:3mm;padding:4.5mm 4mm 1.5mm;margin:4mm 0 4mm;position:relative}
+.uebt{position:absolute;top:-3mm;left:4mm;background:#fff;padding:0 2mm;font-weight:bold;font-size:10pt}.uebt span{font-weight:normal;font-style:italic;font-size:9pt}
+.ueb p{margin:0 0 2.6mm;line-height:1.9}
+/* Material */
+.mat{border:1pt solid #000;padding:2mm 3mm;margin-bottom:3mm;background:#fafafa}.matt{font-weight:bold;font-size:10pt;margin-bottom:1.5mm}
+.bil{width:100%;font-size:9pt}.bil th,.bil td{border:.5pt solid #777;padding:.5mm 1.5mm}.bil th{background:#ddd}.bil td:nth-child(2),.bil td:nth-child(4){text-align:right;width:24mm}
+.sum td{font-weight:bold;border-top:1.5pt solid #000}
+.t{width:100%;margin:1mm 0 1mm}.t th,.t td{border:.6pt solid #000;padding:1mm 2mm;vertical-align:top}.t th{background:#e2e2e2;text-align:left}
+.ut td{padding:2mm;line-height:1.9}.ut3 td{font-size:9.5pt;height:9mm}.ut3 td:first-child{width:20mm}
+.vn td{font-size:9.3pt}
+.schema{width:110mm}.schema td:nth-child(2),.schema td:nth-child(3){text-align:right}
+.rech{width:120mm}.rech td:nth-child(2){text-align:right}
+.plaene{display:flex;flex-direction:column;gap:1.5mm}.pl{font-size:8.8pt;margin:0}.pl td,.pl th{padding:.3mm 1.5mm}.pl td:not(:first-child){text-align:right}.pl th{text-align:center}
+.opt td{font-size:9.5pt}
+/* Aufgaben */
+.ak{font-weight:bold;font-size:12pt;border-bottom:1.5pt solid #000;margin:2mm 0 2mm;padding-bottom:.5mm}
+.task{margin-bottom:3mm;break-inside:avoid}.tn{display:inline-block;min-width:8mm}
+.check{border:1.6pt dashed #000;border-radius:2mm;padding:2mm 3mm;margin-top:3mm;font-size:10pt}
+.cl{display:inline-block;background:#000;color:#fff;font-weight:bold;padding:.3mm 2mm;margin-right:2mm;border-radius:1mm}
+.notiz{margin-top:4mm}
+.mail{border:1.5pt solid #000;border-radius:2mm;padding:2mm 3mm;margin-top:2mm}.mailk{font-size:9.5pt;border-bottom:1pt solid #000;padding-bottom:1mm;margin-bottom:1mm}
+.ende{text-align:center;font-weight:bold;font-size:13pt;margin-top:6mm}
+/* Baum */
+.baum{text-align:center}.bw{border:1.5pt solid #000;padding:1.5mm;font-weight:bold;margin:0 auto 2mm;background:#fff}.bw0{width:70mm;background:#000;color:#fff}
+.br2{display:grid;grid-template-columns:2fr 1fr;gap:4mm}.br3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4mm;margin-bottom:1.5mm}
+.bb{border:1pt solid #000;padding:2mm;font-size:9.5pt;line-height:1.9}.bb small{display:block;font-style:italic;line-height:1.3;margin:.5mm 0 1mm}
+/* Antworten */
+.a{display:inline-block;min-width:12mm;color:#1565c0;font-family:"Courier New",Consolas,monospace;font-weight:bold;font-size:9.6pt;line-height:1.35;border-bottom:.8pt solid #000;padding:0 1mm}
+.ab{position:relative;margin-top:1mm;background:repeating-linear-gradient(to bottom,transparent 0,transparent calc(7.5mm - .7pt),#888 calc(7.5mm - .7pt),#888 7.5mm);line-height:7.5mm;overflow:hidden}
+.karo{margin-top:1mm;background-color:#fff;background-image:linear-gradient(#bbb .5pt,transparent .5pt),linear-gradient(90deg,#bbb .5pt,transparent .5pt);background-size:5mm 5mm;line-height:5mm;padding-left:1mm;overflow:hidden}
+.at{color:#1565c0;font-family:"Courier New",Consolas,monospace;font-weight:bold;font-size:9.6pt}
+.s .a,.s .at{color:transparent}
+.s .a{min-width:14mm}
+/* Lösungsblätter */
+.lsheet{padding-top:14mm}
+.lnr{position:absolute;top:7mm;right:12mm;font-size:30pt;font-weight:bold;border:3pt solid #000;padding:0 3mm;border-radius:2mm}
+.lkopf{font-size:15pt;font-weight:bold;border-bottom:2.5pt solid #000;margin-bottom:1mm;padding-right:30mm}
+.lhinw{font-size:9pt;font-style:italic;margin-bottom:4mm}
+.lsheet .ab,.lsheet .karo{height:auto!important;background:none;line-height:1.45;padding:0;margin:0}
+.lsheet .task{margin-bottom:3mm}
+.lsheet .ueb p{line-height:1.6}
+.titel h1{font-size:22pt}.kopf{margin-bottom:3mm}.legende div{margin:.6mm 0;font-size:9.5pt}.steck td{padding:.8mm 2mm}.plan td{padding:.6mm 2mm}
+.auto svg{max-height:28mm}.balken div{width:44mm}
+.lsheet{font-size:9.8pt}.lsheet .t td,.lsheet .t th{padding:.6mm 1.5mm}.lsheet .ueb p{margin-bottom:1.6mm}.lsheet .bb{line-height:1.5}
+.bil td{padding:.2mm 1.5mm;line-height:1.25}
+.pl{font-size:8.3pt}.pl td,.pl th{padding:0 1.5mm;line-height:1.3}.plan1 b{font-size:9.5pt}.plaene{gap:.5mm}
+.info{font-size:9.6pt;line-height:1.35}
+.cols{column-count:2;column-gap:6mm;column-rule:.5pt solid #bbb}.cols p,.cols li{break-inside:avoid}
+.alltag{font-size:9.6pt}
+.matrix{width:100%;border-collapse:collapse;margin:1mm 0 2mm}.matrix th,.matrix td{border:1.2pt solid #000;padding:2mm;vertical-align:top;line-height:1.7;text-align:left}
+.matrix tr:first-child th{background:#e6e6e6;width:42%}.matrix tr:first-child th:first-child{width:16%;background:#fff;border-top-color:#fff;border-left-color:#fff}
+.matrix th small,.matrix td small{display:block;font-weight:normal;font-style:italic;font-size:8.5pt;line-height:1.3}.matrix tr th:first-child{background:#e6e6e6}
+.matrix td.grau{background:repeating-linear-gradient(135deg,#fff 0 5px,#ddd 5px 6px);text-align:center;vertical-align:middle}
+.vnt{margin:2mm 0 1mm}
+.block{border:2pt solid #000;padding:2mm 3mm;margin-bottom:2mm;font-size:10pt;background:#f0f0f0}
+.lt{margin:.5mm 0 1mm;line-height:1.4}
+.s .lt{display:none}
+.karo{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='50' height='50' viewBox='0 0 50 50'%3E%3Cpath d='M0 0.5H50M0.5 0V50' stroke='%23999' stroke-width='1' fill='none'/%3E%3C/svg%3E");background-size:5mm 5mm;background-position:0 0;border-right:.6pt solid #999;border-bottom:.6pt solid #999}
+.task{margin-bottom:2.2mm}
+.karo{background:none!important;position:relative;border:none}.karo .grid{position:absolute;left:0;top:0}.karo .at{position:relative}
+.zwei{display:grid;grid-template-columns:1fr 1fr;gap:6mm}.zwei>div+div{border-left:.5pt solid #bbb;padding-left:6mm}
+td .a,th .a{border-bottom:none!important;min-width:0!important;padding:0}
+.t td:has(.a){height:7mm}
+.zl{min-height:12mm;line-height:6mm;font-size:9pt;background:repeating-linear-gradient(to bottom,transparent 0,transparent calc(6mm - .6pt),#999 calc(6mm - .6pt),#999 6mm)}.zl .a{line-height:6mm;font-size:9pt}
+.ut3 td{height:auto}
+.zl small{display:block!important;line-height:6mm!important;margin:0!important;font-size:8.5pt}
+.lsheet .grid{display:none}
+.fig:not(.fig80)>svg:not(.leg){width:84%!important}.fig80>svg{width:92%}.pc{height:calc(297mm - 26mm);overflow:hidden}.lsheet .pc{height:calc(297mm - 29mm)}
+.pc>.kap:not(:first-child){margin-top:5mm}.pc>.ak:first-child{margin-top:0}
+#quelle{width:182mm;margin:0 auto}
+.fig img{max-width:100%}img{max-width:100%}
+.titel h1{font-size:22pt}.blattkopf .kopf{margin-bottom:3mm}
+.ak{break-after:avoid}h4{font-size:10.5pt;margin:2mm 0 1mm}
+.ueb .zwei p,.ueb .cols p{line-height:1.9}
+.formelz{margin:0 0 2mm}.formel p{margin:0}
+.code,code{font-family:"Courier New",Consolas,monospace;font-size:9pt}.code{border:.6pt solid #000;background:#f4f4f4;padding:1.5mm 2mm;white-space:pre-wrap;margin:0 0 2mm}
+blockquote{margin:0 0 2mm;padding-left:3mm;border-left:1pt solid #888;font-style:italic}
+mark{background:#ddd;color:inherit}
+.planz,.legendez,.roh{margin-bottom:3mm}
+.task .ab,.task .karo{margin-bottom:1mm}
+.alltag>.cols,.szenario>.cols,.mat>.cols{margin-bottom:1.5mm}
+.leerhinweis{font-style:italic}
+.umbruch{height:0}
+`;
+  const VORSCHAU_CSS = '@media screen{[data-b]{cursor:pointer}[data-b]:hover{outline:1px dashed #5e81ac;outline-offset:1mm}.gewaehlt{outline:2px solid #c05a1c!important;outline-offset:1mm}.umbruch.gewaehlt{outline-width:4px}}';
+
+  window.Arbeitsblatt = {lesen, schreiben, seite, TYPEN, leer, MIT_TITEL, MIT_NR, OHNE_INHALT, attrText, hatAttr, inline};
+})();
+
+</script>
+<style>
+[hidden]{display:none!important}
+.arbeit{display:grid;grid-template-columns:minmax(340px,480px) minmax(0,1fr);gap:12px;height:calc(100vh - 150px);min-height:520px}
+@media (max-width:900px){.arbeit{grid-template-columns:1fr;height:auto}.links{height:70vh}.vorschau{height:80vh}}
+.links{display:flex;flex-direction:column;gap:8px;min-height:0}
+.reiter{display:inline-flex;border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.reiter button{font:600 14px system-ui,sans-serif;background:var(--panel2);color:var(--text);border:0;padding:7px 12px;cursor:pointer}
+.reiter button+button{border-left:1px solid var(--border)}
+.reiter button[aria-pressed=true]{background:var(--accent);color:#fff}
+[data-theme=dark] .reiter button[aria-pressed=true]{color:#2e3440}
+#md{flex:1;width:100%;resize:none;font:13.5px/1.5 var(--mono);background:var(--ed-bg);color:var(--text);border:1px solid var(--border);border-radius:12px;padding:10px 12px;tab-size:2}
+#md.drueber,.inhalt.drueber{outline:3px dashed var(--accent)}
+details.hilfe{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:8px 12px;font-size:13.5px;max-height:45%;overflow:auto}
+details.hilfe summary{cursor:pointer;font-weight:600}
+details.hilfe code{font:12.5px var(--mono);background:var(--panel2);padding:0 4px;border-radius:4px}
+details.hilfe table{border-collapse:collapse;margin:6px 0}details.hilfe td{padding:2px 8px 2px 0;vertical-align:top}
+#editor{display:flex;flex-direction:column;gap:8px;min-height:0;flex:1}
+.blattzeile{display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:13px}
+.blattzeile .feld{flex:1;min-width:120px;padding:5px 8px;font-size:13px}
+.palette{display:flex;flex-wrap:wrap;gap:4px}
+.chip{font:600 12.5px system-ui,sans-serif;background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--f,var(--border));border-radius:8px;padding:4px 8px;cursor:grab;color:var(--text);user-select:none}
+.chip:hover{border-color:var(--accent)}
+.liste{flex:1 1 40%;min-height:120px;overflow:auto;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:6px;display:flex;flex-direction:column;gap:3px}
+.karte{display:flex;align-items:center;gap:6px;background:var(--panel2);border:1px solid transparent;border-left:4px solid var(--f,var(--border));border-radius:8px;padding:4px 6px;cursor:pointer;font-size:13.5px;position:relative}
+.karte:hover{border-color:var(--border)}
+.karte.gewaehlt{border-color:var(--marke);box-shadow:0 0 0 1px var(--marke)}
+.karte.zieht{opacity:.4}
+.karte.vor::before,.karte.nach::after{content:"";position:absolute;left:0;right:0;height:3px;background:var(--marke);border-radius:2px}
+.karte.vor::before{top:-3px}.karte.nach::after{bottom:-3px}
+.griff{cursor:grab;color:var(--muted);font-size:15px;line-height:1}
+.ktyp{font-weight:700;font-size:12px;min-width:72px;color:var(--muted)}
+.ktext{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kattr{font:11px var(--mono);color:var(--muted)}
+.karte .mini{background:none;border:0;color:var(--muted);cursor:pointer;padding:0 3px;font-size:14px;opacity:0;font-family:inherit}
+.karte:hover .mini,.karte.gewaehlt .mini{opacity:1}
+.karte .mini:hover{color:var(--text)}
+.karte.kap{margin-top:6px}.karte.kap .ktext{font-weight:700}
+.karte.seite .ktext{color:var(--muted);font-style:italic}
+.panel{flex:1 1 60%;min-height:0;overflow:auto;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:8px;font-size:13.5px}
+.panel label.z{display:flex;flex-direction:column;gap:3px;font-weight:600;font-size:12.5px;color:var(--muted)}
+.panel .feld{font-size:13.5px;padding:5px 8px}
+.panel textarea.inhalt{min-height:160px;resize:vertical;font:13px/1.45 var(--mono);background:var(--ed-bg);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 8px}
+.panel .reihe{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.panel .reihe label{display:inline-flex;gap:4px;align-items:center}
+.panel .klein{font-size:12.5px;color:var(--muted)}
+.panel .btn{padding:4px 9px;font-size:12.5px}
+.panel h3{margin:0;font:700 15px system-ui,sans-serif}
+.vorschau{position:relative;background:#7b8394;border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.vorschau iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#888}
+.vorschau iframe.wartet{visibility:hidden}
+.meldung{font-size:13px;color:var(--muted);min-height:18px;margin:-4px 0 8px}
+.meldung.warn{color:var(--err)}
+#fassung{padding:6px 8px}
+body.datei-drueber::after{content:"Markdown-Datei hier ablegen";position:fixed;inset:12px;border:4px dashed var(--accent);border-radius:16px;display:flex;align-items:center;justify-content:center;font:700 22px system-ui,sans-serif;color:var(--accent);background:color-mix(in srgb,var(--bg) 80%,transparent);pointer-events:none;z-index:50}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="bar">
+    <div class="brand">Markdown<span> → Arbeitsblatt</span></div>
+    <span class="reiter" role="group" aria-label="Ansicht">
+      <button type="button" data-ansicht="md" aria-pressed="true">Markdown</button>
+      <button type="button" data-ansicht="editor" aria-pressed="false">Editor</button>
+    </span>
+    <button class="btn" id="rueck" type="button" title="Rückgängig (Strg+Z)">↶</button>
+    <button class="btn" id="vor" type="button" title="Wiederholen (Strg+Y)">↷</button>
+    <button class="btn" id="oeffnen" type="button" title="Markdown-Datei öffnen (oder auf die Seite ziehen)">Öffnen</button>
+    <button class="btn" id="beispiel" type="button" title="Beispielblatt laden">Beispiel</button>
+    <button class="btn" id="neu" type="button">Neu</button>
+    <input type="file" id="datei" accept=".md,.markdown,.txt,text/markdown,text/plain" hidden>
+    <span class="spacer"></span>
+    <select class="feld" id="fassung" aria-label="Fassung">
+      <option value="s">Schülerfassung</option>
+      <option value="l">Lehrkraft (mit Lösungen)</option>
+      <option value="lb">Lösungsblätter</option>
+    </select>
+    <span class="gruppe"><span class="hint">Export</span>
+      <button class="btn" id="alsMd" type="button" title="Markdown speichern">.md</button>
+      <button class="btn" id="alsHtml" type="button" title="Gewählte Fassung als HTML-Datei">HTML</button>
+      <button class="btn haupt" id="drucken" type="button" title="Drucken oder als PDF speichern (A4, Ränder „Keine“, Hintergrundgrafiken an)">Drucken / PDF</button>
+    </span>
+  </div>
+  <div class="meldung" id="meldung"></div>
+  <div class="arbeit">
+    <div class="links">
+      <textarea id="md" spellcheck="true" aria-label="Markdown"></textarea>
+      <details class="hilfe" id="hilfe">
+        <summary>So schreibst du das Markdown</summary>
+        <table>
+          <tr><td><code># Titel</code></td><td>Kopfzeile (Name, Klasse, Datum) und Überschrift</td></tr>
+          <tr><td><code>## Kapitel</code></td><td>nummeriertes Kapitel, <code>### …</code> Zwischentitel</td></tr>
+          <tr><td>normaler Text</td><td>Infotext mit Linie links</td></tr>
+          <tr><td><code>&gt; [!AUFTRAG] Titel</code></td><td>Warnungsblock; Inhalt in den folgenden <code>&gt;</code>-Zeilen</td></tr>
+          <tr><td>Blocknamen</td><td><code>AUFTRAG</code> <code>ALLTAG</code> <code>BEISPIEL</code> <code>UEBERBLICK</code> <code>AUFGABEN</code> <code>MATERIAL</code> <code>FORMEL</code> <code>HINWEIS</code> <code>CHECK</code> <code>PLAN</code> <code>LEGENDE</code> <code>INFO</code> <code>HTML</code>; GitHub-Namen: NOTE = Info, TIP = Beispiel, IMPORTANT = Überblick, WARNING = Auftrag, CAUTION = Hinweis. Jeder andere Name wird ein grauer Kasten mit diesem Namen.</td></tr>
+          <tr><td><code>[!INFO|2spaltig|zusammen]</code></td><td>Attribute: <code>2spaltig</code>, <code>zusammen</code> (nie trennen), <code>neue-seite</code>, <code>nr=2</code> (Lösungsblatt), <code>klasse=…</code>, <code>stil=…</code> (CSS). Bei Überschriften: <code>## Titel {neue-seite}</code></td></tr>
+          <tr><td><code>[[Antwort]]</code></td><td>Lücke, Breite mit <code>[[Antwort|30mm]]</code></td></tr>
+          <tr><td><code>1. Aufgabe …</code></td><td>in <code>[!AUFGABEN]</code>; eingerückte Zeile <code>Lösung: …</code> steht nur in der Lehrkraftfassung</td></tr>
+          <tr><td><code>[[linien 3]]</code> <code>[[karo 4]]</code></td><td>Schreibplatz auf dem Blatt (eigene Zeile)</td></tr>
+          <tr><td><code>|||</code></td><td>eigene Zeile: Spaltenumbruch (zwei Spalten)</td></tr>
+          <tr><td><code>---</code></td><td>Seitenumbruch</td></tr>
+          <tr><td><code>![Text|60%](bild.png)</code></td><td>Bild mit Breite; Bilddatei in das Textfeld ziehen bettet sie ein</td></tr>
+          <tr><td>HTML</td><td>Zeilen mit <code>&lt;div&gt;</code>, <code>&lt;table&gt;</code>, <code>&lt;svg&gt;</code>, <code>&lt;style&gt;</code> … bleiben erhalten</td></tr>
+        </table>
+      </details>
+      <div id="editor" hidden>
+        <div class="blattzeile">
+          <input class="feld" id="m-fach" placeholder="Fach · Thema (über dem Titel)" aria-label="Fach und Thema">
+          <input class="feld" id="m-fuss" placeholder="Fußzeile (sonst Titel)" aria-label="Fußzeile">
+          <label><input type="checkbox" id="m-kopf" checked> Name/Klasse</label>
+        </div>
+        <div class="palette" id="palette" aria-label="Bausteine – auf die Liste ziehen oder anklicken"></div>
+        <div class="liste" id="liste" aria-label="Blöcke des Blatts"></div>
+        <div class="panel" id="panel"></div>
+      </div>
+    </div>
+    <div class="vorschau" id="vorschau">
+      <iframe title="Vorschau" id="f0"></iframe>
+      <iframe title="Vorschau" id="f1" class="wartet"></iframe>
+    </div>
+  </div>
+</div>
+<script>
+'use strict';
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+const AB = window.Arbeitsblatt;
+const SPEICHER = 'mdblatt-text', ANSICHT = 'mdblatt-ansicht', FASSUNG = 'mdblatt-fassung';
+const ls = {get: k => { try { return localStorage.getItem(k); } catch (e) { return null; } },
+  set: (k, v) => { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } }};
+const FARBE = {titel: '#2e3440', kap: '#4c566a', h3: '#7b88a1', info: '#5e81ac', auftrag: '#c05a1c', alltag: '#a3be8c', beispiel: '#8fbcbb',
+  ueberblick: '#b48ead', aufgaben: '#d08770', material: '#ebcb8b', formel: '#81a1c1', hinweis: '#88c0d0', check: '#bf616a',
+  plan: '#7b88a1', legende: '#7b88a1', html: '#4c566a', seite: '#d8dee9', box: '#a3be8c'};
+const NAME = Object.fromEntries(AB.TYPEN.map(t => [t.typ, t.name]));
+const HILFE = {
+  aufgaben: 'Nummerierte Liste (1. 2. …). Eingerückte Zeile „Lösung: …“ steht nur in der Lehrkraftfassung, [[linien 3]] oder [[karo 4]] gibt Schreibplatz auf dem Blatt.',
+  ueberblick: 'Merkkasten mit Lücken [[Antwort]] – landet auf dem Lösungsblatt.',
+  html: 'Eigenes HTML, wird unverändert eingefügt (auch <style> für eigene Klassen).',
+  check: 'Text ist optional und steht hinter „Vergleiche jetzt …“.',
+  hinweis: 'Leer lassen für den Standardhinweis „Bearbeite alle Aufgaben auf einem eigenen Blockblatt …“.',
+  formel: 'Kasten für eine Formel, z. B. Eigenkapitalquote = [[Eigenkapital]] : Gesamtkapital · 100.',
+  plan: 'Tabelle aller Kapitel mit Seite und Lösungsblatt – wird automatisch erzeugt.',
+  legende: 'Erklärt die Kastenarten (Info, Alltag, Überblick, Aufgaben, Lösungsblatt).',
+  seite: 'Ab hier beginnt eine neue Seite.'
+};
+const BEISPIEL = `---
+fach: IT · Datenschutz
+fuss: Sichere Passwörter · Arbeitsblatt
+---
+
+# Sichere Passwörter
+
+> [!AUFTRAG]
+> Deine Oma hat ein neues Tablet und möchte für ihr E-Mail-Konto das Passwort **Oma1955** nehmen. Sie fragt dich, ob das eine gute Idee ist. Am Ende dieses Blatts schreibst du ihr eine kurze Nachricht mit drei Tipps.
+
+> [!HINWEIS]
+
+## Wie Passwörter geknackt werden
+
+Angreifer raten Passwörter selten von Hand. Ein Programm probiert in einer Sekunde Milliarden von Kombinationen aus. Zuerst kommen **Wörterbuchlisten** an die Reihe: häufige Passwörter wie \`123456\`, Namen, Geburtsjahre und Wörter aus dem Duden.
+
+Erst wenn das nicht klappt, folgt die **Brute-Force-Methode**: Das Programm probiert systematisch *alle* Zeichenfolgen durch. Jedes zusätzliche Zeichen vervielfacht die Zahl der Möglichkeiten.
+
+> [!ALLTAG] Das Fahrradschloss
+> Ein Zahlenschloss mit 3 Ringen hat 1.000 Kombinationen – wer Zeit hat, probiert sie in einer halben Stunde durch. Mit 5 Ringen sind es schon 100.000. Genauso wird ein Passwort mit jedem Zeichen sicherer.
+
+> [!UEBERBLICK] Angriffe auf Passwörter
+> Beim [[Wörterbuchangriff|38mm]] probiert ein Programm häufige Passwörter und echte Wörter aus.
+>
+> Beim [[Brute-Force-Angriff|38mm]] probiert es [[alle|18mm]] möglichen Zeichenfolgen durch.
+>
+> Jedes zusätzliche Zeichen [[vervielfacht|28mm]] die Zahl der Möglichkeiten.
+
+> [!AUFGABEN]
+> 1. Erkläre, warum *Oma1955* schnell geknackt wäre.
+>    Lösung: Es besteht aus einem Namen und einem Geburtsjahr. Beides steht in Wörterbuchlisten und wird zuerst ausprobiert.
+> 2. Berechne, wie viele vierstellige PINs aus den Ziffern 0 bis 9 es gibt.
+>    [[karo 2]]
+>    Lösung: 10 · 10 · 10 · 10 = 10.000 PINs
+
+> [!CHECK]
+
+## Ein gutes Passwort bauen
+
+> [!INFO|2spaltig]
+> Ein sicheres Passwort ist **lang** (mindestens 12 Zeichen) und steht in keinem Wörterbuch. Am leichtesten merkt man sich einen **Satz**, aus dem man die Anfangsbuchstaben nimmt.
+>
+> Für jedes Konto braucht man ein **eigenes** Passwort. Wird ein Dienst gehackt, probieren Angreifer die erbeuteten Passwörter sofort bei anderen Diensten aus.
+>
+> Ein **Passwortmanager** speichert alle Passwörter verschlüsselt. Man muss sich dann nur noch ein einziges, sehr gutes Masterpasswort merken.
+
+> [!BEISPIEL] Die Satzmethode
+> „Mein Hund Bello frisst jeden Morgen 2 Würstchen!“
+> |||
+> → **MHBfjM2W!** – 9 Zeichen mit Groß- und Kleinbuchstaben, Ziffer und Sonderzeichen.
+
+> [!MATERIAL] Passwörter im Test
+> | Passwort | Länge | sicher? |
+> |---|---|---|
+> | Oma1955 | 7 | [[nein]] |
+> | MHBfjM2W! | 9 | [[eher ja, aber noch recht kurz]] |
+> | Sonnenblume-Tisch-Kakao-17 | 26 | [[ja, lang und kein einzelnes Wort aus dem Wörterbuch]] |
+
+> [!AUFGABEN]
+> 1. Bilde mit der Satzmethode ein eigenes Passwort. Schreibe nur den Satz auf, nicht das Passwort.
+> 2. Schreibe deiner Oma eine kurze Nachricht mit drei Tipps für ein sicheres Passwort.
+>    [[linien 4]]
+>    Lösung: z. B. Nimm einen langen Satz und davon die Anfangsbuchstaben. Benutze für jedes Konto ein eigenes Passwort. Probier einen Passwortmanager aus.
+
+> [!CHECK]
+`;
+
+/* ---------- Zustand ---------- */
+let md = ls.get(SPEICHER);
+if (md == null) md = BEISPIEL;
+let doc = AB.lesen(md);
+let wahl = -1;
+let ansicht = ls.get(ANSICHT) === 'editor' ? 'editor' : 'md';
+const rueck = [], vor = [];
+let gruppe = null;
+
+const ta = $('#md');
+ta.value = md;
+$('#fassung').value = ['s', 'l', 'lb'].includes(ls.get(FASSUNG)) ? ls.get(FASSUNG) : 's';
+
+function meldung(t, warn){ const m = $('#meldung'); m.textContent = t || ''; m.classList.toggle('warn', !!warn); }
+function speichern(){
+  if (!ls.set(SPEICHER, md)) meldung('Das Blatt ist zu groß für den Browserspeicher (meist wegen eingebetteter Bilder). Speichere es als .md-Datei.', true);
+  window.TrainerSync && TrainerSync.changed();
+}
+function schnappschuss(g){
+  if (g && g === gruppe) return;
+  rueck.push(md); if (rueck.length > 200) rueck.shift();
+  vor.length = 0; gruppe = g || null;
+}
+/* Änderung im Markdown-Text */
+function ausText(){
+  schnappschuss('text');
+  md = ta.value; doc = AB.lesen(md);
+  if (wahl >= doc.bloecke.length) wahl = -1;
+  speichern(); vorschauBald();
+}
+/* Änderung über den Editor: doc ist die Quelle, Markdown wird daraus geschrieben */
+function aendern(fn, g, ohnePanel){
+  schnappschuss(g || ('e' + Math.random()));
+  fn();
+  md = AB.schreiben(doc); ta.value = md;
+  speichern(); liste(); if (!ohnePanel) panel(); vorschauBald();
+}
+function laden(neu, merken){
+  if (merken !== false) schnappschuss();
+  md = neu; ta.value = md; doc = AB.lesen(md); wahl = -1;
+  speichern(); alles();
+}
+function zurueck(von, nach){
+  if (!von.length) return;
+  nach.push(md);
+  md = von.pop(); ta.value = md; doc = AB.lesen(md); gruppe = null;
+  if (wahl >= doc.bloecke.length) wahl = -1;
+  speichern(); alles();
+}
+function alles(){ meta(); liste(); panel(); vorschauBald(); }
+
+/* ---------- Ansicht ---------- */
+function zeigeAnsicht(a){
+  ansicht = a; ls.set(ANSICHT, a);
+  document.querySelectorAll('[data-ansicht]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.ansicht === a)));
+  $('#md').hidden = a !== 'md'; $('#hilfe').hidden = a !== 'md'; $('#editor').hidden = a !== 'editor';
+  if (a === 'editor') { doc = AB.lesen(md); if (wahl >= doc.bloecke.length) wahl = -1; alles(); }
+}
+document.querySelectorAll('[data-ansicht]').forEach(b => b.onclick = () => zeigeAnsicht(b.dataset.ansicht));
+
+/* ---------- Blatt-Einstellungen ---------- */
+function meta(){
+  const m = doc.meta || {};
+  $('#m-fach').value = m.fach || ''; $('#m-fuss').value = m.fuss || '';
+  $('#m-kopf').checked = (m.kopf || '').toLowerCase() !== 'nein';
+}
+$('#m-fach').oninput = e => aendern(() => { doc.meta.fach = e.target.value; }, 'fach', true);
+$('#m-fuss').oninput = e => aendern(() => { doc.meta.fuss = e.target.value; }, 'fuss', true);
+$('#m-kopf').onchange = e => aendern(() => { if (e.target.checked) delete doc.meta.kopf; else doc.meta.kopf = 'nein'; }, null, true);
+
+/* ---------- Palette und Liste (Ziehen und Ablegen) ---------- */
+const pal = $('#palette');
+AB.TYPEN.forEach(t => {
+  const c = document.createElement('span');
+  c.className = 'chip'; c.textContent = t.name; c.draggable = true; c.tabIndex = 0;
+  c.style.setProperty('--f', FARBE[t.typ]);
+  c.title = 'Auf die Liste ziehen oder anklicken (kommt hinter den markierten Block)';
+  c.ondragstart = e => { e.dataTransfer.setData('text/x-blatt-typ', t.typ); e.dataTransfer.effectAllowed = 'copy'; };
+  const neu = () => einfuegen(t.typ, wahl >= 0 ? wahl + 1 : doc.bloecke.length);
+  c.onclick = neu;
+  c.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); neu(); } };
+  pal.appendChild(c);
+});
+function einfuegen(typ, pos){
+  const b = AB.leer(typ);
+  if (typ === 'aufgaben') b.text = '1. Neue Aufgabe\n   Lösung: …';
+  else if (typ === 'ueberblick') b.text = 'Ein Satz mit [[Lücke]].';
+  else if (['info', 'alltag', 'beispiel', 'auftrag', 'material', 'box'].includes(typ)) b.text = 'Text';
+  else if (typ === 'html') b.text = '<div style="border:1pt solid #000;padding:2mm">Eigenes HTML</div>';
+  else if (typ === 'formel') b.text = 'Ergebnis = [[A]] · [[B]]';
+  else if (['titel', 'kap', 'h3'].includes(typ)) b.titel = NAME[typ];
+  aendern(() => { doc.bloecke.splice(pos, 0, b); wahl = pos; });
+  zeigeVorschau(true);
+}
+
+function kurz(b){
+  if (b.typ === 'seite') return '— neue Seite —';
+  const t = b.titel || (b.text || '').split('\n').find(l => l.trim()) || '';
+  return t.replace(/\[\[([^\]|]*)(\|[^\]]*)?\]\]/g, '[$1]').replace(/[*_`>#]/g, '').trim() || '(leer)';
+}
+const liste_ = $('#liste');
+let zieh = null;   // Index der gezogenen Karte
+function liste(){
+  if (ansicht !== 'editor') return;
+  liste_.innerHTML = '';
+  doc.bloecke.forEach((b, i) => {
+    const k = document.createElement('div');
+    k.className = 'karte ' + b.typ + (i === wahl ? ' gewaehlt' : '');
+    k.style.setProperty('--f', FARBE[b.typ] || '#888');
+    k.draggable = true; k.dataset.i = i; k.tabIndex = 0;
+    const attr = AB.attrText(b.attr);
+    k.innerHTML = `<span class="griff" aria-hidden="true">⠿</span><span class="ktyp">${esc(b.typ === 'box' ? b.name || 'Kasten' : NAME[b.typ])}</span>` +
+      `<span class="ktext">${esc(kurz(b))}</span>${attr ? `<span class="kattr" title="${esc(attr)}">{${esc(attr.length > 14 ? attr.slice(0, 13) + '…' : attr)}}</span>` : ''}` +
+      `<button class="mini" data-tun="hoch" title="nach oben" type="button">↑</button><button class="mini" data-tun="runter" title="nach unten" type="button">↓</button>` +
+      `<button class="mini" data-tun="kopie" title="duplizieren" type="button">⧉</button><button class="mini" data-tun="weg" title="löschen" type="button">✕</button>`;
+    k.onclick = e => {
+      const tun = e.target.dataset && e.target.dataset.tun;
+      if (tun) return aktion(tun, i);
+      waehle(i, true);
+    };
+    k.onkeydown = e => {
+      if (e.target !== k) return;
+      if (e.key === 'ArrowUp' && e.altKey) { e.preventDefault(); aktion('hoch', i); }
+      else if (e.key === 'ArrowDown' && e.altKey) { e.preventDefault(); aktion('runter', i); }
+      else if (e.key === 'ArrowUp' && i > 0) { e.preventDefault(); waehle(i - 1, true); fokusKarte(); }
+      else if (e.key === 'ArrowDown' && i + 1 < doc.bloecke.length) { e.preventDefault(); waehle(i + 1, true); fokusKarte(); }
+      else if (e.key === 'Delete') { e.preventDefault(); aktion('weg', i); fokusKarte(); }
+      else if (e.key === 'Enter') { e.preventDefault(); const f = $('#panel input.feld, #panel textarea'); f && f.focus(); }
+    };
+    k.ondragstart = e => { zieh = i; k.classList.add('zieht'); e.dataTransfer.setData('text/x-blatt-karte', String(i)); e.dataTransfer.effectAllowed = 'move'; };
+    k.ondragend = () => { zieh = null; k.classList.remove('zieht'); markiere(null); };
+    liste_.appendChild(k);
+  });
+  if (!doc.bloecke.length) liste_.innerHTML = '<p class="klein" style="margin:8px;color:var(--muted)">Noch leer: Bausteine von oben hierher ziehen.</p>';
+}
+function fokusKarte(){ const k = liste_.querySelector('.karte.gewaehlt'); k && k.focus(); }
+function zielIndex(e){
+  const karten = [...liste_.querySelectorAll('.karte')];
+  for (const k of karten) { const r = k.getBoundingClientRect(); if (e.clientY < r.top + r.height / 2) return {pos: +k.dataset.i, k, vor: true}; }
+  return {pos: karten.length, k: karten[karten.length - 1], vor: false};
+}
+function markiere(z){
+  liste_.querySelectorAll('.vor,.nach').forEach(x => x.classList.remove('vor', 'nach'));
+  if (z && z.k) z.k.classList.add(z.vor ? 'vor' : 'nach');
+}
+const istBlattZug = e => [...e.dataTransfer.types].some(t => t === 'text/x-blatt-typ' || t === 'text/x-blatt-karte');
+liste_.addEventListener('dragover', e => { if (!istBlattZug(e)) return; e.preventDefault(); markiere(zielIndex(e)); });
+liste_.addEventListener('dragleave', e => { if (!liste_.contains(e.relatedTarget)) markiere(null); });
+liste_.addEventListener('drop', e => {
+  if (!istBlattZug(e)) return;
+  e.preventDefault(); e.stopPropagation();
+  const {pos} = zielIndex(e); markiere(null);
+  const typ = e.dataTransfer.getData('text/x-blatt-typ');
+  if (typ) return einfuegen(typ, pos);
+  const von = +e.dataTransfer.getData('text/x-blatt-karte');
+  if (Number.isNaN(von) || von === pos || von + 1 === pos) return;
+  aendern(() => { const [b] = doc.bloecke.splice(von, 1); const ziel = pos > von ? pos - 1 : pos; doc.bloecke.splice(ziel, 0, b); wahl = ziel; });
+});
+function aktion(tun, i){
+  const n = doc.bloecke.length;
+  if (tun === 'hoch' && i > 0) aendern(() => { doc.bloecke.splice(i - 1, 0, doc.bloecke.splice(i, 1)[0]); wahl = i - 1; });
+  else if (tun === 'runter' && i < n - 1) aendern(() => { doc.bloecke.splice(i + 1, 0, doc.bloecke.splice(i, 1)[0]); wahl = i + 1; });
+  else if (tun === 'kopie') aendern(() => { doc.bloecke.splice(i + 1, 0, JSON.parse(JSON.stringify(doc.bloecke[i]))); wahl = i + 1; });
+  else if (tun === 'weg') aendern(() => { doc.bloecke.splice(i, 1); wahl = Math.min(i, doc.bloecke.length - 1); });
+}
+function waehle(i, scroll){
+  wahl = i;
+  liste_.querySelectorAll('.karte').forEach(k => k.classList.toggle('gewaehlt', +k.dataset.i === i));
+  const k = liste_.querySelector('.karte.gewaehlt'); k && k.scrollIntoView({block: 'nearest'});
+  panel(); zeigeVorschau(scroll);
+}
+
+/* ---------- Eigenschaften des gewählten Blocks ---------- */
+function panel(){
+  const p = $('#panel');
+  if (ansicht !== 'editor') return;
+  const b = doc.bloecke[wahl];
+  if (!b) { p.innerHTML = '<p class="klein">Block in der Liste oder in der Vorschau anklicken, um ihn zu bearbeiten. Neue Blöcke aus der Leiste oben auf die Liste ziehen.</p>'; return; }
+  b.attr = b.attr || {};
+  const a = b.attr;
+  const typen = AB.TYPEN.map(t => `<option value="${t.typ}"${t.typ === b.typ ? ' selected' : ''}>${esc(t.name)}</option>`).join('') +
+    `<option value="box"${b.typ === 'box' ? ' selected' : ''}>Eigener Kasten</option>`;
+  const mitInhalt = !AB.OHNE_INHALT.includes(b.typ);
+  const ohneAttr = b.typ === 'seite';
+  p.innerHTML = `
+    <div class="reihe"><h3>Block ${wahl + 1}</h3><span class="spacer" style="flex:1"></span>
+      <button class="btn" data-tun="kopie" type="button">Duplizieren</button><button class="btn" data-tun="weg" type="button">Löschen</button></div>
+    <label class="z">Typ <select class="feld" id="p-typ">${typen}</select></label>
+    ${b.typ === 'box' ? `<label class="z">Name des Kastens (steht oben im Kasten) <input class="feld" id="p-name" value="${esc(b.name)}"></label>` : ''}
+    ${AB.MIT_TITEL.includes(b.typ) ? `<label class="z">${['titel', 'kap', 'h3'].includes(b.typ) ? 'Text' : 'Titel (optional)'} <input class="feld" id="p-titel" value="${esc(b.titel)}"></label>` : ''}
+    ${mitInhalt ? `<label class="z">${b.typ === 'html' ? 'HTML' : 'Inhalt (Markdown)'}
+      <textarea class="inhalt" id="p-text" spellcheck="${b.typ !== 'html'}">${esc(b.text)}</textarea></label>
+      ${b.typ !== 'html' ? `<div class="reihe klein">Einfügen:
+        <button class="btn" data-ein="[[Antwort]]" type="button">Lücke</button>
+        <button class="btn" data-ein="\n[[linien 3]]\n" type="button">Linien</button>
+        <button class="btn" data-ein="\n[[karo 4]]\n" type="button">Karo</button>
+        <button class="btn" data-ein="\n|||\n" type="button">Spaltenumbruch</button>
+        <button class="btn" data-ein="\n| A | B |\n|---|---|\n| [[x]] | [[y]] |\n" type="button">Tabelle</button>
+        <button class="btn" data-bild type="button">Bild</button></div>` : ''}` : ''}
+    ${HILFE[b.typ] ? `<div class="klein">${esc(HILFE[b.typ])}</div>` : ''}
+    ${ohneAttr ? '' : `<div class="reihe">
+      ${['titel', 'kap', 'h3'].includes(b.typ) ? '' : `<label><input type="checkbox" id="p-spalten"${a.spalten ? ' checked' : ''}> 2 Spalten</label>`}
+      <label title="Block nie auf zwei Seiten verteilen"><input type="checkbox" id="p-zusammen"${a.zusammen ? ' checked' : ''}> zusammenhalten</label>
+      <label><input type="checkbox" id="p-seite"${a.seite ? ' checked' : ''}> neue Seite davor</label></div>
+      ${AB.MIT_NR.includes(b.typ) ? `<label class="z">Lösungsblatt-Nummer (leer = Kapitelnummer) <input class="feld" id="p-nr" value="${esc(a.nr || '')}" inputmode="numeric" style="max-width:120px"></label>` : ''}
+      <label class="z">CSS-Klasse <input class="feld" id="p-klasse" value="${esc(a.klasse || '')}" placeholder="z. B. klein (eigene Klassen in einem HTML-Block mit &lt;style&gt;)"></label>
+      <label class="z">Stil (CSS) <input class="feld" id="p-stil" value="${esc(a.stil || '')}" placeholder="z. B. margin-top:6mm; font-size:9pt"></label>`}`;
+  const feld = (id, fn) => { const el = p.querySelector(id); if (el) el.oninput = () => aendern(() => fn(el), 'p' + id + wahl, true); };
+  feld('#p-titel', el => { b.titel = el.value; });
+  feld('#p-name', el => { b.name = el.value; });
+  feld('#p-text', el => { b.text = el.value; });
+  feld('#p-nr', el => { a.nr = el.value.trim(); });
+  feld('#p-klasse', el => { a.klasse = el.value.trim(); });
+  feld('#p-stil', el => { a.stil = el.value.trim(); });
+  ['spalten', 'zusammen', 'seite'].forEach(k => { const el = p.querySelector('#p-' + k); if (el) el.onchange = () => aendern(() => { a[k] = el.checked; }, null, true); });
+  p.querySelector('#p-typ').onchange = e => aendern(() => {
+    b.typ = e.target.value;
+    if (b.typ === 'box' && !b.name) b.name = 'Kasten';
+    if (b.typ !== 'box') b.name = '';
+  });
+  p.querySelectorAll('[data-tun]').forEach(x => x.onclick = () => aktion(x.dataset.tun, wahl));
+  const text = p.querySelector('#p-text');
+  p.querySelectorAll('[data-ein]').forEach(x => x.onclick = () => einsetzen(text, x.dataset.ein));
+  const bildKnopf = p.querySelector('[data-bild]');
+  if (bildKnopf) bildKnopf.onclick = () => { bildZiel = text; $('#bilddatei').click(); };
+  if (text) bilderAblegen(text);
+}
+function einsetzen(feld, s){
+  const a = feld.selectionStart, e = feld.selectionEnd;
+  const wahlText = feld.value.slice(a, e);
+  if (s === '[[Antwort]]' && wahlText) s = '[[' + wahlText + ']]';
+  feld.setRangeText(s, a, e, 'end');
+  feld.focus();
+  feld.dispatchEvent(new Event('input'));
+}
+
+/* ---------- Bilder einbetten ---------- */
+const bildEingabe = Object.assign(document.createElement('input'), {type: 'file', accept: 'image/*', id: 'bilddatei', hidden: true});
+document.body.appendChild(bildEingabe);
+let bildZiel = null;
+function bildLesen(datei, feld){
+  const r = new FileReader();
+  r.onload = () => einsetzen(feld, `\n![${datei.name.replace(/\.[^.]+$/, '').replace(/[[\]|]/g, '')}|60%](${r.result})\n`);
+  r.readAsDataURL(datei);
+}
+bildEingabe.onchange = () => { const d = bildEingabe.files[0]; if (d && bildZiel) bildLesen(d, bildZiel); bildEingabe.value = ''; };
+function bilderAblegen(feld){
+  feld.addEventListener('dragover', e => { if ([...e.dataTransfer.types].includes('Files')) { e.preventDefault(); e.stopPropagation(); feld.classList.add('drueber'); } });
+  feld.addEventListener('dragleave', () => feld.classList.remove('drueber'));
+  feld.addEventListener('drop', e => {
+    feld.classList.remove('drueber');
+    const d = [...e.dataTransfer.files];
+    if (!d.length) return;
+    e.preventDefault(); e.stopPropagation();
+    d.forEach(f => {
+      if (/^image\//.test(f.type)) bildLesen(f, feld);
+      else if (feld === ta) dateiOeffnen(f);
+    });
+  });
+}
+bilderAblegen(ta);
+
+/* ---------- Vorschau (zwei Rahmen: der neue wird im Hintergrund umbrochen, dann getauscht) ---------- */
+const rahmen = [$('#f0'), $('#f1')];
+let aktiv = 0, warteY = 0, timer = null, letzte = '';
+function zoomFaktor(){ const w = $('#vorschau').clientWidth; return Math.max(0.3, Math.min(1, (w - 24) / 812)); }
+function vorschauBald(){ clearTimeout(timer); timer = setTimeout(vorschau, 220); }
+function vorschau(){
+  const modus = $('#fassung').value;
+  const html = AB.seite(doc, modus, {vorschau: true, zoom: +zoomFaktor().toFixed(3)});
+  if (html === letzte) return;
+  letzte = html;
+  const neu = rahmen[1 - aktiv];
+  try { warteY = rahmen[aktiv].contentWindow.scrollY || 0; } catch (e) { warteY = 0; }
+  neu.srcdoc = html;
+}
+window.addEventListener('message', e => {
+  const d = e.data || {};
+  if (d.blatt === 'fertig' && e.source === rahmen[1 - aktiv].contentWindow) {
+    const neu = rahmen[1 - aktiv];
+    neu.contentWindow.scrollTo(0, warteY);
+    neu.classList.remove('wartet'); rahmen[aktiv].classList.add('wartet');
+    aktiv = 1 - aktiv;
+    zeigeVorschau(false);
+    const gross = (d.zuGross || []).map(i => doc.bloecke[i] ? `Block ${i + 1} (${NAME[doc.bloecke[i].typ] || doc.bloecke[i].name})` : '').filter(Boolean);
+    meldung(`${d.seiten} ${d.seiten === 1 ? 'Seite' : 'Seiten'}` + (gross.length ? ` · passt nicht auf eine Seite und wird abgeschnitten: ${gross.join(', ')}` : '') + relativeBilder(), gross.length > 0);
+  } else if (d.blatt === 'wahl' && e.source === rahmen[aktiv].contentWindow) {
+    if (ansicht !== 'editor') zeigeAnsicht('editor');
+    waehle(d.i, false);
+    const f = $('#p-text') || $('#p-titel'); f && f.focus({preventScroll: true});
+  }
+});
+function relativeBilder(){
+  return /!\[[^\]]*\]\((?!data:|https?:)[^)]+\)/.test(md) ? ' · Bilder mit Dateipfad fehlen in der Vorschau: Bilddatei ins Textfeld ziehen, dann wird sie eingebettet.' : '';
+}
+function zeigeVorschau(scroll){
+  try { rahmen[aktiv].contentWindow.postMessage({blatt: 'zeige', i: ansicht === 'editor' ? wahl : -1, scroll}, '*'); } catch (e) {}
+}
+$('#fassung').onchange = e => { ls.set(FASSUNG, e.target.value); vorschau(); };
+let rt = null;
+window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { letzte = ''; vorschau(); }, 250); });
+
+/* ---------- Dateien ---------- */
+function dateiname(){
+  const t = (doc.bloecke.find(b => b.typ === 'titel') || {}).titel || 'Arbeitsblatt';
+  return t.replace(/[^\wäöüÄÖÜß -]+/g, '').trim().replace(/\s+/g, '_') || 'Arbeitsblatt';
+}
+function herunterladen(text, name, typ){
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], {type: typ}));
+  a.download = name; document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+}
+function dateiOeffnen(f){
+  const r = new FileReader();
+  r.onload = () => { laden(String(r.result)); meldung('Geöffnet: ' + f.name + relativeBilder()); };
+  r.readAsText(f, 'utf-8');
+}
+$('#oeffnen').onclick = () => $('#datei').click();
+$('#datei').onchange = e => { const f = e.target.files[0]; if (f) dateiOeffnen(f); e.target.value = ''; };
+$('#beispiel').onclick = () => laden(BEISPIEL);
+$('#neu').onclick = () => laden('# Neues Arbeitsblatt\n\n> [!AUFTRAG]\n> Worum geht es?\n\n## Erstes Kapitel\n\nText\n\n> [!AUFGABEN]\n> 1. Erste Aufgabe\n>    Lösung: …\n');
+$('#alsMd').onclick = () => herunterladen(md, dateiname() + '.md', 'text/markdown;charset=utf-8');
+$('#alsHtml').onclick = () => {
+  const m = $('#fassung').value;
+  herunterladen(AB.seite(doc, m), dateiname() + '_' + {s: 'Schueler', l: 'Lehrkraft', lb: 'Loesungsblaetter'}[m] + '.html', 'text/html;charset=utf-8');
+};
+$('#drucken').onclick = () => {
+  const w = rahmen[aktiv].contentWindow;
+  w.postMessage({blatt: 'zeige', i: -1}, '*');
+  setTimeout(() => w.print(), 50);
+};
+$('#rueck').onclick = () => zurueck(rueck, vor);
+$('#vor').onclick = () => zurueck(vor, rueck);
+document.addEventListener('keydown', e => {
+  if (!(e.ctrlKey || e.metaKey) || e.target === ta) return;
+  if (e.key.toLowerCase() === 'z' && !e.shiftKey) { if (e.target.matches('input,textarea')) return; e.preventDefault(); zurueck(rueck, vor); }
+  else if (e.key.toLowerCase() === 'y' || (e.key.toLowerCase() === 'z' && e.shiftKey)) { if (e.target.matches('input,textarea')) return; e.preventDefault(); zurueck(vor, rueck); }
+});
+ta.addEventListener('input', ausText);
+ta.addEventListener('keydown', e => {   // Tab rückt ein statt den Fokus zu wechseln
+  if (e.key !== 'Tab' || e.ctrlKey || e.altKey) return;
+  e.preventDefault(); ta.setRangeText('  ', ta.selectionStart, ta.selectionEnd, 'end'); ausText();
+});
+// Markdown-Datei irgendwo auf die Seite ziehen
+let tiefe = 0;
+const hatDatei = e => [...e.dataTransfer.types].includes('Files');
+document.addEventListener('dragenter', e => { if (hatDatei(e)) { tiefe++; document.body.classList.add('datei-drueber'); } });
+document.addEventListener('dragleave', e => { if (hatDatei(e) && --tiefe <= 0) { tiefe = 0; document.body.classList.remove('datei-drueber'); } });
+document.addEventListener('dragover', e => { if (hatDatei(e)) e.preventDefault(); });
+document.addEventListener('drop', e => {
+  tiefe = 0; document.body.classList.remove('datei-drueber');
+  if (!hatDatei(e)) return;
+  e.preventDefault();
+  const f = [...e.dataTransfer.files].find(f => /\.(md|markdown|txt)$/i.test(f.name) || /^text\//.test(f.type));
+  if (f) dateiOeffnen(f); else meldung('Bitte eine Markdown-Datei (.md) ablegen. Bilder ins Textfeld ziehen.', true);
+});
+// beim Ablegen auf Feldern greifen deren eigene Handler (stopPropagation); body-Hinweis trotzdem entfernen
+['drop', 'dragend'].forEach(t => document.addEventListener(t, () => { tiefe = 0; document.body.classList.remove('datei-drueber'); }, true));
+
+zeigeAnsicht(ansicht);
+vorschau();
+</script>
+</body>
+</html>

@@ -1,0 +1,597 @@
+<!doctype html>
+<html lang="de" data-trainer="mdblatt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Markdown → Arbeitsblatt – vibe learning</title>
+<!--
+  Markdown → Arbeitsblatt: Markdown mit Warnungsblöcken (> [!AUFTRAG], > [!ALLTAG] …) wird ein A4-Arbeitsblatt
+  im Layout der Selbstlernhefte (Schüler, Lehrkraft, Lösungsblätter). Umwandlung und Umbruch: arbeitsblatt.js.
+  Zwei Ansichten derselben Daten: Markdown-Text und Block-Editor (Blöcke ziehen, Typ/Attribute/eigenes HTML).
+  Gespeichert wird im Browser (mdblatt-text), über PocketBase pro Benutzer.
+-->
+<script src="../../katalog.js"></script>
+<script src="../../nav.js"></script>
+<script src="../../sync.js"></script>
+<script>
+(function(){var t=null;try{t=localStorage.getItem('wenn-theme');}catch(e){}
+document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');})();
+</script>
+<link rel="stylesheet" href="struktogramm.css">
+<script src="arbeitsblatt.js"></script>
+<style>
+[hidden]{display:none!important}
+.arbeit{display:grid;grid-template-columns:minmax(340px,480px) minmax(0,1fr);gap:12px;height:calc(100vh - 150px);min-height:520px}
+@media (max-width:900px){.arbeit{grid-template-columns:1fr;height:auto}.links{height:70vh}.vorschau{height:80vh}}
+.links{display:flex;flex-direction:column;gap:8px;min-height:0}
+.reiter{display:inline-flex;border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.reiter button{font:600 14px system-ui,sans-serif;background:var(--panel2);color:var(--text);border:0;padding:7px 12px;cursor:pointer}
+.reiter button+button{border-left:1px solid var(--border)}
+.reiter button[aria-pressed=true]{background:var(--accent);color:#fff}
+[data-theme=dark] .reiter button[aria-pressed=true]{color:#2e3440}
+#md{flex:1;width:100%;resize:none;font:13.5px/1.5 var(--mono);background:var(--ed-bg);color:var(--text);border:1px solid var(--border);border-radius:12px;padding:10px 12px;tab-size:2}
+#md.drueber,.inhalt.drueber{outline:3px dashed var(--accent)}
+details.hilfe{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:8px 12px;font-size:13.5px;max-height:45%;overflow:auto}
+details.hilfe summary{cursor:pointer;font-weight:600}
+details.hilfe code{font:12.5px var(--mono);background:var(--panel2);padding:0 4px;border-radius:4px}
+details.hilfe table{border-collapse:collapse;margin:6px 0}details.hilfe td{padding:2px 8px 2px 0;vertical-align:top}
+#editor{display:flex;flex-direction:column;gap:8px;min-height:0;flex:1}
+.blattzeile{display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:13px}
+.blattzeile .feld{flex:1;min-width:120px;padding:5px 8px;font-size:13px}
+.palette{display:flex;flex-wrap:wrap;gap:4px}
+.chip{font:600 12.5px system-ui,sans-serif;background:var(--panel);border:1px solid var(--border);border-left:4px solid var(--f,var(--border));border-radius:8px;padding:4px 8px;cursor:grab;color:var(--text);user-select:none}
+.chip:hover{border-color:var(--accent)}
+.liste{flex:1 1 40%;min-height:120px;overflow:auto;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:6px;display:flex;flex-direction:column;gap:3px}
+.karte{display:flex;align-items:center;gap:6px;background:var(--panel2);border:1px solid transparent;border-left:4px solid var(--f,var(--border));border-radius:8px;padding:4px 6px;cursor:pointer;font-size:13.5px;position:relative}
+.karte:hover{border-color:var(--border)}
+.karte.gewaehlt{border-color:var(--marke);box-shadow:0 0 0 1px var(--marke)}
+.karte.zieht{opacity:.4}
+.karte.vor::before,.karte.nach::after{content:"";position:absolute;left:0;right:0;height:3px;background:var(--marke);border-radius:2px}
+.karte.vor::before{top:-3px}.karte.nach::after{bottom:-3px}
+.griff{cursor:grab;color:var(--muted);font-size:15px;line-height:1}
+.ktyp{font-weight:700;font-size:12px;min-width:72px;color:var(--muted)}
+.ktext{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kattr{font:11px var(--mono);color:var(--muted)}
+.karte .mini{background:none;border:0;color:var(--muted);cursor:pointer;padding:0 3px;font-size:14px;opacity:0;font-family:inherit}
+.karte:hover .mini,.karte.gewaehlt .mini{opacity:1}
+.karte .mini:hover{color:var(--text)}
+.karte.kap{margin-top:6px}.karte.kap .ktext{font-weight:700}
+.karte.seite .ktext{color:var(--muted);font-style:italic}
+.panel{flex:1 1 60%;min-height:0;overflow:auto;background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:8px;font-size:13.5px}
+.panel label.z{display:flex;flex-direction:column;gap:3px;font-weight:600;font-size:12.5px;color:var(--muted)}
+.panel .feld{font-size:13.5px;padding:5px 8px}
+.panel textarea.inhalt{min-height:160px;resize:vertical;font:13px/1.45 var(--mono);background:var(--ed-bg);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 8px}
+.panel .reihe{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.panel .reihe label{display:inline-flex;gap:4px;align-items:center}
+.panel .klein{font-size:12.5px;color:var(--muted)}
+.panel .btn{padding:4px 9px;font-size:12.5px}
+.panel h3{margin:0;font:700 15px system-ui,sans-serif}
+.vorschau{position:relative;background:#7b8394;border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.vorschau iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#888}
+.vorschau iframe.wartet{visibility:hidden}
+.meldung{font-size:13px;color:var(--muted);min-height:18px;margin:-4px 0 8px}
+.meldung.warn{color:var(--err)}
+#fassung{padding:6px 8px}
+body.datei-drueber::after{content:"Markdown-Datei hier ablegen";position:fixed;inset:12px;border:4px dashed var(--accent);border-radius:16px;display:flex;align-items:center;justify-content:center;font:700 22px system-ui,sans-serif;color:var(--accent);background:color-mix(in srgb,var(--bg) 80%,transparent);pointer-events:none;z-index:50}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="bar">
+    <div class="brand">Markdown<span> → Arbeitsblatt</span></div>
+    <span class="reiter" role="group" aria-label="Ansicht">
+      <button type="button" data-ansicht="md" aria-pressed="true">Markdown</button>
+      <button type="button" data-ansicht="editor" aria-pressed="false">Editor</button>
+    </span>
+    <button class="btn" id="rueck" type="button" title="Rückgängig (Strg+Z)">↶</button>
+    <button class="btn" id="vor" type="button" title="Wiederholen (Strg+Y)">↷</button>
+    <button class="btn" id="oeffnen" type="button" title="Markdown-Datei öffnen (oder auf die Seite ziehen)">Öffnen</button>
+    <button class="btn" id="beispiel" type="button" title="Beispielblatt laden">Beispiel</button>
+    <button class="btn" id="neu" type="button">Neu</button>
+    <input type="file" id="datei" accept=".md,.markdown,.txt,text/markdown,text/plain" hidden>
+    <span class="spacer"></span>
+    <select class="feld" id="fassung" aria-label="Fassung">
+      <option value="s">Schülerfassung</option>
+      <option value="l">Lehrkraft (mit Lösungen)</option>
+      <option value="lb">Lösungsblätter</option>
+    </select>
+    <span class="gruppe"><span class="hint">Export</span>
+      <button class="btn" id="alsMd" type="button" title="Markdown speichern">.md</button>
+      <button class="btn" id="alsHtml" type="button" title="Gewählte Fassung als HTML-Datei">HTML</button>
+      <button class="btn haupt" id="drucken" type="button" title="Drucken oder als PDF speichern (A4, Ränder „Keine“, Hintergrundgrafiken an)">Drucken / PDF</button>
+    </span>
+  </div>
+  <div class="meldung" id="meldung"></div>
+  <div class="arbeit">
+    <div class="links">
+      <textarea id="md" spellcheck="true" aria-label="Markdown"></textarea>
+      <details class="hilfe" id="hilfe">
+        <summary>So schreibst du das Markdown</summary>
+        <table>
+          <tr><td><code># Titel</code></td><td>Kopfzeile (Name, Klasse, Datum) und Überschrift</td></tr>
+          <tr><td><code>## Kapitel</code></td><td>nummeriertes Kapitel, <code>### …</code> Zwischentitel</td></tr>
+          <tr><td>normaler Text</td><td>Infotext mit Linie links</td></tr>
+          <tr><td><code>&gt; [!AUFTRAG] Titel</code></td><td>Warnungsblock; Inhalt in den folgenden <code>&gt;</code>-Zeilen</td></tr>
+          <tr><td>Blocknamen</td><td><code>AUFTRAG</code> <code>ALLTAG</code> <code>BEISPIEL</code> <code>UEBERBLICK</code> <code>AUFGABEN</code> <code>MATERIAL</code> <code>FORMEL</code> <code>HINWEIS</code> <code>CHECK</code> <code>PLAN</code> <code>LEGENDE</code> <code>INFO</code> <code>HTML</code>; GitHub-Namen: NOTE = Info, TIP = Beispiel, IMPORTANT = Überblick, WARNING = Auftrag, CAUTION = Hinweis. Jeder andere Name wird ein grauer Kasten mit diesem Namen.</td></tr>
+          <tr><td><code>[!INFO|2spaltig|zusammen]</code></td><td>Attribute: <code>2spaltig</code>, <code>zusammen</code> (nie trennen), <code>neue-seite</code>, <code>nr=2</code> (Lösungsblatt), <code>klasse=…</code>, <code>stil=…</code> (CSS). Bei Überschriften: <code>## Titel {neue-seite}</code></td></tr>
+          <tr><td><code>[[Antwort]]</code></td><td>Lücke, Breite mit <code>[[Antwort|30mm]]</code></td></tr>
+          <tr><td><code>1. Aufgabe …</code></td><td>in <code>[!AUFGABEN]</code>; eingerückte Zeile <code>Lösung: …</code> steht nur in der Lehrkraftfassung</td></tr>
+          <tr><td><code>[[linien 3]]</code> <code>[[karo 4]]</code></td><td>Schreibplatz auf dem Blatt (eigene Zeile)</td></tr>
+          <tr><td><code>|||</code></td><td>eigene Zeile: Spaltenumbruch (zwei Spalten)</td></tr>
+          <tr><td><code>---</code></td><td>Seitenumbruch</td></tr>
+          <tr><td><code>![Text|60%](bild.png)</code></td><td>Bild mit Breite; Bilddatei in das Textfeld ziehen bettet sie ein</td></tr>
+          <tr><td>HTML</td><td>Zeilen mit <code>&lt;div&gt;</code>, <code>&lt;table&gt;</code>, <code>&lt;svg&gt;</code>, <code>&lt;style&gt;</code> … bleiben erhalten</td></tr>
+        </table>
+      </details>
+      <div id="editor" hidden>
+        <div class="blattzeile">
+          <input class="feld" id="m-fach" placeholder="Fach · Thema (über dem Titel)" aria-label="Fach und Thema">
+          <input class="feld" id="m-fuss" placeholder="Fußzeile (sonst Titel)" aria-label="Fußzeile">
+          <label><input type="checkbox" id="m-kopf" checked> Name/Klasse</label>
+        </div>
+        <div class="palette" id="palette" aria-label="Bausteine – auf die Liste ziehen oder anklicken"></div>
+        <div class="liste" id="liste" aria-label="Blöcke des Blatts"></div>
+        <div class="panel" id="panel"></div>
+      </div>
+    </div>
+    <div class="vorschau" id="vorschau">
+      <iframe title="Vorschau" id="f0"></iframe>
+      <iframe title="Vorschau" id="f1" class="wartet"></iframe>
+    </div>
+  </div>
+</div>
+<script>
+'use strict';
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+const AB = window.Arbeitsblatt;
+const SPEICHER = 'mdblatt-text', ANSICHT = 'mdblatt-ansicht', FASSUNG = 'mdblatt-fassung';
+const ls = {get: k => { try { return localStorage.getItem(k); } catch (e) { return null; } },
+  set: (k, v) => { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } }};
+const FARBE = {titel: '#2e3440', kap: '#4c566a', h3: '#7b88a1', info: '#5e81ac', auftrag: '#c05a1c', alltag: '#a3be8c', beispiel: '#8fbcbb',
+  ueberblick: '#b48ead', aufgaben: '#d08770', material: '#ebcb8b', formel: '#81a1c1', hinweis: '#88c0d0', check: '#bf616a',
+  plan: '#7b88a1', legende: '#7b88a1', html: '#4c566a', seite: '#d8dee9', box: '#a3be8c'};
+const NAME = Object.fromEntries(AB.TYPEN.map(t => [t.typ, t.name]));
+const HILFE = {
+  aufgaben: 'Nummerierte Liste (1. 2. …). Eingerückte Zeile „Lösung: …“ steht nur in der Lehrkraftfassung, [[linien 3]] oder [[karo 4]] gibt Schreibplatz auf dem Blatt.',
+  ueberblick: 'Merkkasten mit Lücken [[Antwort]] – landet auf dem Lösungsblatt.',
+  html: 'Eigenes HTML, wird unverändert eingefügt (auch <style> für eigene Klassen).',
+  check: 'Text ist optional und steht hinter „Vergleiche jetzt …“.',
+  hinweis: 'Leer lassen für den Standardhinweis „Bearbeite alle Aufgaben auf einem eigenen Blockblatt …“.',
+  formel: 'Kasten für eine Formel, z. B. Eigenkapitalquote = [[Eigenkapital]] : Gesamtkapital · 100.',
+  plan: 'Tabelle aller Kapitel mit Seite und Lösungsblatt – wird automatisch erzeugt.',
+  legende: 'Erklärt die Kastenarten (Info, Alltag, Überblick, Aufgaben, Lösungsblatt).',
+  seite: 'Ab hier beginnt eine neue Seite.'
+};
+const BEISPIEL = `---
+fach: IT · Datenschutz
+fuss: Sichere Passwörter · Arbeitsblatt
+---
+
+# Sichere Passwörter
+
+> [!AUFTRAG]
+> Deine Oma hat ein neues Tablet und möchte für ihr E-Mail-Konto das Passwort **Oma1955** nehmen. Sie fragt dich, ob das eine gute Idee ist. Am Ende dieses Blatts schreibst du ihr eine kurze Nachricht mit drei Tipps.
+
+> [!HINWEIS]
+
+## Wie Passwörter geknackt werden
+
+Angreifer raten Passwörter selten von Hand. Ein Programm probiert in einer Sekunde Milliarden von Kombinationen aus. Zuerst kommen **Wörterbuchlisten** an die Reihe: häufige Passwörter wie \`123456\`, Namen, Geburtsjahre und Wörter aus dem Duden.
+
+Erst wenn das nicht klappt, folgt die **Brute-Force-Methode**: Das Programm probiert systematisch *alle* Zeichenfolgen durch. Jedes zusätzliche Zeichen vervielfacht die Zahl der Möglichkeiten.
+
+> [!ALLTAG] Das Fahrradschloss
+> Ein Zahlenschloss mit 3 Ringen hat 1.000 Kombinationen – wer Zeit hat, probiert sie in einer halben Stunde durch. Mit 5 Ringen sind es schon 100.000. Genauso wird ein Passwort mit jedem Zeichen sicherer.
+
+> [!UEBERBLICK] Angriffe auf Passwörter
+> Beim [[Wörterbuchangriff|38mm]] probiert ein Programm häufige Passwörter und echte Wörter aus.
+>
+> Beim [[Brute-Force-Angriff|38mm]] probiert es [[alle|18mm]] möglichen Zeichenfolgen durch.
+>
+> Jedes zusätzliche Zeichen [[vervielfacht|28mm]] die Zahl der Möglichkeiten.
+
+> [!AUFGABEN]
+> 1. Erkläre, warum *Oma1955* schnell geknackt wäre.
+>    Lösung: Es besteht aus einem Namen und einem Geburtsjahr. Beides steht in Wörterbuchlisten und wird zuerst ausprobiert.
+> 2. Berechne, wie viele vierstellige PINs aus den Ziffern 0 bis 9 es gibt.
+>    [[karo 2]]
+>    Lösung: 10 · 10 · 10 · 10 = 10.000 PINs
+
+> [!CHECK]
+
+## Ein gutes Passwort bauen
+
+> [!INFO|2spaltig]
+> Ein sicheres Passwort ist **lang** (mindestens 12 Zeichen) und steht in keinem Wörterbuch. Am leichtesten merkt man sich einen **Satz**, aus dem man die Anfangsbuchstaben nimmt.
+>
+> Für jedes Konto braucht man ein **eigenes** Passwort. Wird ein Dienst gehackt, probieren Angreifer die erbeuteten Passwörter sofort bei anderen Diensten aus.
+>
+> Ein **Passwortmanager** speichert alle Passwörter verschlüsselt. Man muss sich dann nur noch ein einziges, sehr gutes Masterpasswort merken.
+
+> [!BEISPIEL] Die Satzmethode
+> „Mein Hund Bello frisst jeden Morgen 2 Würstchen!“
+> |||
+> → **MHBfjM2W!** – 9 Zeichen mit Groß- und Kleinbuchstaben, Ziffer und Sonderzeichen.
+
+> [!MATERIAL] Passwörter im Test
+> | Passwort | Länge | sicher? |
+> |---|---|---|
+> | Oma1955 | 7 | [[nein]] |
+> | MHBfjM2W! | 9 | [[eher ja, aber noch recht kurz]] |
+> | Sonnenblume-Tisch-Kakao-17 | 26 | [[ja, lang und kein einzelnes Wort aus dem Wörterbuch]] |
+
+> [!AUFGABEN]
+> 1. Bilde mit der Satzmethode ein eigenes Passwort. Schreibe nur den Satz auf, nicht das Passwort.
+> 2. Schreibe deiner Oma eine kurze Nachricht mit drei Tipps für ein sicheres Passwort.
+>    [[linien 4]]
+>    Lösung: z. B. Nimm einen langen Satz und davon die Anfangsbuchstaben. Benutze für jedes Konto ein eigenes Passwort. Probier einen Passwortmanager aus.
+
+> [!CHECK]
+`;
+
+/* ---------- Zustand ---------- */
+let md = ls.get(SPEICHER);
+if (md == null) md = BEISPIEL;
+let doc = AB.lesen(md);
+let wahl = -1;
+let ansicht = ls.get(ANSICHT) === 'editor' ? 'editor' : 'md';
+const rueck = [], vor = [];
+let gruppe = null;
+
+const ta = $('#md');
+ta.value = md;
+$('#fassung').value = ['s', 'l', 'lb'].includes(ls.get(FASSUNG)) ? ls.get(FASSUNG) : 's';
+
+function meldung(t, warn){ const m = $('#meldung'); m.textContent = t || ''; m.classList.toggle('warn', !!warn); }
+function speichern(){
+  if (!ls.set(SPEICHER, md)) meldung('Das Blatt ist zu groß für den Browserspeicher (meist wegen eingebetteter Bilder). Speichere es als .md-Datei.', true);
+  window.TrainerSync && TrainerSync.changed();
+}
+function schnappschuss(g){
+  if (g && g === gruppe) return;
+  rueck.push(md); if (rueck.length > 200) rueck.shift();
+  vor.length = 0; gruppe = g || null;
+}
+/* Änderung im Markdown-Text */
+function ausText(){
+  schnappschuss('text');
+  md = ta.value; doc = AB.lesen(md);
+  if (wahl >= doc.bloecke.length) wahl = -1;
+  speichern(); vorschauBald();
+}
+/* Änderung über den Editor: doc ist die Quelle, Markdown wird daraus geschrieben */
+function aendern(fn, g, ohnePanel){
+  schnappschuss(g || ('e' + Math.random()));
+  fn();
+  md = AB.schreiben(doc); ta.value = md;
+  speichern(); liste(); if (!ohnePanel) panel(); vorschauBald();
+}
+function laden(neu, merken){
+  if (merken !== false) schnappschuss();
+  md = neu; ta.value = md; doc = AB.lesen(md); wahl = -1;
+  speichern(); alles();
+}
+function zurueck(von, nach){
+  if (!von.length) return;
+  nach.push(md);
+  md = von.pop(); ta.value = md; doc = AB.lesen(md); gruppe = null;
+  if (wahl >= doc.bloecke.length) wahl = -1;
+  speichern(); alles();
+}
+function alles(){ meta(); liste(); panel(); vorschauBald(); }
+
+/* ---------- Ansicht ---------- */
+function zeigeAnsicht(a){
+  ansicht = a; ls.set(ANSICHT, a);
+  document.querySelectorAll('[data-ansicht]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.ansicht === a)));
+  $('#md').hidden = a !== 'md'; $('#hilfe').hidden = a !== 'md'; $('#editor').hidden = a !== 'editor';
+  if (a === 'editor') { doc = AB.lesen(md); if (wahl >= doc.bloecke.length) wahl = -1; alles(); }
+}
+document.querySelectorAll('[data-ansicht]').forEach(b => b.onclick = () => zeigeAnsicht(b.dataset.ansicht));
+
+/* ---------- Blatt-Einstellungen ---------- */
+function meta(){
+  const m = doc.meta || {};
+  $('#m-fach').value = m.fach || ''; $('#m-fuss').value = m.fuss || '';
+  $('#m-kopf').checked = (m.kopf || '').toLowerCase() !== 'nein';
+}
+$('#m-fach').oninput = e => aendern(() => { doc.meta.fach = e.target.value; }, 'fach', true);
+$('#m-fuss').oninput = e => aendern(() => { doc.meta.fuss = e.target.value; }, 'fuss', true);
+$('#m-kopf').onchange = e => aendern(() => { if (e.target.checked) delete doc.meta.kopf; else doc.meta.kopf = 'nein'; }, null, true);
+
+/* ---------- Palette und Liste (Ziehen und Ablegen) ---------- */
+const pal = $('#palette');
+AB.TYPEN.forEach(t => {
+  const c = document.createElement('span');
+  c.className = 'chip'; c.textContent = t.name; c.draggable = true; c.tabIndex = 0;
+  c.style.setProperty('--f', FARBE[t.typ]);
+  c.title = 'Auf die Liste ziehen oder anklicken (kommt hinter den markierten Block)';
+  c.ondragstart = e => { e.dataTransfer.setData('text/x-blatt-typ', t.typ); e.dataTransfer.effectAllowed = 'copy'; };
+  const neu = () => einfuegen(t.typ, wahl >= 0 ? wahl + 1 : doc.bloecke.length);
+  c.onclick = neu;
+  c.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); neu(); } };
+  pal.appendChild(c);
+});
+function einfuegen(typ, pos){
+  const b = AB.leer(typ);
+  if (typ === 'aufgaben') b.text = '1. Neue Aufgabe\n   Lösung: …';
+  else if (typ === 'ueberblick') b.text = 'Ein Satz mit [[Lücke]].';
+  else if (['info', 'alltag', 'beispiel', 'auftrag', 'material', 'box'].includes(typ)) b.text = 'Text';
+  else if (typ === 'html') b.text = '<div style="border:1pt solid #000;padding:2mm">Eigenes HTML</div>';
+  else if (typ === 'formel') b.text = 'Ergebnis = [[A]] · [[B]]';
+  else if (['titel', 'kap', 'h3'].includes(typ)) b.titel = NAME[typ];
+  aendern(() => { doc.bloecke.splice(pos, 0, b); wahl = pos; });
+  zeigeVorschau(true);
+}
+
+function kurz(b){
+  if (b.typ === 'seite') return '— neue Seite —';
+  const t = b.titel || (b.text || '').split('\n').find(l => l.trim()) || '';
+  return t.replace(/\[\[([^\]|]*)(\|[^\]]*)?\]\]/g, '[$1]').replace(/[*_`>#]/g, '').trim() || '(leer)';
+}
+const liste_ = $('#liste');
+let zieh = null;   // Index der gezogenen Karte
+function liste(){
+  if (ansicht !== 'editor') return;
+  liste_.innerHTML = '';
+  doc.bloecke.forEach((b, i) => {
+    const k = document.createElement('div');
+    k.className = 'karte ' + b.typ + (i === wahl ? ' gewaehlt' : '');
+    k.style.setProperty('--f', FARBE[b.typ] || '#888');
+    k.draggable = true; k.dataset.i = i; k.tabIndex = 0;
+    const attr = AB.attrText(b.attr);
+    k.innerHTML = `<span class="griff" aria-hidden="true">⠿</span><span class="ktyp">${esc(b.typ === 'box' ? b.name || 'Kasten' : NAME[b.typ])}</span>` +
+      `<span class="ktext">${esc(kurz(b))}</span>${attr ? `<span class="kattr" title="${esc(attr)}">{${esc(attr.length > 14 ? attr.slice(0, 13) + '…' : attr)}}</span>` : ''}` +
+      `<button class="mini" data-tun="hoch" title="nach oben" type="button">↑</button><button class="mini" data-tun="runter" title="nach unten" type="button">↓</button>` +
+      `<button class="mini" data-tun="kopie" title="duplizieren" type="button">⧉</button><button class="mini" data-tun="weg" title="löschen" type="button">✕</button>`;
+    k.onclick = e => {
+      const tun = e.target.dataset && e.target.dataset.tun;
+      if (tun) return aktion(tun, i);
+      waehle(i, true);
+    };
+    k.onkeydown = e => {
+      if (e.target !== k) return;
+      if (e.key === 'ArrowUp' && e.altKey) { e.preventDefault(); aktion('hoch', i); }
+      else if (e.key === 'ArrowDown' && e.altKey) { e.preventDefault(); aktion('runter', i); }
+      else if (e.key === 'ArrowUp' && i > 0) { e.preventDefault(); waehle(i - 1, true); fokusKarte(); }
+      else if (e.key === 'ArrowDown' && i + 1 < doc.bloecke.length) { e.preventDefault(); waehle(i + 1, true); fokusKarte(); }
+      else if (e.key === 'Delete') { e.preventDefault(); aktion('weg', i); fokusKarte(); }
+      else if (e.key === 'Enter') { e.preventDefault(); const f = $('#panel input.feld, #panel textarea'); f && f.focus(); }
+    };
+    k.ondragstart = e => { zieh = i; k.classList.add('zieht'); e.dataTransfer.setData('text/x-blatt-karte', String(i)); e.dataTransfer.effectAllowed = 'move'; };
+    k.ondragend = () => { zieh = null; k.classList.remove('zieht'); markiere(null); };
+    liste_.appendChild(k);
+  });
+  if (!doc.bloecke.length) liste_.innerHTML = '<p class="klein" style="margin:8px;color:var(--muted)">Noch leer: Bausteine von oben hierher ziehen.</p>';
+}
+function fokusKarte(){ const k = liste_.querySelector('.karte.gewaehlt'); k && k.focus(); }
+function zielIndex(e){
+  const karten = [...liste_.querySelectorAll('.karte')];
+  for (const k of karten) { const r = k.getBoundingClientRect(); if (e.clientY < r.top + r.height / 2) return {pos: +k.dataset.i, k, vor: true}; }
+  return {pos: karten.length, k: karten[karten.length - 1], vor: false};
+}
+function markiere(z){
+  liste_.querySelectorAll('.vor,.nach').forEach(x => x.classList.remove('vor', 'nach'));
+  if (z && z.k) z.k.classList.add(z.vor ? 'vor' : 'nach');
+}
+const istBlattZug = e => [...e.dataTransfer.types].some(t => t === 'text/x-blatt-typ' || t === 'text/x-blatt-karte');
+liste_.addEventListener('dragover', e => { if (!istBlattZug(e)) return; e.preventDefault(); markiere(zielIndex(e)); });
+liste_.addEventListener('dragleave', e => { if (!liste_.contains(e.relatedTarget)) markiere(null); });
+liste_.addEventListener('drop', e => {
+  if (!istBlattZug(e)) return;
+  e.preventDefault(); e.stopPropagation();
+  const {pos} = zielIndex(e); markiere(null);
+  const typ = e.dataTransfer.getData('text/x-blatt-typ');
+  if (typ) return einfuegen(typ, pos);
+  const von = +e.dataTransfer.getData('text/x-blatt-karte');
+  if (Number.isNaN(von) || von === pos || von + 1 === pos) return;
+  aendern(() => { const [b] = doc.bloecke.splice(von, 1); const ziel = pos > von ? pos - 1 : pos; doc.bloecke.splice(ziel, 0, b); wahl = ziel; });
+});
+function aktion(tun, i){
+  const n = doc.bloecke.length;
+  if (tun === 'hoch' && i > 0) aendern(() => { doc.bloecke.splice(i - 1, 0, doc.bloecke.splice(i, 1)[0]); wahl = i - 1; });
+  else if (tun === 'runter' && i < n - 1) aendern(() => { doc.bloecke.splice(i + 1, 0, doc.bloecke.splice(i, 1)[0]); wahl = i + 1; });
+  else if (tun === 'kopie') aendern(() => { doc.bloecke.splice(i + 1, 0, JSON.parse(JSON.stringify(doc.bloecke[i]))); wahl = i + 1; });
+  else if (tun === 'weg') aendern(() => { doc.bloecke.splice(i, 1); wahl = Math.min(i, doc.bloecke.length - 1); });
+}
+function waehle(i, scroll){
+  wahl = i;
+  liste_.querySelectorAll('.karte').forEach(k => k.classList.toggle('gewaehlt', +k.dataset.i === i));
+  const k = liste_.querySelector('.karte.gewaehlt'); k && k.scrollIntoView({block: 'nearest'});
+  panel(); zeigeVorschau(scroll);
+}
+
+/* ---------- Eigenschaften des gewählten Blocks ---------- */
+function panel(){
+  const p = $('#panel');
+  if (ansicht !== 'editor') return;
+  const b = doc.bloecke[wahl];
+  if (!b) { p.innerHTML = '<p class="klein">Block in der Liste oder in der Vorschau anklicken, um ihn zu bearbeiten. Neue Blöcke aus der Leiste oben auf die Liste ziehen.</p>'; return; }
+  b.attr = b.attr || {};
+  const a = b.attr;
+  const typen = AB.TYPEN.map(t => `<option value="${t.typ}"${t.typ === b.typ ? ' selected' : ''}>${esc(t.name)}</option>`).join('') +
+    `<option value="box"${b.typ === 'box' ? ' selected' : ''}>Eigener Kasten</option>`;
+  const mitInhalt = !AB.OHNE_INHALT.includes(b.typ);
+  const ohneAttr = b.typ === 'seite';
+  p.innerHTML = `
+    <div class="reihe"><h3>Block ${wahl + 1}</h3><span class="spacer" style="flex:1"></span>
+      <button class="btn" data-tun="kopie" type="button">Duplizieren</button><button class="btn" data-tun="weg" type="button">Löschen</button></div>
+    <label class="z">Typ <select class="feld" id="p-typ">${typen}</select></label>
+    ${b.typ === 'box' ? `<label class="z">Name des Kastens (steht oben im Kasten) <input class="feld" id="p-name" value="${esc(b.name)}"></label>` : ''}
+    ${AB.MIT_TITEL.includes(b.typ) ? `<label class="z">${['titel', 'kap', 'h3'].includes(b.typ) ? 'Text' : 'Titel (optional)'} <input class="feld" id="p-titel" value="${esc(b.titel)}"></label>` : ''}
+    ${mitInhalt ? `<label class="z">${b.typ === 'html' ? 'HTML' : 'Inhalt (Markdown)'}
+      <textarea class="inhalt" id="p-text" spellcheck="${b.typ !== 'html'}">${esc(b.text)}</textarea></label>
+      ${b.typ !== 'html' ? `<div class="reihe klein">Einfügen:
+        <button class="btn" data-ein="[[Antwort]]" type="button">Lücke</button>
+        <button class="btn" data-ein="\n[[linien 3]]\n" type="button">Linien</button>
+        <button class="btn" data-ein="\n[[karo 4]]\n" type="button">Karo</button>
+        <button class="btn" data-ein="\n|||\n" type="button">Spaltenumbruch</button>
+        <button class="btn" data-ein="\n| A | B |\n|---|---|\n| [[x]] | [[y]] |\n" type="button">Tabelle</button>
+        <button class="btn" data-bild type="button">Bild</button></div>` : ''}` : ''}
+    ${HILFE[b.typ] ? `<div class="klein">${esc(HILFE[b.typ])}</div>` : ''}
+    ${ohneAttr ? '' : `<div class="reihe">
+      ${['titel', 'kap', 'h3'].includes(b.typ) ? '' : `<label><input type="checkbox" id="p-spalten"${a.spalten ? ' checked' : ''}> 2 Spalten</label>`}
+      <label title="Block nie auf zwei Seiten verteilen"><input type="checkbox" id="p-zusammen"${a.zusammen ? ' checked' : ''}> zusammenhalten</label>
+      <label><input type="checkbox" id="p-seite"${a.seite ? ' checked' : ''}> neue Seite davor</label></div>
+      ${AB.MIT_NR.includes(b.typ) ? `<label class="z">Lösungsblatt-Nummer (leer = Kapitelnummer) <input class="feld" id="p-nr" value="${esc(a.nr || '')}" inputmode="numeric" style="max-width:120px"></label>` : ''}
+      <label class="z">CSS-Klasse <input class="feld" id="p-klasse" value="${esc(a.klasse || '')}" placeholder="z. B. klein (eigene Klassen in einem HTML-Block mit &lt;style&gt;)"></label>
+      <label class="z">Stil (CSS) <input class="feld" id="p-stil" value="${esc(a.stil || '')}" placeholder="z. B. margin-top:6mm; font-size:9pt"></label>`}`;
+  const feld = (id, fn) => { const el = p.querySelector(id); if (el) el.oninput = () => aendern(() => fn(el), 'p' + id + wahl, true); };
+  feld('#p-titel', el => { b.titel = el.value; });
+  feld('#p-name', el => { b.name = el.value; });
+  feld('#p-text', el => { b.text = el.value; });
+  feld('#p-nr', el => { a.nr = el.value.trim(); });
+  feld('#p-klasse', el => { a.klasse = el.value.trim(); });
+  feld('#p-stil', el => { a.stil = el.value.trim(); });
+  ['spalten', 'zusammen', 'seite'].forEach(k => { const el = p.querySelector('#p-' + k); if (el) el.onchange = () => aendern(() => { a[k] = el.checked; }, null, true); });
+  p.querySelector('#p-typ').onchange = e => aendern(() => {
+    b.typ = e.target.value;
+    if (b.typ === 'box' && !b.name) b.name = 'Kasten';
+    if (b.typ !== 'box') b.name = '';
+  });
+  p.querySelectorAll('[data-tun]').forEach(x => x.onclick = () => aktion(x.dataset.tun, wahl));
+  const text = p.querySelector('#p-text');
+  p.querySelectorAll('[data-ein]').forEach(x => x.onclick = () => einsetzen(text, x.dataset.ein));
+  const bildKnopf = p.querySelector('[data-bild]');
+  if (bildKnopf) bildKnopf.onclick = () => { bildZiel = text; $('#bilddatei').click(); };
+  if (text) bilderAblegen(text);
+}
+function einsetzen(feld, s){
+  const a = feld.selectionStart, e = feld.selectionEnd;
+  const wahlText = feld.value.slice(a, e);
+  if (s === '[[Antwort]]' && wahlText) s = '[[' + wahlText + ']]';
+  feld.setRangeText(s, a, e, 'end');
+  feld.focus();
+  feld.dispatchEvent(new Event('input'));
+}
+
+/* ---------- Bilder einbetten ---------- */
+const bildEingabe = Object.assign(document.createElement('input'), {type: 'file', accept: 'image/*', id: 'bilddatei', hidden: true});
+document.body.appendChild(bildEingabe);
+let bildZiel = null;
+function bildLesen(datei, feld){
+  const r = new FileReader();
+  r.onload = () => einsetzen(feld, `\n![${datei.name.replace(/\.[^.]+$/, '').replace(/[[\]|]/g, '')}|60%](${r.result})\n`);
+  r.readAsDataURL(datei);
+}
+bildEingabe.onchange = () => { const d = bildEingabe.files[0]; if (d && bildZiel) bildLesen(d, bildZiel); bildEingabe.value = ''; };
+function bilderAblegen(feld){
+  feld.addEventListener('dragover', e => { if ([...e.dataTransfer.types].includes('Files')) { e.preventDefault(); e.stopPropagation(); feld.classList.add('drueber'); } });
+  feld.addEventListener('dragleave', () => feld.classList.remove('drueber'));
+  feld.addEventListener('drop', e => {
+    feld.classList.remove('drueber');
+    const d = [...e.dataTransfer.files];
+    if (!d.length) return;
+    e.preventDefault(); e.stopPropagation();
+    d.forEach(f => {
+      if (/^image\//.test(f.type)) bildLesen(f, feld);
+      else if (feld === ta) dateiOeffnen(f);
+    });
+  });
+}
+bilderAblegen(ta);
+
+/* ---------- Vorschau (zwei Rahmen: der neue wird im Hintergrund umbrochen, dann getauscht) ---------- */
+const rahmen = [$('#f0'), $('#f1')];
+let aktiv = 0, warteY = 0, timer = null, letzte = '';
+function zoomFaktor(){ const w = $('#vorschau').clientWidth; return Math.max(0.3, Math.min(1, (w - 24) / 812)); }
+function vorschauBald(){ clearTimeout(timer); timer = setTimeout(vorschau, 220); }
+function vorschau(){
+  const modus = $('#fassung').value;
+  const html = AB.seite(doc, modus, {vorschau: true, zoom: +zoomFaktor().toFixed(3)});
+  if (html === letzte) return;
+  letzte = html;
+  const neu = rahmen[1 - aktiv];
+  try { warteY = rahmen[aktiv].contentWindow.scrollY || 0; } catch (e) { warteY = 0; }
+  neu.srcdoc = html;
+}
+window.addEventListener('message', e => {
+  const d = e.data || {};
+  if (d.blatt === 'fertig' && e.source === rahmen[1 - aktiv].contentWindow) {
+    const neu = rahmen[1 - aktiv];
+    neu.contentWindow.scrollTo(0, warteY);
+    neu.classList.remove('wartet'); rahmen[aktiv].classList.add('wartet');
+    aktiv = 1 - aktiv;
+    zeigeVorschau(false);
+    const gross = (d.zuGross || []).map(i => doc.bloecke[i] ? `Block ${i + 1} (${NAME[doc.bloecke[i].typ] || doc.bloecke[i].name})` : '').filter(Boolean);
+    meldung(`${d.seiten} ${d.seiten === 1 ? 'Seite' : 'Seiten'}` + (gross.length ? ` · passt nicht auf eine Seite und wird abgeschnitten: ${gross.join(', ')}` : '') + relativeBilder(), gross.length > 0);
+  } else if (d.blatt === 'wahl' && e.source === rahmen[aktiv].contentWindow) {
+    if (ansicht !== 'editor') zeigeAnsicht('editor');
+    waehle(d.i, false);
+    const f = $('#p-text') || $('#p-titel'); f && f.focus({preventScroll: true});
+  }
+});
+function relativeBilder(){
+  return /!\[[^\]]*\]\((?!data:|https?:)[^)]+\)/.test(md) ? ' · Bilder mit Dateipfad fehlen in der Vorschau: Bilddatei ins Textfeld ziehen, dann wird sie eingebettet.' : '';
+}
+function zeigeVorschau(scroll){
+  try { rahmen[aktiv].contentWindow.postMessage({blatt: 'zeige', i: ansicht === 'editor' ? wahl : -1, scroll}, '*'); } catch (e) {}
+}
+$('#fassung').onchange = e => { ls.set(FASSUNG, e.target.value); vorschau(); };
+let rt = null;
+window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { letzte = ''; vorschau(); }, 250); });
+
+/* ---------- Dateien ---------- */
+function dateiname(){
+  const t = (doc.bloecke.find(b => b.typ === 'titel') || {}).titel || 'Arbeitsblatt';
+  return t.replace(/[^\wäöüÄÖÜß -]+/g, '').trim().replace(/\s+/g, '_') || 'Arbeitsblatt';
+}
+function herunterladen(text, name, typ){
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], {type: typ}));
+  a.download = name; document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+}
+function dateiOeffnen(f){
+  const r = new FileReader();
+  r.onload = () => { laden(String(r.result)); meldung('Geöffnet: ' + f.name + relativeBilder()); };
+  r.readAsText(f, 'utf-8');
+}
+$('#oeffnen').onclick = () => $('#datei').click();
+$('#datei').onchange = e => { const f = e.target.files[0]; if (f) dateiOeffnen(f); e.target.value = ''; };
+$('#beispiel').onclick = () => laden(BEISPIEL);
+$('#neu').onclick = () => laden('# Neues Arbeitsblatt\n\n> [!AUFTRAG]\n> Worum geht es?\n\n## Erstes Kapitel\n\nText\n\n> [!AUFGABEN]\n> 1. Erste Aufgabe\n>    Lösung: …\n');
+$('#alsMd').onclick = () => herunterladen(md, dateiname() + '.md', 'text/markdown;charset=utf-8');
+$('#alsHtml').onclick = () => {
+  const m = $('#fassung').value;
+  herunterladen(AB.seite(doc, m), dateiname() + '_' + {s: 'Schueler', l: 'Lehrkraft', lb: 'Loesungsblaetter'}[m] + '.html', 'text/html;charset=utf-8');
+};
+$('#drucken').onclick = () => {
+  const w = rahmen[aktiv].contentWindow;
+  w.postMessage({blatt: 'zeige', i: -1}, '*');
+  setTimeout(() => w.print(), 50);
+};
+$('#rueck').onclick = () => zurueck(rueck, vor);
+$('#vor').onclick = () => zurueck(vor, rueck);
+document.addEventListener('keydown', e => {
+  if (!(e.ctrlKey || e.metaKey) || e.target === ta) return;
+  if (e.key.toLowerCase() === 'z' && !e.shiftKey) { if (e.target.matches('input,textarea')) return; e.preventDefault(); zurueck(rueck, vor); }
+  else if (e.key.toLowerCase() === 'y' || (e.key.toLowerCase() === 'z' && e.shiftKey)) { if (e.target.matches('input,textarea')) return; e.preventDefault(); zurueck(vor, rueck); }
+});
+ta.addEventListener('input', ausText);
+ta.addEventListener('keydown', e => {   // Tab rückt ein statt den Fokus zu wechseln
+  if (e.key !== 'Tab' || e.ctrlKey || e.altKey) return;
+  e.preventDefault(); ta.setRangeText('  ', ta.selectionStart, ta.selectionEnd, 'end'); ausText();
+});
+// Markdown-Datei irgendwo auf die Seite ziehen
+let tiefe = 0;
+const hatDatei = e => [...e.dataTransfer.types].includes('Files');
+document.addEventListener('dragenter', e => { if (hatDatei(e)) { tiefe++; document.body.classList.add('datei-drueber'); } });
+document.addEventListener('dragleave', e => { if (hatDatei(e) && --tiefe <= 0) { tiefe = 0; document.body.classList.remove('datei-drueber'); } });
+document.addEventListener('dragover', e => { if (hatDatei(e)) e.preventDefault(); });
+document.addEventListener('drop', e => {
+  tiefe = 0; document.body.classList.remove('datei-drueber');
+  if (!hatDatei(e)) return;
+  e.preventDefault();
+  const f = [...e.dataTransfer.files].find(f => /\.(md|markdown|txt)$/i.test(f.name) || /^text\//.test(f.type));
+  if (f) dateiOeffnen(f); else meldung('Bitte eine Markdown-Datei (.md) ablegen. Bilder ins Textfeld ziehen.', true);
+});
+// beim Ablegen auf Feldern greifen deren eigene Handler (stopPropagation); body-Hinweis trotzdem entfernen
+['drop', 'dragend'].forEach(t => document.addEventListener(t, () => { tiefe = 0; document.body.classList.remove('datei-drueber'); }, true));
+
+zeigeAnsicht(ansicht);
+vorschau();
+</script>
+</body>
+</html>
