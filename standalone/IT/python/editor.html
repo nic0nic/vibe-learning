@@ -3342,7 +3342,7 @@ dialog.km-dialog::backdrop{background:rgba(20,24,32,.55)}
 .kd-kopf{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:10px 14px;background:var(--panel);border-bottom:1px solid var(--border)}
 .kd-titel{font:800 18px system-ui,sans-serif;margin-right:6px}
 .kd-haupt{flex:1;min-height:0;display:grid;grid-template-columns:minmax(240px,32%) 1fr;grid-template-rows:1fr minmax(110px,26%);gap:12px;padding:12px}
-.kd-code{grid-row:1;margin:0;overflow:auto;background:var(--ed-bg);border:1px solid var(--border);border-radius:12px;padding:8px 0;font:clamp(13px,1.15vw,18px)/1.55 var(--mono)}
+.kd-code{grid-row:1;margin:0;overflow:auto;background:var(--ed-bg);color:var(--text);border:1px solid var(--border);border-radius:12px;padding:8px 0;font:clamp(13px,1.15vw,18px)/1.55 var(--mono)}
 .kd-code div{padding:0 12px 0 0;white-space:pre}
 .kd-code i{display:inline-block;width:3.2em;padding-right:.8em;text-align:right;color:var(--gutter-text);font-style:normal;user-select:none}
 .kd-code .step-naechste i,.kd-code .step-aktiv i{color:var(--accent);font-weight:800}
@@ -3427,7 +3427,7 @@ dialog.km-dialog::backdrop{background:rgba(20,24,32,.55)}
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
   </div>
   <div class="kd-haupt">
-    <div class="kd-code" id="kdCode" aria-label="Programm"></div>
+    <div class="kd-code cm-s-default" id="kdCode" aria-label="Programm"></div>
     <div class="kd-rechts">
       <div class="kd-legende"><span><b class="lp">Post-it</b>Name der Variable</span><span><b class="lt">Tafel</b>Wert, klein darunter der Datentyp</span><span>Klick auf eine Schublade: auf/zu</span></div>
       <div id="kdPlatz"></div>
@@ -3690,13 +3690,23 @@ const dlg = $('#kmDialog');
 function renderCode(){
   const box = $('#kdCode');
   box.textContent = '';
-  ed.getValue().split('\n').forEach((z, i) => {
+  // Farben wie im Editor: dieselben Tokens und cm-Klassen (Regeln unter .cm-s-default)
+  for (let i = 0; i < ed.lineCount(); i++){
     const d = document.createElement('div');
     const n = document.createElement('i'); n.textContent = i + 1;
-    d.append(n, z || ' ');
+    d.appendChild(n);
+    const tokens = ed.getLineTokens(i, true);
+    if (!tokens.length) d.append(' ');
+    tokens.forEach(t => {
+      if (!t.type){ d.append(t.string); return; }
+      const sp = document.createElement('span');
+      sp.className = t.type.split(' ').map(c => 'cm-' + c).join(' ');
+      sp.textContent = t.string;
+      d.appendChild(sp);
+    });
     if (mark && mark.nr === i + 1) d.className = 'step-' + mark.art;
     box.appendChild(d);
-  });
+  }
   const m = box.querySelector('.step-naechste,.step-aktiv');
   if (m) m.scrollIntoView({block: 'nearest'});
 }
