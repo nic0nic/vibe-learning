@@ -548,6 +548,8 @@ kommode.js – Variablenmodell „Kommode“ für Python (Skulpt), Bereich IT/py
     Variable anlegen    → Post-it auf eine leere Schublade, Tafel hineinlegen und beschreiben
     neuer Wert          → Tafel putzen und neu beschreiben
     Variable verwenden  → Schublade auf, auf die Tafel schauen (Auge)
+  Die Schubladen sind zu; sie fahren nur zum Lesen/Schreiben auf. Ein Klick auf eine Schublade
+  öffnet sie (Tafel stellt sich auf), ein zweiter schließt sie wieder.
 
   Einbinden (nach skulpt.min.js):
     <link rel="stylesheet" href="lib/kommode.css">

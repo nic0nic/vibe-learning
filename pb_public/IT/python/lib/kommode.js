@@ -6,6 +6,8 @@
     Variable anlegen    → Post-it auf eine leere Schublade, Tafel hineinlegen und beschreiben
     neuer Wert          → Tafel putzen und neu beschreiben
     Variable verwenden  → Schublade auf, auf die Tafel schauen (Auge)
+  Die Schubladen sind zu; sie fahren nur zum Lesen/Schreiben auf. Ein Klick auf eine Schublade
+  öffnet sie (Tafel stellt sich auf), ein zweiter schließt sie wieder.
 
   Einbinden (nach skulpt.min.js):
     <link rel="stylesheet" href="lib/kommode.css">
@@ -177,6 +179,8 @@
   }
 
   /* ---------- Ansicht ---------- */
+  // Schubladen sind zu. Zum Lesen/Schreiben fährt die Schublade auf, die Tafel stellt sich auf,
+  // danach wird sie wieder hingelegt und die Schublade geschlossen. Klick auf eine Schublade: auf/zu.
   const AUGE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M1.5 12S5.5 4.5 12 4.5 22.5 12 22.5 12 18.5 19.5 12 19.5 1.5 12 1.5 12z" fill="#fff" stroke="#2e3440" stroke-width="1.6"/><circle cx="12" cy="12" r="4.2" fill="#4f73a3"/><circle cx="12" cy="12" r="2" fill="#1d232c"/><circle cx="13.3" cy="10.7" r=".9" fill="#fff"/></svg>';
   const MIN_LADEN = 4;
   const ruhe = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -185,38 +189,102 @@
 
   function erzeugen(eltern) {
     const el = h('div', 'kommode');
-    el.innerHTML = '<div class="km-platte"></div><div class="km-korpus"><div class="km-laden"></div></div>' +
-      '<div class="km-fuesse"><span></span><span></span></div><div class="km-info" aria-live="polite"></div>';
+    el.innerHTML = '<div class="km-moebel"><div class="km-platte"></div><div class="km-korpus"><div class="km-laden"></div></div>' +
+      '<div class="km-sockel"></div><div class="km-fuesse"><span></span><span></span></div></div>' +
+      '<div class="km-info" aria-live="polite"></div>';
     const ladenEl = el.querySelector('.km-laden'), infoEl = el.querySelector('.km-info');
     const belegt = new Map();          // name → Schublade
-    const k = {el, tempo: 1};
-    const dauer = ms => Math.round(ms / Math.max(.25, k.tempo) * (ruhe ? .3 : 1));
+    let tempo = 1;
+    const faktor = () => (ruhe ? .3 : 1) / Math.max(.25, tempo);
+    const k = {
+      el,
+      get tempo() { return tempo; },
+      set tempo(v) { tempo = +v || 1; el.style.setProperty('--t', faktor()); }
+    };
+    k.tempo = 1;
+    const dauer = ms => Math.round(ms * faktor());
     const anim = (e, frames, ms, opt) => e.animate(frames, Object.assign({duration: dauer(ms), easing: 'ease-in-out'}, opt)).finished.catch(() => {});
 
-    function neueLade() {
+    function teile(l) { return {tafel: l.querySelector('.km-tafel'), wert: l.querySelector('.km-wert'), typ: l.querySelector('.km-typ'), postit: l.querySelector('.km-postit')}; }
+    function aria(l) {
+      const n = teile(l).postit.textContent, auf = l.classList.contains('offen');
+      l.setAttribute('aria-expanded', auf);
+      l.setAttribute('aria-label', (n ? `Schublade „${n}“` : 'Leere Schublade') + (auf ? ' schließen' : ' öffnen'));
+      l.title = auf ? 'Klicken: Schublade schließen' : 'Klicken: Schublade öffnen';
+    }
+    function neueLade(sanft) {
       const l = h('div', 'km-lade leer',
-        '<div class="km-innen"><div class="km-tafel"><span class="km-wert"></span><span class="km-typ"></span></div></div>' +
-        '<div class="km-front"><span class="km-postit"></span><span class="km-knauf"></span></div>' +
-        '<span class="km-auge">' + AUGE + '</span>');
+        '<div class="km-schub"><div class="km-innen"><div class="km-boden"></div>' +
+        '<div class="km-tafel"><span class="km-wert"></span><span class="km-typ"></span><span class="km-auge">' + AUGE + '</span></div></div>' +
+        '<div class="km-front"><span class="km-postit"></span><span class="km-knauf"></span></div></div>');
+      l.tabIndex = 0;
+      l.setAttribute('role', 'button');
+      l.style.setProperty('--mx', (ladenEl.children.length * 7.3 % 24) + 'em');   // Maserung je Schublade verschieden
+      l.addEventListener('click', () => umschalten(l));
+      l.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); umschalten(l); } });
       ladenEl.appendChild(l);
+      aria(l);
+      if (sanft) anim(l, [{opacity: 0, transform: 'translateY(.8em) scale(.94)'}, {opacity: 1, transform: 'none'}], 500, {easing: 'ease-out'});
       return l;
     }
-    function teile(l) { return {tafel: l.querySelector('.km-tafel'), wert: l.querySelector('.km-wert'), typ: l.querySelector('.km-typ'), postit: l.querySelector('.km-postit')}; }
     function beschrifte(l, name, w) {
       const t = teile(l);
-      if (name != null) { t.postit.textContent = name; t.postit.title = 'Variable ' + name; }
-      t.wert.textContent = w.text; t.wert.title = w.text;
-      t.typ.textContent = w.typ;
+      if (name != null) t.postit.textContent = name;
+      t.wert.textContent = w ? w.text : ''; t.wert.title = w ? w.text : '';
+      t.typ.textContent = w ? w.typ : '';
+      aria(l);
     }
-    function freieLade() {
-      let l = ladenEl.querySelector('.km-lade.leer');
-      if (!l) l = neueLade();
-      return l;
-    }
+    function freieLade() { return ladenEl.querySelector('.km-lade.leer') || neueLade(true); }
     function auffuellen(sanft) {
-      const n = ladenEl.children.length, frei = ladenEl.querySelectorAll('.km-lade.leer').length;
-      for (let i = n; i < MIN_LADEN; i++) neueLade();
-      if (n >= MIN_LADEN && !frei) { const l = neueLade(); if (sanft) anim(l, [{opacity: 0, transform: 'translateY(.6em)'}, {opacity: 1, transform: 'none'}], 400); }
+      for (let i = ladenEl.children.length; i < MIN_LADEN; i++) neueLade();
+      if (!ladenEl.querySelector('.km-lade.leer')) neueLade(sanft);
+    }
+
+    // Bewegungen (Dauer passend zu den Übergängen in kommode.css, skaliert mit --t)
+    async function oeffnen(l) {
+      if (l.classList.contains('offen')) return;
+      l.classList.add('offen'); aria(l);
+      await pause(dauer(620));
+    }
+    async function schliessen(l) {
+      if (!l.classList.contains('offen')) return;
+      l.classList.remove('offen', 'steht', 'frei'); aria(l);
+      await pause(dauer(480));
+    }
+    async function heben(l, an) {
+      if (l.classList.contains('steht') === an) return;
+      l.classList.add('frei');             // beim Hinlegen erst danach wieder abschneiden
+      l.classList.toggle('steht', an);
+      await pause(dauer(an ? 480 : 380));
+      l.classList.remove('frei');
+    }
+    async function umschalten(l) {
+      if (l._arbeit) return;
+      l._arbeit = true;
+      if (l.classList.contains('offen')) {
+        delete l.dataset.manuell;
+        await heben(l, false);
+        await schliessen(l);
+      } else {
+        l.dataset.manuell = '1';
+        await oeffnen(l);
+        if (!l.classList.contains('leer')) await heben(l, true);
+      }
+      l._arbeit = false;
+    }
+    // vor einer Bewegung des Programms: Schublade auf, Tafel aufstellen
+    async function ran(laden) {
+      laden.forEach(l => { l._arbeit = true; });
+      laden[0].scrollIntoView({block: 'nearest', behavior: 'smooth'});
+      await Promise.all(laden.map(oeffnen));
+      await Promise.all(laden.map(l => heben(l, true)));
+    }
+    // danach: Tafel hinlegen, Schublade zu – außer man hatte sie selbst geöffnet
+    async function weg(laden) {
+      const zu = laden.filter(l => !l.dataset.manuell);
+      await Promise.all(zu.map(l => heben(l, false)));
+      await Promise.all(zu.map(schliessen));
+      laden.forEach(l => { l._arbeit = false; });
     }
 
     k.groesse = g => { el.classList.toggle('mini', g === 'mini'); el.classList.toggle('gross', g === 'gross'); };
@@ -230,38 +298,46 @@
     k.lesen = async names => {
       const laden = names.map(n => belegt.get(n)).filter(Boolean);
       if (!laden.length) return;
+      await ran(laden);
       laden.forEach(l => l.classList.add('schaut'));
-      laden[0].scrollIntoView({block: 'nearest', behavior: 'smooth'});
-      await pause(dauer(1100));
+      await pause(dauer(1300));
       laden.forEach(l => l.classList.remove('schaut'));
-      await pause(dauer(250));
+      await weg(laden);
     };
     k.schreiben = async (name, w) => {
       let l = belegt.get(name);
-      if (!l) {
-        // anlegen: Post-it aufkleben, Schublade auf, Tafel hineinlegen, beschreiben
-        l = freieLade();
-        belegt.set(name, l);
-        const t = teile(l);
-        t.postit.textContent = name; t.wert.textContent = ''; t.typ.textContent = '';
-        l.scrollIntoView({block: 'nearest', behavior: 'smooth'});
-        l.classList.add('klebt');
-        await anim(t.postit, [
-          {opacity: 0, transform: 'translate(1.5em,-2.5em) rotate(-18deg) scale(1.7)'},
-          {opacity: 1, transform: 'translate(0,0) rotate(-2.5deg) scale(1.08)', offset: .8},
-          {opacity: 1, transform: 'rotate(-2.5deg) scale(1)'}], 650, {easing: 'ease-out'});
-        l.classList.remove('klebt');
-        l.classList.remove('leer');
-        await pause(dauer(380));
-        await anim(t.tafel, [{opacity: 0, transform: 'translateY(-1.2em) scale(1.1)'}, {opacity: 1, transform: 'none'}], 420, {easing: 'ease-out'});
-        auffuellen(true);
+      if (l) {
+        // neuer Wert: putzen, dann neu beschreiben
+        await ran([l]);
+        await putzen(l);
         await schreibeKreide(l, name, w);
+        await weg([l]);
         return;
       }
-      // neuer Wert: putzen, dann neu beschreiben
+      // anlegen: Post-it aufkleben, Schublade auf, Tafel hineinlegen, beschreiben
+      l = freieLade();
+      belegt.set(name, l);
+      l._arbeit = true;
+      const t = teile(l);
+      beschrifte(l, name, null);
       l.scrollIntoView({block: 'nearest', behavior: 'smooth'});
-      await putzen(l);
+      l.classList.add('klebt');
+      await anim(t.postit, [
+        {opacity: 0, transform: 'translate(2em,-3em) rotate(-25deg) scale(1.8)', boxShadow: '1.2em 1.6em .8em rgba(0,0,0,.25)'},
+        {opacity: 1, transform: 'translate(0,0) rotate(-1deg) scale(1.06)', boxShadow: '.3em .4em .3em rgba(0,0,0,.3)', offset: .75},
+        {opacity: 1, transform: 'rotate(-3.5deg) scale(.97)', offset: .88},
+        {opacity: 1, transform: 'rotate(-2.5deg) scale(1)'}], 800, {easing: 'ease-out'});
+      l.classList.remove('klebt');
+      await oeffnen(l);
+      l.classList.remove('leer');
+      l.classList.add('steht');
+      await anim(t.tafel, [
+        {opacity: 0, transform: 'translateY(-4em) translateZ(3em) rotateX(-12deg) rotateZ(-6deg)'},
+        {opacity: 1, transform: 'translateY(-.5em) translateZ(2em) rotateX(0) rotateZ(1.5deg)', offset: .8},
+        {opacity: 1, transform: 'translateY(-.5em) translateZ(2em) rotateX(0)'}], 600, {easing: 'ease-out'});
+      auffuellen(true);
       await schreibeKreide(l, name, w);
+      await weg([l]);
     };
     async function putzen(l) {
       const t = teile(l);
@@ -271,13 +347,13 @@
       const breite = t.tafel.clientWidth - s.offsetWidth;
       await Promise.all([
         anim(s, [
-          {transform: 'translate(0,-.3em) rotate(-8deg)', opacity: 0},
+          {transform: 'translate(-.4em,-.6em) rotate(-14deg)', opacity: 0},
           {transform: 'translate(0,-.3em) rotate(-8deg)', opacity: 1, offset: .1},
-          {transform: `translate(${breite}px,0) rotate(6deg)`, offset: .4},
-          {transform: 'translate(0,.25em) rotate(-6deg)', offset: .7},
-          {transform: `translate(${breite}px,0) rotate(4deg)`, opacity: 1, offset: .92},
-          {transform: `translate(${breite}px,0) rotate(4deg)`, opacity: 0}], 1100),
-        anim(t.wert, [{opacity: 1, filter: 'blur(0)'}, {opacity: .35, filter: 'blur(2px)', offset: .45}, {opacity: 0, filter: 'blur(4px)'}], 1000, {fill: 'forwards'}),
+          {transform: `translate(${breite}px,0) rotate(6deg)`, offset: .38},
+          {transform: 'translate(0,.25em) rotate(-6deg)', offset: .64},
+          {transform: `translate(${breite}px,-.1em) rotate(4deg)`, opacity: 1, offset: .9},
+          {transform: `translate(${breite + 10}px,-.8em) rotate(14deg)`, opacity: 0}], 1150),
+        anim(t.wert, [{opacity: 1, filter: 'blur(0)'}, {opacity: .35, filter: 'blur(2px)', offset: .45}, {opacity: 0, filter: 'blur(5px)'}], 1000, {fill: 'forwards'}),
         anim(t.typ, [{opacity: 1}, {opacity: 0}], 700, {fill: 'forwards'})
       ]);
       s.remove();
@@ -292,26 +368,46 @@
       beschrifte(l, name, w);
       const kreide = h('span', 'km-kreide');
       t.tafel.appendChild(kreide);
-      const x0 = t.wert.offsetLeft, x1 = x0 + Math.min(t.wert.offsetWidth, t.tafel.clientWidth), y = t.wert.offsetTop + t.wert.offsetHeight * .55;
-      const ms = Math.min(1400, 280 + 90 * w.text.length);
+      const x0 = t.wert.offsetLeft + 4, x1 = t.wert.offsetLeft + Math.min(t.wert.offsetWidth, t.tafel.clientWidth) - 4, y = t.wert.offsetTop + t.wert.offsetHeight * .6;
+      const ms = Math.min(1500, 320 + 95 * w.text.length);
+      // Kreidestaub entlang der Schrift
+      const staub = [];
+      for (let i = 0; i < Math.min(14, 3 + w.text.length * 2); i++) {
+        const p = h('span', 'km-staub'), f = Math.random(), x = x0 + (x1 - x0) * f;
+        t.tafel.appendChild(p); staub.push(p);
+        anim(p, [
+          {opacity: .9, transform: `translate(${x}px,${y}px) scale(1)`},
+          {opacity: 0, transform: `translate(${x + (Math.random() - .5) * 14}px,${y + 14 + Math.random() * 12}px) scale(.4)`}],
+          650, {delay: dauer(ms * f), easing: 'ease-in', fill: 'backwards'});
+      }
       await Promise.all([
-        anim(t.wert, [{clipPath: 'inset(0 100% 0 0)'}, {clipPath: 'inset(0 0 0 0)'}], ms, {easing: 'linear'}),
+        anim(t.wert, [{clipPath: 'inset(-20% 100% -20% 0)'}, {clipPath: 'inset(-20% 0 -20% 0)'}], ms, {easing: 'linear'}),
         anim(kreide, [
-          {transform: `translate(${x0}px,${y}px) rotate(-35deg)`, opacity: 1},
-          {transform: `translate(${(x0 + x1) / 2}px,${y - 4}px) rotate(-30deg)`, offset: .5},
-          {transform: `translate(${x1}px,${y}px) rotate(-35deg)`, opacity: 1}], ms, {easing: 'linear'})
+          {transform: `translate(${x0}px,${y}px) rotate(-35deg)`, opacity: 0},
+          {transform: `translate(${x0}px,${y}px) rotate(-35deg)`, opacity: 1, offset: .05},
+          {transform: `translate(${(x0 + x1) / 2}px,${y - 5}px) rotate(-28deg)`, offset: .5},
+          {transform: `translate(${x1}px,${y}px) rotate(-35deg)`, opacity: 1, offset: .95},
+          {transform: `translate(${x1 + 8}px,${y - 14}px) rotate(-40deg)`, opacity: 0}], ms + dauer(150), {easing: 'linear'})
       ]);
       await anim(t.typ, [{opacity: 0}, {opacity: 1}], 300);
       kreide.remove();
+      setTimeout(() => staub.forEach(p => p.remove()), dauer(900));
+      t.tafel.classList.remove('geputzt');
       l.classList.remove('arbeitet');
     }
     k.entfernen = async name => {
       const l = belegt.get(name);
       if (!l) return;
       belegt.delete(name);
-      await anim(teile(l).postit, [{transform: 'rotate(-2.5deg)', opacity: 1}, {transform: 'translateY(2em) rotate(25deg)', opacity: 0}], 600, {easing: 'ease-in'});
+      const t = teile(l);
+      await ran([l]);
+      await anim(t.tafel, [{opacity: 1, transform: 'translateY(-.5em) translateZ(2em)'}, {opacity: 0, transform: 'translateY(-4em) translateZ(3em) rotateZ(8deg)'}], 550, {easing: 'ease-in', fill: 'forwards'});
       l.classList.add('leer');
-      teile(l).postit.textContent = '';
+      t.tafel.getAnimations().forEach(a => a.cancel());
+      delete l.dataset.manuell;
+      await weg([l]);
+      await anim(t.postit, [{transform: 'rotate(-2.5deg)', opacity: 1}, {transform: 'translate(.4em,.2em) rotate(8deg)', opacity: 1, offset: .3}, {transform: 'translateY(3em) rotate(35deg)', opacity: 0}], 750, {easing: 'ease-in'});
+      beschrifte(l, '', null);
     };
 
     k.leeren();
