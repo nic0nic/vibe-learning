@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="de" data-trainer="nicht">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NICHT – Bedingungen umdrehen – vibe learning</title>
+<!--
+  Die Funktion NICHT in Excel, Aufhänger: Eine WENN-Formel mit UND lässt sich „von der anderen Seite“ mit ODER schreiben
+  (UND ↔ ODER, jede Bedingung ins Gegenteil, Dann_Wert und Sonst_Wert tauschen). Erarbeitung und Übung mit lib/aufgaben.js,
+  Endlos-Modus (Aufgaben.training): Zur gegebenen Formel UND oder ODER in der gleichwertigen Formel wählen.
+  Stufe 1 „Umdrehen“ (umgedreht oder unverändert), Stufe 2 „Mit NICHT“ (dazu NICHT außen oder an jeder Bedingung).
+  Schalter „Auf Zeit“ setzt bei beiden Stufen die Zeit (eigene Bestleistung über training.variante).
+  Gespeichert: nicht-stand = {schritt, erledigt}, nicht-endlos-training = {stufe, best}, nicht-zeit = '1' (Schalter an).
+-->
+<script src="../../katalog.js"></script>
+<script src="../../nav.js"></script>
+<script src="../../sync.js"></script>
+<script>
+(function(){var t=null;try{t=localStorage.getItem('wenn-theme');}catch(e){}
+document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');})();
+</script>
+<link rel="stylesheet" href="../../lib/basis.css">
+<link rel="stylesheet" href="../../lib/aufgaben.css">
+<script src="../../lib/aufgaben.js"></script>
+<style>
+.wrap{max-width:900px}
+.info{border-left:4px solid var(--accent);padding:2px 0 2px 12px;margin:0 0 12px}
+code.fx{font:600 15px var(--mono);background:var(--panel2);border:1px solid var(--border);border-radius:6px;padding:1px 6px;white-space:nowrap}
+.fxblock{display:flex;flex-direction:column;align-items:flex-start;gap:6px;margin:8px 0 12px}
+.fxblock code.fx{white-space:normal;word-break:break-all;font-size:16px;padding:4px 8px}
+.merk{border:2px solid var(--accent);border-radius:12px;padding:8px 14px;margin:10px 0;background:var(--panel)}
+.merk .mt{font-weight:800;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent-text,var(--accent));margin-bottom:2px}
+.merk p,.merk ol{margin:4px 0}
+.schritt{color:var(--muted);font-size:13px;margin:6px 0 -2px}
+table.gegen{border-collapse:collapse;margin:8px 0 12px;font:15px var(--mono)}
+table.gegen td,table.gegen th{border:1px solid var(--border);padding:5px 12px;text-align:center}
+table.gegen th{background:var(--panel2);font:600 13px system-ui,sans-serif}
+.af-luecken code.fx{white-space:normal;line-height:2.4;background:none;border:0;padding:0;font-size:16px}
+.af-luecken select{font:600 14px var(--mono)}
+/* Endlos */
+.ef{display:flex;flex-direction:column;align-items:center;gap:6px;font:400 15px system-ui,sans-serif}
+.ef .el{color:var(--muted)}
+.ef code{font:600 clamp(14px,2.4vw,19px) var(--mono);background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:6px 10px;word-break:break-all}
+.ef .blank{display:inline-block;min-width:3.6em;text-align:center;border-bottom:3px solid var(--accent);color:var(--accent-text,var(--accent))}
+.tr-fehler .ef code{font-size:12px;padding:2px 4px}
+.tr-fehler .ef{align-items:flex-start;font-size:12px}
+.zeitschalter{display:flex;align-items:center;gap:10px;margin:4px 0 12px}
+.sys{display:inline-flex;align-items:center;gap:8px;font:600 15px system-ui,sans-serif;background:var(--panel);color:var(--text);border:2px solid var(--border);border-radius:999px;padding:5px 14px 5px 6px;cursor:pointer}
+.sys .knopf{position:relative;width:34px;height:20px;border-radius:10px;background:var(--border);transition:background .15s}
+.sys .knopf::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .15s}
+.sys[aria-checked=true]{border-color:var(--accent)}
+.sys[aria-checked=true] .knopf{background:var(--accent)}
+.sys[aria-checked=true] .knopf::after{left:16px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="bar"><div class="brand">NICHT<span> – umdrehen</span></div><div class="muted">Bedingungen umkehren – und UND gegen ODER tauschen</div></div>
+  <div id="app"></div>
+</div>
+<script>
+'use strict';
+const esc = Aufgaben.esc;
+const F = s => `<code class="fx">${esc(s)}</code>`;                                  // Formel im Fließtext
+const FB = (...z) => `<div class="fxblock">${z.map(F).join('')}</div>`;               // Formeln untereinander
+const L = s => '<code class="fx">' + s.split(/(\[\[.*?\]\])/).map((t, i) => i % 2 ? t : esc(t)).join('') + '</code>';   // Lückentext-Formel
+
+/* ---------- Endlos: Formeln erzeugen ---------- */
+const GEGEN = {'<':'>=', '>=':'<', '>':'<=', '<=':'>', '=':'<>', '<>':'='};
+const OPS = Object.keys(GEGEN), ANDERE = {UND:'ODER', ODER:'UND'};
+const TEXTE = ['"ja"', '"nein"', '"bezahlt"', '"Gold"', '"Bayern"', '"rot"', '"Mitglied"'];
+const ERGEBNISSE = [['"ja"', '"nein"'], ['"Rabatt"', '"kein Rabatt"'], ['"bestanden"', '"nicht bestanden"'], ['0', '4,90'],
+  ['"frei"', '"Gebühr"'], ['"Bonus"', '"kein Bonus"'], ['"darf rein"', '"darf nicht rein"'], ['10%', '0%']];
+const zufall = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+const eins = l => l[zufall(0, l.length - 1)];
+function bedingungen(){
+  const n = Math.random() < 0.75 ? 2 : 3, zellen = Aufgaben.mischen(['B2', 'C2', 'D2', 'E2']).slice(0, n).sort();
+  return zellen.map(z => Math.random() < 0.65
+    ? {z, op:eins(OPS), v:String(eins([zufall(1, 6), zufall(2, 20) * 5, zufall(12, 21), zufall(1, 10) * 100]))}
+    : {z, op:eins(['=', '=', '<>']), v:eins(TEXTE)});
+}
+const txt = b => b.z + b.op + b.v, neg = b => ({...b, op:GEGEN[b.op]});
+const BLANK = '\u0000';
+const zeig = s => esc(s).replace(BLANK, '<span class="blank">?</span>');
+let zuletzt = '';
+function neueAufgabe(arten){
+  return () => {
+    let f, c, r, art;
+    do { f = eins(['UND', 'ODER']); c = bedingungen(); r = eins(ERGEBNISSE); art = eins(arten); } while (art + f === zuletzt && Math.random() < 0.6);
+    zuletzt = art + f;
+    const [x, y] = r, g = ANDERE[f], orig = `=WENN(${f}(${c.map(txt).join(';')});${x};${y})`;
+    const um = Aufgaben.mischen(c.slice());
+    const V = {   // Formel mit Lücke, richtige Funktion, Begründung
+      um:   [`=WENN(${BLANK}(${c.map(neg).map(txt).join(';')});${y};${x})`, g, 'Bedingungen umgedreht, Dann/Sonst getauscht'],
+      gleich:[`=WENN(${BLANK}(${um.map(txt).join(';')});${x};${y})`, f, 'nichts umgedreht, nur andere Reihenfolge'],
+      aussen:[`=WENN(NICHT(${BLANK}(${um.map(txt).join(';')}));${y};${x})`, f, 'NICHT außen, dafür Dann/Sonst getauscht'],
+      beides:[`=WENN(NICHT(${BLANK}(${c.map(neg).map(txt).join(';')}));${x};${y})`, g, 'NICHT außen und jede Bedingung umgedreht'],
+      jede: [`=WENN(${BLANK}(${c.map(b => 'NICHT(' + txt(b) + ')').join(';')});${y};${x})`, g, 'jede Bedingung mit NICHT umgedreht, Dann/Sonst getauscht']
+    }[art];
+    return {
+      frage:`<div class="ef"><span class="el">Diese Formel …</span><code>${esc(orig)}</code><span class="el">… liefert immer dasselbe wie:</span><code>${zeig(V[0])}</code></div>`,
+      loesung:`${V[1]} (${V[2]})`,
+      optionen:[{t:'UND', ok:V[1] === 'UND'}, {t:'ODER', ok:V[1] === 'ODER'}]
+    };
+  };
+}
+
+/* Schalter „Auf Zeit“: setzt die Zeit in beiden Stufen, eigene Bestleistung */
+const ZEIT = {start:12, schritt:-0.2, min:5}, ZEIT_KEY = 'nicht-zeit';
+let aufZeit = false; try { aufZeit = localStorage.getItem(ZEIT_KEY) === '1'; } catch (e) {}
+const STUFEN = [
+  {name:'Umdrehen', antwort:'mc', neu:neueAufgabe(['um', 'um', 'um', 'gleich', 'gleich'])},
+  {name:'Mit NICHT', antwort:'mc', neu:neueAufgabe(['um', 'gleich', 'aussen', 'aussen', 'beides', 'beides', 'jede', 'jede'])}];
+const zeitSetzen = () => STUFEN.forEach(s => { s.zeit = aufZeit ? ZEIT : null; });
+zeitSetzen();
+function zeitBauen(el){
+  const box = el.querySelector('.zeitbox'); if (!box) return;
+  const zeigen = () => { box.innerHTML = `<div class="zeitschalter"><button type="button" class="sys" role="switch" aria-checked="${aufZeit}"><span class="knopf"></span>⏱ Auf Zeit</button><span class="muted">${aufZeit ? 'Der Balken läuft ab – mit jeder richtigen Antwort etwas schneller.' : 'Ohne Zeitdruck.'}</span></div>`; };
+  box.addEventListener('click', e => {
+    if (!e.target.closest('.sys')) return;
+    aufZeit = !aufZeit; zeitSetzen();
+    try { localStorage.setItem(ZEIT_KEY, aufZeit ? '1' : '0'); } catch (e) {}
+    if (window.TrainerSync) TrainerSync.changed();
+    zeigen(); box.querySelector('.sys').focus();
+    const tr = el.querySelector('.af-training'); if (tr) tr.dispatchEvent(new Event('af-variante'));
+  });
+  zeigen();
+}
+
+/* ---------- Ablauf ---------- */
+const RABATT = '=WENN(UND(B2<18;C2="ja");"Rabatt";"kein Rabatt")', LEA = '=WENN(ODER(B2>=18;C2<>"ja");"kein Rabatt";"Rabatt")';
+Aufgaben.sequenz({el:'#app', key:'nicht', schritte:[
+  {id:'info', kurz:'Einstieg', html:`<h2>Zwei Formeln – dasselbe Ergebnis?</h2>
+    <p>Im Freibad gibt es einen Schülerrabatt: Wer <b>jünger als 18</b> ist <b>und</b> einen <b>Schülerausweis</b> hat, zahlt weniger. In Spalte B steht das Alter, in Spalte C, ob ein Ausweis da ist („ja“ oder „nein“).</p>
+    <p>Tim schreibt die Formel so, wie die Regel klingt:</p>${FB(RABATT)}
+    <p>Lea denkt von der anderen Seite: <i>„Wann gibt es <b>keinen</b> Rabatt? Wenn jemand 18 oder älter ist <b>oder</b> keinen Ausweis hat.“</i></p>${FB(LEA)}
+    <div class="info"><p>Die beiden Formeln sehen ganz verschieden aus: UND gegen ODER, andere Vergleichszeichen, Dann_Wert und Sonst_Wert vertauscht. Liefern sie trotzdem immer dasselbe? Das prüfst du jetzt.</p></div>`},
+  {id:'e1', kurz:'1 Vergleich', erinnerung:`<p>Tim: ${F(RABATT)}<br>Lea: ${F(LEA)}</p>`, aufgaben:[
+    {typ:'wahrheit', nr:'1.1', frage:'Ergänze, was die beiden Prüfungen für jede Person ergeben.', werte:['WAHR', 'FALSCH'],
+      spalten:['Person', 'Alter (B2)', 'Ausweis (C2)', esc('UND(B2<18;C2="ja")'), esc('ODER(B2>=18;C2<>"ja")')],
+      zeilen:[['Mia', 15, 'ja', {l:true}, {l:false}], ['Tom', 17, 'nein', {l:false}, {l:true}], ['Ali', 18, 'ja', {l:false}, {l:true}], ['Eva', 20, 'nein', {l:false}, {l:true}]],
+      hinweise:{3:'UND ist nur WAHR, wenn beide Bedingungen stimmen. Ali ist 18 – ist 18 kleiner als 18?', 4:'ODER ist schon WAHR, wenn eine Bedingung stimmt.'}},
+    {typ:'mc', nr:'1.2', frage:'Was fällt dir in der Tabelle auf?', options:['Wo die UND-Prüfung WAHR ist, ist die ODER-Prüfung FALSCH – und umgekehrt.', 'Beide Prüfungen ergeben immer dasselbe.', 'Die ODER-Prüfung ist immer WAHR.'], correct:[0],
+      why:{1:'Schau dir Mia an: einmal WAHR, einmal FALSCH.', 2:'Bei Mia ist sie FALSCH.'}},
+    {typ:'wahrheit', nr:'1.3', frage:'Was zeigen die beiden Formeln an?', werte:['Rabatt', 'kein Rabatt'],
+      spalten:['Person', 'Alter', 'Ausweis', 'Tims Formel', 'Leas Formel'],
+      zeilen:[['Mia', 15, 'ja', {l:true}, {l:true}], ['Tom', 17, 'nein', {l:false}, {l:false}], ['Ali', 18, 'ja', {l:false}, {l:false}], ['Eva', 20, 'nein', {l:false}, {l:false}]],
+      hinweise:{4:'Bei Lea steht „kein Rabatt“ vorne: Ist ihre Prüfung WAHR, gibt es keinen Rabatt.'},
+      ok:'Genau: Die Prüfung ist genau umgekehrt – und weil Lea auch Dann_Wert und Sonst_Wert vertauscht hat, kommt dasselbe heraus.'}]},
+  {id:'nicht', kurz:'NICHT', html:`<h2>Die Funktion NICHT</h2>
+    <p>Leas Trick ist: <b>alles umdrehen</b>. Dafür hat Excel eine eigene Funktion. <b>NICHT</b> dreht einen Wahrheitswert um:</p>
+    <table class="gegen"><tr><th>Prüfung</th><th>NICHT(Prüfung)</th></tr><tr><td>WAHR</td><td>FALSCH</td></tr><tr><td>FALSCH</td><td>WAHR</td></tr></table>
+    <div class="merk"><div class="mt">Aufbau</div><p>${F('=NICHT(Prüfung)')}</p><p>Beispiel mit B2 = 15:</p>${FB('=NICHT(B2<18)')}<p>B2&lt;18 ist WAHR, also liefert die Formel FALSCH.</p></div>
+    <p>Meist steht NICHT als Prüfung in einer WENN-Funktion. Wer <b>keinen</b> Ausweis hat, zahlt den vollen Preis:</p>${FB('=WENN(NICHT(C2="ja");"voller Preis";"Ausweis da")')}
+    <p>Oft kommt man auch ohne NICHT aus, mit dem <b>Gegenteil</b> der Bedingung:</p>
+    <table class="gegen"><tr><th>Bedingung</th><th>NICHT(…) ist dasselbe wie</th></tr>
+      <tr><td>B2&lt;18</td><td>B2&gt;=18</td></tr><tr><td>B2&gt;18</td><td>B2&lt;=18</td></tr><tr><td>B2&lt;=18</td><td>B2&gt;18</td></tr><tr><td>B2&gt;=18</td><td>B2&lt;18</td></tr>
+      <tr><td>C2="ja"</td><td>C2&lt;&gt;"ja"</td></tr><tr><td>C2&lt;&gt;"ja"</td><td>C2="ja"</td></tr></table>
+    <div class="info"><p><b>Achtung:</b> Das Gegenteil von ${F('B2<18')} ist ${F('B2>=18')}, nicht ${F('B2>18')}. Wer genau 18 ist, ist nicht jünger als 18 – die 18 gehört zum Gegenteil dazu.</p></div>`},
+  {id:'e2', kurz:'2 NICHT', erinnerung:`<p>${F('NICHT')} dreht WAHR und FALSCH um. Gegenteile: &lt; ↔ &gt;=, &gt; ↔ &lt;=, = ↔ &lt;&gt;</p>`, aufgaben:[
+    {typ:'wahrheit', nr:'2.1', frage:'Was ergeben die Prüfungen?', werte:['WAHR', 'FALSCH'],
+      spalten:['B2', esc('B2>=50'), esc('NICHT(B2>=50)'), esc('NICHT(B2<50)')],
+      zeilen:[[30, false, {l:true}, {l:false}], [50, true, {l:false}, {l:true}], [80, true, {l:false}, {l:true}]],
+      hinweise:{2:'NICHT dreht den Wert aus der Spalte davor um.', 3:'Prüfe zuerst B2<50 und drehe das Ergebnis dann um.'}},
+    {typ:'zuordnen', nr:'2.2', frage:'Ordne jeder Formel die Bedingung zu, die dasselbe bedeutet.',
+      felder:[['a', 'B2>=18'], ['b', 'B2>18'], ['c', 'B2<=50'], ['d', 'C2<>"ja"'], ['e', 'D2="Gold"']],
+      karten:[{t:'NICHT(B2<18)', z:'a'}, {t:'NICHT(B2<=18)', z:'b'}, {t:'NICHT(B2>50)', z:'c'}, {t:'NICHT(C2="ja")', z:'d'}, {t:'NICHT(D2<>"Gold")', z:'e'}]},
+    {typ:'mc', nr:'2.3', frage:`Welche Formel liefert dasselbe wie ${F('=WENN(NICHT(B2<18);"Erwachsen";"Kind")')}?`, mono:true,
+      options:['=WENN(B2<18;"Kind";"Erwachsen")', '=WENN(B2<18;"Erwachsen";"Kind")', '=WENN(B2>18;"Erwachsen";"Kind")', '=WENN(NICHT(B2>=18);"Erwachsen";"Kind")'], correct:[0],
+      why:{1:'Ohne NICHT ist die Prüfung umgekehrt – dann müssen Dann_Wert und Sonst_Wert die Plätze tauschen.', 2:'Wer genau 18 ist, bekäme hier „Kind“.', 3:'NICHT(B2>=18) ist dasselbe wie B2<18 – genau umgekehrt.'},
+      after:'Statt NICHT kann man auch Dann_Wert und Sonst_Wert tauschen.'}]},
+  {id:'regel', kurz:'Umdrehen', html:`<h2>NICHT vor UND und ODER</h2>
+    <p>Was bedeutet ${F('NICHT(UND(B2<18;C2="ja"))')}? „Es stimmt <b>nicht</b>, dass <b>beide</b> Bedingungen erfüllt sind.“ Also ist <b>mindestens eine</b> falsch – das ist ein ODER:</p>
+    ${FB('NICHT(UND(B2<18;C2="ja"))', 'ODER(NICHT(B2<18);NICHT(C2="ja"))', 'ODER(B2>=18;C2<>"ja")')}
+    <p>Umgekehrt genauso: „Es stimmt nicht, dass <b>mindestens eine</b> Bedingung erfüllt ist“ heißt: <b>keine</b> ist erfüllt – das ist ein UND.</p>
+    ${FB('NICHT(ODER(B2="Sa";B2="So"))', 'UND(B2<>"Sa";B2<>"So")')}
+    <p>So kommt man Schritt für Schritt von Tims zu Leas Formel:</p>
+    <p class="schritt">Tim</p>${FB(RABATT)}
+    <p class="schritt">NICHT davor, dafür Dann_Wert und Sonst_Wert tauschen</p>${FB('=WENN(NICHT(UND(B2<18;C2="ja"));"kein Rabatt";"Rabatt")')}
+    <p class="schritt">NICHT vor UND wird ODER mit NICHT vor jeder Bedingung</p>${FB('=WENN(ODER(NICHT(B2<18);NICHT(C2="ja"));"kein Rabatt";"Rabatt")')}
+    <p class="schritt">Jedes NICHT durch das Gegenteil ersetzen – Lea</p>${FB(LEA)}
+    <div class="merk"><div class="mt">Merke: WENN mit UND/ODER umdrehen</div><ol>
+      <li>Aus <b>UND</b> wird <b>ODER</b>, aus <b>ODER</b> wird <b>UND</b>.</li>
+      <li><b>Jede</b> Bedingung wird durch ihr <b>Gegenteil</b> ersetzt (oder bekommt ein NICHT).</li>
+      <li><b>Dann_Wert</b> und <b>Sonst_Wert</b> tauschen die Plätze.</li></ol>
+      <p>Ändert man nur einen Teil, stimmt die Formel nicht mehr.</p></div>`},
+  {id:'e3', kurz:'3 Regel', erinnerung:'<p>Umdrehen: UND ↔ ODER, jede Bedingung ins Gegenteil, Dann_Wert und Sonst_Wert tauschen.</p>', aufgaben:[
+    {typ:'luecken', nr:'3.1', frage:'Ergänze die Regel.', text:'Beim Umdrehen wird aus UND ein [[ODER|UND|NICHT]]. [[Jede|Nur die erste]] Bedingung wird durch ihr Gegenteil ersetzt. Dann_Wert und Sonst_Wert werden [[getauscht|beibehalten]]. Statt des Gegenteils kann man auch [[NICHT|ODER|UND]] vor die Bedingung schreiben.'},
+    {typ:'mc', nr:'3.2', frage:`Was ist dasselbe wie ${F('NICHT(ODER(B2>4;C2>4))')}?`, mono:true,
+      options:['UND(B2<=4;C2<=4)', 'ODER(B2<=4;C2<=4)', 'UND(B2<4;C2<4)', 'UND(B2>4;C2>4)'], correct:[0],
+      why:{1:'Vor ODER wird NICHT zu UND.', 2:'Das Gegenteil von >4 ist <=4 – die 4 gehört dazu.', 3:'Die Bedingungen müssen auch umgedreht werden.'}},
+    {typ:'luecken', nr:'3.3', frage:`Dreh die Formel ${F('=WENN(UND(B2>=50;C2="Deutschland");0;4,90)')} um (Versand kostenlos ab 50 € innerhalb Deutschlands).`,
+      text:L('=WENN([[ODER|UND]](B2[[<|<=|>]]50;C2[[<>|=]]"Deutschland");[[4,90|0]];[[0|4,90]])')}]},
+  {id:'u1', kurz:'Übung 1', erinnerung:'<p>Umdrehen: UND ↔ ODER, jede Bedingung ins Gegenteil, Dann_Wert und Sonst_Wert tauschen. NICHT dreht WAHR und FALSCH um.</p>', erinnerungZu:true, aufgaben:[
+    {typ:'mc', nr:'4.1', frage:`Welche Formel liefert immer dasselbe wie ${F('=WENN(ODER(B2>4;C2>4);"Nachhilfe";"keine Nachhilfe")')}?`, mono:true,
+      options:['=WENN(UND(B2<=4;C2<=4);"keine Nachhilfe";"Nachhilfe")', '=WENN(UND(B2<=4;C2<=4);"Nachhilfe";"keine Nachhilfe")', '=WENN(UND(B2<4;C2<4);"keine Nachhilfe";"Nachhilfe")', '=WENN(ODER(B2<=4;C2<=4);"keine Nachhilfe";"Nachhilfe")'], correct:[0],
+      why:{1:'Dann_Wert und Sonst_Wert müssen getauscht werden.', 2:'Wer genau eine 4 hat, braucht keine Nachhilfe – das Gegenteil von >4 ist <=4.', 3:'Aus ODER muss UND werden.'}},
+    {typ:'mc', nr:'4.2', frage:`Welche Formeln liefern dasselbe wie ${F('=WENN(UND(B2>=140;C2>=8);"darf fahren";"darf nicht fahren")')}? (Achterbahn: Größe in B2, Alter in C2)`, mono:true,
+      options:['=WENN(ODER(B2<140;C2<8);"darf nicht fahren";"darf fahren")', '=WENN(NICHT(UND(B2>=140;C2>=8));"darf nicht fahren";"darf fahren")', '=WENN(ODER(NICHT(B2>=140);NICHT(C2>=8));"darf nicht fahren";"darf fahren")', '=WENN(ODER(B2<140;C2<8);"darf fahren";"darf nicht fahren")', '=WENN(NICHT(UND(B2>=140;C2>=8));"darf fahren";"darf nicht fahren")'], correct:[0, 1, 2],
+      why:{3:'Hier fehlt das Tauschen von Dann_Wert und Sonst_Wert.', 4:'NICHT dreht die Prüfung um – dann müssen auch Dann_Wert und Sonst_Wert tauschen.'}},
+    {typ:'luecken', nr:'4.3', frage:`Das Café hat am Wochenende geschlossen: ${F('=WENN(ODER(B2="Samstag";B2="Sonntag");"geschlossen";"geöffnet")')}. Ergänze die umgedrehte Formel.`,
+      text:L('=WENN([[UND|ODER]](B2[[<>|=]]"Samstag";B2[[<>|=]]"Sonntag");[["geöffnet"|"geschlossen"]];[["geschlossen"|"geöffnet"]])'),
+      ok:'Richtig! Ein Tag ist geöffnet, wenn er kein Samstag und auch kein Sonntag ist.'}]},
+  {id:'u2', kurz:'Übung 2', erinnerung:'<p>Umdrehen: UND ↔ ODER, jede Bedingung ins Gegenteil, Dann_Wert und Sonst_Wert tauschen. NICHT dreht WAHR und FALSCH um.</p>', erinnerungZu:true, aufgaben:[
+    {typ:'mc', nr:'5.1', frage:`Jonas hat ${F('=WENN(UND(B2>=140;C2>=8);"darf fahren";"darf nicht fahren")')} umgedreht zu ${F('=WENN(ODER(B2<=140;C2<8);"darf nicht fahren";"darf fahren")')}. Für wen zeigt seine Formel das Falsche an?`,
+      options:['Lina: 140 cm, 9 Jahre', 'Ben: 150 cm, 7 Jahre', 'Ida: 130 cm, 10 Jahre', 'Max: 160 cm, 12 Jahre'], correct:[0],
+      why:{1:'Ben darf nicht fahren – das zeigen beide Formeln an.', 2:'Ida darf nicht fahren – das zeigen beide Formeln an.', 3:'Max darf fahren – das zeigen beide Formeln an.'},
+      after:'Das Gegenteil von B2>=140 ist B2<140. Mit B2<=140 darf Lina mit genau 140 cm nicht fahren, obwohl sie dürfte.'},
+    {typ:'luecken', nr:'5.2', frage:`Drei Bedingungen: Beim Gewinnspiel gewinnt, wer mindestens 50 Punkte hat (B2), angemeldet ist (C2) und nicht gesperrt ist (D2):<br>${F('=WENN(UND(B2>=50;C2="ja";D2<>"gesperrt");"Gewinn";"Niete")')}<br>Ergänze die umgedrehte Formel.`,
+      text:L('=WENN([[ODER|UND]](B2[[<|<=|>]]50;C2[[<>|=]]"ja";D2[[=|<>]]"gesperrt");[["Niete"|"Gewinn"]];[["Gewinn"|"Niete"]])')},
+    {typ:'mc', nr:'5.3', frage:`Welche Formel liefert dasselbe wie ${F('=WENN(NICHT(ODER(B2="Mitglied";C2>=100));5;0)')}? (5 € Versand, außer für Mitglieder oder ab 100 € Bestellwert)`, mono:true,
+      options:['=WENN(ODER(B2="Mitglied";C2>=100);0;5)', '=WENN(UND(B2<>"Mitglied";C2<100);0;5)', '=WENN(ODER(B2<>"Mitglied";C2<100);5;0)', '=WENN(ODER(B2="Mitglied";C2>=100);5;0)'], correct:[0],
+      why:{1:'NICHT(ODER(…)) ist UND(B2<>"Mitglied";C2<100) – das ist richtig umgeschrieben, aber dann bleiben Dann_Wert und Sonst_Wert: 5;0.', 2:'Aus ODER muss UND werden.', 3:'Lässt man NICHT weg, müssen Dann_Wert und Sonst_Wert tauschen.'},
+      after:'Auch richtig wäre =WENN(UND(B2<>"Mitglied";C2<100);5;0).'}]},
+  {id:'endlos', kurz:'Endlos', titel:'UND oder ODER?', html:`<h2>Endlos: UND oder ODER?</h2>
+    <p>Oben steht eine Formel, darunter eine Formel, die immer dasselbe liefert – nur die Funktion fehlt. Wähle <b>UND</b> oder <b>ODER</b> (oder Taste 1 bzw. 2). Achte darauf, ob die Bedingungen umgedreht und Dann_Wert und Sonst_Wert getauscht sind. Ein Fehler beendet die Serie.</p>
+    <p>Stufe an den Flammen: <b>1</b> Umdrehen · <b>2</b> Mit NICHT. Mit dem Schalter spielst du auf Zeit (eigene Bestleistung).</p><div class="zeitbox"></div>`,
+   nach:zeitBauen,
+   training:{variante:() => aufZeit ? 'auf Zeit' : '', stufen:STUFEN}}
+]});
+</script>
+</body>
+</html>
