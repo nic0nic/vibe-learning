@@ -409,11 +409,11 @@ Die Seite liefert (bei UND/ODER und NICHT kommen accepts, applyDrop und SCEN aus
   außerdem für basis.js: setMode, canNext, nextTask, renderNav, renderDock (Pfad/Endlos über dockHTML())
 ```
 
-### IT/excel/wennbau.js – Excel: WENN mit UND/ODER/NICHT – Parser, Prüfung und Bau-Oberfläche in 9 Stufen (und-oder, nicht)
+### IT/excel/wennbau.js – Excel: WENN mit UND/ODER/NICHT – Parser, Prüfung und Bau-Oberfläche in 9 Stufen (und-oder)
 
 ```text
 wennbau.js – WENN-Formeln mit UND/ODER/NICHT bauen und prüfen: Parser, Auswertung, Bausteine in 9 Stufen
-Genutzt von und-oder.html und nicht.html. Laden nach basis.js und bausteine.js (dazu basis.css + bausteine.css),
+Genutzt von und-oder.html. Laden nach basis.js und bausteine.js (dazu basis.css + bausteine.css),
 Aufgaben aus Szenarien: uo-szenarien.js (danach laden).
 
 API
@@ -442,7 +442,7 @@ Die Seite liefert: render() (ruft wbRender), check() (ruft wbCheck), setup(), re
 
 ```text
 uo-szenarien.js – Sachaufgaben für WENN mit UND/ODER (Achterbahn, Mofa, Versand …) und buildTask
-Genutzt von und-oder.html (Übungen, Endlos) und nicht.html (Formeln umdrehen). Laden nach wennbau.js.
+Genutzt von und-oder.html (Übungen, Endlos). Laden nach wennbau.js.
 
 API
   SCEN                       {id: {name, pick(r) → Parameter, build(p) → {comb, conds, labels, resLabel, then, else, text, resD}}}

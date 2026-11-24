@@ -1,5 +1,5 @@
 /* uo-szenarien.js – Sachaufgaben für WENN mit UND/ODER (Achterbahn, Mofa, Versand …) und buildTask
- * Genutzt von und-oder.html (Übungen, Endlos) und nicht.html (Formeln umdrehen). Laden nach wennbau.js.
+ * Genutzt von und-oder.html (Übungen, Endlos). Laden nach wennbau.js.
  *
  * API
  *   SCEN                       {id: {name, pick(r) → Parameter, build(p) → {comb, conds, labels, resLabel, then, else, text, resD}}}

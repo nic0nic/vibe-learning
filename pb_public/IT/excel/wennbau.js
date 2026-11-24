@@ -1,5 +1,5 @@
 /* wennbau.js – WENN-Formeln mit UND/ODER/NICHT bauen und prüfen: Parser, Auswertung, Bausteine in 9 Stufen
- * Genutzt von und-oder.html und nicht.html. Laden nach basis.js und bausteine.js (dazu basis.css + bausteine.css),
+ * Genutzt von und-oder.html. Laden nach basis.js und bausteine.js (dazu basis.css + bausteine.css),
  * Aufgaben aus Szenarien: uo-szenarien.js (danach laden).
  *
  * API

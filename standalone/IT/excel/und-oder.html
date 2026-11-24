@@ -68,7 +68,6 @@ window.KATALOG = {
             {id: 'wbz', stufen: 6, datei: 'wenn-bezuege.html', titel: 'WENN mit $', text: 'WENN-Formeln auf ganze Spalten übertragen: Grenzwerte mit $ festhalten – Zellen in der Tabelle auswählen wie in Excel.'},
             {id: 'uo',   stufen: 9, datei: 'und-oder.html',   titel: 'UND / ODER',        text: 'Bedingungen verknüpfen – mit Erarbeitung, Übungen und Endlos-Modus.'},
             {id: 'uobz', stufen: 6, datei: 'und-oder-bezuege.html', titel: 'UND / ODER mit $', text: 'WENN mit UND/ODER auf ganze Spalten übertragen: Grenzwerte mit $ festhalten – Zellen in der Tabelle auswählen wie in Excel.'},
-            {id: 'nicht', stufen: 9, datei: 'nicht.html', titel: 'NICHT', text: 'Die Funktion NICHT: Bedingungen umkehren und WENN-Formeln umdrehen (UND wird ODER) – Erarbeitung mit Blitz-Training auf Zeit, Endlos-Modus von Bausteinen bis zur eigenen Formel.'},
             {id: 'bz',   stufen: 6, datei: 'bezuege.html',    titel: 'Zellbezüge $',      text: 'Relative und absolute Bezüge: Formeln übertragen und $-Zeichen richtig setzen.'}
           ]
         },
@@ -3197,7 +3196,7 @@ const AC_FN = [
 </script>
 <script>/* wennbau.js */
 /* wennbau.js – WENN-Formeln mit UND/ODER/NICHT bauen und prüfen: Parser, Auswertung, Bausteine in 9 Stufen
- * Genutzt von und-oder.html und nicht.html. Laden nach basis.js und bausteine.js (dazu basis.css + bausteine.css),
+ * Genutzt von und-oder.html. Laden nach basis.js und bausteine.js (dazu basis.css + bausteine.css),
  * Aufgaben aus Szenarien: uo-szenarien.js (danach laden).
  *
  * API
@@ -3685,7 +3684,7 @@ document.addEventListener('keydown', e => {
 </script>
 <script>/* uo-szenarien.js */
 /* uo-szenarien.js – Sachaufgaben für WENN mit UND/ODER (Achterbahn, Mofa, Versand …) und buildTask
- * Genutzt von und-oder.html (Übungen, Endlos) und nicht.html (Formeln umdrehen). Laden nach wennbau.js.
+ * Genutzt von und-oder.html (Übungen, Endlos). Laden nach wennbau.js.
  *
  * API
  *   SCEN                       {id: {name, pick(r) → Parameter, build(p) → {comb, conds, labels, resLabel, then, else, text, resD}}}

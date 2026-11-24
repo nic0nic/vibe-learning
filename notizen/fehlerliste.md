@@ -57,6 +57,9 @@ Gesammelt im Thread „Aufbau der Seite“. Umgesetzt wird erst, wenn die Lehrkr
 
 ### Version vom 24.11.
 
+74. **Excel: Seite NICHT entfernt** (gewünscht 24.11.: „war nicht gut und keine gute Idee“)
+    `IT/excel/nicht.html` gelöscht, Eintrag in `katalog.js` entfernt, Einzeldatei und ByCS-Paket weg. `wennbau.js` und `uo-szenarien.js` bleiben für UND/ODER, nur die Kopfkommentare sind angepasst. Gespeicherter Fortschritt zu `nicht` bleibt in alten Browsern/PocketBase liegen, wird aber nirgends mehr angezeigt.
+
 73. **Python-Editor: Variablenmodell „Kommode“ und schrittweise Ausführung** (gewünscht 24.11.)
     Neue Bibliothek `IT/python/lib/kommode.js` + `kommode.css`. Jede Variable ist eine Schublade mit Post-it (Name) und Schiefertafel (Wert, Datentyp klein, Text in "…"). Anlegen = Post-it aufkleben und Tafel beschreiben, neuer Wert = Tafel putzen (Schwamm) und neu beschreiben, Verwenden = auf die Tafel schauen (Auge). `Kommode.lauf` nutzt den Debug-Modus von Skulpt (Halt vor jeder Zeile, `Sk.delay` an Schleifenköpfen) und zeigt pro Zeile die Teilschritte: erst lesen, dann putzen/schreiben. Dazu kommt die letzte Prüfung der while-Bedingung als eigener Schritt, und bei for wird der nächste Wert dem Schleifenkopf zugeordnet.
     `editor.html`: Schalter „Variablen“ (gespeichert in `py-kommode`, Tempo in `py-kommode-tempo`), Kommode klein oben rechts im Editor (einklappbar), ⤢ öffnet ein Vollbild-Fenster mit Code, Kommode und Terminal (input() geht dort auch). Schritt (F10), Abspielen/Pause und Tempo. Normales „Ausführen“ zeigt am Ende den Endzustand, auch nach einem Fehler.
