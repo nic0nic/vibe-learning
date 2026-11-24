@@ -10,6 +10,8 @@
   Beide liegen im Unterordner lib/ – kein Internet nötig, läuft auch per Doppelklick,
   solange lib/ neben dieser Datei liegt.
   Der Code wird im Browser gespeichert (Schlüssel py-code), über PocketBase pro Schüler.
+  Variablenmodell „Kommode“ (lib/kommode.js): Schalter „Variablen“, dann klein oben rechts im Editor,
+  per ⤢ als Vollbild; dazu Schritt / Abspielen (F10 = nächster Schritt).
 -->
 <script src="../../katalog.js"></script>
 <script src="../../nav.js"></script>
@@ -22,6 +24,8 @@ document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: da
 <script src="lib/codemirror.min.js"></script>
 <script src="lib/skulpt.min.js"></script>
 <script src="lib/skulpt-stdlib.js"></script>
+<link rel="stylesheet" href="lib/kommode.css">
+<script src="lib/kommode.js"></script>
 <style>
 :root{
   --bg:#e5e9f0; --panel:#f6f8fb; --panel2:#eceff4; --text:#2e3440; --muted:#5b6578; --border:#cdd3de;
@@ -97,6 +101,55 @@ select.btn{padding-right:10px}
 #turtleBox.an{display:block}
 #turtleBox canvas{display:block}
 
+/* Variablenmodell: Schalter, Schritt-Leiste, Zeilenmarkierung */
+.btn[aria-pressed=true]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);background:color-mix(in srgb,var(--accent) 16%,var(--panel2))}
+.schritt-gruppe{display:inline-flex;flex-wrap:wrap;align-items:center;gap:8px}
+.schritt-gruppe[hidden]{display:none}
+.tempo{display:inline-flex;align-items:center;gap:6px;font:600 13px system-ui,sans-serif;color:var(--muted)}
+.tempo input{width:90px;accent-color:var(--accent)}
+.step-naechste{background:color-mix(in srgb,#ebcb8b 30%,transparent)!important}
+.step-aktiv{background:color-mix(in srgb,#ebcb8b 62%,transparent)!important}
+.CodeMirror-linenumber.step-pfeil{color:var(--accent);font-weight:800}
+
+/* Kommode klein oben rechts im Editor */
+#edPane{position:relative}
+.km-ecke{position:absolute;z-index:5;top:34px;right:18px;width:min(290px,45%);max-height:calc(100% - 44px);display:flex;flex-direction:column;
+  background:color-mix(in srgb,var(--panel) 94%,transparent);border:1px solid var(--border);border-radius:12px;box-shadow:0 6px 20px rgba(0,0,0,.18)}
+.km-ecke[hidden]{display:none}
+.km-ecke-kopf{display:flex;align-items:center;gap:4px;padding:3px 4px 3px 10px;font:700 12px system-ui,sans-serif;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);border-bottom:1px solid var(--border);cursor:default}
+.km-ecke-kopf span{flex:1}
+.km-ecke-kopf button{width:28px;height:26px;display:grid;place-items:center;background:none;border:1px solid transparent;border-radius:7px;color:var(--text);cursor:pointer;font:700 15px system-ui,sans-serif}
+.km-ecke-kopf button:hover{border-color:var(--accent)}
+.km-ecke-kopf svg{width:16px;height:16px}
+.km-ecke-body{overflow:auto;padding:10px 8px 6px}
+.km-ecke.zu .km-ecke-body{display:none}
+.km-ecke .km-info{position:sticky;bottom:-6px;margin:6px -8px 0;padding:6px 10px;min-height:0;background:var(--panel);border-top:1px solid var(--border)}
+.km-ecke .km-info:empty{display:none}
+.km-ecke.zu{width:auto}
+
+/* Kommode als Vollbild */
+dialog.km-dialog{width:calc(100vw - 24px);height:calc(100vh - 24px);max-width:none;max-height:none;padding:0;border:1px solid var(--border);border-radius:14px;background:var(--bg);color:var(--text);flex-direction:column;overflow:hidden}
+dialog.km-dialog[open]{display:flex}
+dialog.km-dialog::backdrop{background:rgba(20,24,32,.55)}
+.kd-kopf{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:10px 14px;background:var(--panel);border-bottom:1px solid var(--border)}
+.kd-titel{font:800 18px system-ui,sans-serif;margin-right:6px}
+.kd-haupt{flex:1;min-height:0;display:grid;grid-template-columns:minmax(240px,32%) 1fr;grid-template-rows:1fr minmax(110px,26%);gap:12px;padding:12px}
+.kd-code{grid-row:1;margin:0;overflow:auto;background:var(--ed-bg);border:1px solid var(--border);border-radius:12px;padding:8px 0;font:clamp(13px,1.15vw,18px)/1.55 var(--mono)}
+.kd-code div{padding:0 12px 0 0;white-space:pre}
+.kd-code i{display:inline-block;width:3.2em;padding-right:.8em;text-align:right;color:var(--gutter-text);font-style:normal;user-select:none}
+.kd-code .step-naechste i,.kd-code .step-aktiv i{color:var(--accent);font-weight:800}
+.kd-rechts{grid-row:1;overflow:auto;min-height:0;padding:4px 8px}
+.kd-legende{display:flex;flex-wrap:wrap;gap:6px 18px;margin:0 0 12px;font:13px system-ui,sans-serif;color:var(--muted)}
+.kd-legende b{display:inline-block;padding:0 .5em;margin-right:4px;border-radius:3px;font:700 12px/1.6 "Segoe Print","Comic Sans MS",cursive}
+.kd-legende .lp{background:#ffe95e;color:#2b2a26}
+.kd-legende .lt{background:#2b3633;color:#f5f2e6;border:2px solid #b98049}
+.kd-term{grid-column:1 / -1;min-height:0;display:flex;border:1px solid var(--border);border-radius:12px;overflow:hidden}
+@media (max-width:800px){
+  .kd-haupt{grid-template-columns:1fr;grid-template-rows:auto 1fr minmax(100px,24%)}
+  .kd-code{max-height:22vh}
+  .kd-rechts{grid-row:2}
+}
+
 @media (max-width:700px){
   .hint{display:none}
   .term-body{flex-direction:column}
@@ -112,6 +165,14 @@ select.btn{padding-right:10px}
       <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg>Ausführen</button>
     <button class="btn" id="stopBtn" disabled title="Programm abbrechen (Strg+C im Terminal)">
       <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1.5"/></svg>Stopp</button>
+    <button class="btn" id="kmBtn" aria-pressed="false" title="Variablenmodell (Kommode) ein/aus">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3.5" y="3" width="17" height="16" rx="1.5"/><path d="M3.5 8.5h17M3.5 14h17M11 6h2M11 11.2h2M11 16.6h2M6 19v2M18 19v2"/></svg>Variablen</button>
+    <span class="schritt-gruppe" id="schrittLeiste" hidden>
+      <button class="btn" id="schrittBtn" title="Nächster Schritt (F10)">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 5v14l9-7z"/><rect x="16" y="5" width="3" height="14" rx="1"/></svg>Schritt</button>
+      <button class="btn" id="playBtn" title="Schritte automatisch abspielen"></button>
+      <label class="tempo" title="Tempo der Schritte und Animationen">Tempo <input type="range" id="tempo" min="0.5" max="4" step="0.25" value="1"></label>
+    </span>
     <button class="btn" id="clearBtn" title="Terminal leeren">Terminal leeren</button>
     <select class="btn" id="beispiel" aria-label="Beispiel laden">
       <option value="">Beispiel laden …</option>
@@ -126,6 +187,14 @@ select.btn{padding-right:10px}
   <section class="pane" id="edPane">
     <div class="pane-head">programm.py<span class="status" id="saveState"></span></div>
     <textarea id="code" spellcheck="false"></textarea>
+    <div class="km-ecke" id="kmEcke" hidden>
+      <div class="km-ecke-kopf"><span>Variablen</span>
+        <button id="kmKlein" title="Einklappen" aria-label="Einklappen">–</button>
+        <button id="kmGross" title="Als Vollbild anzeigen" aria-label="Als Vollbild anzeigen">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M14 4h6v6M20 4l-7 7M10 20H4v-6M4 20l7-7"/></svg></button>
+      </div>
+      <div class="km-ecke-body" id="kmPlatz"></div>
+    </div>
   </section>
 
   <div class="split" id="split" role="separator" aria-label="Größe von Editor und Terminal ändern"></div>
@@ -138,6 +207,26 @@ select.btn{padding-right:10px}
     </div>
   </section>
 </div>
+
+<dialog class="km-dialog" id="kmDialog" aria-label="Variablenmodell Kommode">
+  <div class="kd-kopf">
+    <span class="kd-titel">Variablen-Kommode</span>
+    <span id="kdLeiste"></span>
+    <button class="btn" id="kdStop" title="Programm abbrechen">
+      <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1.5"/></svg>Stopp</button>
+    <span class="spacer"></span>
+    <button class="iconbtn" id="kdZu" title="Schließen (Esc)" aria-label="Vollbild schließen">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  </div>
+  <div class="kd-haupt">
+    <div class="kd-code" id="kdCode" aria-label="Programm"></div>
+    <div class="kd-rechts">
+      <div class="kd-legende"><span><b class="lp">Post-it</b>Name der Variable</span><span><b class="lt">Tafel</b>Wert, klein darunter der Datentyp</span></div>
+      <div id="kdPlatz"></div>
+    </div>
+    <div class="kd-term" id="kdTerm"></div>
+  </div>
+</dialog>
 
 <script>
 'use strict';
@@ -299,6 +388,7 @@ function askInput(prompt){
     term.scrollTop = term.scrollHeight;
     pendingInput = {reject, el};
     setStatus('wartet auf Eingabe …', 'laeuft');
+    if (lauf && lauf.schritte) kommode.info('Python wartet auf deine Eingabe im Terminal …');
     el.addEventListener('keydown', e => {
       if (e.key === 'Enter'){
         const v = el.value; el.remove(); pendingInput = null;
@@ -345,8 +435,84 @@ function showError(err){
   }
 }
 
+/* ---------- Variablenmodell (Kommode) ---------- */
+const kommode = Kommode.erzeugen($('#kmPlatz'));
+kommode.groesse('mini');
+const KM_KEY = 'py-kommode';
+let kmAn = load(KM_KEY) === '1';
+kommode.tempo = parseFloat(load(KM_KEY + '-tempo')) || 1;
+$('#tempo').value = kommode.tempo;
+$('#tempo').addEventListener('input', e => {
+  kommode.tempo = parseFloat(e.target.value);
+  try { localStorage.setItem(KM_KEY + '-tempo', e.target.value); } catch (err) {}
+});
+function renderKm(){
+  $('#kmBtn').setAttribute('aria-pressed', kmAn);
+  $('#kmEcke').hidden = !kmAn;
+  $('#schrittLeiste').hidden = !kmAn;
+}
+$('#kmBtn').addEventListener('click', () => {
+  kmAn = !kmAn;
+  try { localStorage.setItem(KM_KEY, kmAn ? '1' : '0'); } catch (e) {}
+  if (!kmAn && lauf && lauf.schritte) lauf.abspielen(true);   // ausgeblendet: Schritte ohne Halt zu Ende laufen lassen
+  renderKm(); setButtons();
+});
+$('#kmKlein').addEventListener('click', () => {
+  const zu = $('#kmEcke').classList.toggle('zu');
+  $('#kmKlein').textContent = zu ? '+' : '–';
+  $('#kmKlein').title = zu ? 'Ausklappen' : 'Einklappen';
+  $('#kmKlein').setAttribute('aria-label', $('#kmKlein').title);
+});
+
+// Zeile markieren: im Editor und in der Code-Ansicht des Vollbilds
+let mark = null;              // {nr, art, handle}
+function markiere(nr, art){
+  if (mark){ ed.removeLineClass(mark.handle, 'background', 'step-' + mark.art); mark = null; }
+  if (nr && nr <= ed.lineCount()){
+    const handle = ed.getLineHandle(nr - 1);
+    ed.addLineClass(handle, 'background', 'step-' + art);
+    ed.scrollIntoView({line: nr - 1, ch: 0}, 80);
+    mark = {nr, art, handle};
+  }
+  if (dlg.open) renderCode();
+}
+
+// Vollbild: Kommode, Schritt-Leiste und Terminal wandern in das Pop-up und beim Schließen zurück
+const dlg = $('#kmDialog');
+function renderCode(){
+  const box = $('#kdCode');
+  box.textContent = '';
+  ed.getValue().split('\n').forEach((z, i) => {
+    const d = document.createElement('div');
+    const n = document.createElement('i'); n.textContent = i + 1;
+    d.append(n, z || ' ');
+    if (mark && mark.nr === i + 1) d.className = 'step-' + mark.art;
+    box.appendChild(d);
+  });
+  const m = box.querySelector('.step-naechste,.step-aktiv');
+  if (m) m.scrollIntoView({block: 'nearest'});
+}
+$('#kmGross').addEventListener('click', () => {
+  $('#kdPlatz').appendChild(kommode.el); kommode.groesse('gross');
+  $('#kdLeiste').appendChild($('#schrittLeiste'));
+  $('#kdTerm').appendChild(term);
+  renderCode();
+  dlg.showModal();
+  const i = term.querySelector('input'); if (i) i.focus();
+  term.scrollTop = term.scrollHeight;
+});
+dlg.addEventListener('close', () => {
+  $('#kmPlatz').appendChild(kommode.el); kommode.groesse('mini');
+  $('#clearBtn').before($('#schrittLeiste'));
+  $('#termPane .term-body').prepend(term);
+  term.scrollTop = term.scrollHeight;
+  const i = term.querySelector('input'); if (i) i.focus();
+});
+$('#kdZu').addEventListener('click', () => dlg.close());
+$('#kdStop').addEventListener('click', () => stop());
+
 /* ---------- Ausführen ---------- */
-let running = false, stopRequested = false, runId = 0, abortRun = null;
+let running = false, stopRequested = false, runId = 0, abortRun = null, lauf = null;
 const ABBRUCH = {abbruch: true};
 
 function builtinRead(f){
@@ -354,51 +520,62 @@ function builtinRead(f){
   return Sk.builtinFiles.files[f];
 }
 
-function run(){
+// modus: undefined = normal, 'schritt' = vor jeder Zeile anhalten, 'auto' = Schritte abspielen
+function run(modus){
   if (running) return;
   stopRequested = false;
   clearErrLine();
   const code = ed.getValue();
+  const schritte = !!modus;
   const turtle = /^\s*(import\s+turtle|from\s+turtle\s+import)/m.test(code);
   $('#turtleBox').classList.toggle('an', turtle);
   nl();
-  out('>>> programm.py wird ausgeführt\n', 'sys');
+  out(schritte ? '>>> programm.py wird Schritt für Schritt ausgeführt\n' : '>>> programm.py wird ausgeführt\n', 'sys');
   const id = ++runId;
-  running = true; setButtons();
+  running = true;
+  if (schritte) ed.setOption('readOnly', true);
   setStatus('läuft …', 'laeuft');
   const t0 = performance.now();
+  kommode.leeren();
 
-  Sk.configure({
-    __future__: Sk.python3,
-    output: s => { if (id === runId && !stopRequested) out(s); },
-    read: builtinRead,
-    inputfun: askInput,
-    inputfunTakesPrompt: true,
-    yieldLimit: 100,             // regelmäßig Pause machen, damit Stopp und Anzeige funktionieren
-    killableWhile: true, killableFor: true,
-    execLimit: null
-  });
   const h = $('#termPane').clientHeight - 40;
   (Sk.TurtleGraphics || (Sk.TurtleGraphics = {})).target = 'turtle';
-  Sk.TurtleGraphics.width = Math.max(300, Math.min(480, h));
-  Sk.TurtleGraphics.height = Math.max(300, Math.min(480, h));
-
   // Stopp beendet sofort; ein noch laufender Rest (z. B. Turtle-Animation) bricht beim nächsten Schritt ab
   const abgebrochen = new Promise((_, reject) => { abortRun = () => reject(ABBRUCH); });
-  Promise.race([abgebrochen, Sk.misceval.asyncToPromise(
-    () => Sk.importMainWithBody('<stdin>', false, code, true),
-    {'*': () => { if (id !== runId || stopRequested) throw ABBRUCH; }}
-  )]).then(() => {
+  lauf = Kommode.lauf({
+    code, kommode, schritte, auto: modus === 'auto',
+    konfig: {
+      __future__: Sk.python3,
+      output: s => { if (id === runId && !stopRequested) out(s); },
+      read: builtinRead,
+      inputfun: askInput,
+      inputfunTakesPrompt: true,
+      yieldLimit: 100,             // regelmäßig Pause machen, damit Stopp und Anzeige funktionieren
+      killableWhile: true, killableFor: true,
+      execLimit: null
+    },
+    zeile: markiere,
+    abbruch: () => { if (id !== runId || stopRequested) throw ABBRUCH; }
+  });
+  lauf.schritte = schritte;
+  lauf.onwarten = () => setButtons();
+  Sk.TurtleGraphics.width = Math.max(300, Math.min(480, h));
+  Sk.TurtleGraphics.height = Math.max(300, Math.min(480, h));
+  setButtons();
+
+  Promise.race([abgebrochen, lauf.promise]).then(() => {
     nl();
     const s = ((performance.now() - t0) / 1000).toFixed(2);
     out(`>>> fertig (${s} s)\n`, 'sys');
     setStatus('fertig', 'ok');
   }, err => {
-    if (err === ABBRUCH || stopRequested){ nl(); out('>>> Programm abgebrochen\n', 'sys'); setStatus('abgebrochen'); }
+    if (err === ABBRUCH || stopRequested){ nl(); out('>>> Programm abgebrochen\n', 'sys'); setStatus('abgebrochen'); kommode.info('Programm abgebrochen.'); }
     else { showError(err); setStatus('Fehler', 'fehler'); }
   }).finally(() => {
     if (pendingInput){ pendingInput.el.remove(); pendingInput = null; }
-    running = false; abortRun = null; setButtons();
+    markiere(null);
+    ed.setOption('readOnly', false);
+    running = false; abortRun = null; lauf = null; setButtons();
   });
 }
 
@@ -406,13 +583,36 @@ function stop(){
   if (!running) return;
   stopRequested = true;
   if (pendingInput){ const p = pendingInput; p.el.remove(); pendingInput = null; p.reject(ABBRUCH); }
+  if (lauf) lauf.beenden(ABBRUCH);
   if (abortRun) abortRun();
 }
-function setButtons(){ $('#runBtn').disabled = running; $('#stopBtn').disabled = !running; }
+const PLAY = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 5v14l8-7zM12 5v14l8-7z"/></svg>Abspielen';
+const PAUSE = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>Pause';
+function setButtons(){
+  const schritte = !!(lauf && lauf.schritte);
+  $('#runBtn').disabled = running;
+  $('#stopBtn').disabled = $('#kdStop').disabled = !running;
+  $('#schrittBtn').disabled = running && !(schritte && lauf.bereit);
+  $('#playBtn').disabled = running && !schritte;
+  $('#playBtn').innerHTML = schritte && lauf.auto ? PAUSE : PLAY;
+  $('#kmBtn').disabled = running;
+}
+function schritt(){
+  if (!running) run('schritt');
+  else if (lauf && lauf.schritte){ if (lauf.auto) lauf.abspielen(false); lauf.schritt(); }
+}
 
-$('#runBtn').addEventListener('click', run);
+$('#runBtn').addEventListener('click', () => run());
 $('#stopBtn').addEventListener('click', stop);
-document.addEventListener('keydown', e => { if (e.key === 'Escape' && running) stop(); });
+$('#schrittBtn').addEventListener('click', schritt);
+$('#playBtn').addEventListener('click', () => {
+  if (!running) run('auto');
+  else if (lauf && lauf.schritte){ lauf.abspielen(!lauf.auto); setButtons(); }
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && running && !dlg.open) stop();
+  if (e.key === 'F10' && kmAn){ e.preventDefault(); if (!$('#schrittBtn').disabled) schritt(); }
+});
 
 /* ---------- Trenner Editor/Terminal ---------- */
 (function(){
@@ -446,7 +646,8 @@ $('#themeBtn').addEventListener('click', () => {
 });
 renderTheme();
 
-out('Schreibe oben deinen Code und klicke auf „Ausführen“.\nTastenkürzel: Strg+Enter ausführen · Esc abbrechen · Strg+# Kommentar an/aus\n', 'sys');
+out('Schreibe oben deinen Code und klicke auf „Ausführen“.\nTastenkürzel: Strg+Enter ausführen · F10 nächster Schritt · Esc abbrechen · Strg+# Kommentar an/aus\n', 'sys');
+renderKm();
 setButtons();
 </script>
 </body>

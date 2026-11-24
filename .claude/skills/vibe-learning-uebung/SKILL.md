@@ -538,6 +538,54 @@ Verglichen wird ohne Groß-/Kleinschreibung, Satzzeichen und doppelte Leerzeiche
 ä/ö/ü/ß zählen wie ae/oe/ue/ss. Texte in input("…") gehören nicht zur Ausgabe.
 ```
 
+### IT/python/lib/kommode.js – Python: Variablenmodell Kommode (Schubladen, Post-its, Schiefertafeln) und schrittweise Ausführung mit Skulpt (dazu kommode.css)
+
+```text
+kommode.js – Variablenmodell „Kommode“ für Python (Skulpt), Bereich IT/python
+
+  Bild: Jede Variable ist eine Schublade. Der Name steht auf einem Post-it auf der Schublade,
+  der Wert auf einer kleinen Schiefertafel darin (Datentyp klein in der Ecke, Text in "…").
+    Variable anlegen    → Post-it auf eine leere Schublade, Tafel hineinlegen und beschreiben
+    neuer Wert          → Tafel putzen und neu beschreiben
+    Variable verwenden  → Schublade auf, auf die Tafel schauen (Auge)
+
+  Einbinden (nach skulpt.min.js):
+    <link rel="stylesheet" href="lib/kommode.css">
+    <script src="lib/kommode.js"></script>
+
+  Ansicht:
+    const k = Kommode.erzeugen(eltern)     Kommode zeichnen, k.el ist das Wurzelelement (darf umgehängt werden)
+    k.groesse('mini' | 'gross')            Darstellung (klein in der Ecke / Vollbild)
+    k.leeren()                             alle Schubladen leer
+    k.zustand(map)                         ohne Animation setzen, map: Map name → {text, typ}
+    await k.lesen(['x', 'y'])              auf die Tafeln schauen
+    await k.schreiben('x', {text, typ})    anlegen bzw. putzen und neu beschreiben
+    await k.entfernen('x')                 Post-it ab, Schublade leer (del x)
+    k.info(text)                           Satz unter der Kommode („Was passiert gerade?“)
+    k.tempo = 1                            0.5 … 4, größer = schneller
+
+  Programm laufen lassen:
+    const lauf = Kommode.lauf({code, kommode, konfig, schritte, auto, zeile, abbruch})
+      konfig    Optionen für Sk.configure (output, inputfun, read …), debugging setzt lauf selbst
+      schritte  true: vor jeder Zeile anhalten und Teilschritte zeigen (lesen → putzen/schreiben)
+                false: normal laufen, am Ende (auch nach Fehler) den Endzustand zeigen
+      auto      true: Schritte selbst abspielen (Pause je nach k.tempo)
+      zeile(nr, art)  Zeile markieren, art 'naechste' | 'aktiv'; nr null = Markierung weg
+      abbruch() wird bei jedem Halt aufgerufen und darf werfen, um das Programm abzubrechen
+    lauf.promise              wie Sk.misceval.asyncToPromise
+    lauf.schritt()            nächster Schritt
+    lauf.abspielen(an)        automatisch weiter (an = true) oder anhalten; lauf.auto gibt den Stand
+    lauf.beenden(grund)       wartenden Schritt mit grund abbrechen
+    lauf.bereit               true, solange auf den nächsten Schritt gewartet wird
+    lauf.onwarten = fn        wird aufgerufen, wenn sich lauf.bereit ändert
+
+  Hilfen:
+    Kommode.analyse(text)     → {lesen: [...], ziele: [...], fuer: [...]} welche Namen eine Zeile liest/setzt
+    Kommode.variablen(gbl)    → Map name → {text, typ} aus einem Skulpt-Namensraum (ohne Funktionen, Module)
+
+  Grenzen: Lokale Variablen in Funktionen zeigt die Kommode nicht (nur globale).
+```
+
 ### IT/html/lib/htmlkurs.js – Geführte HTML- und CSS-Übungen
 
 ```text

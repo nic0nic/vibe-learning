@@ -55,6 +55,15 @@ Gesammelt im Thread „Aufbau der Seite“. Umgesetzt wird erst, wenn die Lehrkr
 
 ## Erledigt
 
+### Version vom 24.11.
+
+73. **Python-Editor: Variablenmodell „Kommode“ und schrittweise Ausführung** (gewünscht 24.11.)
+    Neue Bibliothek `IT/python/lib/kommode.js` + `kommode.css`. Jede Variable ist eine Schublade mit Post-it (Name) und Schiefertafel (Wert, Datentyp klein, Text in "…"). Anlegen = Post-it aufkleben und Tafel beschreiben, neuer Wert = Tafel putzen (Schwamm) und neu beschreiben, Verwenden = auf die Tafel schauen (Auge). `Kommode.lauf` nutzt den Debug-Modus von Skulpt (Halt vor jeder Zeile, `Sk.delay` an Schleifenköpfen) und zeigt pro Zeile die Teilschritte: erst lesen, dann putzen/schreiben. Dazu kommt die letzte Prüfung der while-Bedingung als eigener Schritt, und bei for wird der nächste Wert dem Schleifenkopf zugeordnet.
+    `editor.html`: Schalter „Variablen“ (gespeichert in `py-kommode`, Tempo in `py-kommode-tempo`), Kommode klein oben rechts im Editor (einklappbar), ⤢ öffnet ein Vollbild-Fenster mit Code, Kommode und Terminal (input() geht dort auch). Schritt (F10), Abspielen/Pause und Tempo. Normales „Ausführen“ zeigt am Ende den Endzustand, auch nach einem Fehler.
+    Grenzen: Lokale Variablen in Funktionen werden nicht gezeigt (Hinweis im Satz unter der Kommode). Listen erscheinen als Text auf der Tafel. Umlaute in Namen kann Skulpt ohnehin nicht.
+    Getestet in Chromium (Webseite und Einzeldatei): Zuweisungen, `x = x + 1`, `+=`, for, while mit Ende, while True mit break und input(), Funktion, Fehler, Stopp mitten im Schritt, Vollbild hell/dunkel. Nicht getestet: PocketBase, Touch, ByCS-Paket in ByCS, Firefox/Safari.
+    **Später:** Seite `variable.html` zur Erarbeitung und Übung, die die Bibliothek mitnutzt.
+
 ### Version vom 19.11.
 
 72. **BWR Gesamt: Seite Kalkulationen** (gewünscht 19.11.)
