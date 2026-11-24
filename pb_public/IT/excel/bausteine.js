@@ -9,7 +9,7 @@
  *   dragData, dragKind, dropOk, dragTap, shiftPlace           Drag-Hooks für basis.js, Shift+Klick setzt ein
  *   AC_FN                                                     Funktionsliste der Autovervollständigung
  *
- * Die Seite liefert
+ * Die Seite liefert (bei UND/ODER und NICHT kommen accepts, applyDrop und SCEN aus wennbau.js bzw. uo-szenarien.js)
  *   SCEN, setup(), accepts(target, kind), applyDrop(d, type, idx, t), renderGrid(),
  *   let endScen, endSeed, poolSeed, CUR, S = {items, slots, row, fb, success, result, …}
  *   außerdem für basis.js: setMode, canNext, nextTask, renderNav, renderDock (Pfad/Endlos über dockHTML())

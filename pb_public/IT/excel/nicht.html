@@ -6,11 +6,15 @@
 <title>NICHT – Bedingungen umdrehen – vibe learning</title>
 <!--
   Die Funktion NICHT in Excel, Aufhänger: Eine WENN-Formel mit UND lässt sich „von der anderen Seite“ mit ODER schreiben
-  (UND ↔ ODER, jede Bedingung ins Gegenteil, Dann_Wert und Sonst_Wert tauschen). Erarbeitung und Übung mit lib/aufgaben.js,
-  Endlos-Modus (Aufgaben.training): Zur gegebenen Formel UND oder ODER in der gleichwertigen Formel wählen.
-  Stufe 1 „Umdrehen“ (umgedreht oder unverändert), Stufe 2 „Mit NICHT“ (dazu NICHT außen oder an jeder Bedingung).
-  Schalter „Auf Zeit“ setzt bei beiden Stufen die Zeit (eigene Bestleistung über training.variante).
-  Gespeichert: nicht-stand = {schritt, erledigt}, nicht-endlos-training = {stufe, best}, nicht-zeit = '1' (Schalter an).
+  (UND ↔ ODER, jede Bedingung ins Gegenteil, Dann_Wert und Sonst_Wert tauschen).
+  Modus Erarbeitung: Erklärungen, Aufgaben und Übung mit lib/aufgaben.js (Aufgaben.sequenz), am Ende ein Blitz-Training
+    (Aufgaben.training): UND oder ODER in der gleichwertigen Formel wählen, Stufen „Umdrehen“ und „Mit NICHT“,
+    Schalter „Auf Zeit“ (eigene Bestleistung über training.variante).
+  Modus Endlos: Formel umdrehen bzw. ohne NICHT schreiben, 9 Stufen wie bei UND/ODER (wennbau.js: Bausteine → Freitext),
+    Sachaufgaben aus uo-szenarien.js. Geprüft wird, ob die Formel immer dasselbe liefert, dazu umgedreht (andere
+    Verknüpfung) bzw. ohne NICHT (CUR.muss).
+  Gespeichert: nicht-stand = {schritt, erledigt}, nicht-blitz-training = {stufe, best}, nicht-zeit = '1' (Schalter an),
+    nicht-mode, nicht-level, nicht-best (basis.js).
 -->
 <script src="../../katalog.js"></script>
 <script src="../../nav.js"></script>
@@ -19,11 +23,40 @@
 (function(){var t=null;try{t=localStorage.getItem('wenn-theme');}catch(e){}
 document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');})();
 </script>
-<link rel="stylesheet" href="../../lib/basis.css">
+<link rel="stylesheet" href="basis.css">
+<link rel="stylesheet" href="bausteine.css">
 <link rel="stylesheet" href="../../lib/aufgaben.css">
-<script src="../../lib/aufgaben.js"></script>
 <style>
-.wrap{max-width:900px}
+/* Bausteine wie in und-oder.html */
+.block.fn{background:var(--blk-fn);border-radius:14px;padding:6px 12px;gap:6px;box-shadow:inset 0 -3px 0 rgba(0,0,0,.2);flex-wrap:wrap}
+.block.fn .fname,.block.fn .fsep{font-size:19px}
+.block.fn .slot.hex{min-width:150px;min-height:48px}
+.block.fn .slot.hex.dummy{min-width:110px;min-height:38px;opacity:.7}
+.slot.fnslot{min-width:260px;min-height:60px;border:2px dashed var(--slot-border);border-radius:16px;background:var(--slot);padding:3px}
+.slot.fnslot.drop-hover{border-color:var(--accent)}
+.fixv{font:700 20px var(--mono);padding:6px 12px;border-radius:999px;background:var(--panel2);border:1px solid var(--border)}
+.fixv.c-then{background:var(--then);color:var(--on-color);border-color:transparent}
+.fixv.c-else{background:var(--else);color:var(--on-color);border-color:transparent}
+.block.fn.r-cond .slot.hex::after{background:color-mix(in srgb,var(--cond) 55%,#fff)}
+.cases{margin:8px 0}
+.cases summary{cursor:pointer;color:var(--muted);font-size:14px}
+.gegeben{margin:8px 0 10px}
+.gegeben code{display:inline-block;font:700 17px var(--mono);padding:6px 10px;word-break:break-all}
+.worum{margin-top:8px;font-size:14px}
+.worum summary{cursor:pointer;color:var(--muted)}
+details.help{margin-top:10px;background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:8px 12px}
+details.help summary{cursor:pointer;font-weight:600;color:var(--muted)}
+details.help p,details.help ul{margin:8px 0}
+/* Erarbeitung (lib/aufgaben.js): Knöpfe wie lib/basis.css */
+#lern .btn{font:600 14px system-ui,sans-serif;background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:7px 12px;cursor:pointer}
+#lern .btn.on,#lern .btn.haupt{background:var(--accent);border-color:var(--accent);color:#fff}
+[data-theme=dark] #lern .btn.on,[data-theme=dark] #lern .btn.haupt{color:#2e3440}
+#lern .btn:disabled{opacity:.45}
+#lern .btn.klein{font-size:13px;padding:4px 9px}
+#lern .muted{color:var(--muted)}
+#lern .karte{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px 16px}
+#lern .karte p{margin:0 0 8px}
+#lern h2{font-size:20px;margin:4px 0 8px}
 .info{border-left:4px solid var(--accent);padding:2px 0 2px 12px;margin:0 0 12px}
 code.fx{font:600 15px var(--mono);background:var(--panel2);border:1px solid var(--border);border-radius:6px;padding:1px 6px;white-space:nowrap}
 .fxblock{display:flex;flex-direction:column;align-items:flex-start;gap:6px;margin:8px 0 12px}
@@ -37,7 +70,8 @@ table.gegen td,table.gegen th{border:1px solid var(--border);padding:5px 12px;te
 table.gegen th{background:var(--panel2);font:600 13px system-ui,sans-serif}
 .af-luecken code.fx{white-space:normal;line-height:2.4;background:none;border:0;padding:0;font-size:16px}
 .af-luecken select{font:600 14px var(--mono)}
-/* Endlos */
+.af-karte code.fx,.af-zt code.fx{white-space:normal;word-break:break-all;font-size:13px}
+/* Blitz-Training */
 .ef{display:flex;flex-direction:column;align-items:center;gap:6px;font:400 15px system-ui,sans-serif}
 .ef .el{color:var(--muted)}
 .ef code{font:600 clamp(14px,2.4vw,19px) var(--mono);background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:6px 10px;word-break:break-all}
@@ -54,64 +88,119 @@ table.gegen th{background:var(--panel2);font:600 13px system-ui,sans-serif}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <div class="bar"><div class="brand">NICHT<span> – umdrehen</span></div><div class="muted">Bedingungen umkehren – und UND gegen ODER tauschen</div></div>
-  <div id="app"></div>
-</div>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <linearGradient id="fg" x1="0" y1="1" x2="0" y2="0">
+    <stop offset="0" stop-color="#d9230f"/><stop offset=".55" stop-color="#ff7a00"/><stop offset="1" stop-color="#ffd23f"/>
+  </linearGradient></defs></svg>
+
+<header>
+  <div class="hdr-left">
+    <div class="brand"><span>NICHT</span></div>
+    <div class="modes" role="group" aria-label="Modus">
+      <button data-mode="lernen">Erarbeitung</button><button data-mode="endlos">Endlos</button>
+    </div>
+  </div>
+  <div class="hdr-right">
+    <button class="iconbtn" id="themeBtn" aria-label="Hell/Dunkel umschalten"></button>
+    <div class="flames" id="flames" aria-label="Stufe wählen"></div>
+  </div>
+</header>
+
+<main>
+  <div id="lern"></div>
+  <div id="engine">
+    <section class="card">
+      <div class="meta">
+        <span class="lvlname" id="lvlname"></span>
+        <span id="taskmeta"></span>
+      </div>
+      <div class="taskrow">
+        <div class="tasktext" id="tasktext"></div>
+        <div id="grid"></div>
+      </div>
+    </section>
+
+    <section class="card" id="workcard">
+      <div class="worktitle"><span id="wtlabel">Deine Formel</span> <span class="wthint" id="wthint"></span></div>
+      <div id="work"></div>
+    </section>
+
+    <div class="pools" id="pools"></div>
+
+    <div class="actions">
+      <button class="btn primary" id="checkBtn">Prüfen</button>
+      <button class="btn" id="resetBtn">Zurücksetzen</button>
+      <span class="spacer"></span>
+      <button class="btn" id="skipBtn" title="Neue Aufgabe – die Serie beginnt wieder bei 0">Andere Aufgabe</button>
+      <button class="btn" id="prevBtn" aria-label="Vorherige Aufgabe">◀</button>
+      <button class="btn" id="nextBtn">Nächste Aufgabe ▶</button>
+    </div>
+    <div id="fb"></div>
+  </div>
+</main>
+
+<div class="dock" id="dock"></div>
+
+<script src="../../lib/aufgaben.js"></script>
+<script src="basis.js"></script>
+<script src="bausteine.js"></script>
+<script src="wennbau.js"></script>
+<script src="uo-szenarien.js"></script>
+
+<!-- ===================== Erarbeitung (lib/aufgaben.js) ===================== -->
 <script>
 'use strict';
-const esc = Aufgaben.esc;
 const F = s => `<code class="fx">${esc(s)}</code>`;                                  // Formel im Fließtext
 const FB = (...z) => `<div class="fxblock">${z.map(F).join('')}</div>`;               // Formeln untereinander
-const L = s => '<code class="fx">' + s.split(/(\[\[.*?\]\])/).map((t, i) => i % 2 ? t : esc(t)).join('') + '</code>';   // Lückentext-Formel
+const LT = s => '<code class="fx">' + s.split(/(\[\[.*?\]\])/).map((t, i) => i % 2 ? t : esc(t)).join('') + '</code>';   // Lückentext-Formel
 
-/* ---------- Endlos: Formeln erzeugen ---------- */
+/* ---------- Blitz-Training: UND oder ODER? ---------- */
 const GEGEN = {'<':'>=', '>=':'<', '>':'<=', '<=':'>', '=':'<>', '<>':'='};
-const OPS = Object.keys(GEGEN), ANDERE = {UND:'ODER', ODER:'UND'};
-const TEXTE = ['"ja"', '"nein"', '"bezahlt"', '"Gold"', '"Bayern"', '"rot"', '"Mitglied"'];
-const ERGEBNISSE = [['"ja"', '"nein"'], ['"Rabatt"', '"kein Rabatt"'], ['"bestanden"', '"nicht bestanden"'], ['0', '4,90'],
+const ANDERE = {UND:'ODER', ODER:'UND'};
+const BL_OPS = Object.keys(GEGEN);
+const BL_TEXTE = ['"ja"', '"nein"', '"bezahlt"', '"Gold"', '"Bayern"', '"rot"', '"Mitglied"'];
+const BL_ERG = [['"ja"', '"nein"'], ['"Rabatt"', '"kein Rabatt"'], ['"bestanden"', '"nicht bestanden"'], ['0', '4,90'],
   ['"frei"', '"Gebühr"'], ['"Bonus"', '"kein Bonus"'], ['"darf rein"', '"darf nicht rein"'], ['10%', '0%']];
 const zufall = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
 const eins = l => l[zufall(0, l.length - 1)];
-function bedingungen(){
+function blBedingungen(){
   const n = Math.random() < 0.75 ? 2 : 3, zellen = Aufgaben.mischen(['B2', 'C2', 'D2', 'E2']).slice(0, n).sort();
   return zellen.map(z => Math.random() < 0.65
-    ? {z, op:eins(OPS), v:String(eins([zufall(1, 6), zufall(2, 20) * 5, zufall(12, 21), zufall(1, 10) * 100]))}
-    : {z, op:eins(['=', '=', '<>']), v:eins(TEXTE)});
+    ? {z, op:eins(BL_OPS), v:String(eins([zufall(1, 6), zufall(2, 20) * 5, zufall(12, 21), zufall(1, 10) * 100]))}
+    : {z, op:eins(['=', '=', '<>']), v:eins(BL_TEXTE)});
 }
-const txt = b => b.z + b.op + b.v, neg = b => ({...b, op:GEGEN[b.op]});
-const BLANK = '\u0000';
-const zeig = s => esc(s).replace(BLANK, '<span class="blank">?</span>');
-let zuletzt = '';
-function neueAufgabe(arten){
+const blTxt = b => b.z + b.op + b.v, blNeg = b => ({...b, op:GEGEN[b.op]});
+const LUECKE = '\u0000';
+const blZeig = s => esc(s).replace(LUECKE, '<span class="blank">?</span>');
+let blZuletzt = '';
+function blAufgabe(arten){
   return () => {
     let f, c, r, art;
-    do { f = eins(['UND', 'ODER']); c = bedingungen(); r = eins(ERGEBNISSE); art = eins(arten); } while (art + f === zuletzt && Math.random() < 0.6);
-    zuletzt = art + f;
-    const [x, y] = r, g = ANDERE[f], orig = `=WENN(${f}(${c.map(txt).join(';')});${x};${y})`;
+    do { f = eins(['UND', 'ODER']); c = blBedingungen(); r = eins(BL_ERG); art = eins(arten); } while (art + f === blZuletzt && Math.random() < 0.6);
+    blZuletzt = art + f;
+    const [x, y] = r, g = ANDERE[f], orig = `=WENN(${f}(${c.map(blTxt).join(';')});${x};${y})`;
     const um = Aufgaben.mischen(c.slice());
     const V = {   // Formel mit Lücke, richtige Funktion, Begründung
-      um:   [`=WENN(${BLANK}(${c.map(neg).map(txt).join(';')});${y};${x})`, g, 'Bedingungen umgedreht, Dann/Sonst getauscht'],
-      gleich:[`=WENN(${BLANK}(${um.map(txt).join(';')});${x};${y})`, f, 'nichts umgedreht, nur andere Reihenfolge'],
-      aussen:[`=WENN(NICHT(${BLANK}(${um.map(txt).join(';')}));${y};${x})`, f, 'NICHT außen, dafür Dann/Sonst getauscht'],
-      beides:[`=WENN(NICHT(${BLANK}(${c.map(neg).map(txt).join(';')}));${x};${y})`, g, 'NICHT außen und jede Bedingung umgedreht'],
-      jede: [`=WENN(${BLANK}(${c.map(b => 'NICHT(' + txt(b) + ')').join(';')});${y};${x})`, g, 'jede Bedingung mit NICHT umgedreht, Dann/Sonst getauscht']
+      um:    [`=WENN(${LUECKE}(${c.map(blNeg).map(blTxt).join(';')});${y};${x})`, g, 'Bedingungen umgedreht, Dann/Sonst getauscht'],
+      gleich:[`=WENN(${LUECKE}(${um.map(blTxt).join(';')});${x};${y})`, f, 'nichts umgedreht, nur andere Reihenfolge'],
+      aussen:[`=WENN(NICHT(${LUECKE}(${um.map(blTxt).join(';')}));${y};${x})`, f, 'NICHT außen, dafür Dann/Sonst getauscht'],
+      beides:[`=WENN(NICHT(${LUECKE}(${c.map(blNeg).map(blTxt).join(';')}));${x};${y})`, g, 'NICHT außen und jede Bedingung umgedreht'],
+      jede:  [`=WENN(${LUECKE}(${c.map(b => 'NICHT(' + blTxt(b) + ')').join(';')});${y};${x})`, g, 'jede Bedingung mit NICHT umgedreht, Dann/Sonst getauscht']
     }[art];
     return {
-      frage:`<div class="ef"><span class="el">Diese Formel …</span><code>${esc(orig)}</code><span class="el">… liefert immer dasselbe wie:</span><code>${zeig(V[0])}</code></div>`,
+      frage:`<div class="ef"><span class="el">Diese Formel …</span><code>${esc(orig)}</code><span class="el">… liefert immer dasselbe wie:</span><code>${blZeig(V[0])}</code></div>`,
       loesung:`${V[1]} (${V[2]})`,
       optionen:[{t:'UND', ok:V[1] === 'UND'}, {t:'ODER', ok:V[1] === 'ODER'}]
     };
   };
 }
-
 /* Schalter „Auf Zeit“: setzt die Zeit in beiden Stufen, eigene Bestleistung */
 const ZEIT = {start:12, schritt:-0.2, min:5}, ZEIT_KEY = 'nicht-zeit';
 let aufZeit = false; try { aufZeit = localStorage.getItem(ZEIT_KEY) === '1'; } catch (e) {}
-const STUFEN = [
-  {name:'Umdrehen', antwort:'mc', neu:neueAufgabe(['um', 'um', 'um', 'gleich', 'gleich'])},
-  {name:'Mit NICHT', antwort:'mc', neu:neueAufgabe(['um', 'gleich', 'aussen', 'aussen', 'beides', 'beides', 'jede', 'jede'])}];
-const zeitSetzen = () => STUFEN.forEach(s => { s.zeit = aufZeit ? ZEIT : null; });
+const BL_STUFEN = [
+  {name:'Umdrehen', antwort:'mc', neu:blAufgabe(['um', 'um', 'um', 'gleich', 'gleich'])},
+  {name:'Mit NICHT', antwort:'mc', neu:blAufgabe(['um', 'gleich', 'aussen', 'aussen', 'beides', 'beides', 'jede', 'jede'])}];
+const zeitSetzen = () => BL_STUFEN.forEach(s => { s.zeit = aufZeit ? ZEIT : null; });
 zeitSetzen();
 function zeitBauen(el){
   const box = el.querySelector('.zeitbox'); if (!box) return;
@@ -127,9 +216,12 @@ function zeitBauen(el){
   zeigen();
 }
 
-/* ---------- Ablauf ---------- */
+/* ---------- Schritte der Erarbeitung ---------- */
 const RABATT = '=WENN(UND(B2<18;C2="ja");"Rabatt";"kein Rabatt")', LEA = '=WENN(ODER(B2>=18;C2<>"ja");"kein Rabatt";"Rabatt")';
-Aufgaben.sequenz({el:'#app', key:'nicht', schritte:[
+let lernGebaut = false;
+function lernBauen(){
+  if (lernGebaut) return; lernGebaut = true;
+  Aufgaben.sequenz({el:'#lern', key:'nicht', schritte:[
   {id:'info', kurz:'Einstieg', html:`<h2>Zwei Formeln – dasselbe Ergebnis?</h2>
     <p>Im Freibad gibt es einen Schülerrabatt: Wer <b>jünger als 18</b> ist <b>und</b> einen <b>Schülerausweis</b> hat, zahlt weniger. In Spalte B steht das Alter, in Spalte C, ob ein Ausweis da ist („ja“ oder „nein“).</p>
     <p>Tim schreibt die Formel so, wie die Regel klingt:</p>${FB(RABATT)}
@@ -163,8 +255,8 @@ Aufgaben.sequenz({el:'#app', key:'nicht', schritte:[
       zeilen:[[30, false, {l:true}, {l:false}], [50, true, {l:false}, {l:true}], [80, true, {l:false}, {l:true}]],
       hinweise:{2:'NICHT dreht den Wert aus der Spalte davor um.', 3:'Prüfe zuerst B2<50 und drehe das Ergebnis dann um.'}},
     {typ:'zuordnen', nr:'2.2', frage:'Ordne jeder Formel die Bedingung zu, die dasselbe bedeutet.',
-      felder:[['a', 'B2>=18'], ['b', 'B2>18'], ['c', 'B2<=50'], ['d', 'C2<>"ja"'], ['e', 'D2="Gold"']],
-      karten:[{t:'NICHT(B2<18)', z:'a'}, {t:'NICHT(B2<=18)', z:'b'}, {t:'NICHT(B2>50)', z:'c'}, {t:'NICHT(C2="ja")', z:'d'}, {t:'NICHT(D2<>"Gold")', z:'e'}]},
+      felder:[['a', F('B2>=18')], ['b', F('B2>18')], ['c', F('B2<=50')], ['d', F('C2<>"ja"')], ['e', F('D2="Gold"')]],
+      karten:[{t:F('NICHT(B2<18)'), z:'a'}, {t:F('NICHT(B2<=18)'), z:'b'}, {t:F('NICHT(B2>50)'), z:'c'}, {t:F('NICHT(C2="ja")'), z:'d'}, {t:F('NICHT(D2<>"Gold")'), z:'e'}]},
     {typ:'mc', nr:'2.3', frage:`Welche Formel liefert dasselbe wie ${F('=WENN(NICHT(B2<18);"Erwachsen";"Kind")')}?`, mono:true,
       options:['=WENN(B2<18;"Kind";"Erwachsen")', '=WENN(B2<18;"Erwachsen";"Kind")', '=WENN(B2>18;"Erwachsen";"Kind")', '=WENN(NICHT(B2>=18);"Erwachsen";"Kind")'], correct:[0],
       why:{1:'Ohne NICHT ist die Prüfung umgekehrt – dann müssen Dann_Wert und Sonst_Wert die Plätze tauschen.', 2:'Wer genau 18 ist, bekäme hier „Kind“.', 3:'NICHT(B2>=18) ist dasselbe wie B2<18 – genau umgekehrt.'},
@@ -190,7 +282,7 @@ Aufgaben.sequenz({el:'#app', key:'nicht', schritte:[
       options:['UND(B2<=4;C2<=4)', 'ODER(B2<=4;C2<=4)', 'UND(B2<4;C2<4)', 'UND(B2>4;C2>4)'], correct:[0],
       why:{1:'Vor ODER wird NICHT zu UND.', 2:'Das Gegenteil von >4 ist <=4 – die 4 gehört dazu.', 3:'Die Bedingungen müssen auch umgedreht werden.'}},
     {typ:'luecken', nr:'3.3', frage:`Dreh die Formel ${F('=WENN(UND(B2>=50;C2="Deutschland");0;4,90)')} um (Versand kostenlos ab 50 € innerhalb Deutschlands).`,
-      text:L('=WENN([[ODER|UND]](B2[[<|<=|>]]50;C2[[<>|=]]"Deutschland");[[4,90|0]];[[0|4,90]])')}]},
+      text:LT('=WENN([[ODER|UND]](B2[[<|<=|>]]50;C2[[<>|=]]"Deutschland");[[4,90|0]];[[0|4,90]])')}]},
   {id:'u1', kurz:'Übung 1', erinnerung:'<p>Umdrehen: UND ↔ ODER, jede Bedingung ins Gegenteil, Dann_Wert und Sonst_Wert tauschen. NICHT dreht WAHR und FALSCH um.</p>', erinnerungZu:true, aufgaben:[
     {typ:'mc', nr:'4.1', frage:`Welche Formel liefert immer dasselbe wie ${F('=WENN(ODER(B2>4;C2>4);"Nachhilfe";"keine Nachhilfe")')}?`, mono:true,
       options:['=WENN(UND(B2<=4;C2<=4);"keine Nachhilfe";"Nachhilfe")', '=WENN(UND(B2<=4;C2<=4);"Nachhilfe";"keine Nachhilfe")', '=WENN(UND(B2<4;C2<4);"keine Nachhilfe";"Nachhilfe")', '=WENN(ODER(B2<=4;C2<=4);"keine Nachhilfe";"Nachhilfe")'], correct:[0],
@@ -199,7 +291,7 @@ Aufgaben.sequenz({el:'#app', key:'nicht', schritte:[
       options:['=WENN(ODER(B2<140;C2<8);"darf nicht fahren";"darf fahren")', '=WENN(NICHT(UND(B2>=140;C2>=8));"darf nicht fahren";"darf fahren")', '=WENN(ODER(NICHT(B2>=140);NICHT(C2>=8));"darf nicht fahren";"darf fahren")', '=WENN(ODER(B2<140;C2<8);"darf fahren";"darf nicht fahren")', '=WENN(NICHT(UND(B2>=140;C2>=8));"darf fahren";"darf nicht fahren")'], correct:[0, 1, 2],
       why:{3:'Hier fehlt das Tauschen von Dann_Wert und Sonst_Wert.', 4:'NICHT dreht die Prüfung um – dann müssen auch Dann_Wert und Sonst_Wert tauschen.'}},
     {typ:'luecken', nr:'4.3', frage:`Das Café hat am Wochenende geschlossen: ${F('=WENN(ODER(B2="Samstag";B2="Sonntag");"geschlossen";"geöffnet")')}. Ergänze die umgedrehte Formel.`,
-      text:L('=WENN([[UND|ODER]](B2[[<>|=]]"Samstag";B2[[<>|=]]"Sonntag");[["geöffnet"|"geschlossen"]];[["geschlossen"|"geöffnet"]])'),
+      text:LT('=WENN([[UND|ODER]](B2[[<>|=]]"Samstag";B2[[<>|=]]"Sonntag");[["geöffnet"|"geschlossen"]];[["geschlossen"|"geöffnet"]])'),
       ok:'Richtig! Ein Tag ist geöffnet, wenn er kein Samstag und auch kein Sonntag ist.'}]},
   {id:'u2', kurz:'Übung 2', erinnerung:'<p>Umdrehen: UND ↔ ODER, jede Bedingung ins Gegenteil, Dann_Wert und Sonst_Wert tauschen. NICHT dreht WAHR und FALSCH um.</p>', erinnerungZu:true, aufgaben:[
     {typ:'mc', nr:'5.1', frage:`Jonas hat ${F('=WENN(UND(B2>=140;C2>=8);"darf fahren";"darf nicht fahren")')} umgedreht zu ${F('=WENN(ODER(B2<=140;C2<8);"darf nicht fahren";"darf fahren")')}. Für wen zeigt seine Formel das Falsche an?`,
@@ -207,17 +299,109 @@ Aufgaben.sequenz({el:'#app', key:'nicht', schritte:[
       why:{1:'Ben darf nicht fahren – das zeigen beide Formeln an.', 2:'Ida darf nicht fahren – das zeigen beide Formeln an.', 3:'Max darf fahren – das zeigen beide Formeln an.'},
       after:'Das Gegenteil von B2>=140 ist B2<140. Mit B2<=140 darf Lina mit genau 140 cm nicht fahren, obwohl sie dürfte.'},
     {typ:'luecken', nr:'5.2', frage:`Drei Bedingungen: Beim Gewinnspiel gewinnt, wer mindestens 50 Punkte hat (B2), angemeldet ist (C2) und nicht gesperrt ist (D2):<br>${F('=WENN(UND(B2>=50;C2="ja";D2<>"gesperrt");"Gewinn";"Niete")')}<br>Ergänze die umgedrehte Formel.`,
-      text:L('=WENN([[ODER|UND]](B2[[<|<=|>]]50;C2[[<>|=]]"ja";D2[[=|<>]]"gesperrt");[["Niete"|"Gewinn"]];[["Gewinn"|"Niete"]])')},
+      text:LT('=WENN([[ODER|UND]](B2[[<|<=|>]]50;C2[[<>|=]]"ja";D2[[=|<>]]"gesperrt");[["Niete"|"Gewinn"]];[["Gewinn"|"Niete"]])')},
     {typ:'mc', nr:'5.3', frage:`Welche Formel liefert dasselbe wie ${F('=WENN(NICHT(ODER(B2="Mitglied";C2>=100));5;0)')}? (5 € Versand, außer für Mitglieder oder ab 100 € Bestellwert)`, mono:true,
       options:['=WENN(ODER(B2="Mitglied";C2>=100);0;5)', '=WENN(UND(B2<>"Mitglied";C2<100);0;5)', '=WENN(ODER(B2<>"Mitglied";C2<100);5;0)', '=WENN(ODER(B2="Mitglied";C2>=100);5;0)'], correct:[0],
       why:{1:'NICHT(ODER(…)) ist UND(B2<>"Mitglied";C2<100) – das ist richtig umgeschrieben, aber dann bleiben Dann_Wert und Sonst_Wert: 5;0.', 2:'Aus ODER muss UND werden.', 3:'Lässt man NICHT weg, müssen Dann_Wert und Sonst_Wert tauschen.'},
       after:'Auch richtig wäre =WENN(UND(B2<>"Mitglied";C2<100);5;0).'}]},
-  {id:'endlos', kurz:'Endlos', titel:'UND oder ODER?', html:`<h2>Endlos: UND oder ODER?</h2>
+  {id:'blitz', kurz:'Blitz', titel:'Blitz: UND oder ODER?', html:`<h2>Blitz: UND oder ODER?</h2>
     <p>Oben steht eine Formel, darunter eine Formel, die immer dasselbe liefert – nur die Funktion fehlt. Wähle <b>UND</b> oder <b>ODER</b> (oder Taste 1 bzw. 2). Achte darauf, ob die Bedingungen umgedreht und Dann_Wert und Sonst_Wert getauscht sind. Ein Fehler beendet die Serie.</p>
-    <p>Stufe an den Flammen: <b>1</b> Umdrehen · <b>2</b> Mit NICHT. Mit dem Schalter spielst du auf Zeit (eigene Bestleistung).</p><div class="zeitbox"></div>`,
+    <p>Stufe an den Flammen: <b>1</b> Umdrehen · <b>2</b> Mit NICHT. Mit dem Schalter spielst du auf Zeit (eigene Bestleistung).</p>
+    <p class="muted">Ganze Formeln umdrehen – von Bausteinen bis zum Eintippen – kannst du oben im Modus <b>Endlos</b>.</p><div class="zeitbox"></div>`,
    nach:zeitBauen,
-   training:{variante:() => aufZeit ? 'auf Zeit' : '', stufen:STUFEN}}
-]});
+   training:{variante:() => aufZeit ? 'auf Zeit' : '', stufen:BL_STUFEN}}
+  ]});
+}
+</script>
+
+<!-- ===================== Endlos: Formeln umdrehen (wennbau.js) ===================== -->
+<script>
+'use strict';
+const KEY = 'nicht-';
+const LEVELS = WB_LEVELS;
+const STD = [];   // keine festen Übungen, nur Erarbeitung und Endlos
+function logSolved(erstmals){
+  if (window.TrainerSync) TrainerSync.event({modus:'endlos', stufe:level, aufgabe:CUR.scen, titel:'Umdrehen: ' + CUR.scen, gesamt:0, erstmals});
+}
+let mode = load('mode') === 'endlos' ? 'endlos' : 'lernen';
+let level = Math.min(9, Math.max(1, parseInt(load('level')) || 1));
+let pfadIdx = 0, solved = {};
+let endScen = null, endSeed = 0, endCounted = false, streak = 0, best = parseInt(load('best')) || 0;
+let CUR, S, uid = 0, poolSeed = rand(), pickerOpen = false;
+
+/* Aufgabe: Formel aus einem Szenario umdrehen bzw. ohne NICHT schreiben
+   um      gegeben F(a;b);x;y            gesucht G(¬a;¬b);y;x   (muss: Verknüpfung G)
+   aussen  gegeben NICHT(G(¬a;¬b));x;y   gesucht F(a;b);x;y     (muss: ohne NICHT)
+   tausch  gegeben NICHT(F(a;b));y;x     gesucht G(¬a;¬b);y;x   (muss: ohne NICHT; F(a;b);x;y zählt auch)
+   innen   gegeben F(NICHT(¬a);NICHT(¬b));x;y   gesucht F(a;b);x;y   (muss: ohne NICHT)            */
+const UM_ARTEN = ['um', 'um', 'um', 'um', 'aussen', 'aussen', 'tausch', 'innen'];
+function umdrehAufgabe(id, seed){
+  const T0 = buildTask(id, {}, seed), r = rng(seed + 7), CD = T0.CD;
+  const f = T0.comb, g = ANDERE[f], x = T0.then, y = T0.else, art = pick1(r, UM_ARTEN);
+  const pos = c => c.cell + c.op + c.L(c.b), neg = c => c.cell + GEGEN[c.op] + c.L(c.b);
+  const P = CD.map(pos), N = CD.map(neg);
+  const wenn = (pr, a, b) => `=WENN(${pr};${a};${b})`;
+  const gegeben = {um:T0.sol, aussen:wenn(`NICHT(${g}(${N.join(';')}))`, x, y), tausch:wenn(`NICHT(${f}(${P.join(';')}))`, y, x),
+    innen:wenn(`${f}(${N.map(n => 'NICHT(' + n + ')').join(';')})`, x, y)}[art];
+  const umgedreht = art === 'um' || art === 'tausch';
+  const comb = umgedreht ? g : f, conds = umgedreht ? N : P, th = umgedreht ? y : x, el = umgedreht ? x : y;
+  const T = {...T0, comb, conds, then:th, else:el, sol:wenn(`${comb}(${conds.join(';')})`, th, el), noLogic:false, art, gegeben};
+  // Ablenker: nur, wenn sie an dieser Stelle eingesetzt die Lösung falsch machen
+  const mk = cs => wenn(`${comb}(${cs.join(';')})`, th, el);
+  const failsSub = (i, c) => { const cs = conds.slice(); cs[i] = c; try { return !checkAgainst(mk(cs), T).ok; } catch (e) { return true; } };
+  const NAH = {'>=':'>', '>':'>=', '<':'<=', '<=':'<'}, SPIEGEL = {'>=':'<=', '>':'<', '<':'>', '<=':'>='};
+  const condD = [], cvalD = [];
+  CD.forEach((c, i) => {
+    const op = umgedreht ? GEGEN[c.op] : c.op, lit = c.L(c.b);
+    let cands = [c.cell + GEGEN[op] + lit];                                          // nicht umgedreht bzw. falsch umgedreht
+    if (c.type === 'text') cands.push(...[...new Set(c.values)].filter(v => v !== c.b).slice(0, 2).map(v => c.cell + op + c.L(v)));
+    else cands.push(...[NAH[op], SPIEGEL[op]].filter(Boolean).map(o => c.cell + o + lit), c.cell + op + c.L(c.rd(c.b + c.step)));
+    let n = 0;
+    for (const k of shuffle(cands, r)) if (n < 2 && !conds.includes(k) && !condD.includes(k) && failsSub(i, k)){ condD.push(k); n++; }
+    const vals = c.type === 'text' ? [...new Set(c.values)].filter(v => v !== c.b).map(c.L) : ['"' + c.numLit(c.b) + '"', ...[1, -1, 2].map(s => c.L(c.rd(c.b + s * c.step)))];
+    n = 0;
+    for (const v of vals) if (n < 2 && !T.cvals.includes(v) && !cvalD.includes(v) && failsSub(i, c.cell + op + v)){ cvalD.push(v); n++; }
+  });
+  T.condD = condD; T.cvalD = cvalD;
+  T.muss = ast => {
+    if (art === 'um'){
+      const top = ast.args[0];
+      return top.k === 'call' && top.name === g ? '' : `Die Formel liefert dasselbe – aber sie ist noch nicht umgedreht. Verwende ${g} statt ${f}.`;
+    }
+    return usesFn(ast, ['NICHT']) ? 'Die Formel liefert dasselbe – aber sie soll ohne NICHT auskommen. Ersetze NICHT(…) durch das Gegenteil.' : '';
+  };
+  const auftrag = art === 'um'
+    ? '<b>Dreh die Formel um:</b> Schreibe eine Formel, die immer dasselbe Ergebnis liefert – mit der anderen Verknüpfung, jeder Bedingung im Gegenteil und getauschtem Dann_Wert und Sonst_Wert.'
+    : '<b>Schreibe die Formel ohne NICHT:</b> Sie soll immer dasselbe Ergebnis liefern. Ersetze NICHT durch das Gegenteil – und überlege, ob UND/ODER und Dann_Wert/Sonst_Wert dabei wechseln.';
+  T.text = `<p>In Zelle ${B(T0.out)} steht diese Formel:</p><div class="gegeben"><code>${esc(gegeben)}</code></div><p>${auftrag}</p>`
+    + `<details class="worum"><summary>Worum geht es?</summary><p>${T0.text}</p></details>`
+    + (LEVELS[level].mode === 'text' && LEVELS[level].help ? `<details class="help"><summary>Hilfe: umdrehen</summary><ul><li>UND ↔ ODER</li><li>Gegenteile: &lt; ↔ &gt;=, &gt; ↔ &lt;=, = ↔ &lt;&gt;</li><li>NICHT(UND(a;b)) = ODER(NICHT(a);NICHT(b))</li><li>Prüfung umgedreht → Dann_Wert und Sonst_Wert tauschen</li></ul></details>` : '');
+  return T;
+}
+
+/* ---------- Modus und Ablauf (basis.js, bausteine.js) ---------- */
+function loadTask(){
+  const lern = mode === 'lernen';
+  $('#lern').style.display = lern ? '' : 'none';
+  $('#engine').style.display = $('#dock').style.display = lern ? 'none' : '';
+  if (lern){ renderHeader(); lernBauen(); return; }
+  CUR = umdrehAufgabe(endScen, endSeed); poolSeed = rand(); setup();
+}
+function setMode(m){ if (m === mode) return; mode = m; store('mode', m); if (m === 'endlos' && !endScen) newEndless(); loadTask(); window.scrollTo({top:0, behavior:'smooth'}); }
+function setup(){ if (mode === 'endlos'){ CUR = umdrehAufgabe(endScen, endSeed); wbSetup(); } }   // neu, damit die Hilfe zur Stufe passt
+function canNext(){ return endCounted; }
+function nextTask(){ if (!canNext()) return; newEndless(); loadTask(); window.scrollTo({top:0, behavior:'smooth'}); }
+function renderNav(){ navPfad(); renderDock(); }
+function renderDock(){ $('#dock').innerHTML = dockHTML(); }
+function renderGrid(){ wbGrid(); }
+function render(){ wbRender({lvl:`Stufe ${level}: ${LEVELS[level].name}`, meta:`Endlos · ${CUR.art === 'um' ? 'Umdrehen' : 'Ohne NICHT'} · ${CUR.scen}`, text:CUR.text}); }
+function check(){ wbCheck(); }
+
+document.addEventListener('click', e => { if (!e.target.closest('#lern')) navClick(e); });
+$('#resetBtn').addEventListener('click', () => setup());
+$('#prevBtn').addEventListener('click', () => {});
+if (mode === 'endlos') newEndless();
+loadTask();
 </script>
 </body>
 </html>

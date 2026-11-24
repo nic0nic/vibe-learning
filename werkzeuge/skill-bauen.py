@@ -16,6 +16,8 @@ BIBLIOTHEKEN = [
     ("lib/szenario.js", "Szenario (verzweigter Lern-Chat) als Bild aus Kästen und Pfeilen zeigen (dazu szenario.css)"),
     ("IT/excel/basis.js", "Excel: Grundlage aller Excel-Übungen (dazu basis.css)"),
     ("IT/excel/bausteine.js", "Excel: Formeln aus Bausteinen (wie WENN, UND/ODER; dazu bausteine.css)"),
+    ("IT/excel/wennbau.js", "Excel: WENN mit UND/ODER/NICHT – Parser, Prüfung und Bau-Oberfläche in 9 Stufen (und-oder, nicht)"),
+    ("IT/excel/uo-szenarien.js", "Excel: Sachaufgaben für WENN mit UND/ODER und buildTask (und-oder, nicht)"),
     ("IT/excel/tabelle.js", "Excel: Tabellen-Übungen mit Rechenkern (wie Funktionen, Bezüge; dazu tabelle.css)"),
     ("IT/excel/uebertragen.js", "Excel: Formeln übertragen und $ setzen (wie Bezüge, WENN mit $, UND/ODER mit $; dazu uebertragen.css)"),
     ("IT/python/lib/pykurs.js", "Geführte Python-Übungen"),

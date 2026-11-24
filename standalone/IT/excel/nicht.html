@@ -7,11 +7,15 @@
 <title>NICHT – Bedingungen umdrehen – vibe learning</title>
 <!--
   Die Funktion NICHT in Excel, Aufhänger: Eine WENN-Formel mit UND lässt sich „von der anderen Seite“ mit ODER schreiben
-  (UND ↔ ODER, jede Bedingung ins Gegenteil, Dann_Wert und Sonst_Wert tauschen). Erarbeitung und Übung mit lib/aufgaben.js,
-  Endlos-Modus (Aufgaben.training): Zur gegebenen Formel UND oder ODER in der gleichwertigen Formel wählen.
-  Stufe 1 „Umdrehen“ (umgedreht oder unverändert), Stufe 2 „Mit NICHT“ (dazu NICHT außen oder an jeder Bedingung).
-  Schalter „Auf Zeit“ setzt bei beiden Stufen die Zeit (eigene Bestleistung über training.variante).
-  Gespeichert: nicht-stand = {schritt, erledigt}, nicht-endlos-training = {stufe, best}, nicht-zeit = '1' (Schalter an).
+  (UND ↔ ODER, jede Bedingung ins Gegenteil, Dann_Wert und Sonst_Wert tauschen).
+  Modus Erarbeitung: Erklärungen, Aufgaben und Übung mit lib/aufgaben.js (Aufgaben.sequenz), am Ende ein Blitz-Training
+    (Aufgaben.training): UND oder ODER in der gleichwertigen Formel wählen, Stufen „Umdrehen“ und „Mit NICHT“,
+    Schalter „Auf Zeit“ (eigene Bestleistung über training.variante).
+  Modus Endlos: Formel umdrehen bzw. ohne NICHT schreiben, 9 Stufen wie bei UND/ODER (wennbau.js: Bausteine → Freitext),
+    Sachaufgaben aus uo-szenarien.js. Geprüft wird, ob die Formel immer dasselbe liefert, dazu umgedreht (andere
+    Verknüpfung) bzw. ohne NICHT (CUR.muss).
+  Gespeichert: nicht-stand = {schritt, erledigt}, nicht-blitz-training = {stufe, best}, nicht-zeit = '1' (Schalter an),
+    nicht-mode, nicht-level, nicht-best (basis.js).
 -->
 <script>/* ../../katalog.js */
 /* Inhaltsverzeichnis der Übungsplattform
@@ -76,7 +80,7 @@ window.KATALOG = {
             {id: 'wbz', stufen: 6, datei: 'wenn-bezuege.html', titel: 'WENN mit $', text: 'WENN-Formeln auf ganze Spalten übertragen: Grenzwerte mit $ festhalten – Zellen in der Tabelle auswählen wie in Excel.'},
             {id: 'uo',   stufen: 9, datei: 'und-oder.html',   titel: 'UND / ODER',        text: 'Bedingungen verknüpfen – mit Erarbeitung, Übungen und Endlos-Modus.'},
             {id: 'uobz', stufen: 6, datei: 'und-oder-bezuege.html', titel: 'UND / ODER mit $', text: 'WENN mit UND/ODER auf ganze Spalten übertragen: Grenzwerte mit $ festhalten – Zellen in der Tabelle auswählen wie in Excel.'},
-            {id: 'nicht', stufen: ['Umdrehen', 'Mit NICHT'], datei: 'nicht.html', titel: 'NICHT', text: 'Die Funktion NICHT: Bedingungen umkehren und WENN-Formeln umdrehen (UND wird ODER) – mit Erarbeitung, Übung und Endlos-Modus, auf Wunsch auf Zeit.'},
+            {id: 'nicht', stufen: 9, datei: 'nicht.html', titel: 'NICHT', text: 'Die Funktion NICHT: Bedingungen umkehren und WENN-Formeln umdrehen (UND wird ODER) – Erarbeitung mit Blitz-Training auf Zeit, Endlos-Modus von Bausteinen bis zur eigenen Formel.'},
             {id: 'bz',   stufen: 6, datei: 'bezuege.html',    titel: 'Zellbezüge $',      text: 'Relative und absolute Bezüge: Formeln übertragen und $-Zeichen richtig setzen.'}
           ]
         },
@@ -1075,30 +1079,236 @@ html[data-theme=dark] .pf-item{--bc:#88c0d0}
 (function(){var t=null;try{t=localStorage.getItem('wenn-theme');}catch(e){}
 document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');})();
 </script>
-<style>/* ../../lib/basis.css */
-/* basis.css – Grundaussehen einfacher Übungsseiten ohne eigene Fach-/Bereichs-CSS (Farben hell/dunkel, .wrap, .bar, .brand,
- * .karte, .btn, .feld, .muted). Gleicher Inhalt wie BASIS_CSS in lib/seite.js (dort als Text für Einzeldateien) – beide gleich halten.
- * Genutzt z. B. von Englisch/vokabeltrainer.html und IT/grundlagen/zahlensysteme.html.
- */
-:root{--bg:#e5e9f0;--panel:#f6f8fb;--panel2:#eceff4;--text:#2e3440;--muted:#5b6578;--border:#cdd3de;--accent:#5e81ac;--err:#a8434d;--ok:#5e8a45;--mono:ui-monospace,Consolas,"Liberation Mono",monospace}
-[data-theme=dark]{--bg:#2e3440;--panel:#3b4252;--panel2:#434c5e;--text:#eceff4;--muted:#a9b3c4;--border:#4c566a;--accent:#88c0d0;--err:#d4848b;--ok:#a3be8c}
+<style>/* basis.css */
+/* basis.css – gemeinsame Gestaltung aller Excel-Trainer (Nord-Farben, hell/dunkel über [data-theme=dark]).
+ * Ergänzung je Seitenart danach laden: bausteine.css (wenn, und-oder) oder tabelle.css (funktionen, bezuege).
+ * Seitenspezifisches steht im <style> der Seite. */
+:root{
+  --bg:#e5e9f0; --panel:#f6f8fb; --panel2:#eceff4; --text:#2e3440; --muted:#5b6578; --border:#cdd3de;
+  --accent:#5e8a45; --cond:#5e81ac; --then:#5e8a45; --else:#a8434d; --blk-val:#ebcb8b; --blk-val-text:#2e3440;
+  --blk-cond:#8a5f84; --blk-sym:#4c566a; --slot:#e5e9f0; --slot-border:#a7b1c2; --ok-bg:#dfe9d6;
+  --err-bg:#f1d9db; --err:#a8434d; --solved-bg:#e3ebdc; --solved-border:#a3be8c; --solved-text:#4a7034;
+  --flame-off:#d8dee9; --flame-num-off:#6b7589;
+  --mono:ui-monospace,"Cascadia Mono","SF Mono",Consolas,"Liberation Mono",monospace;
+  --hex:polygon(16px 0,calc(100% - 16px) 0,100% 50%,calc(100% - 16px) 100%,16px 100%,0 50%); --on-color:#ffffff;
+  --blk-fn:#4c8a89; --cell:#ffffff; --cellhd:#eceff4; --grid:#cdd3de; --r0:#5e81ac; --r1:#a8434d; --r2:#8a5f84;
+  --r3:#5e8a45; --r4:#b0663f; --r5:#4c8a89;
+}
+[data-theme=dark]{
+  --bg:#2e3440; --panel:#3b4252; --panel2:#434c5e; --text:#eceff4; --muted:#a9b3c4; --border:#4c566a;
+  --cond:#81a1c1; --then:#a3be8c; --else:#bf616a; --slot:#434c5e; --slot-border:#616e88; --ok-bg:#3e4a45;
+  --err-bg:#4a3c45; --err:#d4848b; --solved-bg:#3e4a45; --solved-border:#6f8a5c; --solved-text:#a3be8c;
+  --flame-off:#4c566a; --flame-num-off:#9aa4b8; --blk-val:#ebcb8b; --blk-val-text:#2e3440; --blk-cond:#b48ead;
+  --blk-sym:#8a95ab; --on-color:#2e3440; --accent:#a3be8c; --blk-fn:#8fbcbb; --cell:#3b4252; --cellhd:#434c5e;
+  --grid:#4c566a; --r0:#81a1c1; --r1:#d4848b; --r2:#b48ead; --r3:#a3be8c; --r4:#d08770; --r5:#8fbcbb;
+}
 *{box-sizing:border-box}
 html,body{margin:0}
-body{background:var(--bg);color:var(--text);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
-.wrap{width:min(1000px,100%);margin:0 auto;padding:14px 16px 24px}
-.bar{margin-bottom:12px}
-.brand{font:800 20px var(--mono)}
-.brand span{color:var(--accent-text,var(--accent))}
-.karte{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px 16px}
-.karte h2{font-size:18px;margin:0 0 6px}
-.karte p{margin:0 0 8px}
-.btn{font:600 14px system-ui,sans-serif;background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:7px 12px;cursor:pointer}
-.btn.on,.btn.haupt{background:var(--accent);border-color:var(--accent);color:#fff}
-[data-theme=dark] .btn.on,[data-theme=dark] .btn.haupt{color:#2e3440}
-.btn:disabled{opacity:.45}
-.btn.klein{font-size:13px;padding:4px 9px}
-.feld{font:14px system-ui,sans-serif;background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 8px}
-.muted{color:var(--muted)}
+body{background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding-bottom:110px}
+header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:12px 20px;background:var(--panel);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:20}
+.brand{font-weight:800;font-size:20px;font-family:var(--mono);letter-spacing:-.5px}
+.brand span{color:var(--accent)}
+.hdr-right{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.flames{display:flex;gap:4px;align-items:flex-end}
+.flame{background:none;border:0;padding:2px;cursor:pointer;transform-origin:50% 90%;line-height:0}
+.flame svg{width:30px;height:38px;display:block}
+.flame path{fill:var(--flame-off);transition:fill .2s}
+.flame text{fill:var(--flame-num-off);font:800 13px system-ui,sans-serif}
+.flame:hover path{fill:#f0b27a}
+.flame.on path{fill:url(#fg)}
+.flame.on text{fill:#fff}
+.flame.on{filter:drop-shadow(0 0 5px rgba(255,150,0,.95)) drop-shadow(0 0 12px rgba(255,70,0,.6));animation:flick 1.4s ease-in-out infinite alternate}
+@keyframes flick{0%{transform:scale(1) rotate(-2deg)}50%{transform:scale(1.05,1.1) rotate(0)}100%{transform:scale(1.02) rotate(2deg)}}
+.iconbtn{background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:10px;width:40px;height:40px;display:grid;place-items:center;cursor:pointer}
+.iconbtn svg{width:20px;height:20px}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:16px 18px;margin-bottom:14px}
+.meta{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;font-size:14px;color:var(--muted);margin-bottom:6px}
+.lvlname{font-weight:700;color:var(--accent)}
+.taskrow{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start}
+code{font-family:var(--mono);background:var(--panel2);padding:1px 5px;border-radius:5px;font-size:.95em}
+.grid{border-collapse:collapse;font-size:14px;font-family:var(--mono)}
+.grid th,.grid td{border:1px solid var(--border);padding:4px 10px;min-width:44px;text-align:left;white-space:nowrap}
+.grid th{background:var(--panel2);color:var(--muted);font-weight:600;text-align:center}
+.grid td.fx{outline:2px solid var(--then);outline-offset:-2px;min-width:110px}
+.grid td.lbl{color:var(--muted);font-family:system-ui,sans-serif}
+.wthint{text-transform:none;letter-spacing:0;font-weight:500;opacity:.8;margin-left:6px}
+.ph{color:var(--muted);font-size:14px;font-weight:500;font-family:system-ui,sans-serif;opacity:.75;padding:0 8px;pointer-events:none}
+.block[data-drag]{cursor:grab}
+.block.val{background:var(--blk-val);color:var(--blk-val-text);border-radius:999px;box-shadow:inset 0 -3px 0 rgba(0,0,0,.15)}
+.block.hex{background:var(--blk-cond);clip-path:var(--hex);padding:7px 26px}
+.block.sym{background:var(--blk-sym);border-radius:7px;min-width:38px;justify-content:center;box-shadow:inset 0 -3px 0 rgba(0,0,0,.2)}
+.block.fn .gapin{background:var(--slot);border-style:solid}
+.block.ghost{opacity:.18;filter:grayscale(1);pointer-events:none}
+.block.drag-src{opacity:.3}
+.drag-ghost{position:fixed;z-index:1000;pointer-events:none;opacity:.95;transform:scale(1.06);filter:drop-shadow(0 6px 12px rgba(0,0,0,.35))}
+.block.r-cond{background:var(--cond);color:var(--on-color)}
+.block.r-then{background:var(--then);color:var(--on-color)}
+.block.r-else{background:var(--else);color:var(--on-color)}
+.builder .cellref{padding:0 2px}
+.builder .grip{font-size:20px;opacity:.75;margin-left:-8px;padding:0 2px}
+.opsel{font:700 17px var(--mono);background:rgba(255,255,255,.92);color:#1c2130;border:0;border-radius:7px;padding:4px 4px;cursor:pointer}
+.cvin{font:700 17px var(--mono);background:rgba(255,255,255,.92);color:#1c2130;border:0;border-radius:999px;padding:5px 10px;min-width:60px;outline:none}
+.cvin:focus{box-shadow:0 0 0 3px rgba(255,255,255,.6)}
+.slot{display:inline-flex;align-items:center;justify-content:center;position:relative}
+.slot.pill{min-width:130px;min-height:48px;border:2px dashed var(--slot-border);border-radius:999px;background:var(--slot);padding:2px}
+.slot.pill.small{min-width:70px;min-height:38px}
+.slot.hex{min-width:210px;min-height:54px;padding:4px 22px}
+.slot.hex::before,.slot.hex::after{content:"";position:absolute;clip-path:var(--hex)}
+.slot.hex::before{inset:0;background:var(--slot-border)}
+.slot.hex::after{inset:2px;background:var(--slot)}
+.slot.hex>*{position:relative;z-index:1}
+.slot.hex.drop-hover::before{background:var(--accent)}
+.slot.hex.drop-hover::after{background:color-mix(in srgb,var(--accent) 14%,var(--slot))}
+.slot-fixed{display:inline-flex}
+.iw{position:relative;display:inline-flex}
+.iw.ins::before,.iw.ins-after::after{content:"";position:absolute;top:2px;bottom:2px;width:4px;border-radius:2px;background:var(--accent)}
+.iw.ins::before{left:-6px}
+.iw.ins-after::after{right:-6px}
+.bx{position:absolute;top:-8px;right:-8px;width:20px;height:20px;border-radius:50%;border:none;background:var(--err);color:var(--on-color);font:700 13px/20px system-ui,sans-serif;padding:0;cursor:pointer}
+.mkrow{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.pool{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:12px 14px}
+.pool-items{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.pool.sympool{background:var(--panel2)}
+.actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:14px 0}
+.btn{font:600 16px system-ui,sans-serif;border-radius:10px;padding:10px 18px;border:1px solid var(--border);background:var(--panel);color:var(--text);cursor:pointer}
+.btn.primary{background:color-mix(in srgb,var(--accent) 22%,var(--panel));border-color:color-mix(in srgb,var(--accent) 50%,var(--panel));color:color-mix(in srgb,var(--accent) 60%,var(--text))}
+.btn:hover{filter:brightness(1.07)}
+.spacer{flex:1}
+.fb{border-radius:12px;padding:12px 16px;border-left:5px solid;margin-bottom:14px}
+.fb.err{background:var(--err-bg);border-color:var(--err)}
+.fb.ok{background:var(--ok-bg);border-color:var(--then);animation:pop .35s ease-out}
+@keyframes pop{0%{transform:scale(.97);opacity:.4}100%{transform:scale(1);opacity:1}}
+.fcol{font:700 18px var(--mono);display:inline-block;margin:6px 0;background:var(--panel);padding:4px 10px;border-radius:8px}
+.topics{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px;margin-top:12px}
+.topic{display:flex;flex-direction:column;gap:4px;text-align:left;background:var(--panel2);border:2px solid var(--border);border-radius:14px;padding:14px 16px;cursor:pointer;color:var(--text);font:15px/1.4 system-ui,sans-serif}
+.topic:hover{border-color:var(--accent)}
+.topic b{font:800 19px var(--mono)}
+.topic .tdesc{color:var(--muted)}
+.topic .tprog{font-size:13px;color:var(--muted);margin-top:4px}
+.topic.done{border-color:var(--solved-border);background:var(--solved-bg)}
+.topic.done .tprog{color:var(--solved-text);font-weight:600}
+.c-cond{color:var(--cond)}
+.c-then{color:var(--then)}
+.c-else{color:var(--else)}
+.tt th,.tt td{border:1px solid var(--border);padding:3px 10px;text-align:left}
+.fbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.nbox{font:600 14px var(--mono);min-width:62px;text-align:center;padding:9px 8px;border:1px solid var(--border);border-radius:8px;background:var(--panel2)}
+.fxl{font:italic 700 15px Georgia,serif;color:var(--muted);padding:0 2px}
+.fin{flex:1 1 300px;display:flex;align-items:center;gap:4px;flex-wrap:wrap;min-height:48px;font:700 20px var(--mono)}
+.gapin{font:700 20px var(--mono);padding:7px 10px;border-radius:10px;border:2px dashed var(--slot-border);background:var(--slot);color:var(--text);outline:none;width:9em}
+.fnsel{font:700 18px var(--mono);padding:7px 8px;border-radius:10px;border:2px dashed var(--slot-border);background:var(--slot);color:var(--text);cursor:pointer}
+.fshow{flex:1;font:600 18px var(--mono);padding:9px 12px;border-radius:10px;border:1px solid var(--border);background:var(--panel2);min-height:46px;white-space:pre}
+.fshow.empty{color:var(--muted);font:italic 15px system-ui,sans-serif}
+.selhint{font-size:14px;color:var(--err);min-height:0;margin:-4px 0 8px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;font:600 13px var(--mono);min-height:4px}
+.chip{padding:2px 8px;border-radius:6px;border:2px solid;background:var(--panel)}
+.howto{font:13px system-ui,sans-serif;color:var(--muted);align-self:center}
+.xl{border-collapse:collapse;font:14px system-ui,sans-serif;user-select:none;-webkit-user-select:none}
+.xl th{background:var(--cellhd);color:var(--muted);font-weight:600;border:1px solid var(--grid);padding:3px 8px;min-width:30px;text-align:center}
+.xl td{background:var(--cell);border:1px solid var(--grid);padding:5px 9px;min-width:70px;height:32px;white-space:nowrap;cursor:cell;position:relative}
+.xl.pick td{touch-action:none}
+.xl td.hd{font-weight:700}
+.xl td.lbl{font-weight:500}
+.xl td.num{text-align:right;font-variant-numeric:tabular-nums}
+.xl td.calc{color:var(--muted)}
+.xl td.tgt{outline:3px solid var(--then);outline-offset:-3px;font:700 14px var(--mono)}
+.xl td.tgt.done{background:color-mix(in srgb,var(--then) 16%,var(--cell));color:var(--text);text-align:right}
+.xl td.ins{outline:3px solid var(--cond);outline-offset:-3px}
+.xl td.sel{outline:2px dashed var(--accent);outline-offset:-3px}
+.xl td.rc0{background:color-mix(in srgb,var(--r0) 16%,var(--cell));box-shadow:inset 0 0 0 1px var(--r0)}
+.xl td.rc1{background:color-mix(in srgb,var(--r1) 16%,var(--cell));box-shadow:inset 0 0 0 1px var(--r1)}
+.xl td.rc2{background:color-mix(in srgb,var(--r2) 16%,var(--cell));box-shadow:inset 0 0 0 1px var(--r2)}
+.xl td.rc3{background:color-mix(in srgb,var(--r3) 16%,var(--cell));box-shadow:inset 0 0 0 1px var(--r3)}
+.xl td.rc4{background:color-mix(in srgb,var(--r4) 16%,var(--cell));box-shadow:inset 0 0 0 1px var(--r4)}
+.xl td.rc5{background:color-mix(in srgb,var(--r5) 16%,var(--cell));box-shadow:inset 0 0 0 1px var(--r5)}
+.c0{color:var(--r0);border-color:var(--r0)}
+.c3{color:var(--r3);border-color:var(--r3)}
+.c4{color:var(--r4);border-color:var(--r4)}
+.c5{color:var(--r5);border-color:var(--r5)}
+.legend{font-size:13px;color:var(--muted)}
+body.dragging,body.dragging *{cursor:grabbing!important}
+.assign{margin-top:12px;padding:12px 14px;border-left:4px solid var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--panel));border-radius:8px}
+.intro{color:var(--muted);font-size:15px;margin-bottom:6px}
+.formula-ex{margin:8px 0}
+.formula-ex code{font-size:17px;padding:4px 10px}
+.opts.mono{flex-direction:column;align-items:stretch}
+.opt{font:600 16px system-ui,sans-serif;padding:10px 16px;border-radius:10px;border:2px solid var(--border);background:var(--panel2);color:var(--text);cursor:pointer;text-align:left}
+.opt.sel{border-color:var(--cond);background:color-mix(in srgb,var(--cond) 15%,var(--panel))}
+.opt.good{border-color:var(--then);background:color-mix(in srgb,var(--then) 18%,var(--panel))}
+.opt.bad{border-color:var(--else);background:color-mix(in srgb,var(--else) 15%,var(--panel))}
+.ohint{font-size:13px;color:var(--muted);margin-top:8px}
+.stepbtn{text-align:left;font:500 14px system-ui,sans-serif;padding:7px 10px;border-radius:8px;border:1px solid var(--border);background:var(--panel2);color:var(--text);cursor:pointer}
+.stepbtn.solved{border-color:var(--then);background:color-mix(in srgb,var(--then) 14%,var(--panel))}
+.stepbtn.cur{outline:2px solid var(--accent)}
+.stepbtn:disabled{opacity:.45;cursor:not-allowed}
+.stepreset{margin-top:6px;font:500 13px system-ui,sans-serif;background:none;border:0;color:var(--muted);text-decoration:underline;cursor:pointer;text-align:left}
+.acpop{position:fixed;z-index:60;display:none;background:var(--panel);border:1px solid var(--border);border-radius:6px;box-shadow:0 6px 20px rgba(0,0,0,.22);min-width:200px;max-width:min(420px,calc(100vw - 16px));font-size:14px;overflow:hidden}
+.acl{max-height:220px;overflow:auto;padding:3px 0}
+.aci{display:flex;align-items:center;gap:8px;padding:5px 10px;font:600 14px var(--mono);cursor:pointer;white-space:nowrap}
+.aci.sel{background:color-mix(in srgb,var(--cond) 20%,var(--panel))}
+.acfx{font:italic 700 11px Georgia,serif;color:var(--cond);border:1px solid color-mix(in srgb,var(--cond) 50%,transparent);border-radius:3px;padding:0 3px}
+.acdesc{border-top:1px solid var(--border);padding:7px 10px;color:var(--muted);font:13px/1.4 system-ui,sans-serif;white-space:normal}
+.ackey{padding:4px 10px 6px;color:var(--muted);font:11px system-ui,sans-serif;opacity:.8}
+.actip{position:fixed;z-index:59;display:none;background:var(--panel);border:1px solid var(--border);border-radius:4px;box-shadow:0 3px 10px rgba(0,0,0,.15);padding:3px 9px;font:13px system-ui,sans-serif;color:var(--muted);white-space:nowrap;max-width:calc(100vw - 16px);overflow:hidden;text-overflow:ellipsis}
+.actip b{color:var(--text)}
+.acfn{color:var(--cond);text-decoration:underline}
+.card.solved{background:var(--solved-bg);border-color:var(--solved-border);box-shadow:0 0 0 1px var(--solved-border) inset;transition:background .3s,border-color .3s}
+.card.solved .wthint{display:none}
+.hdr-left{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.modes{display:inline-flex;background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:3px}
+.modes button,.modes a{border:0;background:none;color:var(--muted);font:600 14px system-ui,sans-serif;padding:7px 14px;border-radius:7px;cursor:pointer}
+.modes a{text-decoration:none;display:inline-block}
+.modes a:hover{color:var(--text)}
+.modes button.on{background:var(--panel);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.18)}
+.btn:disabled{opacity:.45;cursor:not-allowed;filter:none}
+.dock{position:fixed;left:22px;bottom:22px;z-index:30}
+.dockbtn{font:600 15px system-ui,sans-serif;background:var(--panel);color:var(--text);border:2px solid var(--border);border-radius:999px;padding:12px 18px;box-shadow:0 4px 14px rgba(0,0,0,.15);cursor:pointer;display:flex;gap:8px;align-items:center}
+.dockbtn.static{cursor:default}
+.dockbtn .sub{color:var(--muted);font-weight:500}
+.picker .ptitle{font-size:13px;color:var(--muted);margin-bottom:8px}
+.pg button{height:38px;border-radius:8px;border:1px solid var(--border);background:var(--panel2);color:var(--text);font:600 14px system-ui,sans-serif;cursor:pointer}
+.pg button.solved{background:var(--then);color:var(--on-color);border-color:transparent}
+.pg button.cur{outline:3px solid var(--accent);outline-offset:1px}
+.pgl{font-size:12px;color:var(--muted);margin:8px 0 4px}
+@media (max-width:640px){
+  header{padding:10px 12px}
+  .flame svg{width:26px;height:33px}
+  .slot.hex{min-width:170px}
+  body{padding-bottom:24px}
+  .picker{bottom:auto;top:auto;position:relative;margin-bottom:8px}
+}
+
+</style>
+<style>/* bausteine.css */
+/* bausteine.css – nach basis.css laden; Formeln aus Bausteinen (wenn, und-oder) */
+main{max-width:980px;margin:0 auto;padding:18px 16px}
+.tasktext{flex:1 1 380px;margin:0;font-size:17px}
+.worktitle,.pool-title{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:700;margin-bottom:8px}
+.formula{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-family:var(--mono);font-size:22px;font-weight:700}
+.ft{padding:0 2px}
+.block{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:17px;font-weight:700;padding:7px 15px;min-height:40px;user-select:none;-webkit-user-select:none;touch-action:none;white-space:pre;color:#fff;transition:background .25s,opacity .2s}
+.slot.drop-hover{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,var(--slot))}
+.row{display:flex;flex-wrap:wrap;align-items:center;gap:6px;min-height:68px;border:2px dashed var(--slot-border);background:var(--slot);border-radius:14px;padding:10px 12px}
+.row.drop-hover{border-color:var(--accent)}
+.pools{display:grid;gap:12px}
+.ftin{width:100%;font:700 22px var(--mono);padding:12px 14px;border-radius:12px;border:2px solid var(--slot-border);background:var(--slot);color:var(--text);outline:none}
+.ftin:focus{border-color:var(--accent)}
+.tip{margin-top:6px;display:inline-block;font:14px var(--mono);background:var(--panel2);border:1px solid var(--border);border-radius:6px;padding:3px 9px;color:var(--muted)}
+.tip b{color:var(--text)}
+.tt{border-collapse:collapse;font:14px var(--mono);margin-top:6px}
+.tt th{font-family:system-ui,sans-serif;color:var(--muted)}
+.card.solved .worktitle{color:var(--solved-text)}
+.card.solved .worktitle::after{content:" ✓ richtig gelöst";text-transform:none;letter-spacing:0}
+.picker{position:absolute;bottom:62px;left:0;background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:14px;box-shadow:0 8px 28px rgba(0,0,0,.25);width:min(320px,calc(100vw - 44px))}
+.pg{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+@media (max-width:640px){
+  .formula{font-size:19px}
+  .block{font-size:15px;min-height:38px}
+  .dock{position:static;margin:0 16px 16px;display:inline-block}
+}
+@media (max-width:640px){
+  .dock{display:flex;flex-direction:column-reverse;align-items:flex-start}
+}
 
 </style>
 <style>/* ../../lib/aufgaben.css */
@@ -1382,6 +1592,121 @@ button.af-vz:hover{background:var(--panel);box-shadow:inset 3px 0 0 var(--accent
 .af-bfeld+.af-hinweis{margin-top:6px}
 
 </style>
+<style>
+/* Bausteine wie in und-oder.html */
+.block.fn{background:var(--blk-fn);border-radius:14px;padding:6px 12px;gap:6px;box-shadow:inset 0 -3px 0 rgba(0,0,0,.2);flex-wrap:wrap}
+.block.fn .fname,.block.fn .fsep{font-size:19px}
+.block.fn .slot.hex{min-width:150px;min-height:48px}
+.block.fn .slot.hex.dummy{min-width:110px;min-height:38px;opacity:.7}
+.slot.fnslot{min-width:260px;min-height:60px;border:2px dashed var(--slot-border);border-radius:16px;background:var(--slot);padding:3px}
+.slot.fnslot.drop-hover{border-color:var(--accent)}
+.fixv{font:700 20px var(--mono);padding:6px 12px;border-radius:999px;background:var(--panel2);border:1px solid var(--border)}
+.fixv.c-then{background:var(--then);color:var(--on-color);border-color:transparent}
+.fixv.c-else{background:var(--else);color:var(--on-color);border-color:transparent}
+.block.fn.r-cond .slot.hex::after{background:color-mix(in srgb,var(--cond) 55%,#fff)}
+.cases{margin:8px 0}
+.cases summary{cursor:pointer;color:var(--muted);font-size:14px}
+.gegeben{margin:8px 0 10px}
+.gegeben code{display:inline-block;font:700 17px var(--mono);padding:6px 10px;word-break:break-all}
+.worum{margin-top:8px;font-size:14px}
+.worum summary{cursor:pointer;color:var(--muted)}
+details.help{margin-top:10px;background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:8px 12px}
+details.help summary{cursor:pointer;font-weight:600;color:var(--muted)}
+details.help p,details.help ul{margin:8px 0}
+/* Erarbeitung (lib/aufgaben.js): Knöpfe wie lib/basis.css */
+#lern .btn{font:600 14px system-ui,sans-serif;background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:7px 12px;cursor:pointer}
+#lern .btn.on,#lern .btn.haupt{background:var(--accent);border-color:var(--accent);color:#fff}
+[data-theme=dark] #lern .btn.on,[data-theme=dark] #lern .btn.haupt{color:#2e3440}
+#lern .btn:disabled{opacity:.45}
+#lern .btn.klein{font-size:13px;padding:4px 9px}
+#lern .muted{color:var(--muted)}
+#lern .karte{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px 16px}
+#lern .karte p{margin:0 0 8px}
+#lern h2{font-size:20px;margin:4px 0 8px}
+.info{border-left:4px solid var(--accent);padding:2px 0 2px 12px;margin:0 0 12px}
+code.fx{font:600 15px var(--mono);background:var(--panel2);border:1px solid var(--border);border-radius:6px;padding:1px 6px;white-space:nowrap}
+.fxblock{display:flex;flex-direction:column;align-items:flex-start;gap:6px;margin:8px 0 12px}
+.fxblock code.fx{white-space:normal;word-break:break-all;font-size:16px;padding:4px 8px}
+.merk{border:2px solid var(--accent);border-radius:12px;padding:8px 14px;margin:10px 0;background:var(--panel)}
+.merk .mt{font-weight:800;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent-text,var(--accent));margin-bottom:2px}
+.merk p,.merk ol{margin:4px 0}
+.schritt{color:var(--muted);font-size:13px;margin:6px 0 -2px}
+table.gegen{border-collapse:collapse;margin:8px 0 12px;font:15px var(--mono)}
+table.gegen td,table.gegen th{border:1px solid var(--border);padding:5px 12px;text-align:center}
+table.gegen th{background:var(--panel2);font:600 13px system-ui,sans-serif}
+.af-luecken code.fx{white-space:normal;line-height:2.4;background:none;border:0;padding:0;font-size:16px}
+.af-luecken select{font:600 14px var(--mono)}
+.af-karte code.fx,.af-zt code.fx{white-space:normal;word-break:break-all;font-size:13px}
+/* Blitz-Training */
+.ef{display:flex;flex-direction:column;align-items:center;gap:6px;font:400 15px system-ui,sans-serif}
+.ef .el{color:var(--muted)}
+.ef code{font:600 clamp(14px,2.4vw,19px) var(--mono);background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:6px 10px;word-break:break-all}
+.ef .blank{display:inline-block;min-width:3.6em;text-align:center;border-bottom:3px solid var(--accent);color:var(--accent-text,var(--accent))}
+.tr-fehler .ef code{font-size:12px;padding:2px 4px}
+.tr-fehler .ef{align-items:flex-start;font-size:12px}
+.zeitschalter{display:flex;align-items:center;gap:10px;margin:4px 0 12px}
+.sys{display:inline-flex;align-items:center;gap:8px;font:600 15px system-ui,sans-serif;background:var(--panel);color:var(--text);border:2px solid var(--border);border-radius:999px;padding:5px 14px 5px 6px;cursor:pointer}
+.sys .knopf{position:relative;width:34px;height:20px;border-radius:10px;background:var(--border);transition:background .15s}
+.sys .knopf::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .15s}
+.sys[aria-checked=true]{border-color:var(--accent)}
+.sys[aria-checked=true] .knopf{background:var(--accent)}
+.sys[aria-checked=true] .knopf::after{left:16px}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <linearGradient id="fg" x1="0" y1="1" x2="0" y2="0">
+    <stop offset="0" stop-color="#d9230f"/><stop offset=".55" stop-color="#ff7a00"/><stop offset="1" stop-color="#ffd23f"/>
+  </linearGradient></defs></svg>
+
+<header>
+  <div class="hdr-left">
+    <div class="brand"><span>NICHT</span></div>
+    <div class="modes" role="group" aria-label="Modus">
+      <button data-mode="lernen">Erarbeitung</button><button data-mode="endlos">Endlos</button>
+    </div>
+  </div>
+  <div class="hdr-right">
+    <button class="iconbtn" id="themeBtn" aria-label="Hell/Dunkel umschalten"></button>
+    <div class="flames" id="flames" aria-label="Stufe wählen"></div>
+  </div>
+</header>
+
+<main>
+  <div id="lern"></div>
+  <div id="engine">
+    <section class="card">
+      <div class="meta">
+        <span class="lvlname" id="lvlname"></span>
+        <span id="taskmeta"></span>
+      </div>
+      <div class="taskrow">
+        <div class="tasktext" id="tasktext"></div>
+        <div id="grid"></div>
+      </div>
+    </section>
+
+    <section class="card" id="workcard">
+      <div class="worktitle"><span id="wtlabel">Deine Formel</span> <span class="wthint" id="wthint"></span></div>
+      <div id="work"></div>
+    </section>
+
+    <div class="pools" id="pools"></div>
+
+    <div class="actions">
+      <button class="btn primary" id="checkBtn">Prüfen</button>
+      <button class="btn" id="resetBtn">Zurücksetzen</button>
+      <span class="spacer"></span>
+      <button class="btn" id="skipBtn" title="Neue Aufgabe – die Serie beginnt wieder bei 0">Andere Aufgabe</button>
+      <button class="btn" id="prevBtn" aria-label="Vorherige Aufgabe">◀</button>
+      <button class="btn" id="nextBtn">Nächste Aufgabe ▶</button>
+    </div>
+    <div id="fb"></div>
+  </div>
+</main>
+
+<div class="dock" id="dock"></div>
+
 <script>/* ../../lib/aufgaben.js */
 /* aufgaben.js – Aufgabenbausteine für alle Fächer: Aufgaben als Daten, Prüfung und Rückmeldung eingebaut
  *
@@ -2759,96 +3084,1236 @@ window.Aufgaben = {baue, sequenz, endlos, training, mc, mehrfach, finde, zahl, e
 })();
 
 </script>
-<style>
-.wrap{max-width:900px}
-.info{border-left:4px solid var(--accent);padding:2px 0 2px 12px;margin:0 0 12px}
-code.fx{font:600 15px var(--mono);background:var(--panel2);border:1px solid var(--border);border-radius:6px;padding:1px 6px;white-space:nowrap}
-.fxblock{display:flex;flex-direction:column;align-items:flex-start;gap:6px;margin:8px 0 12px}
-.fxblock code.fx{white-space:normal;word-break:break-all;font-size:16px;padding:4px 8px}
-.merk{border:2px solid var(--accent);border-radius:12px;padding:8px 14px;margin:10px 0;background:var(--panel)}
-.merk .mt{font-weight:800;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent-text,var(--accent));margin-bottom:2px}
-.merk p,.merk ol{margin:4px 0}
-.schritt{color:var(--muted);font-size:13px;margin:6px 0 -2px}
-table.gegen{border-collapse:collapse;margin:8px 0 12px;font:15px var(--mono)}
-table.gegen td,table.gegen th{border:1px solid var(--border);padding:5px 12px;text-align:center}
-table.gegen th{background:var(--panel2);font:600 13px system-ui,sans-serif}
-.af-luecken code.fx{white-space:normal;line-height:2.4;background:none;border:0;padding:0;font-size:16px}
-.af-luecken select{font:600 14px var(--mono)}
-/* Endlos */
-.ef{display:flex;flex-direction:column;align-items:center;gap:6px;font:400 15px system-ui,sans-serif}
-.ef .el{color:var(--muted)}
-.ef code{font:600 clamp(14px,2.4vw,19px) var(--mono);background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:6px 10px;word-break:break-all}
-.ef .blank{display:inline-block;min-width:3.6em;text-align:center;border-bottom:3px solid var(--accent);color:var(--accent-text,var(--accent))}
-.tr-fehler .ef code{font-size:12px;padding:2px 4px}
-.tr-fehler .ef{align-items:flex-start;font-size:12px}
-.zeitschalter{display:flex;align-items:center;gap:10px;margin:4px 0 12px}
-.sys{display:inline-flex;align-items:center;gap:8px;font:600 15px system-ui,sans-serif;background:var(--panel);color:var(--text);border:2px solid var(--border);border-radius:999px;padding:5px 14px 5px 6px;cursor:pointer}
-.sys .knopf{position:relative;width:34px;height:20px;border-radius:10px;background:var(--border);transition:background .15s}
-.sys .knopf::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .15s}
-.sys[aria-checked=true]{border-color:var(--accent)}
-.sys[aria-checked=true] .knopf{background:var(--accent)}
-.sys[aria-checked=true] .knopf::after{left:16px}
-</style>
-</head>
-<body>
-<div class="wrap">
-  <div class="bar"><div class="brand">NICHT<span> – umdrehen</span></div><div class="muted">Bedingungen umkehren – und UND gegen ODER tauschen</div></div>
-  <div id="app"></div>
-</div>
+<script>/* basis.js */
+/* basis.js – gemeinsamer Kern aller Excel-Trainer (wenn, und-oder, funktionen, bezuege)
+ *
+ * Einbinden (nach dem Markup, vor den eigenen <script>s), dazu genau eine Ergänzung je Seitenart:
+ *   Formeln aus Bausteinen (wenn, und-oder):   basis.css + bausteine.css, basis.js + bausteine.js
+ *   Tabellenblatt (funktionen, bezuege):       basis.css + tabelle.css,   basis.js + tabelle.js
+ * Alles sind globale Namen, kein Build-Schritt, läuft auch per file://.
+ *
+ * API
+ *   $, esc, rand, clamp, rng, shuffle, pick1, ri, C, B, normQuotes, FErr   Helfer und Zufall
+ *   store(k, v), load(k)       localStorage unter KEY + k; store meldet TrainerSync.changed()
+ *   isSolved(i), markSolved()  gelöste Übung je Stufe (solved[level])
+ *   countSolved()              zählt eine gelöste Übung bzw. Endlos-Aufgabe (Serie, Rekord), → „erstmals“
+ *   skipTask()                 Endlos: andere Aufgabe, Serie auf 0
+ *   renderHeader()             Flammen (Stufen 1 … solange LEVELS[n] existiert), Modusknöpfe, Theme-Symbol
+ *   navPfad(), navLernen(idx, n, info)   Knöpfe Prüfen/Zurücksetzen/Zurück/Weiter je Modus
+ *   dockHTML(groups)           Dock für Übungen/Endlos; groups = Gruppennamen (Gruppe = letztes STD-Feld)
+ *   navClick(e)                Flammen, Modi, Aufgabenwahl, Dock – am Ende des Klick-Handlers aufrufen
+ *   Drag & Drop (Maus/Touch)   Ziehen, Ablageziel hervorheben, Einfügemarke in Zeilen (.iw)
+ *   AC                         Autovervollständigung wie in Excel für Eingaben mit Klasse .acin
+ *   Verdrahtet: #themeBtn, #checkBtn → check(), #nextBtn → nextTask(), #skipBtn → skipTask(),
+ *   Escape schließt die Aufgabenwahl.
+ *
+ * Die Seite (bzw. bausteine.js/tabelle.js) liefert
+ *   KEY, LEVELS, STD; let mode, level, pfadIdx, solved, streak, best, endCounted, pickerOpen
+ *   check, loadTask, setLevel, setMode, gotoTask, canNext, nextTask, newEndless, renderDock
+ *   Drag-Hooks: dragData(b, e) → Zusatzfelder für D (src:true = Quelle blass) oder null;
+ *     dropOk(t); applyDrop(d, type, idx, t); dragTap(d) bei Klick ohne Ziehen; optional dragGhost(g)
+ *   AC_FN = [{n, v | a, d}]; optional AC.word(before, inp) → getipptes Wort oder null
+ *
+ * Gerüst einer Seite
+ *   <link rel="stylesheet" href="basis.css"><link rel="stylesheet" href="tabelle.css"> … Markup
+ *   <script src="basis.js"><\/script><script src="tabelle.js"><\/script>
+ *   <script>
+ *     const KEY = 'xy-', LEVELS = [null, {name:'…'}], STD = [[…, 1]];
+ *     let mode = load('mode') || 'pfad', level = 1, pfadIdx = 0, solved = {}, streak = 0,
+ *         best = 0, endCounted = false, pickerOpen = false, …;
+ *     function check(){ … logSolved(countSolved()); … }   function loadTask(){ … }  …
+ *     if (mode === 'endlos') newEndless();
+ *     loadTask();
+ *   <\/script>
+ */
+
+/* ================= Teil A: alle Seiten ================= */
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const rand = () => (Math.random() * 1e9) | 0;
+const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+function rng(a){ return function(){ a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function shuffle(arr, r){ const a = arr.slice(); for (let i = a.length - 1; i > 0; i--){ const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+const pick1 = (r, a) => a[Math.floor(r() * a.length)];
+const ri = (r, a, b) => a + Math.floor(r() * (b - a + 1));
+const C = s => `<code>${s}</code>`, B = s => `<b>${s}</b>`;
+function normQuotes(s){ return s.replace(/[„“”″«»]/g, '"'); }
+class FErr extends Error { constructor(msg){ super(msg); this.name = 'FErr'; } }
+
+/* Speicher (Schlüssel KEY + k) und Fortschritt */
+function store(k, v){ try{ localStorage.setItem(KEY + k, v); }catch(e){} if (window.TrainerSync) TrainerSync.changed(); }
+function load(k){ try{ return localStorage.getItem(KEY + k); }catch(e){ return null; } }
+function isSolved(i){ return (solved[level] || []).includes(i); }
+function markSolved(){ const a = solved[level] || (solved[level] = []); if (!a.includes(pfadIdx)){ a.push(pfadIdx); store('solved', JSON.stringify(solved)); } }
+function countSolved(){
+  if (mode === 'pfad'){ const erstmals = !isSolved(pfadIdx); markSolved(); return erstmals; }
+  const erstmals = !endCounted;
+  if (!endCounted){ endCounted = true; streak++; if (streak > best){ best = streak; store('best', best); } }
+  return erstmals;
+}
+function skipTask(){ streak = 0; newEndless(); loadTask(); }
+
+/* Kopfzeile, Navigation, Dock */
+function renderHeader(){
+  let h = '';
+  for (let n = 1; LEVELS[n]; n++){
+    h += `<button class="flame${n === level ? ' on' : ''}" data-level="${n}" title="Stufe ${n}: ${esc(LEVELS[n].name)}" aria-label="Stufe ${n}" aria-pressed="${n === level}">
+      ${window.PF_FLAMME ? String(window.PF_FLAMME).replace(/\{n\}/g, n) : `<svg viewBox="0 0 32 40"><path d="M16 2C18 9 27 14 27 26C27 33 22 38 16 38C10 38 5 33 5 26C5 20 9 16 11 11C12 15 13 17 15 18C16 13 17 8 16 2Z"/>
+      <text x="16" y="32" text-anchor="middle">${n}</text></svg>`}</button>`;   // Design (lib/designs.js) kann die Flamme ersetzen
+  }
+  $('#flames').innerHTML = h;
+  $('#flames').style.display = mode === 'lernen' ? 'none' : '';
+  document.querySelectorAll('.modes button').forEach(b => b.classList.toggle('on', b.dataset.mode === mode));
+  const dark = document.documentElement.dataset.theme === 'dark';
+  $('#themeBtn').innerHTML = dark
+    ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>'
+    : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>';
+}
+function navButtons(){ return {nb:$('#nextBtn'), pb:$('#prevBtn'), sb:$('#skipBtn'), cb:$('#checkBtn'), rb:$('#resetBtn'), ob:$('#ovBtn')}; }
+function navPfad(){
+  const {nb, pb, sb, cb, rb, ob} = navButtons();
+  cb.style.display = rb.style.display = nb.style.display = ''; if (ob) ob.style.display = 'none';
+  pb.style.display = mode === 'pfad' ? '' : 'none'; pb.disabled = pfadIdx === 0;
+  sb.style.display = mode === 'endlos' ? '' : 'none';
+  const ok = canNext(); nb.disabled = !ok;
+  if (mode === 'pfad' && pfadIdx === STD.length - 1 && isSolved(pfadIdx)) nb.textContent = 'Alle Übungen geschafft 🎉';
+  else nb.textContent = (ok ? '' : '🔒 ') + 'Nächste Aufgabe ▶';
+  nb.title = ok ? '' : 'Erst die aktuelle Aufgabe richtig lösen';
+}
+function navLernen(idx, n, info){
+  const {nb, pb, sb, cb, rb, ob} = navButtons();
+  pb.style.display = ''; pb.disabled = idx === 0; sb.style.display = 'none'; if (ob) ob.style.display = '';
+  cb.style.display = rb.style.display = info ? 'none' : '';
+  nb.style.display = idx === n - 1 ? 'none' : '';
+  const ok = canNext(); nb.disabled = !ok;
+  nb.textContent = (ok ? '' : '🔒 ') + 'Weiter ▶';
+  nb.title = ok ? '' : 'Erst die Aufgabe in diesem Schritt richtig lösen';
+}
+function dockHTML(groups){
+  if (mode === 'endlos') return `<div class="dockbtn static">🔥 Serie: ${streak} <span class="sub">· Rekord ${best}</span></div>`;
+  let h = `<button class="dockbtn" id="dockBtn" aria-expanded="${pickerOpen}">▦ Aufgabe ${pfadIdx + 1}/${STD.length} <span class="sub">· ${(solved[level] || []).length} gelöst</span></button>`;
+  if (!pickerOpen) return h;
+  const btn = i => `<button data-goto="${i}" class="${isSolved(i) ? 'solved' : ''}${i === pfadIdx ? ' cur' : ''}">${i + 1}</button>`;
+  h += `<div class="picker"><div class="ptitle">Zu Aufgabe springen – grün = auf Stufe ${level} gelöst</div>`;
+  if (!groups) h += '<div class="pg">' + STD.map((_, i) => btn(i)).join('') + '</div>';
+  else for (let g = 1; g < groups.length; g++)
+    h += `<div class="pgl">${esc(groups[g])}</div><div class="pg">` + STD.map((e, i) => e[e.length - 1] !== g ? '' : btn(i)).join('') + '</div>';
+  return h + '</div>';
+}
+function navClick(e){
+  const f = e.target.closest('.flame'); if (f){ setLevel(+f.dataset.level); return; }
+  const m = e.target.closest('.modes button'); if (m){ setMode(m.dataset.mode); return; }
+  const g = e.target.closest('[data-goto]'); if (g){ gotoTask(+g.dataset.goto); return; }
+  if (e.target.closest('#dockBtn')){ pickerOpen = !pickerOpen; renderDock(); return; }
+  if (pickerOpen && !e.target.closest('.picker')){ pickerOpen = false; renderDock(); }
+}
+$('#checkBtn').addEventListener('click', () => check());
+$('#nextBtn').addEventListener('click', () => nextTask());
+$('#skipBtn').addEventListener('click', () => skipTask());
+$('#themeBtn').addEventListener('click', () => {
+  const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+  document.documentElement.dataset.theme = t; try { localStorage.setItem('wenn-theme', t); } catch (e) {} renderHeader();
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && pickerOpen){ pickerOpen = false; renderDock(); } });
+
+/* Drag & Drop (Maus + Touch über Pointer Events) */
+let D = null, hoverEl = null, insEl = null, scrollRAF = null;
+function findTarget(x, y){
+  const el = document.elementFromPoint(x, y);
+  let t = el && el.closest && el.closest('[data-drop]');
+  // ein Baustein darf nicht in sich selbst abgelegt werden (z. B. Wert in den eigenen Baustein)
+  while (t && D.el.contains(t)) t = t.parentElement && t.parentElement.closest('[data-drop]');
+  return t && dropOk(t) ? t : null;
+}
+function rowIndex(row, x, y){
+  const kids = [...row.querySelectorAll(':scope > .iw')];
+  for (let i = 0; i < kids.length; i++){
+    const r = kids[i].getBoundingClientRect();
+    if (y < r.top) return i;
+    if (y <= r.bottom && x < r.left + r.width / 2) return i;
+  }
+  return kids.length;
+}
+function clearHover(){
+  if (hoverEl){ hoverEl.classList.remove('drop-hover'); hoverEl = null; }
+  if (insEl){ insEl.classList.remove('ins', 'ins-after'); insEl = null; }
+}
+function updateHover(x, y){
+  clearHover();
+  const t = findTarget(x, y); if (!t) return;
+  hoverEl = t; t.classList.add('drop-hover');
+  if (t.dataset.drop === 'row'){
+    const kids = [...t.querySelectorAll(':scope > .iw')], i = rowIndex(t, x, y);
+    if (kids.length){ insEl = i < kids.length ? kids[i] : kids[kids.length - 1]; insEl.classList.add(i < kids.length ? 'ins' : 'ins-after'); }
+  }
+}
+function autoScroll(){
+  if (!D || !D.started) return;
+  const topEdge = document.querySelector('header').getBoundingClientRect().bottom + 20;
+  if (D.y < topEdge) window.scrollBy(0, -8); else if (D.y > innerHeight - 30) window.scrollBy(0, 8);
+  updateHover(D.x, D.y);
+  scrollRAF = requestAnimationFrame(autoScroll);
+}
+function endDrag(cancel){
+  cancelAnimationFrame(scrollRAF);
+  const t = cancel ? null : findTarget(D.x, D.y);
+  const idx = t && t.dataset.drop === 'row' ? rowIndex(t, D.x, D.y) : 0;
+  clearHover(); D.ghost.remove(); D.el.classList.remove('drag-src'); document.body.classList.remove('dragging');
+  const d = D; D = null;
+  if (t) applyDrop(d, t.dataset.drop, idx, t);
+}
+document.addEventListener('pointerdown', e => {
+  const b = e.target.closest('.block[data-drag]');
+  if (!b || (e.pointerType === 'mouse' && e.button !== 0)) return;
+  const extra = dragData(b, e); if (!extra) return;
+  e.preventDefault();
+  D = Object.assign({el:b, x0:e.clientX, y0:e.clientY, x:e.clientX, y:e.clientY, started:false}, extra);
+});
+window.addEventListener('pointermove', e => {
+  if (!D) return;
+  D.x = e.clientX; D.y = e.clientY;
+  if (!D.started){
+    if (Math.hypot(e.clientX - D.x0, e.clientY - D.y0) < 5) return;
+    const r = D.el.getBoundingClientRect(), g = D.el.cloneNode(true);
+    ['select', 'input'].forEach(sel => { const gs = g.querySelectorAll(sel); D.el.querySelectorAll(sel).forEach((s, i) => { gs[i].value = s.value; }); });
+    if (window.dragGhost) dragGhost(g);
+    g.classList.add('drag-ghost'); g.classList.remove('drag-src');
+    g.style.width = r.width + 'px'; g.style.left = r.left + 'px'; g.style.top = r.top + 'px';
+    document.body.appendChild(g);
+    D.ghost = g; D.dx = D.x0 - r.left; D.dy = D.y0 - r.top; D.started = true;
+    if (D.src) D.el.classList.add('drag-src');
+    document.body.classList.add('dragging');
+    autoScroll();
+  }
+  D.ghost.style.left = (e.clientX - D.dx) + 'px'; D.ghost.style.top = (e.clientY - D.dy) + 'px';
+  updateHover(e.clientX, e.clientY);
+}, {passive:false});
+window.addEventListener('pointerup', () => {
+  if (!D) return;
+  if (D.started){ endDrag(false); return; }
+  const d = D; D = null;
+  dragTap(d);
+});
+window.addEventListener('pointercancel', () => { if (!D) return; if (D.started) endDrag(true); else D = null; });
+
+/* Autovervollständigung wie in Excel: Funktionsliste beim Tippen, Argument-Hinweis in Klammern */
+const acCanvas = document.createElement('canvas').getContext('2d');
+const AC = {list:[], sel:0, key:'', start:0, token:'', closed:'', input:null,
+  digits:false,           // Funktionsnamen dürfen Ziffern enthalten (ANZAHL2)
+  prev:/[=(;<>\s,]/,      // erlaubtes Zeichen vor dem getippten Wort
+  // getipptes Wort am Cursor (oder null); in #ft erst nach einem „=“
+  word:(before, inp) => { const m = before.match(/[A-Za-zÄÖÜäöüß]+$/); return m && (inp.id !== 'ft' || before.trimStart().startsWith('=')) ? m[0] : null; }};
+function acArgs(f, i){
+  if (f.a) return f.a;
+  const n = Math.max(2, i + 1), out = [];
+  for (let k = 1; k <= n; k++) out.push(k === 1 ? f.v + k : `[${f.v}${k}]`);
+  return [...out, '…'];
+}
+function acCaretX(inp, idx){
+  const cs = getComputedStyle(inp), r = inp.getBoundingClientRect();
+  acCanvas.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+  return r.left + parseFloat(cs.paddingLeft) + parseFloat(cs.borderLeftWidth) + acCanvas.measureText(inp.value.slice(0, idx)).width - inp.scrollLeft;
+}
+function acEls(){
+  let pop = document.getElementById('acpop'), tip = document.getElementById('actip');
+  if (!pop){
+    pop = document.createElement('div'); pop.id = 'acpop'; pop.className = 'acpop'; document.body.appendChild(pop);
+    tip = document.createElement('div'); tip.id = 'actip'; tip.className = 'actip'; document.body.appendChild(tip);
+    pop.addEventListener('pointerdown', e => { const it = e.target.closest('[data-aci]'); e.preventDefault(); if (it){ AC.sel = +it.dataset.aci; acInsert(); } });
+  }
+  return {pop, tip};
+}
+function acHide(){ const {pop, tip} = acEls(); pop.style.display = 'none'; tip.style.display = 'none'; AC.list = []; }
+function acPlace(el, x, inp){
+  const r = inp.getBoundingClientRect();
+  el.style.display = 'block';
+  el.style.left = Math.max(8, Math.min(x - 6, innerWidth - el.offsetWidth - 8)) + 'px';
+  el.style.top = (r.bottom + 4) + 'px';
+}
+function acUpdate(inp){
+  inp = inp || document.activeElement;
+  if (!inp || !inp.matches || !inp.matches('.acin') || document.activeElement !== inp){ acHide(); return; }
+  AC.input = inp;
+  const {pop, tip} = acEls();
+  const pos = inp.selectionStart ?? inp.value.length, before = normQuotes(inp.value.slice(0, pos));
+  // Zeichen für Zeichen lesen: Textbereiche überspringen, offene Funktionen merken
+  const stack = []; let inStr = false, word = '', wstart = 0;
+  for (let i = 0; i < before.length; i++){
+    const ch = before[i];
+    if (ch === '"'){ inStr = !inStr; word = ''; continue; }
+    if (inStr) continue;
+    if (/[A-Za-zÄÖÜäöüß]/.test(ch) || (AC.digits && word && /[0-9]/.test(ch))){ if (!word) wstart = i; word += ch; continue; }
+    if (ch === '(') stack.push({fn:word.toUpperCase(), i:0, at:wstart});
+    else if (ch === ';' && stack.length) stack[stack.length - 1].i++;
+    else if (ch === ')') stack.pop();
+    word = '';
+  }
+  // Funktionsliste: nur wenn gerade ein Funktionsname getippt wird (nicht in Text, nicht Teil einer Zelle)
+  let list = [], token = '', start = pos;
+  const w = !inStr && AC.word(before, inp);
+  if (w){
+    token = w; start = pos - token.length;
+    const prev = before[start - 1];
+    if (!prev || AC.prev.test(prev)) list = AC_FN.filter(f => f.n.startsWith(token.toUpperCase()));
+    if (list.length === 1 && list[0].n === token.toUpperCase() && inp.value[pos] === '(') list = [];
+  }
+  const key = start + ':' + token.toUpperCase();
+  if (AC.closed === key) list = [];
+  if (key !== AC.key) AC.sel = 0;
+  AC.key = key; AC.token = token; AC.start = start; AC.list = list;
+  if (AC.sel >= list.length) AC.sel = 0;
+  if (list.length){
+    const f = list[AC.sel];
+    pop.innerHTML = `<div class="acl">${list.map((x, i) => `<div class="aci${i === AC.sel ? ' sel' : ''}" data-aci="${i}"><span class="acfx">fx</span>${x.n}</div>`).join('')}</div><div class="acdesc">${esc(f.d)}</div><div class="ackey">Tab ↹ fügt ein · ↑ ↓ wählen</div>`;
+    acPlace(pop, acCaretX(inp, start), inp);
+    tip.style.display = 'none';
+    return;
+  }
+  pop.style.display = 'none';
+  const top = stack[stack.length - 1], f = top && AC_FN.find(x => x.n === top.fn);
+  if (f){
+    const args = acArgs(f, top.i);
+    const act = f.a ? Math.min(top.i, args.length - 1) : top.i;
+    tip.innerHTML = `<span class="acfn">${f.n}</span>(${args.map((a, i) => i === act ? `<b>${esc(a)}</b>` : esc(a)).join('; ')})`;
+    acPlace(tip, acCaretX(inp, top.at), inp);
+  } else tip.style.display = 'none';
+}
+function acInsert(){
+  const inp = AC.input, f = AC.list[AC.sel];
+  if (!inp || !f) return;
+  const pos = inp.selectionStart ?? inp.value.length;
+  const after = inp.value.slice(pos), add = after.startsWith('(') ? f.n : f.n + '(';
+  inp.value = inp.value.slice(0, AC.start) + add + after;
+  const c = AC.start + f.n.length + 1;
+  inp.focus(); inp.setSelectionRange(c, c);
+  inp.dispatchEvent(new Event('input', {bubbles:true}));
+  acUpdate(inp);
+}
+document.addEventListener('keydown', e => {
+  if (!e.target.matches || !e.target.matches('.acin') || !AC.list.length) return;
+  if (e.key === 'ArrowDown'){ e.preventDefault(); AC.sel = (AC.sel + 1) % AC.list.length; acUpdate(e.target); }
+  else if (e.key === 'ArrowUp'){ e.preventDefault(); AC.sel = (AC.sel - 1 + AC.list.length) % AC.list.length; acUpdate(e.target); }
+  else if (e.key === 'Tab'){ e.preventDefault(); acInsert(); }
+  else if (e.key === 'Escape'){ e.preventDefault(); AC.closed = AC.key; acUpdate(e.target); }
+  else if (e.key === 'Enter'){ acHide(); }
+}, true);
+document.addEventListener('keyup', e => { if (e.target.matches && e.target.matches('.acin') && !['ArrowDown', 'ArrowUp', 'Tab', 'Escape', 'Enter', 'F4'].includes(e.key)) acUpdate(e.target); });
+document.addEventListener('focusin', e => { if (e.target.matches && e.target.matches('.acin')) acUpdate(e.target); });
+document.addEventListener('focusout', () => setTimeout(() => acUpdate(), 0));
+window.addEventListener('scroll', () => { if (AC.input && document.activeElement === AC.input) acUpdate(AC.input); }, {passive:true});
+window.addEventListener('resize', () => acUpdate());
+
+</script>
+<script>/* bausteine.js */
+/* bausteine.js – Ergänzung zu basis.js für Trainer, die Formeln aus Bausteinen bauen (wenn, und-oder)
+ * Laden nach basis.js; dazu bausteine.css nach basis.css.
+ *
+ * API
+ *   SEP, CELL, OPS, rank, cmp, opTest, same, fmtNum, fmtVal   Vergleich und Ausgabe nach Excel-Regeln
+ *   fx, pickV, SUBJ, DAYS, stripQ                             Aufgabentexte
+ *   setLevel(n), newEndless(), gotoTask(i)                    Stufe wechseln, Endlos-Szenario, Übung wählen
+ *   role, isPlaced, renderFeedback, clearMarks, updateTip     Darstellung (S.slots, S.row, S.fb, #fb, #workcard)
+ *   dragData, dragKind, dropOk, dragTap, shiftPlace           Drag-Hooks für basis.js, Shift+Klick setzt ein
+ *   AC_FN                                                     Funktionsliste der Autovervollständigung
+ *
+ * Die Seite liefert (bei UND/ODER und NICHT kommen accepts, applyDrop und SCEN aus wennbau.js bzw. uo-szenarien.js)
+ *   SCEN, setup(), accepts(target, kind), applyDrop(d, type, idx, t), renderGrid(),
+ *   let endScen, endSeed, poolSeed, CUR, S = {items, slots, row, fb, success, result, …}
+ *   außerdem für basis.js: setMode, canNext, nextTask, renderNav, renderDock (Pfad/Endlos über dockHTML())
+ */
+
+const SEP = '\u0001'; // trennt Bausteine beim Zusammensetzen (außerhalb von Text = Leerraum)
+const CELL = /^\$?([A-Za-z]{1,3})\$?([0-9]{1,7})$/;
+const OPS = ['=','<>','<','<=','>','>='];
+/* Auswertung nach Excel-Regeln: Zahl < Text < Wahrheitswert, Text ohne Groß/Klein */
+function rank(v){ return v.t === 'num' ? 1 : v.t === 'str' ? 2 : 3; }
+function cmp(a, b){
+  if (rank(a) !== rank(b)) return rank(a) - rank(b);
+  if (a.t === 'str'){ const x = a.v.toLowerCase(), y = b.v.toLowerCase(); return x < y ? -1 : x > y ? 1 : 0; }
+  if (a.t === 'bool') return (a.v ? 1 : 0) - (b.v ? 1 : 0);
+  return Math.abs(a.v - b.v) < 1e-9 ? 0 : a.v - b.v;
+}
+function opTest(op, c){ return {'=':c===0,'<>':c!==0,'<':c<0,'<=':c<=0,'>':c>0,'>=':c>=0}[op]; }
+function same(a, b){ if (a.t !== b.t) return false; if (a.t === 'num') return Math.abs(a.v - b.v) < 1e-9; return a.v === b.v; }
+function fmtNum(x){ return String(+x.toFixed(10)).replace('.', ','); }
+function fmtVal(v){ if (v.t === 'num') return fmtNum(v.v); if (v.t === 'str') return '"' + v.v + '"'; if (v.t === 'err') return v.v; return v.v ? 'WAHR' : 'FALSCH'; }
+
+/* Aufgabentexte */
+const fx = (n, dp) => n.toFixed(dp || 0).replace('.', ',');
+const pickV = (V, p) => V[(p.v || 0) % V.length];
+const SUBJ = ['Mathematik', 'Deutsch', 'Englisch', 'BwR', 'Physik'];
+const DAYS = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'];
+function stripQ(l){ const m = l.match(/^"(.*)"$/); return m ? m[1].replace(/""/g, '"') : l; }
+
+/* Übungen und Endlos */
+function setLevel(n){ level = n; store('level', n); poolSeed = rand(); setup(); }
+function newEndless(){ const ids = Object.keys(SCEN).filter(k => k !== endScen); endScen = ids[Math.floor(Math.random() * ids.length)]; endSeed = rand(); endCounted = false; }
+function gotoTask(i){ pfadIdx = Math.max(0, Math.min(STD.length - 1, i)); store('idx', pfadIdx); pickerOpen = false; loadTask(); window.scrollTo({top:0, behavior:'smooth'}); }
+
+/* Darstellung */
+function role(r){ return S.success ? r : ''; }
+function isPlaced(id){ return Object.values(S.slots).includes(id) || S.row.includes(id); }
+function renderFeedback(){ const fb = $('#fb'); $('#workcard').classList.toggle('solved', !!(S.fb && S.fb.type === 'ok')); fb.innerHTML = S.fb ? `<div class="fb ${S.fb.type}">${S.fb.html}</div>` : ''; }
+function clearMarks(){
+  if (!S.success && !S.fb) return;
+  const was = S.success;
+  S.success = false; S.fb = null; S.result = null;
+  document.querySelectorAll('.r-cond,.r-then,.r-else').forEach(el => el.classList.remove('r-cond', 'r-then', 'r-else'));
+  document.querySelectorAll('.fixv').forEach(el => el.classList.remove('c-then', 'c-else'));
+  renderFeedback(); if (was) renderGrid();
+}
+/* Syntax-Hinweis und Autovervollständigung übernimmt acUpdate (wie in Excel) */
+function updateTip(){ acUpdate(); }
+
+/* Drag-Hooks: Bausteine haben data-id, Zeichen data-sym; die Seite liefert accepts(t, kind) */
+function dragData(b, e){
+  if (e.target.closest('select,input,option')) return null;
+  if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+  return {id:b.dataset.id, sym:b.dataset.sym, shift:e.shiftKey, src:!b.dataset.sym};
+}
+function dragKind(){ return D.sym ? 'sym' : S.items[D.id].kind; }
+const dropOk = t => accepts(t, dragKind());
+const dragTap = d => { if (d.shift) shiftPlace(d); };
+// Shift+Klick statt Ziehen: Baustein in die erste freie Lücke, in die er passt, sonst hinten an die Formel anhängen
+function shiftPlace(d){
+  if (!d.sym && isPlaced(d.id)) return;
+  const kind = d.sym ? 'sym' : S.items[d.id].kind;
+  const t = [...document.querySelectorAll('[data-drop]')].find(t =>
+    t.dataset.drop !== 'pool' && !d.el.contains(t) && accepts(t, kind) && (t.dataset.drop !== 'slot' || !S.slots[t.dataset.slot]));
+  if (t) applyDrop(d, t.dataset.drop, t.dataset.drop === 'row' ? S.row.length : 0, t);
+}
+
+const AC_FN = [
+  {n:'ANZAHL',     v:'Wert',           d:'Zählt, wie viele Zellen in einem Bereich Zahlen enthalten.'},
+  {n:'MAX',        v:'Zahl',           d:'Gibt den größten Wert aus einer Reihe von Werten zurück.'},
+  {n:'MIN',        v:'Zahl',           d:'Gibt den kleinsten Wert aus einer Reihe von Werten zurück.'},
+  {n:'MITTELWERT', v:'Zahl',           d:'Berechnet den Durchschnitt (das arithmetische Mittel) der Argumente.'},
+  {n:'NICHT',      a:['Wahrheitswert'], d:'Kehrt einen Wahrheitswert um: Aus WAHR wird FALSCH und aus FALSCH wird WAHR.'},
+  {n:'ODER',       v:'Wahrheitswert',  d:'Prüft, ob mindestens eines der Argumente WAHR ist. Gibt nur FALSCH zurück, wenn alle Argumente FALSCH sind.'},
+  {n:'SUMME',      v:'Zahl',           d:'Addiert alle Zahlen.'},
+  {n:'UND',        v:'Wahrheitswert',  d:'Prüft, ob alle Argumente WAHR sind, und gibt nur dann WAHR zurück.'},
+  {n:'WENN',       a:['Wahrheitstest', '[Wert_wenn_wahr]', '[Wert_wenn_falsch]'], d:'Prüft, ob eine Bedingung erfüllt ist, und gibt einen Wert zurück, wenn sie WAHR ist, und einen anderen, wenn sie FALSCH ist.'},
+  {n:'WENNFEHLER', a:['Wert', 'Wert_falls_Fehler'], d:'Gibt einen anderen Wert zurück, wenn die Formel einen Fehler ergibt.'},
+  {n:'WENNS',      a:['Wahrheitstest1', 'Wert_wenn_wahr1', '…'], d:'Prüft mehrere Bedingungen nacheinander und gibt den Wert der ersten erfüllten Bedingung zurück.'}
+];
+
+</script>
+<script>/* wennbau.js */
+/* wennbau.js – WENN-Formeln mit UND/ODER/NICHT bauen und prüfen: Parser, Auswertung, Bausteine in 9 Stufen
+ * Genutzt von und-oder.html und nicht.html. Laden nach basis.js und bausteine.js (dazu basis.css + bausteine.css),
+ * Aufgaben aus Szenarien: uo-szenarien.js (danach laden).
+ *
+ * API
+ *   parseFormula(src) → Baum (wirft FErr mit deutscher Meldung), ev(baum, env) → Wert, usesFn(baum, ['UND']), fmtNode(baum)
+ *   checkAgainst(src, aufgabe) → {ast, rows, fail, ok, logic}: dasselbe Ergebnis wie aufgabe.sol bei allen aufgabe.tests
+ *   product(listen)            alle Kombinationen (Testwerte)
+ *   WB_LEVELS                  die 9 Stufen: Bedingungen auswählen … Freitext ohne Hilfe (in der Seite: const LEVELS = WB_LEVELS)
+ *   wbSetup()                  Bausteine für CUR auf Stufe level anlegen (S), dann render()   (setup der Seite ruft es auf)
+ *   wbRender(kopf)             Formel, Bausteine und Rückmeldung zeichnen; kopf = {lvl, meta, text (HTML)}
+ *   wbGrid()                   kleine Tabelle mit Beispielwerten und Ergebnis (renderGrid der Seite ruft es auf)
+ *   wbCheck(opt)               Formel prüfen, Rückmeldung; nach richtiger Lösung logSolved(opt.geloest ? opt.geloest() : countSolved()),
+ *                              opt.nachher = HTML unter der Erfolgsmeldung
+ *   accepts, unplace, applyDrop   Ablageregeln (für basis.js/bausteine.js)
+ *   Ereignisse: Vergleichszeichen (.opsel), Werte (.cvin), Freitext (#ft), Enter in .cvin/#ft prüft.
+ *
+ * Aufgabe CUR (buildTask in uo-szenarien.js): {scen, text, cells, out, labels, resLabel, sample, comb, conds, condD,
+ *   condCells, cvals, cvalD, dps, then, else, resD, sol, tests, noLogic}. Stufen 1–5 setzen genau zwei Bedingungen ein.
+ *   Optional: muss(ast) → Fehlermeldung oder '' (Zusatzbedingung nach richtiger Auswertung, z. B. „ohne NICHT“),
+ *   syms: weitere Zeichen für Stufe 6/7 (z. B. ['NICHT']).
+ *
+ * Die Seite liefert: render() (ruft wbRender), check() (ruft wbCheck), setup(), renderGrid(), renderNav(), logSolved(erstmals),
+ *   die Variablen aus basis.js und let CUR, S, uid, poolSeed.
+ */
+
+/* ---------- Parser und Auswertung ---------- */
+function tokenize(src){
+  const t = []; let i = 0; const n = src.length;
+  const isL = ch => /[A-Za-zÄÖÜäöüß$_]/.test(ch);
+  while (i < n){
+    const c = src[i];
+    if (c === ' ' || c === '\t' || c === '\n' || c === SEP){ i++; continue; }
+    const start = i;
+    if (c === '"'){
+      i++; let v = ''; let closed = false;
+      while (i < n){
+        if (src[i] === '"'){ if (src[i+1] === '"'){ v += '"'; i += 2; continue; } closed = true; i++; break; }
+        if (src[i] !== SEP) v += src[i];
+        i++;
+      }
+      if (!closed) throw new FErr('Ein Anführungszeichen wurde geöffnet, aber nicht wieder geschlossen.');
+      t.push({type:'str', value:v, start, end:i}); continue;
+    }
+    if (/[0-9]/.test(c)){
+      let j = i; while (j < n && /[0-9]/.test(src[j])) j++;
+      if (src[j] === ',' && /[0-9]/.test(src[j+1] || '')){ j++; while (j < n && /[0-9]/.test(src[j])) j++; }
+      if (src[j] === '.' && /[0-9]/.test(src[j+1] || '')) throw new FErr('Dezimalzahlen schreibt man im deutschen Excel mit Komma, z. B. 4,95.');
+      if (j < n && isL(src[j])){
+        let k = j; while (k < n && /[A-Za-zÄÖÜäöüß0-9]/.test(src[k])) k++;
+        const w = src.slice(i, k);
+        throw new FErr(`„${w}“ ist keine Zahl. Text muss in Anführungszeichen stehen: "${w}"`);
+      }
+      t.push({type:'num', value:parseFloat(src.slice(i, j).replace(',', '.')), start, end:j}); i = j; continue;
+    }
+    if (isL(c)){
+      let j = i; while (j < n && /[A-Za-zÄÖÜäöüß$_0-9]/.test(src[j])) j++;
+      t.push({type:'id', value:src.slice(i, j), start, end:j}); i = j; continue;
+    }
+    const two = src.substr(i, 2);
+    if (two === '=>') throw new FErr('Das Zeichen „=>“ gibt es in Excel nicht. Meinst du „>=“?');
+    if (two === '=<') throw new FErr('Das Zeichen „=<“ gibt es in Excel nicht. Meinst du „<=“?');
+    if (two === '><') throw new FErr('Das Zeichen „><“ gibt es in Excel nicht. „Ungleich“ schreibt man „<>“.');
+    if (two === '!=') throw new FErr('„Ungleich“ schreibt man in Excel „<>“.');
+    if (two === '&&' || two === '||') throw new FErr('In Excel verknüpft man Bedingungen mit UND(…; …) bzw. ODER(…; …).');
+    if (two === '<=' || two === '>=' || two === '<>'){ t.push({type:'op', value:two, start, end:i+2}); i += 2; continue; }
+    if ('<>='.includes(c)){ t.push({type:'op', value:c, start, end:i+1}); i++; continue; }
+    if ('();,'.includes(c)){ t.push({type:c, value:c, start, end:i+1}); i++; continue; }
+    if (c === '€') throw new FErr('Das €-Zeichen gehört nicht in die Formel – schreibe nur die Zahl.');
+    if (c === '%') throw new FErr('Das %-Zeichen gehört hier nicht in die Formel – schreibe nur die Zahl.');
+    throw new FErr(`Das Zeichen „${c}“ ist an dieser Stelle nicht erlaubt.`);
+  }
+  return t;
+}
+
+const FUNCS = {WENN:[3,3], UND:[2,30], ODER:[2,30], NICHT:[1,1]};
+const ENGLISH = {IF:'WENN', AND:'UND', OR:'ODER', NOT:'NICHT'};
+const WENN_PART = ['Die Prüfung (der erste Teil von WENN) fehlt.', 'Der Dann_Wert (der zweite Teil von WENN) fehlt.', 'Der Sonst_Wert (der dritte Teil von WENN) fehlt.'];
+const INFIX = 'UND bzw. ODER stehen in Excel vor den Bedingungen: UND(Bedingung1; Bedingung2).';
+
+/* Allgemeiner Parser: =WENN(…) mit beliebig verschachtelten WENN/UND/ODER/NICHT */
+function parseFormula(raw){
+  const src = normQuotes(raw);
+  const t = tokenize(src); let p = 0;
+  const peek = () => t[p], next = () => t[p++];
+  if (!t.length) throw new FErr('Es wurde noch nichts eingegeben.');
+  if (!(t[0].type === 'op' && t[0].value === '=')) throw new FErr('Eine Formel beginnt in Excel immer mit einem „=“.');
+  p = 1;
+  const f = peek();
+  if (!f) throw new FErr('Nach dem „=“ fehlt die Funktion WENN.');
+  if (!(f.type === 'id' && f.value.toUpperCase() === 'WENN')){
+    if (f.type === 'id' && f.value.toUpperCase() === 'IF') throw new FErr('Im deutschen Excel heißt die Funktion WENN (nicht IF).');
+    throw new FErr('Die Formel muss mit =WENN( beginnen.');
+  }
+  const ast = expr(null);
+  if (p < t.length){
+    if (peek().type === ')') throw new FErr('Hier ist eine schließende Klammer „)“ zu viel.');
+    throw new FErr('Nach der letzten schließenden Klammer darf nichts mehr stehen.');
+  }
+  return ast;
+
+  function isLogicWord(k){ return k && k.type === 'id' && /^(UND|ODER|AND|OR)$/i.test(k.value) && !(t[p+1] && t[p+1].type === '('); }
+  function expr(ctx){
+    if (isLogicWord(peek())) throw new FErr(INFIX);
+    const a = term(ctx);
+    const k = peek();
+    if (k && k.type === 'op'){
+      next();
+      const b = term(ctx);
+      const k2 = peek();
+      if (k2 && k2.type === 'op') throw new FErr('Eine Bedingung hat nur ein Vergleichszeichen. Für „zwischen“ nutzt man UND, z. B. UND(A1>=13; A1<=17).');
+      if (isLogicWord(k2)) throw new FErr(INFIX);
+      return {k:'cmp', op:k.value, a, b, start:a.start, end:b.end};
+    }
+    if (isLogicWord(k)) throw new FErr(INFIX);
+    return a;
+  }
+  function missing(ctx){
+    if (!ctx) return 'Die Formel ist unvollständig.';
+    if (ctx.fn === 'WENN') return WENN_PART[Math.min(ctx.i, 2)];
+    if (ctx.fn === 'UND' || ctx.fn === 'ODER') return `In ${ctx.fn}(…) fehlt eine Bedingung.`;
+    return `In ${ctx.fn}(…) fehlt etwas.`;
+  }
+  function term(ctx){
+    const k = peek();
+    if (!k) throw new FErr('Die Formel ist unvollständig: ' + missing(ctx));
+    if (k.type === ';' || k.type === ')' || k.type === ',') throw new FErr(missing(ctx));
+    if (k.type === 'op') throw new FErr('Vor dem Vergleichszeichen fehlt etwas (z. B. die Zelle).');
+    if (k.type === '('){
+      next(); const e = expr(ctx); const c = next();
+      if (!c || c.type !== ')') throw new FErr('Eine Klammer wurde geöffnet, aber nicht geschlossen.');
+      return e;
+    }
+    next();
+    if (k.type === 'num') return {k:'lit', v:{t:'num', v:k.value}, start:k.start, end:k.end};
+    if (k.type === 'str') return {k:'lit', v:{t:'str', v:k.value}, start:k.start, end:k.end};
+    const u = k.value.toUpperCase();
+    if (peek() && peek().type === '(') return call(u, k);
+    if (FUNCS[u]) throw new FErr(`Nach ${u} folgt eine öffnende Klammer „(“.`);
+    if (u === 'WAHR') return {k:'lit', v:{t:'bool', v:true}, start:k.start, end:k.end};
+    if (u === 'FALSCH') return {k:'lit', v:{t:'bool', v:false}, start:k.start, end:k.end};
+    const m = k.value.match(CELL);
+    if (m && !(peek() && peek().type === 'id' && !isLogicWord(peek()))) return {k:'ref', v:(m[1] + m[2]).toUpperCase(), start:k.start, end:k.end};
+    while (peek() && (peek().type === 'id' || peek().type === 'num') && !isLogicWord(peek())) next();
+    const txt = src.slice(k.start, t[p-1].end).split(SEP).join('');
+    throw new FErr(`„${txt}“ ist Text und muss in Anführungszeichen stehen: "${txt}"`);
+  }
+  function call(name, tok){
+    if (ENGLISH[name]) throw new FErr(`Im deutschen Excel heißt die Funktion ${ENGLISH[name]} (nicht ${name}).`);
+    if (!FUNCS[name]) throw new FErr(`Die Funktion „${tok.value}“ gibt es hier nicht. Erlaubt sind WENN, UND, ODER und NICHT.`);
+    next(); // (
+    const args = [], spans = [];
+    while (true){
+      const s = peek() ? peek().start : src.length;
+      const e = expr({fn:name, i:args.length});
+      args.push(e); spans.push([s, t[p-1].end]);
+      const k = next();
+      if (!k) throw new FErr(`Es fehlt die schließende Klammer „)“ von ${name}.`);
+      if (k.type === ';') continue;
+      if (k.type === ')') break;
+      if (k.type === ',') throw new FErr('Im deutschen Excel trennt man die Teile einer Funktion mit einem Semikolon „;“.');
+      throw new FErr(`In ${name}(…) fehlt zwischen zwei Teilen ein Semikolon „;“.`);
+    }
+    const [mn, mx] = FUNCS[name];
+    if ((name === 'UND' || name === 'ODER') && args.some(a => a.k === 'lit' && a.v.t === 'str'))
+      throw new FErr(`In ${name}(…) gehören nur Bedingungen. Wurde die Klammer von ${name} vielleicht nicht vor dem Dann_Wert geschlossen?`);
+    if (name === 'WENN' && args.length < 3) throw new FErr('WENN braucht drei Teile: Prüfung; Dann_Wert; Sonst_Wert.');
+    if (name === 'WENN' && args.length > 3) throw new FErr('WENN hat genau drei Teile – hier ist ein Semikolon zu viel.');
+    if (args.length < mn) throw new FErr(`${name} braucht mindestens zwei Bedingungen, getrennt durch „;“.`);
+    if (args.length > mx) throw new FErr(`${name} hat hier zu viele Teile.`);
+    return {k:'call', name, args, spans, start:tok.start, end:t[p-1].end};
+  }
+}
+
+/* Auswertung nach Excel-Regeln */
+const ERR = {t:'err', v:'#WERT!'};
+function toBool(v){ if (v.t === 'bool') return v.v; if (v.t === 'num') return v.v !== 0; return null; }
+function ev(n, env){
+  if (n.k === 'lit') return n.v;
+  if (n.k === 'ref'){ const x = env[n.v]; return x === undefined ? {t:'num', v:0} : x; }
+  if (n.k === 'cmp'){ const a = ev(n.a, env), b = ev(n.b, env); if (a.t === 'err') return a; if (b.t === 'err') return b; return {t:'bool', v:opTest(n.op, cmp(a, b))}; }
+  if (n.name === 'WENN'){ const c = ev(n.args[0], env); if (c.t === 'err') return c; const b = toBool(c); if (b === null) return ERR; return ev(n.args[b ? 1 : 2], env); }
+  const vals = n.args.map(a => ev(a, env));
+  if (vals.some(v => v.t === 'err')) return ERR;
+  const bs = vals.map(toBool); if (bs.includes(null)) return ERR;
+  if (n.name === 'UND') return {t:'bool', v:bs.every(Boolean)};
+  if (n.name === 'ODER') return {t:'bool', v:bs.some(Boolean)};
+  return {t:'bool', v:!bs[0]}; // NICHT
+}
+function usesFn(n, names){ return n.k === 'call' && (names.includes(n.name) || n.args.some(a => usesFn(a, names))) || n.k === 'cmp' && (usesFn(n.a, names) || usesFn(n.b, names)); }
+function fmtNode(n){
+  if (n.k === 'lit') return n.v.t === 'str' ? '"' + n.v.v.replace(/"/g, '""') + '"' : fmtVal(n.v);
+  if (n.k === 'ref') return n.v;
+  if (n.k === 'cmp') return fmtNode(n.a) + n.op + fmtNode(n.b);
+  return n.name + '(' + n.args.map(fmtNode).join(';') + ')';
+}
+
+function checkAgainst(src, task){
+  const ast = parseFormula(src);
+  const ref = parseFormula(task.sol);
+  const rows = task.tests.map(env => ({env, got:ev(ast, env), exp:ev(ref, env)}));
+  const fail = rows.find(r => !same(r.got, r.exp)) || null;
+  return {ast, rows, fail, ok:!fail, logic:usesFn(ast, ['UND', 'ODER'])};
+}
+function product(arrs){ return arrs.reduce((acc, a) => acc.flatMap(x => a.map(y => [...x, y])), [[]]); }
+
+/* ---------- Stufen und Bausteine ---------- */
+const WB_LEVELS = [null,
+  {name:'Bedingungen auswählen',              mode:'slots', comb:'fixed',  cond:'choose',    res:'fixed'},
+  {name:'UND oder ODER wählen',               mode:'slots', comb:'choose', cond:'choose',    res:'fixed'},
+  {name:'DANN und SONST einsetzen',           mode:'slots', comb:'choose', cond:'choose',    res:'drag'},
+  {name:'Bedingungen bauen – Wert ziehen',    mode:'slots', comb:'choose', cond:'buildDrag', res:'drag'},
+  {name:'Bedingungen bauen – Wert eintippen', mode:'slots', comb:'choose', cond:'buildType', res:'drag'},
+  {name:'Formel komplett bauen',              mode:'row',   cond:'buildType', quotes:false},
+  {name:'Formel bauen inkl. Anführungszeichen', mode:'row', cond:'buildType', quotes:true},
+  {name:'Freitext mit Hilfe',                 mode:'text',  help:true},
+  {name:'Freitext ohne Hilfe',                mode:'text',  help:false}
+];
+
+function wbSetup(){
+  const T = CUR, L = LEVELS[level], r = rng(poolSeed);
+  S = {items:{}, pools:{fn:[], cond:[], cval:[], res:[]}, slots:{comb:null, c1:null, c2:null, then:null, else:null},
+       row:[], text:'', success:false, rowRoles:{}, fb:null, result:null};
+  uid = 0;
+  if (L.mode === 'text'){ render(); return; }
+  const mk = (kind, lit, extra) => { const id = 'b' + (++uid); S.items[id] = {id, kind, lit, label:lit, ...extra}; return id; };
+  if (L.comb === 'choose') S.pools.fn = ['UND', 'ODER'].map(f => mk('fn', f));
+  const builders = (L.cond === 'buildDrag' || L.cond === 'buildType') ? T.condCells.map(c => mk('builder', '', {bcell:c, op:'', input:''})) : [];
+  if (L.cond === 'choose') S.pools.cond = shuffle([...T.conds, ...T.condD].map(l => mk('cond', l)), r);
+  if (L.cond === 'buildDrag'){
+    S.pools.cval = shuffle([...new Set([...T.cvals, ...T.cvalD])].map(l => mk('val', l)), r);
+    builders.forEach(b => S.slots['cv:' + b] = null);
+  }
+  if (L.mode === 'slots' && L.cond !== 'choose') S.pools.cond = builders;
+  if (L.res === 'drag' || L.mode === 'row'){
+    const seen = new Set();
+    const res = [T.then, T.else, ...T.resD].map(l => L.quotes ? stripQ(l) : l).filter(l => !seen.has(l) && seen.add(l));
+    S.pools.res = shuffle(res.map(l => mk('val', l)), r);
+  }
+  if (L.mode === 'row') S.pools.res = [...builders, ...S.pools.res];
+  render();
+}
+
+function fmtCell(v, dp){ return v.t === 'num' ? fx(v.v, dp) : esc(v.v); }
+function wbGrid(){
+  const T = CUR, row = T.out.match(/\d+/)[0], col = c => c.replace(/\d+/, '');
+  const out = S.result ? esc(S.result.t === 'str' ? S.result.v : fmtVal(S.result)) : '';
+  $('#grid').innerHTML = `<table class="grid"><tr><th></th>${T.cells.map(c => `<th>${col(c)}</th>`).join('')}<th>${col(T.out)}</th></tr>
+    <tr><th>${row - 1}</th>${T.labels.map(l => `<td class="lbl">${esc(l)}</td>`).join('')}<td class="lbl">${esc(T.resLabel)}</td></tr>
+    <tr><th>${row}</th>${T.cells.map((c, i) => `<td>${fmtCell(T.sample[c], T.dps[i])}</td>`).join('')}<td class="fx">${out}</td></tr></table>`;
+}
+
+function builderInner(it, grip){
+  const L = LEVELS[level];
+  const opts = ['', ...OPS].map(o => `<option value="${esc(o)}"${it.op === o ? ' selected' : ''}>${o === '' ? '?' : esc(o)}</option>`).join('');
+  let v;
+  if (L.cond === 'buildDrag'){
+    const k = 'cv:' + it.id, id = S.slots[k];
+    v = `<div class="slot pill small" data-drop="slot" data-slot="${k}">${id ? blockHTML(S.items[id], {role:role('cond')}) : '<span class="ph">Wert</span>'}</div>`;
+  } else {
+    v = `<input class="cvin" data-b="${it.id}" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Wert" value="${esc(it.input)}" size="${Math.max(4, it.input.length + 1)}" aria-label="Vergleichswert">`;
+  }
+  return `${grip ? '<span class="grip" aria-hidden="true">⠿</span>' : ''}<span class="cellref">${it.bcell}</span><select class="opsel" data-b="${it.id}" aria-label="Vergleichszeichen">${opts}</select>${v}`;
+}
+
+function condSlot(key, live){
+  if (!live) return '<div class="slot hex dummy"><span class="ph">Bedingung</span></div>';
+  const id = S.slots[key];
+  return `<div class="slot hex" data-drop="slot" data-slot="${key}">${id ? blockHTML(S.items[id], {role:role('cond')}) : '<span class="ph">Bedingung</span>'}</div>`;
+}
+
+function blockHTML(it, o = {}){
+  const cls = ['block'];
+  if (it.kind === 'val') cls.push('val');
+  else if (it.kind === 'sym') cls.push('sym');
+  else if (it.kind === 'fn') cls.push('fn');
+  else cls.push('hex');
+  if (it.kind === 'builder') cls.push('builder');
+  if (o.role) cls.push('r-' + o.role);
+  if (o.ghost) cls.push('ghost');
+  const drag = o.drag !== false && !o.ghost && it.id ? ` data-drag="1" data-id="${it.id}"` : '';
+  let inner;
+  if (it.kind === 'builder' && o.ghost) inner = `<span class="cellref">${it.bcell}</span> ? Wert`;
+  else if (it.kind === 'builder') inner = builderInner(it, !!drag);
+  else if (it.kind === 'fn') inner = `<span class="fname">${it.lit}(</span>${condSlot('c1', o.live)}<span class="fsep">;</span>${condSlot('c2', o.live)}<span class="fname">)</span>`;
+  else inner = esc(it.label);
+  return `<div class="${cls.join(' ')}"${drag}>${inner}</div>`;
+}
+
+function wbRender(kopf){
+  const T = CUR, L = LEVELS[level];
+  renderHeader();
+  $('#workcard').style.display = ''; $('#wtlabel').textContent = 'Deine Formel';
+  $('#lvlname').textContent = kopf.lvl;
+  $('#taskmeta').textContent = kopf.meta;
+  $('#tasktext').innerHTML = kopf.text;
+  renderGrid();
+  const W = $('#work'), P = $('#pools');
+
+  if (L.mode === 'slots'){
+    let comb;
+    if (L.comb === 'fixed') comb = blockHTML({kind:'fn', lit:T.comb}, {drag:false, live:true, role:role('cond')});
+    else comb = `<div class="slot fnslot" data-drop="slot" data-slot="comb">${S.slots.comb ? blockHTML(S.items[S.slots.comb], {live:true, role:role('cond')}) : '<span class="ph">UND / ODER</span>'}</div>`;
+    const res = s => L.res === 'fixed'
+      ? `<span class="fixv${S.success ? ' c-' + s : ''}">${esc(T[s])}</span>`
+      : `<div class="slot pill" data-drop="slot" data-slot="${s}">${S.slots[s] ? blockHTML(S.items[S.slots[s]], {role:role(s)}) : `<span class="ph">${s === 'then' ? 'Dann_Wert' : 'Sonst_Wert'}</span>`}</div>`;
+    W.innerHTML = `<div class="formula"><span class="ft">=WENN(</span>${comb}<span class="ft">;</span>${res('then')}<span class="ft">;</span>${res('else')}<span class="ft">)</span></div>`;
+  } else if (L.mode === 'row'){
+    const kids = S.row.map(id => `<span class="iw">${blockHTML(S.items[id], {role:S.success ? (S.rowRoles[id] || '') : ''})}</span>`).join('');
+    W.innerHTML = `<div class="row" data-drop="row">${kids || '<span class="ph">Ziehe Zeichen und Bausteine hierher, um die Formel zu bauen.</span>'}</div>`;
+  } else {
+    W.innerHTML = `<input id="ft" class="ftin acin" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Formel eingeben …" value="${esc(S.text)}" aria-label="Formel">`;
+    updateTip();
+  }
+
+  let ph = '';
+  const pool = (title, key) => `<div class="pool" data-drop="pool"><div class="pool-title">${title}</div><div class="pool-items">${S.pools[key].map(id => blockHTML(S.items[id], {ghost:isPlaced(id)})).join('')}</div></div>`;
+  if (S.pools.fn.length) ph += pool('Verknüpfung', 'fn');
+  if (S.pools.cond.length) ph += pool(L.cond === 'choose' ? 'Bedingungen' : 'Bedingungen bauen', 'cond');
+  if (S.pools.cval.length) ph += pool('Vergleichswerte', 'cval');
+  if (S.pools.res.length) ph += pool(L.mode === 'row' ? 'Bausteine' : 'Werte für DANN und SONST', 'res');
+  if (L.mode === 'row'){
+    const syms = ['=', 'WENN', 'UND', 'ODER', ...(T.syms || []), '(', ';', ')'].concat(L.quotes ? ['"'] : []);
+    ph += `<div class="pool sympool" data-drop="pool"><div class="pool-title">Zeichen – beliebig oft verwendbar</div><div class="pool-items">${syms.map(s => `<div class="block sym" data-drag="1" data-sym="${esc(s)}">${esc(s)}</div>`).join('')}</div></div>`;
+  }
+  P.innerHTML = ph; P.style.display = ph ? '' : 'none';
+  $('#wthint').textContent = L.mode === 'text' ? '' : '· Zum Entfernen einen Baustein zurück nach unten ziehen';
+  renderFeedback(); renderNav();
+}
+
+
+/* ---------- Formel zusammensetzen & prüfen ---------- */
+function builderStr(it){
+  const L = LEVELS[level];
+  if (!it.op) return {missing:'Wähle in jeder Bedingung ein Vergleichszeichen aus.'};
+  let v;
+  if (L.cond === 'buildDrag'){ const id = S.slots['cv:' + it.id]; if (!id) return {missing:'Ziehe in jede Bedingung einen Vergleichswert.'}; v = S.items[id].lit; }
+  else { v = it.input.trim(); if (!v) return {missing:'Trage in jeder Bedingung einen Vergleichswert ein.'}; }
+  return {str:it.bcell + it.op + v};
+}
+function piece(id){ const it = S.items[id]; return it.kind === 'builder' ? builderStr(it) : {str:it.lit}; }
+
+function currentFormula(){
+  const T = CUR, L = LEVELS[level];
+  if (L.mode === 'text') return {src:S.text};
+  if (L.mode === 'slots'){
+    let comb = T.comb;
+    if (L.comb === 'choose'){ if (!S.slots.comb) return {missing:'Ziehe UND oder ODER in das Feld der Prüfung.'}; comb = S.items[S.slots.comb].lit; }
+    if (!S.slots.c1 || !S.slots.c2) return {missing:`Setze in ${comb}(…) zwei Bedingungen ein.`};
+    const a = piece(S.slots.c1), b = piece(S.slots.c2);
+    if (a.missing) return a; if (b.missing) return b;
+    let th = T.then, el = T.else;
+    if (L.res === 'drag'){
+      if (!S.slots.then) return {missing:'Das Feld „Dann_Wert“ ist noch leer.'};
+      if (!S.slots.else) return {missing:'Das Feld „Sonst_Wert“ ist noch leer.'};
+      th = S.items[S.slots.then].lit; el = S.items[S.slots.else].lit;
+    }
+    return {src:`=WENN(${comb}(${a.str};${b.str});${th};${el})`};
+  }
+  if (!S.row.length) return {missing:'Die Formelzeile ist noch leer.'};
+  let src = '', ranges = {};
+  for (let i = 0; i < S.row.length; i++){
+    const pc = piece(S.row[i]); if (pc.missing) return pc;
+    if (i) src += SEP;
+    ranges[S.row[i]] = [src.length, src.length + pc.str.length];
+    src += pc.str;
+  }
+  return {src, ranges};
+}
+
+function caseText(env){
+  const parts = CUR.cells.map((c, i) => `in <b>${c}</b> <code>${esc(fmtVal(env[c]))}</code>`);
+  return parts.length === 1 ? parts[0] : parts.slice(0, -1).join(', ') + ' und ' + parts[parts.length - 1];
+}
+
+function wbCheck(opt = {}){
+  const T = CUR, L = LEVELS[level], knapp = L.mode === 'text' && !L.help;   // letzte Stufe: Rückmeldung ohne Hinweise
+  const cur = currentFormula();
+  if (cur.missing){ S.fb = {type:'err', html:esc(cur.missing)}; S.success = false; renderFeedback(); return; }
+  let res;
+  try { res = checkAgainst(cur.src, T); }
+  catch (e){
+    if (!(e instanceof FErr)) throw e;
+    S.success = false; S.fb = {type:'err', html: knapp ? 'Die Formel enthält einen Fehler.' : esc(e.message)};
+    renderFeedback(); return;
+  }
+  if (!res.ok){
+    S.success = false;
+    if (knapp) S.fb = {type:'err', html:'Die Formel ist gültig, liefert aber nicht in allen Fällen das richtige Ergebnis.'};
+    else {
+      const f = res.fail;
+      let h = `Die Formel ist gültig, aber das Ergebnis stimmt noch nicht in jedem Fall.<br>Wenn ${caseText(f.env)} steht, liefert deine Formel <code>${esc(fmtVal(f.got))}</code> – richtig wäre <code>${esc(fmtVal(f.exp))}</code>.`;
+      if (f.got.t === 'str' && f.exp.t === 'str' && f.got.v.toLowerCase() === f.exp.v.toLowerCase()) h += '<br>Achte auf Groß- und Kleinschreibung.';
+      else if (f.got.t !== f.exp.t && fmtVal(f.got).replace(/"/g, '') === fmtVal(f.exp).replace(/"/g, '')) h += '<br>Achte darauf, ob eine Zahl oder ein Text ausgegeben werden soll.';
+      S.fb = {type:'err', html:h};
+    }
+    renderFeedback(); return;
+  }
+  if (!res.logic && !T.noLogic){
+    S.success = false;
+    S.fb = {type:'err', html:'Das Ergebnis stimmt – aber in dieser Übung sollst du die Bedingungen mit UND bzw. ODER verknüpfen statt mehrere WENN-Funktionen zu verschachteln.'};
+    renderFeedback(); return;
+  }
+  const fehlt = T.muss ? T.muss(res.ast) : '';
+  if (fehlt){ S.success = false; S.fb = {type:'err', html:fehlt}; renderFeedback(); return; }
+  // richtig
+  S.success = true;
+  S.ast = res.ast;
+  logSolved(opt.geloest ? opt.geloest() : countSolved());
+  const a = res.ast;
+  if (L.mode === 'row'){
+    S.rowRoles = {};
+    for (const [id, [x, y]] of Object.entries(cur.ranges))
+      ['cond', 'then', 'else'].forEach((r, i) => { const sp = a.spans[i]; if (x >= sp[0] && y <= sp[1]) S.rowRoles[id] = r; });
+  }
+  S.result = ev(a, T.sample);
+  const colored = `=WENN(<span class="c-cond">${esc(fmtNode(a.args[0]))}</span>;<span class="c-then">${esc(fmtNode(a.args[1]))}</span>;<span class="c-else">${esc(fmtNode(a.args[2]))}</span>)`;
+  const norm = s => normQuotes(s).split(SEP).join('').replace(/\s+/g, '').toUpperCase();
+  let h = `<b>Glückwunsch, richtig! 🎉</b><br><span class="fcol">${colored}</span><br><span class="legend"><span class="c-cond">■</span> Prüfung &nbsp; <span class="c-then">■</span> Dann_Wert &nbsp; <span class="c-else">■</span> Sonst_Wert</span>`;
+  if (norm(cur.src) !== norm(T.sol)) h += `<br>Deine Lösung ist gleichwertig zur Musterlösung <code>${esc(T.sol)}</code>.`;
+  if (!knapp){
+    h += `<details class="cases"><summary>Alle ${res.rows.length} getesteten Fälle anzeigen</summary><table class="tt"><tr>${T.cells.map(c => `<th>${c}</th>`).join('')}<th>Ergebnis</th></tr>` +
+      res.rows.map(r => `<tr>${T.cells.map(c => `<td>${esc(fmtVal(r.env[c]))}</td>`).join('')}<td>${esc(fmtVal(r.got))}</td></tr>`).join('') + '</table></details>';
+  }
+  if (opt.nachher) h += opt.nachher + '<br>';
+  if (canNext()) h += mode === 'lernen' ? 'Weiter geht es mit „Weiter“.' : 'Weiter geht es mit „Nächste Aufgabe“.';
+  S.fb = {type:'ok', html:h};
+  render();
+}
+
+
+/* ---------- Drag & Drop: Ablageregeln (Ziehen: basis.js, Shift+Klick: bausteine.js) ---------- */
+function accepts(target, kind){
+  const t = target.dataset.drop;
+  if (t === 'slot'){
+    const s = target.dataset.slot;
+    if (s === 'comb') return kind === 'fn';
+    if (s === 'c1' || s === 'c2') return kind === 'cond' || kind === 'builder';
+    return kind === 'val';
+  }
+  if (t === 'row') return kind !== 'cond' && kind !== 'fn';
+  return t === 'pool';
+}
+function unplace(id){
+  for (const k in S.slots) if (S.slots[k] === id){ S.slots[k] = null; if (k === 'comb'){ S.slots.c1 = null; S.slots.c2 = null; } }
+  const i = S.row.indexOf(id); if (i >= 0) S.row.splice(i, 1);
+  if (S.items[id] && S.items[id].kind === 'sym') delete S.items[id];
+}
+
+function applyDrop(d, type, idx, t){
+  if (type === 'slot'){
+    const s = t.dataset.slot;
+    if (S.slots[s] === d.id) return;
+    const prev = Object.keys(S.slots).find(k => S.slots[k] === d.id);
+    const occ = S.slots[s];
+    if (prev) S.slots[prev] = null;
+    S.slots[s] = d.id;
+    if (prev && occ){ const pe = document.querySelector(`[data-slot="${prev}"]`); if (pe && accepts(pe, S.items[occ].kind)) S.slots[prev] = occ; } // tauschen
+  } else if (type === 'row'){
+    let id = d.id;
+    if (d.sym){ id = 's' + (++uid); S.items[id] = {id, kind:'sym', lit:d.sym, label:d.sym}; }
+    const cur = S.row.indexOf(id);
+    if (cur >= 0){ S.row.splice(cur, 1); if (cur < idx) idx--; }
+    S.row.splice(idx, 0, id);
+  } else {
+    if (d.sym || !isPlaced(d.id)) return;
+    unplace(d.id);
+  }
+  S.success = false; S.fb = null; S.result = null;
+  render();
+}
+
+/* ---------- Ereignisse ---------- */
+document.addEventListener('change', e => {
+  if (e.target.matches('.opsel')){ S.items[e.target.dataset.b].op = e.target.value; clearMarks(); }
+});
+document.addEventListener('input', e => {
+  if (e.target.matches('.cvin')){ const it = S.items[e.target.dataset.b]; it.input = e.target.value; e.target.size = Math.max(4, it.input.length + 1); clearMarks(); }
+  if (e.target.id === 'ft'){ S.text = e.target.value; updateTip(); clearMarks(); }
+});
+document.addEventListener('keyup', e => { if (e.target.id === 'ft') updateTip(); });
+document.addEventListener('click', e => { if (e.target.id === 'ft') updateTip(); });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && (e.target.id === 'ft' || (e.target.matches && e.target.matches('.cvin')))){ e.preventDefault(); check(); }
+});
+
+</script>
+<script>/* uo-szenarien.js */
+/* uo-szenarien.js – Sachaufgaben für WENN mit UND/ODER (Achterbahn, Mofa, Versand …) und buildTask
+ * Genutzt von und-oder.html (Übungen, Endlos) und nicht.html (Formeln umdrehen). Laden nach wennbau.js.
+ *
+ * API
+ *   SCEN                       {id: {name, pick(r) → Parameter, build(p) → {comb, conds, labels, resLabel, then, else, text, resD}}}
+ *   buildTask(id, fixed, seed) → Aufgabe für wennbau.js (Zellen, Beispielwerte, Testfälle, Ablenker, sol = Musterlösung);
+ *                                id aus SCEN oder LSCEN der Seite; T.CD = Bedingungen einzeln {cell, op, b, L(wert) → Literal, type, …}
+ */
+const HOW = 'Verwende dazu eine WENN-Funktion zusammen mit UND bzw. ODER.';
+const outs = (a, b) => `Ausgegeben werden soll ${C(a)} bzw. ${C(b)}.`;
+
+/* ---- Grundmengen ---- */
+const RIDES = [{n:'Feuerwirbel', h:1.1, a:6}, {n:'Blitzschlange', h:1.2, a:8}, {n:'Schwarzer Falke', h:1.3, a:10}, {n:'Donnerkeil', h:1.4, a:10}];
+const TARIFE = [{lo:6, hi:14, n:'Kindertarif'}, {lo:12, hi:17, n:'Jugendtarif'}, {lo:14, hi:17, n:'Jugendtarif'}, {lo:18, hi:25, n:'Studententarif'}];
+const KLIMA = [{lo:19, hi:22}, {lo:20, hi:23}, {lo:18, hi:21}];
+
+/* ---- Szenarien ----
+   build(p) liefert: comb, conds[{c (Zellindex), op, b, type, dp, lo, hi, values}], labels, resLabel, then, else, text(cells, out), resD */
+const SCEN = {
+  achterbahn: { name:'Achterbahn',
+    pick: r => ({ride:pick1(r, RIDES).n, v:ri(r, 0, 1)}),
+    build: p => { const k = RIDES.find(x => x.n === p.ride), h = fx(k.h, 2);
+      const V = pickV([
+        {comb:'UND', ops:['>=', '>='], then:'darf mitfahren', else:'darf nicht mitfahren', rule:`Mitfahren darf nur, wer mindestens ${h} m groß und mindestens ${k.a} Jahre alt ist.`},
+        {comb:'ODER', ops:['<', '<'], then:'darf nicht mitfahren', else:'darf mitfahren', rule:`Wer kleiner als ${h} m oder jünger als ${k.a} Jahre ist, darf nicht mitfahren.`}], p);
+      return {...V, conds:[{c:0, op:V.ops[0], b:k.h, type:'dec', dp:2, lo:0.95, hi:1.95}, {c:1, op:V.ops[1], b:k.a, type:'int', lo:4, hi:16}],
+        labels:['Größe (m)', 'Alter'], resLabel:'Achterbahn',
+        text:(c, o) => `In Zelle ${B(c[0])} steht die Körpergröße eines Kindes in Metern, in Zelle ${B(c[1])} sein Alter. Für die Achterbahn <i>${k.n}</i> gilt: ${V.rule} Entscheide in Zelle ${B(o)}, ob das Kind mitfahren darf. ${HOW} ${outs('darf mitfahren', 'darf nicht mitfahren')}`,
+        resD:['mitfahren', 'nicht mitfahren', 'ja', 'nein', 'zu klein', 'zu jung']}; } },
+
+  mofa: { name:'Mofa',
+    pick: r => ({v:ri(r, 0, 1)}),
+    build: p => {
+      const V = pickV([
+        {comb:'UND', c:[['>=', 15], ['=', 'ja']], then:'darf fahren', else:'darf nicht fahren', rule:'Ein Mofa darf fahren, wer mindestens 15 Jahre alt ist und eine Mofa-Prüfbescheinigung besitzt.'},
+        {comb:'ODER', c:[['<', 15], ['=', 'nein']], then:'darf nicht fahren', else:'darf fahren', rule:'Wer jünger als 15 Jahre ist oder keine Mofa-Prüfbescheinigung besitzt, darf kein Mofa fahren.'}], p);
+      return {...V, conds:[{c:0, op:V.c[0][0], b:V.c[0][1], type:'int', lo:12, hi:40}, {c:1, op:V.c[1][0], b:V.c[1][1], type:'text', values:['ja', 'nein']}],
+        labels:['Alter', 'Prüfbescheinigung'], resLabel:'Mofa',
+        text:(c, o) => `In Zelle ${B(c[0])} steht das Alter einer Person, in Zelle ${B(c[1])} steht ${C('ja')} oder ${C('nein')} – je nachdem, ob sie eine Mofa-Prüfbescheinigung besitzt. ${V.rule} Entscheide in Zelle ${B(o)}, ob die Person Mofa fahren darf. ${HOW} ${outs('darf fahren', 'darf nicht fahren')}`,
+        resD:['fahren', 'nicht fahren', 'ja', 'nein', 'erlaubt', 15]}; } },
+
+  kundenkarte: { name:'Kundenkarte',
+    pick: r => ({b:pick1(r, [30, 50, 100]), rate:pick1(r, [5, 10]), v:ri(r, 0, 1)}),
+    build: p => {
+      const V = pickV([
+        {comb:'UND', c:[['=', 'ja'], ['>=', p.b]], then:p.rate, else:0, rule:`${p.rate} % Rabatt gibt es nur mit Kundenkarte und ab einem Einkaufswert von ${p.b} €, sonst 0 %.`},
+        {comb:'ODER', c:[['=', 'nein'], ['<', p.b]], then:0, else:p.rate, rule:`Ohne Kundenkarte oder bei einem Einkaufswert unter ${p.b} € gibt es keinen Rabatt, sonst ${p.rate} %.`}], p);
+      return {...V, conds:[{c:0, op:V.c[0][0], b:V.c[0][1], type:'text', values:['ja', 'nein']}, {c:1, op:V.c[1][0], b:V.c[1][1], type:'dec', dp:2, lo:5, hi:200}],
+        labels:['Kundenkarte', 'Einkauf (€)'], resLabel:'Rabatt (%)',
+        text:(c, o) => `In Zelle ${B(c[0])} steht, ob ein Kunde eine Kundenkarte hat (${C('ja')} oder ${C('nein')}), in Zelle ${B(c[1])} sein Einkaufswert in €. ${V.rule} Gib in Zelle ${B(o)} den Rabatt in Prozent als Zahl aus. ${HOW}`,
+        resD:[p.rate + ' %', String(p.rate), p.rate / 100, '0', 100, p.b]}; } },
+
+  versand_de: { name:'Versand ins Ausland',
+    pick: r => ({b:pick1(r, [29, 39, 50]), fee:pick1(r, [3.95, 4.95, 5.9]), v:ri(r, 0, 1)}),
+    build: p => { const ff = fx(p.fee, 2);
+      const V = pickV([
+        {comb:'UND', c:[['>=', p.b], ['=', 'Deutschland']], then:0, else:p.fee, rule:`Versandkostenfrei sind nur Bestellungen ab ${p.b} €, die nach Deutschland gehen. Alle anderen kosten ${ff} € Versand.`},
+        {comb:'ODER', c:[['<', p.b], ['<>', 'Deutschland']], then:p.fee, else:0, rule:`Liegt der Bestellwert unter ${p.b} € oder geht die Lieferung nicht nach Deutschland, kostet der Versand ${ff} €, sonst ist er kostenlos.`}], p);
+      return {...V, conds:[{c:0, op:V.c[0][0], b:V.c[0][1], type:'dec', dp:2, lo:5, hi:150}, {c:1, op:V.c[1][0], b:V.c[1][1], type:'text', values:['Deutschland', 'Österreich', 'Schweiz']}],
+        labels:['Bestellwert (€)', 'Land'], resLabel:'Versand (€)',
+        text:(c, o) => `In Zelle ${B(c[0])} steht der Bestellwert in €, in Zelle ${B(c[1])} das Lieferland (z. B. ${C('Deutschland')} oder ${C('Österreich')}). ${V.rule} Berechne in Zelle ${B(o)} die Versandkosten in € (als Zahl). ${HOW}`,
+        resD:['0', ff, 'kostenlos', ff + ' €', p.b, Math.round(p.fee)]}; } },
+
+  tarif: { name:'Eintrittstarif',
+    pick: r => ({t:ri(r, 0, TARIFE.length - 1), v:ri(r, 0, 1)}),
+    build: p => { const T = TARIFE[p.t];
+      const V = pickV([
+        {comb:'UND', c:[['>=', T.lo], ['<=', T.hi]], then:T.n, else:'Normaltarif', rule:`Der ${T.n} gilt für alle von ${T.lo} bis einschließlich ${T.hi} Jahren.`},
+        {comb:'ODER', c:[['<', T.lo], ['>', T.hi]], then:'Normaltarif', else:T.n, rule:`Wer jünger als ${T.lo} oder älter als ${T.hi} Jahre ist, zahlt den Normaltarif, alle anderen den ${T.n}.`}], p);
+      return {...V, conds:[{c:0, op:V.c[0][0], b:V.c[0][1], type:'int', lo:1, hi:80}, {c:0, op:V.c[1][0], b:V.c[1][1], type:'int', lo:1, hi:80}],
+        labels:['Alter'], resLabel:'Tarif',
+        text:(c, o) => `Im Kletterpark gibt es verschiedene Tarife. In Zelle ${B(c[0])} steht das Alter einer Person. ${V.rule} Gib in Zelle ${B(o)} den passenden Tarif aus. ${HOW} ${outs(T.n, 'Normaltarif')}`,
+        resD:['ermäßigt', 'Vollpreis', 'Normalpreis', 'Kinder', 'ja', 'nein']}; } },
+
+  raumklima: { name:'Raumklima',
+    pick: r => ({k:ri(r, 0, KLIMA.length - 1), v:ri(r, 0, 1)}),
+    build: p => { const K = KLIMA[p.k];
+      const V = pickV([
+        {comb:'UND', c:[['>=', K.lo], ['<=', K.hi]], then:'angenehm', else:'nicht angenehm', rule:`Angenehm ist eine Temperatur von ${K.lo} °C bis einschließlich ${K.hi} °C.`},
+        {comb:'ODER', c:[['<', K.lo], ['>', K.hi]], then:'nicht angenehm', else:'angenehm', rule:`Unter ${K.lo} °C oder über ${K.hi} °C ist es im Klassenzimmer nicht angenehm.`}], p);
+      return {...V, conds:[{c:0, op:V.c[0][0], b:V.c[0][1], type:'dec', dp:1, lo:15, hi:28}, {c:0, op:V.c[1][0], b:V.c[1][1], type:'dec', dp:1, lo:15, hi:28}],
+        labels:['Temperatur (°C)'], resLabel:'Raumklima',
+        text:(c, o) => `Ein Sensor misst die Temperatur im Klassenzimmer. Der Messwert in °C steht in Zelle ${B(c[0])}. ${V.rule} Gib in Zelle ${B(o)} eine Bewertung aus. ${HOW} ${outs('angenehm', 'nicht angenehm')}`,
+        resD:['zu warm', 'zu kalt', 'gut', 'schlecht', 'normal', 'unangenehm']}; } },
+
+  sportabzeichen: { name:'Sportabzeichen',
+    pick: r => ({s:pick1(r, [8.5, 9, 9.5]), w:pick1(r, [3.2, 3.5, 3.8]), v:ri(r, 0, 1)}),
+    build: p => { const ss = fx(p.s, 1), ww = fx(p.w, 2);
+      const V = pickV([
+        {comb:'UND', c:[['<=', p.s], ['>=', p.w]], then:'geschafft', else:'nicht geschafft', rule:`Geschafft hat es, wer die 50 m in höchstens ${ss} Sekunden läuft und mindestens ${ww} m weit springt.`},
+        {comb:'ODER', c:[['>', p.s], ['<', p.w]], then:'nicht geschafft', else:'geschafft', rule:`Wer für 50 m länger als ${ss} Sekunden braucht oder weniger als ${ww} m weit springt, hat es nicht geschafft.`}], p);
+      return {...V, conds:[{c:0, op:V.c[0][0], b:V.c[0][1], type:'dec', dp:1, lo:6.5, hi:12}, {c:1, op:V.c[1][0], b:V.c[1][1], type:'dec', dp:2, lo:2, hi:5}],
+        labels:['50 m (s)', 'Weitsprung (m)'], resLabel:'Abzeichen',
+        text:(c, o) => `Für ein Sportabzeichen zählen zwei Disziplinen. In Zelle ${B(c[0])} steht die Laufzeit über 50 m in Sekunden, in Zelle ${B(c[1])} die Sprungweite in Metern. ${V.rule} Gib das Ergebnis in Zelle ${B(o)} aus. ${HOW} ${outs('geschafft', 'nicht geschafft')}`,
+        resD:['bestanden', 'durchgefallen', 'Urkunde', 'ja', 'nein', 'geschafft!']}; } },
+
+  bewerbung: { name:'Bewerbung',
+    pick: r => ({b:pick1(r, [2, 3]), v:ri(r, 0, 1)}),
+    build: p => {
+      const V = pickV([
+        {comb:'UND', ops:['<=', '<='], b:p.b, then:'Einladung', else:'Absage', rule:`Eine Einladung zum Vorstellungsgespräch bekommt, wer in Mathematik und in Deutsch jeweils die Note ${p.b} oder besser hat.`},
+        {comb:'ODER', ops:['>', '>'], b:p.b, then:'Absage', else:'Einladung', rule:`Wer in Mathematik oder in Deutsch schlechter als ${p.b} ist, bekommt eine Absage.`}], p);
+      return {...V, conds:[{c:0, op:V.ops[0], b:p.b, type:'int', lo:1, hi:6}, {c:1, op:V.ops[1], b:p.b, type:'int', lo:1, hi:6}],
+        labels:['Mathe', 'Deutsch'], resLabel:'Bewerbung',
+        text:(c, o) => `Ein Betrieb sucht Auszubildende. In Zelle ${B(c[0])} steht die Mathematiknote einer Bewerberin, in Zelle ${B(c[1])} ihre Deutschnote. ${V.rule} Gib in Zelle ${B(o)} die Entscheidung aus. ${HOW} ${outs('Einladung', 'Absage')}`,
+        resD:['Zusage', 'eingeladen', 'abgelehnt', 'ja', 'nein', 'Termin']}; } },
+
+  ermaessigung: { name:'Museumseintritt',
+    pick: r => ({y:pick1(r, [14, 16, 18]), o:pick1(r, [60, 65]), v:ri(r, 0, 1)}),
+    build: p => {
+      const V = pickV([
+        {comb:'ODER', c:[['<', p.y], ['>=', p.o]], then:'ermäßigt', else:'voller Preis', rule:`Ermäßigten Eintritt bekommen alle unter ${p.y} Jahren und alle ab ${p.o} Jahren.`},
+        {comb:'UND', c:[['>=', p.y], ['<', p.o]], then:'voller Preis', else:'ermäßigt', rule:`Den vollen Preis zahlen alle ab ${p.y} Jahren, die jünger als ${p.o} sind. Alle anderen zahlen ermäßigt.`}], p);
+      return {...V, conds:[{c:0, op:V.c[0][0], b:V.c[0][1], type:'int', lo:3, hi:90}, {c:0, op:V.c[1][0], b:V.c[1][1], type:'int', lo:3, hi:90}],
+        labels:['Alter'], resLabel:'Eintritt',
+        text:(c, o) => `In Zelle ${B(c[0])} steht das Alter eines Museumsbesuchers. ${V.rule} Gib in Zelle ${B(o)} den Eintrittspreis aus. ${HOW} ${outs('ermäßigt', 'voller Preis')}`,
+        resD:['Vollpreis', 'Seniorentarif', 'Kinder', 'frei', 'ja', 'nein']}; } },
+
+  premiumversand: { name:'Premiumversand',
+    pick: r => ({b:pick1(r, [25, 39, 50]), fee:pick1(r, [2.99, 3.95, 4.95]), v:ri(r, 0, 1)}),
+    build: p => { const ff = fx(p.fee, 2);
+      const V = pickV([
+        {comb:'ODER', c:[['>=', p.b], ['=', 'Premium']], then:0, else:p.fee, rule:`Der Versand ist kostenlos ab einem Bestellwert von ${p.b} € oder für Premium-Kunden. Sonst kostet er ${ff} €.`},
+        {comb:'UND', c:[['<', p.b], ['<>', 'Premium']], then:p.fee, else:0, rule:`Nur wer unter ${p.b} € bestellt und kein Premium-Kunde ist, zahlt ${ff} € Versand. Alle anderen zahlen nichts.`}], p);
+      return {...V, conds:[{c:0, op:V.c[0][0], b:V.c[0][1], type:'dec', dp:2, lo:5, hi:120}, {c:1, op:V.c[1][0], b:V.c[1][1], type:'text', values:['Premium', 'Basis', 'Standard']}],
+        labels:['Bestellwert (€)', 'Status'], resLabel:'Versand (€)',
+        text:(c, o) => `In Zelle ${B(c[0])} steht der Bestellwert in €, in Zelle ${B(c[1])} der Kundenstatus (${C('Premium')}, ${C('Basis')} oder ${C('Standard')}). ${V.rule} Berechne in Zelle ${B(o)} die Versandkosten in € (als Zahl). ${HOW}`,
+        resD:['0', ff, 'kostenlos', ff + ' €', p.b, 'Premium']}; } },
+
+  museum: { name:'Öffnungstage',
+    pick: r => { const i = ri(r, 0, 5); return {d1:DAYS[i], d2:DAYS[i + 1], v:ri(r, 0, 1)}; },
+    build: p => {
+      const V = pickV([
+        {comb:'ODER', c:[['=', p.d1], ['=', p.d2]], then:'geschlossen', else:'geöffnet', rule:`Das Museum hat am ${p.d1} und am ${p.d2} geschlossen.`},
+        {comb:'UND', c:[['<>', p.d1], ['<>', p.d2]], then:'geöffnet', else:'geschlossen', rule:`Das Museum hat an allen Tagen außer ${p.d1} und ${p.d2} geöffnet.`}], p);
+      return {...V, conds:[{c:0, op:V.c[0][0], b:V.c[0][1], type:'text', values:DAYS}, {c:0, op:V.c[1][0], b:V.c[1][1], type:'text', values:DAYS}],
+        labels:['Wochentag'], resLabel:'Museum',
+        text:(c, o) => `In Zelle ${B(c[0])} steht ein Wochentag. ${V.rule} Gib in Zelle ${B(o)} aus, ob das Museum an diesem Tag offen ist. ${HOW} ${outs('geöffnet', 'geschlossen')}`,
+        resD:['zu', 'offen', 'Ruhetag', 'frei', 'Wochenende', p.d1]}; } },
+
+  unwetter: { name:'Unwetterwarnung',
+    pick: r => ({w:pick1(r, [60, 75, 90]), n:pick1(r, [25, 40, 50]), v:ri(r, 0, 1)}),
+    build: p => {
+      const V = pickV([
+        {comb:'ODER', c:[['>=', p.w], ['>=', p.n]], then:'Warnung', else:'keine Warnung', rule:`Eine Warnung wird ausgegeben, wenn der Wind mindestens ${p.w} km/h erreicht oder mindestens ${p.n} Liter Regen pro m² erwartet werden.`},
+        {comb:'UND', c:[['<', p.w], ['<', p.n]], then:'keine Warnung', else:'Warnung', rule:`Keine Warnung gibt es nur, wenn der Wind unter ${p.w} km/h bleibt und weniger als ${p.n} Liter Regen pro m² erwartet werden.`}], p);
+      return {...V, conds:[{c:0, op:V.c[0][0], b:V.c[0][1], type:'int', lo:0, hi:130}, {c:1, op:V.c[1][0], b:V.c[1][1], type:'int', lo:0, hi:80}],
+        labels:['Wind (km/h)', 'Regen (l/m²)'], resLabel:'Wetterdienst',
+        text:(c, o) => `Der Wetterdienst prüft jeden Tag die Vorhersage. In Zelle ${B(c[0])} steht die Windgeschwindigkeit in km/h, in Zelle ${B(c[1])} die Regenmenge in Litern pro m². ${V.rule} ${HOW} Gib in Zelle ${B(o)} ${C('Warnung')} bzw. ${C('keine Warnung')} aus.`,
+        resD:['Sturm', 'Alarm', 'Unwetter', 'sicher', 'ok', 'Gefahr']}; } },
+
+  vorruecken: { name:'Vorrücken',
+    pick: r => { const a = ri(r, 0, SUBJ.length - 1); return {s1:SUBJ[a], s2:SUBJ[(a + 1) % SUBJ.length], v:ri(r, 0, 2)}; },
+    build: p => { const s1 = p.s1 || 'Mathematik', s2 = p.s2 || 'Deutsch';
+      const V = pickV([
+        {comb:'ODER', ops:['>=', '>='], b:5, then:'gefährdet', else:'in Ordnung', rule:`Hat jemand in ${s1} oder in ${s2} eine 5 oder 6, ist das Vorrücken gefährdet.`},
+        {comb:'ODER', ops:['>', '>'], b:4, then:'gefährdet', else:'in Ordnung', rule:`Ist die Note in ${s1} oder in ${s2} schlechter als 4, ist das Vorrücken gefährdet.`},
+        {comb:'UND', ops:['<=', '<='], b:4, then:'in Ordnung', else:'gefährdet', rule:`Nur wer in ${s1} und in ${s2} mindestens eine 4 hat, rückt sicher vor. Sonst ist das Vorrücken gefährdet.`}], p);
+      return {...V, conds:[{c:0, op:V.ops[0], b:V.b, type:'int', lo:1, hi:6}, {c:1, op:V.ops[1], b:V.b, type:'int', lo:1, hi:6}],
+        labels:[s1, s2], resLabel:'Vorrücken',
+        text:(c, o) => `In Zelle ${B(c[0])} steht die Zeugnisnote in ${s1}, in Zelle ${B(c[1])} die Note in ${s2}. ${V.rule} Gib in Zelle ${B(o)} ${C('gefährdet')} bzw. ${C('in Ordnung')} aus. ${HOW}`,
+        resD:['bestanden', 'durchgefallen', 'gut', 'schlecht', 'Nachprüfung', V.b]}; } },
+
+  verein: { name:'Vereinsbeitrag',
+    pick: r => ({red:pick1(r, [3, 5, 6]), full:pick1(r, [10, 12, 15]), v:ri(r, 0, 1)}),
+    build: p => {
+      const V = pickV([
+        {comb:'ODER', c:[['<', 18], ['=', 'ja']], then:p.red, else:p.full, rule:`Wer jünger als 18 ist oder noch zur Schule geht bzw. eine Ausbildung macht, zahlt ${p.red} € im Monat. Alle anderen zahlen ${p.full} €.`},
+        {comb:'UND', c:[['>=', 18], ['=', 'nein']], then:p.full, else:p.red, rule:`Den vollen Beitrag von ${p.full} € zahlen nur Mitglieder ab 18 Jahren, die nicht Schüler bzw. Azubi sind. Alle anderen zahlen ${p.red} €.`}], p);
+      return {...V, conds:[{c:0, op:V.c[0][0], b:V.c[0][1], type:'int', lo:6, hi:70}, {c:1, op:V.c[1][0], b:V.c[1][1], type:'text', values:['ja', 'nein']}],
+        labels:['Alter', 'Schüler/Azubi'], resLabel:'Beitrag (€)',
+        text:(c, o) => `Ein Sportverein berechnet den Monatsbeitrag. In Zelle ${B(c[0])} steht das Alter eines Mitglieds, in Zelle ${B(c[1])} ${C('ja')} oder ${C('nein')} – je nachdem, ob es Schüler oder Azubi ist. ${V.rule} Gib in Zelle ${B(o)} den Beitrag in € als Zahl aus. ${HOW}`,
+        resD:[p.red + ' €', 'ermäßigt', p.red + p.full, 0, 18, String(p.red)]}; } },
+
+  parkplatz: { name:'Kundenparkplatz',
+    pick: r => ({b:pick1(r, [30, 60]), fee:pick1(r, [2, 3, 4.5]), v:ri(r, 0, 1)}),
+    build: p => { const ff = fx(p.fee, 2);
+      const V = pickV([
+        {comb:'ODER', c:[['<=', p.b], ['=', 'ja']], then:0, else:p.fee, rule:`Kostenlos parkt, wer höchstens ${p.b} Minuten bleibt oder im Geschäft eingekauft hat. Alle anderen zahlen ${ff} €.`},
+        {comb:'UND', c:[['>', p.b], ['=', 'nein']], then:p.fee, else:0, rule:`Wer länger als ${p.b} Minuten parkt und nicht eingekauft hat, zahlt ${ff} €. Alle anderen parken kostenlos.`}], p);
+      return {...V, conds:[{c:0, op:V.c[0][0], b:V.c[0][1], type:'int', lo:5, hi:240}, {c:1, op:V.c[1][0], b:V.c[1][1], type:'text', values:['ja', 'nein']}],
+        labels:['Parkdauer (min)', 'Eingekauft'], resLabel:'Gebühr (€)',
+        text:(c, o) => `Ein Supermarkt hat einen Kundenparkplatz. In Zelle ${B(c[0])} steht die Parkdauer in Minuten, in Zelle ${B(c[1])} steht ${C('ja')} oder ${C('nein')} – je nachdem, ob eingekauft wurde. ${V.rule} Berechne in Zelle ${B(o)} die Parkgebühr in € (als Zahl). ${HOW}`,
+        resD:['0', ff, 'kostenlos', ff + ' €', p.b, p.fee * 2]}; } },
+
+  leihrad: { name:'Leihrad-Check',
+    pick: r => ({b:pick1(r, [500, 800, 1000]), v:ri(r, 0, 1)}),
+    build: p => {
+      const V = pickV([
+        {comb:'ODER', c:[['>=', p.b], ['=', 'abgenutzt']], then:'Werkstatt', else:'einsatzbereit', rule:`Ein Rad muss in die Werkstatt, wenn es seit der letzten Wartung mindestens ${p.b} km gefahren ist oder die Bremsen abgenutzt sind.`},
+        {comb:'UND', c:[['<', p.b], ['=', 'ok']], then:'einsatzbereit', else:'Werkstatt', rule:`Einsatzbereit ist ein Rad nur, wenn es seit der Wartung weniger als ${p.b} km gefahren ist und die Bremsen ok sind. Sonst muss es in die Werkstatt.`}], p);
+      return {...V, conds:[{c:0, op:V.c[0][0], b:V.c[0][1], type:'int', lo:0, hi:2000}, {c:1, op:V.c[1][0], b:V.c[1][1], type:'text', values:['ok', 'abgenutzt']}],
+        labels:['km seit Wartung', 'Bremsen'], resLabel:'Status',
+        text:(c, o) => `Ein Fahrradverleih prüft seine Räder. In Zelle ${B(c[0])} stehen die Kilometer seit der letzten Wartung, in Zelle ${B(c[1])} der Zustand der Bremsen (${C('ok')} oder ${C('abgenutzt')}). ${V.rule} Gib in Zelle ${B(o)} ${C('Werkstatt')} bzw. ${C('einsatzbereit')} aus. ${HOW}`,
+        resD:['reparieren', 'defekt', 'fahrbereit', 'ok', 'Wartung', p.b]}; } }
+};
+
+/* ---- Aufgabe aus Szenario + Parametern bauen ---- */
+function buildTask(id, fixed, seedNum){
+  const sc = SCEN[id] || (typeof LSCEN !== 'undefined' && LSCEN[id]), r = rng(seedNum);
+  const p = {col:pick1(r, ['A', 'B', 'C']), row:ri(r, 2, 25), ...sc.pick(r), ...fixed};
+  const s = sc.build(p);
+  const nc = Math.max(...s.conds.map(c => c.c)) + 1, cc = p.col.charCodeAt(0);
+  const cells = [...Array(nc)].map((_, i) => String.fromCharCode(cc + i) + p.row);
+  const out = s.out || String.fromCharCode(cc + nc) + p.row;
+  const O = v => typeof v === 'number' ? (Number.isInteger(v) ? String(v) : fx(v, 2)) : '"' + v + '"';
+  const CD = s.conds.map(c => {
+    const dp = c.dp || 0, step = Math.pow(10, -dp), f = Math.pow(10, dp);
+    const rd = x => Math.round(x * f) / f;
+    const numLit = v => Number.isInteger(v) ? String(v) : fx(v, dp);
+    const L = v => typeof v === 'number' ? numLit(v) : '"' + v + '"';
+    return {...c, dp, step, rd, numLit, L, cell:cells[c.c]};
+  });
+  const conds = CD.map(c => c.cell + c.op + c.L(c.b));
+  const T = {scen:sc.name, id, cells, out, labels:s.labels, resLabel:s.resLabel, comb:s.comb,
+             conds, condCells:CD.map(c => c.cell), cvals:CD.map(c => c.L(c.b)),
+             dps:cells.map((_, i) => (CD.find(c => c.c === i).dp)),
+             then:O(s.then), else:O(s.else), text:s.text(cells, out)};
+  const mk = cs => T.comb ? `=WENN(${T.comb}(${cs.join(';')});${T.then};${T.else})` : `=WENN(${cs[0]};${T.then};${T.else})`;
+  T.noLogic = !T.comb; T.CD = CD;
+  T.sol = mk(conds);
+
+  // Testwerte je Zelle, dann alle Kombinationen
+  const perCell = cells.map((_, ci) => {
+    const cs = CD.filter(c => c.c === ci);
+    if (cs[0].type === 'text') return [...new Set(cs.flatMap(c => c.values))].map(v => ({t:'str', v}));
+    const vals = new Set();
+    cs.forEach(c => [c.b - c.step, c.b, c.b + c.step, c.lo, c.hi].forEach(x => vals.add(c.rd(x))));
+    return [...vals].sort((a, b) => a - b).map(v => ({t:'num', v}));
+  });
+  T.tests = product(perCell).map(vs => Object.fromEntries(vs.map((v, i) => [cells[i], v])));
+  T.sample = Object.fromEntries(cells.map((cell, ci) => {
+    const c = CD.find(x => x.c === ci);
+    if (p.sample && p.sample[ci] !== undefined) return [cell, p.sample[ci]];
+    if (c.type === 'text') return [cell, {t:'str', v:pick1(r, c.values)}];
+    return [cell, {t:'num', v:c.rd(c.lo + ri(r, 0, Math.round((c.hi - c.lo) / c.step)) * c.step)}];
+  }));
+
+  if (s.sheet){ // Lernmodus: echtes Tabellenblatt, erste Datenzeile ist die Formelzeile
+    const sh = SHEETS[s.sheet];
+    T.sheet = sh; T.rowEnvs = sh.rows.map((_, i) => sheetEnv(sh, i)); T.sample = T.rowEnvs[0];
+  }
+  // Ablenker: nur, wenn sie an dieser Stelle eingesetzt die Lösung falsch machen
+  const failsSub = (i, c) => { const cs = conds.slice(); cs[i] = c; try { return !checkAgainst(mk(cs), T).ok; } catch (e) { return true; } };
+  const condD = [], cvalD = [];
+  CD.forEach((c, i) => {
+    const other = c.cell.replace(/\d+/, '') + (p.row > 2 ? p.row - 1 : p.row + 1);
+    let cands, vals;
+    if (c.type === 'text'){
+      const oth = [...new Set(c.values)].filter(v => v !== c.b);
+      cands = [...oth.slice(0, 2).map(v => c.cell + c.op + c.L(v)), c.cell + c.op + c.b, c.cell + (c.op === '=' ? '<>' : '=') + c.L(c.b), other + c.op + c.L(c.b)];
+      vals = [c.b, ...oth.map(c.L)];
+    } else {
+      const flip = {'>=':'>', '>':'>=', '<':'<=', '<=':'<'}[c.op], mir = {'>=':'<=', '>':'<', '<':'>', '<=':'>='}[c.op];
+      const bad = {'>=':'=>', '<=':'=<', '>':'=', '<':'='}[c.op];
+      cands = [c.cell + flip + c.L(c.b), c.cell + mir + c.L(c.b), c.cell + c.op + c.L(c.rd(c.b + c.step)), c.cell + c.op + c.L(c.rd(c.b - c.step)),
+               c.cell + bad + c.L(c.b), c.cell + c.op + '"' + c.numLit(c.b) + '"', other + c.op + c.L(c.b)];
+      vals = ['"' + c.numLit(c.b) + '"', ...[1, -1, 2, 10].map(k => c.L(c.rd(c.b + k * c.step)))];
+    }
+    let n = 0;
+    for (const x of shuffle(cands, r)){ if (n < 2 && !conds.includes(x) && !condD.includes(x) && failsSub(i, x)){ condD.push(x); n++; } }
+    n = 0;
+    for (const v of vals){ if (n < 2 && !T.cvals.includes(v) && !cvalD.includes(v) && failsSub(i, c.cell + c.op + v)){ cvalD.push(v); n++; } }
+  });
+  T.condD = condD; T.cvalD = cvalD;
+  const used = new Set([T.then, T.else]), res = [];
+  for (const v of shuffle(s.resD, r)){ const l = O(v); if (!used.has(l)){ used.add(l); res.push(l); } }
+  T.resD = res.slice(0, 6);
+  return T;
+}
+
+</script>
+
+<!-- ===================== Erarbeitung (lib/aufgaben.js) ===================== -->
 <script>
 'use strict';
-const esc = Aufgaben.esc;
 const F = s => `<code class="fx">${esc(s)}</code>`;                                  // Formel im Fließtext
 const FB = (...z) => `<div class="fxblock">${z.map(F).join('')}</div>`;               // Formeln untereinander
-const L = s => '<code class="fx">' + s.split(/(\[\[.*?\]\])/).map((t, i) => i % 2 ? t : esc(t)).join('') + '</code>';   // Lückentext-Formel
+const LT = s => '<code class="fx">' + s.split(/(\[\[.*?\]\])/).map((t, i) => i % 2 ? t : esc(t)).join('') + '</code>';   // Lückentext-Formel
 
-/* ---------- Endlos: Formeln erzeugen ---------- */
+/* ---------- Blitz-Training: UND oder ODER? ---------- */
 const GEGEN = {'<':'>=', '>=':'<', '>':'<=', '<=':'>', '=':'<>', '<>':'='};
-const OPS = Object.keys(GEGEN), ANDERE = {UND:'ODER', ODER:'UND'};
-const TEXTE = ['"ja"', '"nein"', '"bezahlt"', '"Gold"', '"Bayern"', '"rot"', '"Mitglied"'];
-const ERGEBNISSE = [['"ja"', '"nein"'], ['"Rabatt"', '"kein Rabatt"'], ['"bestanden"', '"nicht bestanden"'], ['0', '4,90'],
+const ANDERE = {UND:'ODER', ODER:'UND'};
+const BL_OPS = Object.keys(GEGEN);
+const BL_TEXTE = ['"ja"', '"nein"', '"bezahlt"', '"Gold"', '"Bayern"', '"rot"', '"Mitglied"'];
+const BL_ERG = [['"ja"', '"nein"'], ['"Rabatt"', '"kein Rabatt"'], ['"bestanden"', '"nicht bestanden"'], ['0', '4,90'],
   ['"frei"', '"Gebühr"'], ['"Bonus"', '"kein Bonus"'], ['"darf rein"', '"darf nicht rein"'], ['10%', '0%']];
 const zufall = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
 const eins = l => l[zufall(0, l.length - 1)];
-function bedingungen(){
+function blBedingungen(){
   const n = Math.random() < 0.75 ? 2 : 3, zellen = Aufgaben.mischen(['B2', 'C2', 'D2', 'E2']).slice(0, n).sort();
   return zellen.map(z => Math.random() < 0.65
-    ? {z, op:eins(OPS), v:String(eins([zufall(1, 6), zufall(2, 20) * 5, zufall(12, 21), zufall(1, 10) * 100]))}
-    : {z, op:eins(['=', '=', '<>']), v:eins(TEXTE)});
+    ? {z, op:eins(BL_OPS), v:String(eins([zufall(1, 6), zufall(2, 20) * 5, zufall(12, 21), zufall(1, 10) * 100]))}
+    : {z, op:eins(['=', '=', '<>']), v:eins(BL_TEXTE)});
 }
-const txt = b => b.z + b.op + b.v, neg = b => ({...b, op:GEGEN[b.op]});
-const BLANK = '\u0000';
-const zeig = s => esc(s).replace(BLANK, '<span class="blank">?</span>');
-let zuletzt = '';
-function neueAufgabe(arten){
+const blTxt = b => b.z + b.op + b.v, blNeg = b => ({...b, op:GEGEN[b.op]});
+const LUECKE = '\u0000';
+const blZeig = s => esc(s).replace(LUECKE, '<span class="blank">?</span>');
+let blZuletzt = '';
+function blAufgabe(arten){
   return () => {
     let f, c, r, art;
-    do { f = eins(['UND', 'ODER']); c = bedingungen(); r = eins(ERGEBNISSE); art = eins(arten); } while (art + f === zuletzt && Math.random() < 0.6);
-    zuletzt = art + f;
-    const [x, y] = r, g = ANDERE[f], orig = `=WENN(${f}(${c.map(txt).join(';')});${x};${y})`;
+    do { f = eins(['UND', 'ODER']); c = blBedingungen(); r = eins(BL_ERG); art = eins(arten); } while (art + f === blZuletzt && Math.random() < 0.6);
+    blZuletzt = art + f;
+    const [x, y] = r, g = ANDERE[f], orig = `=WENN(${f}(${c.map(blTxt).join(';')});${x};${y})`;
     const um = Aufgaben.mischen(c.slice());
     const V = {   // Formel mit Lücke, richtige Funktion, Begründung
-      um:   [`=WENN(${BLANK}(${c.map(neg).map(txt).join(';')});${y};${x})`, g, 'Bedingungen umgedreht, Dann/Sonst getauscht'],
-      gleich:[`=WENN(${BLANK}(${um.map(txt).join(';')});${x};${y})`, f, 'nichts umgedreht, nur andere Reihenfolge'],
-      aussen:[`=WENN(NICHT(${BLANK}(${um.map(txt).join(';')}));${y};${x})`, f, 'NICHT außen, dafür Dann/Sonst getauscht'],
-      beides:[`=WENN(NICHT(${BLANK}(${c.map(neg).map(txt).join(';')}));${x};${y})`, g, 'NICHT außen und jede Bedingung umgedreht'],
-      jede: [`=WENN(${BLANK}(${c.map(b => 'NICHT(' + txt(b) + ')').join(';')});${y};${x})`, g, 'jede Bedingung mit NICHT umgedreht, Dann/Sonst getauscht']
+      um:    [`=WENN(${LUECKE}(${c.map(blNeg).map(blTxt).join(';')});${y};${x})`, g, 'Bedingungen umgedreht, Dann/Sonst getauscht'],
+      gleich:[`=WENN(${LUECKE}(${um.map(blTxt).join(';')});${x};${y})`, f, 'nichts umgedreht, nur andere Reihenfolge'],
+      aussen:[`=WENN(NICHT(${LUECKE}(${um.map(blTxt).join(';')}));${y};${x})`, f, 'NICHT außen, dafür Dann/Sonst getauscht'],
+      beides:[`=WENN(NICHT(${LUECKE}(${c.map(blNeg).map(blTxt).join(';')}));${x};${y})`, g, 'NICHT außen und jede Bedingung umgedreht'],
+      jede:  [`=WENN(${LUECKE}(${c.map(b => 'NICHT(' + blTxt(b) + ')').join(';')});${y};${x})`, g, 'jede Bedingung mit NICHT umgedreht, Dann/Sonst getauscht']
     }[art];
     return {
-      frage:`<div class="ef"><span class="el">Diese Formel …</span><code>${esc(orig)}</code><span class="el">… liefert immer dasselbe wie:</span><code>${zeig(V[0])}</code></div>`,
+      frage:`<div class="ef"><span class="el">Diese Formel …</span><code>${esc(orig)}</code><span class="el">… liefert immer dasselbe wie:</span><code>${blZeig(V[0])}</code></div>`,
       loesung:`${V[1]} (${V[2]})`,
       optionen:[{t:'UND', ok:V[1] === 'UND'}, {t:'ODER', ok:V[1] === 'ODER'}]
     };
   };
 }
-
 /* Schalter „Auf Zeit“: setzt die Zeit in beiden Stufen, eigene Bestleistung */
 const ZEIT = {start:12, schritt:-0.2, min:5}, ZEIT_KEY = 'nicht-zeit';
 let aufZeit = false; try { aufZeit = localStorage.getItem(ZEIT_KEY) === '1'; } catch (e) {}
-const STUFEN = [
-  {name:'Umdrehen', antwort:'mc', neu:neueAufgabe(['um', 'um', 'um', 'gleich', 'gleich'])},
-  {name:'Mit NICHT', antwort:'mc', neu:neueAufgabe(['um', 'gleich', 'aussen', 'aussen', 'beides', 'beides', 'jede', 'jede'])}];
-const zeitSetzen = () => STUFEN.forEach(s => { s.zeit = aufZeit ? ZEIT : null; });
+const BL_STUFEN = [
+  {name:'Umdrehen', antwort:'mc', neu:blAufgabe(['um', 'um', 'um', 'gleich', 'gleich'])},
+  {name:'Mit NICHT', antwort:'mc', neu:blAufgabe(['um', 'gleich', 'aussen', 'aussen', 'beides', 'beides', 'jede', 'jede'])}];
+const zeitSetzen = () => BL_STUFEN.forEach(s => { s.zeit = aufZeit ? ZEIT : null; });
 zeitSetzen();
 function zeitBauen(el){
   const box = el.querySelector('.zeitbox'); if (!box) return;
@@ -2864,9 +4329,12 @@ function zeitBauen(el){
   zeigen();
 }
 
-/* ---------- Ablauf ---------- */
+/* ---------- Schritte der Erarbeitung ---------- */
 const RABATT = '=WENN(UND(B2<18;C2="ja");"Rabatt";"kein Rabatt")', LEA = '=WENN(ODER(B2>=18;C2<>"ja");"kein Rabatt";"Rabatt")';
-Aufgaben.sequenz({el:'#app', key:'nicht', schritte:[
+let lernGebaut = false;
+function lernBauen(){
+  if (lernGebaut) return; lernGebaut = true;
+  Aufgaben.sequenz({el:'#lern', key:'nicht', schritte:[
   {id:'info', kurz:'Einstieg', html:`<h2>Zwei Formeln – dasselbe Ergebnis?</h2>
     <p>Im Freibad gibt es einen Schülerrabatt: Wer <b>jünger als 18</b> ist <b>und</b> einen <b>Schülerausweis</b> hat, zahlt weniger. In Spalte B steht das Alter, in Spalte C, ob ein Ausweis da ist („ja“ oder „nein“).</p>
     <p>Tim schreibt die Formel so, wie die Regel klingt:</p>${FB(RABATT)}
@@ -2900,8 +4368,8 @@ Aufgaben.sequenz({el:'#app', key:'nicht', schritte:[
       zeilen:[[30, false, {l:true}, {l:false}], [50, true, {l:false}, {l:true}], [80, true, {l:false}, {l:true}]],
       hinweise:{2:'NICHT dreht den Wert aus der Spalte davor um.', 3:'Prüfe zuerst B2<50 und drehe das Ergebnis dann um.'}},
     {typ:'zuordnen', nr:'2.2', frage:'Ordne jeder Formel die Bedingung zu, die dasselbe bedeutet.',
-      felder:[['a', 'B2>=18'], ['b', 'B2>18'], ['c', 'B2<=50'], ['d', 'C2<>"ja"'], ['e', 'D2="Gold"']],
-      karten:[{t:'NICHT(B2<18)', z:'a'}, {t:'NICHT(B2<=18)', z:'b'}, {t:'NICHT(B2>50)', z:'c'}, {t:'NICHT(C2="ja")', z:'d'}, {t:'NICHT(D2<>"Gold")', z:'e'}]},
+      felder:[['a', F('B2>=18')], ['b', F('B2>18')], ['c', F('B2<=50')], ['d', F('C2<>"ja"')], ['e', F('D2="Gold"')]],
+      karten:[{t:F('NICHT(B2<18)'), z:'a'}, {t:F('NICHT(B2<=18)'), z:'b'}, {t:F('NICHT(B2>50)'), z:'c'}, {t:F('NICHT(C2="ja")'), z:'d'}, {t:F('NICHT(D2<>"Gold")'), z:'e'}]},
     {typ:'mc', nr:'2.3', frage:`Welche Formel liefert dasselbe wie ${F('=WENN(NICHT(B2<18);"Erwachsen";"Kind")')}?`, mono:true,
       options:['=WENN(B2<18;"Kind";"Erwachsen")', '=WENN(B2<18;"Erwachsen";"Kind")', '=WENN(B2>18;"Erwachsen";"Kind")', '=WENN(NICHT(B2>=18);"Erwachsen";"Kind")'], correct:[0],
       why:{1:'Ohne NICHT ist die Prüfung umgekehrt – dann müssen Dann_Wert und Sonst_Wert die Plätze tauschen.', 2:'Wer genau 18 ist, bekäme hier „Kind“.', 3:'NICHT(B2>=18) ist dasselbe wie B2<18 – genau umgekehrt.'},
@@ -2927,7 +4395,7 @@ Aufgaben.sequenz({el:'#app', key:'nicht', schritte:[
       options:['UND(B2<=4;C2<=4)', 'ODER(B2<=4;C2<=4)', 'UND(B2<4;C2<4)', 'UND(B2>4;C2>4)'], correct:[0],
       why:{1:'Vor ODER wird NICHT zu UND.', 2:'Das Gegenteil von >4 ist <=4 – die 4 gehört dazu.', 3:'Die Bedingungen müssen auch umgedreht werden.'}},
     {typ:'luecken', nr:'3.3', frage:`Dreh die Formel ${F('=WENN(UND(B2>=50;C2="Deutschland");0;4,90)')} um (Versand kostenlos ab 50 € innerhalb Deutschlands).`,
-      text:L('=WENN([[ODER|UND]](B2[[<|<=|>]]50;C2[[<>|=]]"Deutschland");[[4,90|0]];[[0|4,90]])')}]},
+      text:LT('=WENN([[ODER|UND]](B2[[<|<=|>]]50;C2[[<>|=]]"Deutschland");[[4,90|0]];[[0|4,90]])')}]},
   {id:'u1', kurz:'Übung 1', erinnerung:'<p>Umdrehen: UND ↔ ODER, jede Bedingung ins Gegenteil, Dann_Wert und Sonst_Wert tauschen. NICHT dreht WAHR und FALSCH um.</p>', erinnerungZu:true, aufgaben:[
     {typ:'mc', nr:'4.1', frage:`Welche Formel liefert immer dasselbe wie ${F('=WENN(ODER(B2>4;C2>4);"Nachhilfe";"keine Nachhilfe")')}?`, mono:true,
       options:['=WENN(UND(B2<=4;C2<=4);"keine Nachhilfe";"Nachhilfe")', '=WENN(UND(B2<=4;C2<=4);"Nachhilfe";"keine Nachhilfe")', '=WENN(UND(B2<4;C2<4);"keine Nachhilfe";"Nachhilfe")', '=WENN(ODER(B2<=4;C2<=4);"keine Nachhilfe";"Nachhilfe")'], correct:[0],
@@ -2936,7 +4404,7 @@ Aufgaben.sequenz({el:'#app', key:'nicht', schritte:[
       options:['=WENN(ODER(B2<140;C2<8);"darf nicht fahren";"darf fahren")', '=WENN(NICHT(UND(B2>=140;C2>=8));"darf nicht fahren";"darf fahren")', '=WENN(ODER(NICHT(B2>=140);NICHT(C2>=8));"darf nicht fahren";"darf fahren")', '=WENN(ODER(B2<140;C2<8);"darf fahren";"darf nicht fahren")', '=WENN(NICHT(UND(B2>=140;C2>=8));"darf fahren";"darf nicht fahren")'], correct:[0, 1, 2],
       why:{3:'Hier fehlt das Tauschen von Dann_Wert und Sonst_Wert.', 4:'NICHT dreht die Prüfung um – dann müssen auch Dann_Wert und Sonst_Wert tauschen.'}},
     {typ:'luecken', nr:'4.3', frage:`Das Café hat am Wochenende geschlossen: ${F('=WENN(ODER(B2="Samstag";B2="Sonntag");"geschlossen";"geöffnet")')}. Ergänze die umgedrehte Formel.`,
-      text:L('=WENN([[UND|ODER]](B2[[<>|=]]"Samstag";B2[[<>|=]]"Sonntag");[["geöffnet"|"geschlossen"]];[["geschlossen"|"geöffnet"]])'),
+      text:LT('=WENN([[UND|ODER]](B2[[<>|=]]"Samstag";B2[[<>|=]]"Sonntag");[["geöffnet"|"geschlossen"]];[["geschlossen"|"geöffnet"]])'),
       ok:'Richtig! Ein Tag ist geöffnet, wenn er kein Samstag und auch kein Sonntag ist.'}]},
   {id:'u2', kurz:'Übung 2', erinnerung:'<p>Umdrehen: UND ↔ ODER, jede Bedingung ins Gegenteil, Dann_Wert und Sonst_Wert tauschen. NICHT dreht WAHR und FALSCH um.</p>', erinnerungZu:true, aufgaben:[
     {typ:'mc', nr:'5.1', frage:`Jonas hat ${F('=WENN(UND(B2>=140;C2>=8);"darf fahren";"darf nicht fahren")')} umgedreht zu ${F('=WENN(ODER(B2<=140;C2<8);"darf nicht fahren";"darf fahren")')}. Für wen zeigt seine Formel das Falsche an?`,
@@ -2944,17 +4412,109 @@ Aufgaben.sequenz({el:'#app', key:'nicht', schritte:[
       why:{1:'Ben darf nicht fahren – das zeigen beide Formeln an.', 2:'Ida darf nicht fahren – das zeigen beide Formeln an.', 3:'Max darf fahren – das zeigen beide Formeln an.'},
       after:'Das Gegenteil von B2>=140 ist B2<140. Mit B2<=140 darf Lina mit genau 140 cm nicht fahren, obwohl sie dürfte.'},
     {typ:'luecken', nr:'5.2', frage:`Drei Bedingungen: Beim Gewinnspiel gewinnt, wer mindestens 50 Punkte hat (B2), angemeldet ist (C2) und nicht gesperrt ist (D2):<br>${F('=WENN(UND(B2>=50;C2="ja";D2<>"gesperrt");"Gewinn";"Niete")')}<br>Ergänze die umgedrehte Formel.`,
-      text:L('=WENN([[ODER|UND]](B2[[<|<=|>]]50;C2[[<>|=]]"ja";D2[[=|<>]]"gesperrt");[["Niete"|"Gewinn"]];[["Gewinn"|"Niete"]])')},
+      text:LT('=WENN([[ODER|UND]](B2[[<|<=|>]]50;C2[[<>|=]]"ja";D2[[=|<>]]"gesperrt");[["Niete"|"Gewinn"]];[["Gewinn"|"Niete"]])')},
     {typ:'mc', nr:'5.3', frage:`Welche Formel liefert dasselbe wie ${F('=WENN(NICHT(ODER(B2="Mitglied";C2>=100));5;0)')}? (5 € Versand, außer für Mitglieder oder ab 100 € Bestellwert)`, mono:true,
       options:['=WENN(ODER(B2="Mitglied";C2>=100);0;5)', '=WENN(UND(B2<>"Mitglied";C2<100);0;5)', '=WENN(ODER(B2<>"Mitglied";C2<100);5;0)', '=WENN(ODER(B2="Mitglied";C2>=100);5;0)'], correct:[0],
       why:{1:'NICHT(ODER(…)) ist UND(B2<>"Mitglied";C2<100) – das ist richtig umgeschrieben, aber dann bleiben Dann_Wert und Sonst_Wert: 5;0.', 2:'Aus ODER muss UND werden.', 3:'Lässt man NICHT weg, müssen Dann_Wert und Sonst_Wert tauschen.'},
       after:'Auch richtig wäre =WENN(UND(B2<>"Mitglied";C2<100);5;0).'}]},
-  {id:'endlos', kurz:'Endlos', titel:'UND oder ODER?', html:`<h2>Endlos: UND oder ODER?</h2>
+  {id:'blitz', kurz:'Blitz', titel:'Blitz: UND oder ODER?', html:`<h2>Blitz: UND oder ODER?</h2>
     <p>Oben steht eine Formel, darunter eine Formel, die immer dasselbe liefert – nur die Funktion fehlt. Wähle <b>UND</b> oder <b>ODER</b> (oder Taste 1 bzw. 2). Achte darauf, ob die Bedingungen umgedreht und Dann_Wert und Sonst_Wert getauscht sind. Ein Fehler beendet die Serie.</p>
-    <p>Stufe an den Flammen: <b>1</b> Umdrehen · <b>2</b> Mit NICHT. Mit dem Schalter spielst du auf Zeit (eigene Bestleistung).</p><div class="zeitbox"></div>`,
+    <p>Stufe an den Flammen: <b>1</b> Umdrehen · <b>2</b> Mit NICHT. Mit dem Schalter spielst du auf Zeit (eigene Bestleistung).</p>
+    <p class="muted">Ganze Formeln umdrehen – von Bausteinen bis zum Eintippen – kannst du oben im Modus <b>Endlos</b>.</p><div class="zeitbox"></div>`,
    nach:zeitBauen,
-   training:{variante:() => aufZeit ? 'auf Zeit' : '', stufen:STUFEN}}
-]});
+   training:{variante:() => aufZeit ? 'auf Zeit' : '', stufen:BL_STUFEN}}
+  ]});
+}
+</script>
+
+<!-- ===================== Endlos: Formeln umdrehen (wennbau.js) ===================== -->
+<script>
+'use strict';
+const KEY = 'nicht-';
+const LEVELS = WB_LEVELS;
+const STD = [];   // keine festen Übungen, nur Erarbeitung und Endlos
+function logSolved(erstmals){
+  if (window.TrainerSync) TrainerSync.event({modus:'endlos', stufe:level, aufgabe:CUR.scen, titel:'Umdrehen: ' + CUR.scen, gesamt:0, erstmals});
+}
+let mode = load('mode') === 'endlos' ? 'endlos' : 'lernen';
+let level = Math.min(9, Math.max(1, parseInt(load('level')) || 1));
+let pfadIdx = 0, solved = {};
+let endScen = null, endSeed = 0, endCounted = false, streak = 0, best = parseInt(load('best')) || 0;
+let CUR, S, uid = 0, poolSeed = rand(), pickerOpen = false;
+
+/* Aufgabe: Formel aus einem Szenario umdrehen bzw. ohne NICHT schreiben
+   um      gegeben F(a;b);x;y            gesucht G(¬a;¬b);y;x   (muss: Verknüpfung G)
+   aussen  gegeben NICHT(G(¬a;¬b));x;y   gesucht F(a;b);x;y     (muss: ohne NICHT)
+   tausch  gegeben NICHT(F(a;b));y;x     gesucht G(¬a;¬b);y;x   (muss: ohne NICHT; F(a;b);x;y zählt auch)
+   innen   gegeben F(NICHT(¬a);NICHT(¬b));x;y   gesucht F(a;b);x;y   (muss: ohne NICHT)            */
+const UM_ARTEN = ['um', 'um', 'um', 'um', 'aussen', 'aussen', 'tausch', 'innen'];
+function umdrehAufgabe(id, seed){
+  const T0 = buildTask(id, {}, seed), r = rng(seed + 7), CD = T0.CD;
+  const f = T0.comb, g = ANDERE[f], x = T0.then, y = T0.else, art = pick1(r, UM_ARTEN);
+  const pos = c => c.cell + c.op + c.L(c.b), neg = c => c.cell + GEGEN[c.op] + c.L(c.b);
+  const P = CD.map(pos), N = CD.map(neg);
+  const wenn = (pr, a, b) => `=WENN(${pr};${a};${b})`;
+  const gegeben = {um:T0.sol, aussen:wenn(`NICHT(${g}(${N.join(';')}))`, x, y), tausch:wenn(`NICHT(${f}(${P.join(';')}))`, y, x),
+    innen:wenn(`${f}(${N.map(n => 'NICHT(' + n + ')').join(';')})`, x, y)}[art];
+  const umgedreht = art === 'um' || art === 'tausch';
+  const comb = umgedreht ? g : f, conds = umgedreht ? N : P, th = umgedreht ? y : x, el = umgedreht ? x : y;
+  const T = {...T0, comb, conds, then:th, else:el, sol:wenn(`${comb}(${conds.join(';')})`, th, el), noLogic:false, art, gegeben};
+  // Ablenker: nur, wenn sie an dieser Stelle eingesetzt die Lösung falsch machen
+  const mk = cs => wenn(`${comb}(${cs.join(';')})`, th, el);
+  const failsSub = (i, c) => { const cs = conds.slice(); cs[i] = c; try { return !checkAgainst(mk(cs), T).ok; } catch (e) { return true; } };
+  const NAH = {'>=':'>', '>':'>=', '<':'<=', '<=':'<'}, SPIEGEL = {'>=':'<=', '>':'<', '<':'>', '<=':'>='};
+  const condD = [], cvalD = [];
+  CD.forEach((c, i) => {
+    const op = umgedreht ? GEGEN[c.op] : c.op, lit = c.L(c.b);
+    let cands = [c.cell + GEGEN[op] + lit];                                          // nicht umgedreht bzw. falsch umgedreht
+    if (c.type === 'text') cands.push(...[...new Set(c.values)].filter(v => v !== c.b).slice(0, 2).map(v => c.cell + op + c.L(v)));
+    else cands.push(...[NAH[op], SPIEGEL[op]].filter(Boolean).map(o => c.cell + o + lit), c.cell + op + c.L(c.rd(c.b + c.step)));
+    let n = 0;
+    for (const k of shuffle(cands, r)) if (n < 2 && !conds.includes(k) && !condD.includes(k) && failsSub(i, k)){ condD.push(k); n++; }
+    const vals = c.type === 'text' ? [...new Set(c.values)].filter(v => v !== c.b).map(c.L) : ['"' + c.numLit(c.b) + '"', ...[1, -1, 2].map(s => c.L(c.rd(c.b + s * c.step)))];
+    n = 0;
+    for (const v of vals) if (n < 2 && !T.cvals.includes(v) && !cvalD.includes(v) && failsSub(i, c.cell + op + v)){ cvalD.push(v); n++; }
+  });
+  T.condD = condD; T.cvalD = cvalD;
+  T.muss = ast => {
+    if (art === 'um'){
+      const top = ast.args[0];
+      return top.k === 'call' && top.name === g ? '' : `Die Formel liefert dasselbe – aber sie ist noch nicht umgedreht. Verwende ${g} statt ${f}.`;
+    }
+    return usesFn(ast, ['NICHT']) ? 'Die Formel liefert dasselbe – aber sie soll ohne NICHT auskommen. Ersetze NICHT(…) durch das Gegenteil.' : '';
+  };
+  const auftrag = art === 'um'
+    ? '<b>Dreh die Formel um:</b> Schreibe eine Formel, die immer dasselbe Ergebnis liefert – mit der anderen Verknüpfung, jeder Bedingung im Gegenteil und getauschtem Dann_Wert und Sonst_Wert.'
+    : '<b>Schreibe die Formel ohne NICHT:</b> Sie soll immer dasselbe Ergebnis liefern. Ersetze NICHT durch das Gegenteil – und überlege, ob UND/ODER und Dann_Wert/Sonst_Wert dabei wechseln.';
+  T.text = `<p>In Zelle ${B(T0.out)} steht diese Formel:</p><div class="gegeben"><code>${esc(gegeben)}</code></div><p>${auftrag}</p>`
+    + `<details class="worum"><summary>Worum geht es?</summary><p>${T0.text}</p></details>`
+    + (LEVELS[level].mode === 'text' && LEVELS[level].help ? `<details class="help"><summary>Hilfe: umdrehen</summary><ul><li>UND ↔ ODER</li><li>Gegenteile: &lt; ↔ &gt;=, &gt; ↔ &lt;=, = ↔ &lt;&gt;</li><li>NICHT(UND(a;b)) = ODER(NICHT(a);NICHT(b))</li><li>Prüfung umgedreht → Dann_Wert und Sonst_Wert tauschen</li></ul></details>` : '');
+  return T;
+}
+
+/* ---------- Modus und Ablauf (basis.js, bausteine.js) ---------- */
+function loadTask(){
+  const lern = mode === 'lernen';
+  $('#lern').style.display = lern ? '' : 'none';
+  $('#engine').style.display = $('#dock').style.display = lern ? 'none' : '';
+  if (lern){ renderHeader(); lernBauen(); return; }
+  CUR = umdrehAufgabe(endScen, endSeed); poolSeed = rand(); setup();
+}
+function setMode(m){ if (m === mode) return; mode = m; store('mode', m); if (m === 'endlos' && !endScen) newEndless(); loadTask(); window.scrollTo({top:0, behavior:'smooth'}); }
+function setup(){ if (mode === 'endlos'){ CUR = umdrehAufgabe(endScen, endSeed); wbSetup(); } }   // neu, damit die Hilfe zur Stufe passt
+function canNext(){ return endCounted; }
+function nextTask(){ if (!canNext()) return; newEndless(); loadTask(); window.scrollTo({top:0, behavior:'smooth'}); }
+function renderNav(){ navPfad(); renderDock(); }
+function renderDock(){ $('#dock').innerHTML = dockHTML(); }
+function renderGrid(){ wbGrid(); }
+function render(){ wbRender({lvl:`Stufe ${level}: ${LEVELS[level].name}`, meta:`Endlos · ${CUR.art === 'um' ? 'Umdrehen' : 'Ohne NICHT'} · ${CUR.scen}`, text:CUR.text}); }
+function check(){ wbCheck(); }
+
+document.addEventListener('click', e => { if (!e.target.closest('#lern')) navClick(e); });
+$('#resetBtn').addEventListener('click', () => setup());
+$('#prevBtn').addEventListener('click', () => {});
+if (mode === 'endlos') newEndless();
+loadTask();
 </script>
 </body>
 </html>

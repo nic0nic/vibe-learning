@@ -403,10 +403,51 @@ API
   dragData, dragKind, dropOk, dragTap, shiftPlace           Drag-Hooks für basis.js, Shift+Klick setzt ein
   AC_FN                                                     Funktionsliste der Autovervollständigung
 
-Die Seite liefert
+Die Seite liefert (bei UND/ODER und NICHT kommen accepts, applyDrop und SCEN aus wennbau.js bzw. uo-szenarien.js)
   SCEN, setup(), accepts(target, kind), applyDrop(d, type, idx, t), renderGrid(),
   let endScen, endSeed, poolSeed, CUR, S = {items, slots, row, fb, success, result, …}
   außerdem für basis.js: setMode, canNext, nextTask, renderNav, renderDock (Pfad/Endlos über dockHTML())
+```
+
+### IT/excel/wennbau.js – Excel: WENN mit UND/ODER/NICHT – Parser, Prüfung und Bau-Oberfläche in 9 Stufen (und-oder, nicht)
+
+```text
+wennbau.js – WENN-Formeln mit UND/ODER/NICHT bauen und prüfen: Parser, Auswertung, Bausteine in 9 Stufen
+Genutzt von und-oder.html und nicht.html. Laden nach basis.js und bausteine.js (dazu basis.css + bausteine.css),
+Aufgaben aus Szenarien: uo-szenarien.js (danach laden).
+
+API
+  parseFormula(src) → Baum (wirft FErr mit deutscher Meldung), ev(baum, env) → Wert, usesFn(baum, ['UND']), fmtNode(baum)
+  checkAgainst(src, aufgabe) → {ast, rows, fail, ok, logic}: dasselbe Ergebnis wie aufgabe.sol bei allen aufgabe.tests
+  product(listen)            alle Kombinationen (Testwerte)
+  WB_LEVELS                  die 9 Stufen: Bedingungen auswählen … Freitext ohne Hilfe (in der Seite: const LEVELS = WB_LEVELS)
+  wbSetup()                  Bausteine für CUR auf Stufe level anlegen (S), dann render()   (setup der Seite ruft es auf)
+  wbRender(kopf)             Formel, Bausteine und Rückmeldung zeichnen; kopf = {lvl, meta, text (HTML)}
+  wbGrid()                   kleine Tabelle mit Beispielwerten und Ergebnis (renderGrid der Seite ruft es auf)
+  wbCheck(opt)               Formel prüfen, Rückmeldung; nach richtiger Lösung logSolved(opt.geloest ? opt.geloest() : countSolved()),
+                             opt.nachher = HTML unter der Erfolgsmeldung
+  accepts, unplace, applyDrop   Ablageregeln (für basis.js/bausteine.js)
+  Ereignisse: Vergleichszeichen (.opsel), Werte (.cvin), Freitext (#ft), Enter in .cvin/#ft prüft.
+
+Aufgabe CUR (buildTask in uo-szenarien.js): {scen, text, cells, out, labels, resLabel, sample, comb, conds, condD,
+  condCells, cvals, cvalD, dps, then, else, resD, sol, tests, noLogic}. Stufen 1–5 setzen genau zwei Bedingungen ein.
+  Optional: muss(ast) → Fehlermeldung oder '' (Zusatzbedingung nach richtiger Auswertung, z. B. „ohne NICHT“),
+  syms: weitere Zeichen für Stufe 6/7 (z. B. ['NICHT']).
+
+Die Seite liefert: render() (ruft wbRender), check() (ruft wbCheck), setup(), renderGrid(), renderNav(), logSolved(erstmals),
+  die Variablen aus basis.js und let CUR, S, uid, poolSeed.
+```
+
+### IT/excel/uo-szenarien.js – Excel: Sachaufgaben für WENN mit UND/ODER und buildTask (und-oder, nicht)
+
+```text
+uo-szenarien.js – Sachaufgaben für WENN mit UND/ODER (Achterbahn, Mofa, Versand …) und buildTask
+Genutzt von und-oder.html (Übungen, Endlos) und nicht.html (Formeln umdrehen). Laden nach wennbau.js.
+
+API
+  SCEN                       {id: {name, pick(r) → Parameter, build(p) → {comb, conds, labels, resLabel, then, else, text, resD}}}
+  buildTask(id, fixed, seed) → Aufgabe für wennbau.js (Zellen, Beispielwerte, Testfälle, Ablenker, sol = Musterlösung);
+                               id aus SCEN oder LSCEN der Seite; T.CD = Bedingungen einzeln {cell, op, b, L(wert) → Literal, type, …}
 ```
 
 ### IT/excel/tabelle.js – Excel: Tabellen-Übungen mit Rechenkern (wie Funktionen, Bezüge; dazu tabelle.css)

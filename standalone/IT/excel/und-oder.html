@@ -68,7 +68,7 @@ window.KATALOG = {
             {id: 'wbz', stufen: 6, datei: 'wenn-bezuege.html', titel: 'WENN mit $', text: 'WENN-Formeln auf ganze Spalten übertragen: Grenzwerte mit $ festhalten – Zellen in der Tabelle auswählen wie in Excel.'},
             {id: 'uo',   stufen: 9, datei: 'und-oder.html',   titel: 'UND / ODER',        text: 'Bedingungen verknüpfen – mit Erarbeitung, Übungen und Endlos-Modus.'},
             {id: 'uobz', stufen: 6, datei: 'und-oder-bezuege.html', titel: 'UND / ODER mit $', text: 'WENN mit UND/ODER auf ganze Spalten übertragen: Grenzwerte mit $ festhalten – Zellen in der Tabelle auswählen wie in Excel.'},
-            {id: 'nicht', stufen: ['Umdrehen', 'Mit NICHT'], datei: 'nicht.html', titel: 'NICHT', text: 'Die Funktion NICHT: Bedingungen umkehren und WENN-Formeln umdrehen (UND wird ODER) – mit Erarbeitung, Übung und Endlos-Modus, auf Wunsch auf Zeit.'},
+            {id: 'nicht', stufen: 9, datei: 'nicht.html', titel: 'NICHT', text: 'Die Funktion NICHT: Bedingungen umkehren und WENN-Formeln umdrehen (UND wird ODER) – Erarbeitung mit Blitz-Training auf Zeit, Endlos-Modus von Bausteinen bis zur eigenen Formel.'},
             {id: 'bz',   stufen: 6, datei: 'bezuege.html',    titel: 'Zellbezüge $',      text: 'Relative und absolute Bezüge: Formeln übertragen und $-Zeichen richtig setzen.'}
           ]
         },
@@ -3113,7 +3113,7 @@ window.addEventListener('resize', () => acUpdate());
  *   dragData, dragKind, dropOk, dragTap, shiftPlace           Drag-Hooks für basis.js, Shift+Klick setzt ein
  *   AC_FN                                                     Funktionsliste der Autovervollständigung
  *
- * Die Seite liefert
+ * Die Seite liefert (bei UND/ODER und NICHT kommen accepts, applyDrop und SCEN aus wennbau.js bzw. uo-szenarien.js)
  *   SCEN, setup(), accepts(target, kind), applyDrop(d, type, idx, t), renderGrid(),
  *   let endScen, endSeed, poolSeed, CUR, S = {items, slots, row, fb, success, result, …}
  *   außerdem für basis.js: setMode, canNext, nextTask, renderNav, renderDock (Pfad/Endlos über dockHTML())
@@ -3195,9 +3195,34 @@ const AC_FN = [
 ];
 
 </script>
+<script>/* wennbau.js */
+/* wennbau.js – WENN-Formeln mit UND/ODER/NICHT bauen und prüfen: Parser, Auswertung, Bausteine in 9 Stufen
+ * Genutzt von und-oder.html und nicht.html. Laden nach basis.js und bausteine.js (dazu basis.css + bausteine.css),
+ * Aufgaben aus Szenarien: uo-szenarien.js (danach laden).
+ *
+ * API
+ *   parseFormula(src) → Baum (wirft FErr mit deutscher Meldung), ev(baum, env) → Wert, usesFn(baum, ['UND']), fmtNode(baum)
+ *   checkAgainst(src, aufgabe) → {ast, rows, fail, ok, logic}: dasselbe Ergebnis wie aufgabe.sol bei allen aufgabe.tests
+ *   product(listen)            alle Kombinationen (Testwerte)
+ *   WB_LEVELS                  die 9 Stufen: Bedingungen auswählen … Freitext ohne Hilfe (in der Seite: const LEVELS = WB_LEVELS)
+ *   wbSetup()                  Bausteine für CUR auf Stufe level anlegen (S), dann render()   (setup der Seite ruft es auf)
+ *   wbRender(kopf)             Formel, Bausteine und Rückmeldung zeichnen; kopf = {lvl, meta, text (HTML)}
+ *   wbGrid()                   kleine Tabelle mit Beispielwerten und Ergebnis (renderGrid der Seite ruft es auf)
+ *   wbCheck(opt)               Formel prüfen, Rückmeldung; nach richtiger Lösung logSolved(opt.geloest ? opt.geloest() : countSolved()),
+ *                              opt.nachher = HTML unter der Erfolgsmeldung
+ *   accepts, unplace, applyDrop   Ablageregeln (für basis.js/bausteine.js)
+ *   Ereignisse: Vergleichszeichen (.opsel), Werte (.cvin), Freitext (#ft), Enter in .cvin/#ft prüft.
+ *
+ * Aufgabe CUR (buildTask in uo-szenarien.js): {scen, text, cells, out, labels, resLabel, sample, comb, conds, condD,
+ *   condCells, cvals, cvalD, dps, then, else, resD, sol, tests, noLogic}. Stufen 1–5 setzen genau zwei Bedingungen ein.
+ *   Optional: muss(ast) → Fehlermeldung oder '' (Zusatzbedingung nach richtiger Auswertung, z. B. „ohne NICHT“),
+ *   syms: weitere Zeichen für Stufe 6/7 (z. B. ['NICHT']).
+ *
+ * Die Seite liefert: render() (ruft wbRender), check() (ruft wbCheck), setup(), renderGrid(), renderNav(), logSolved(erstmals),
+ *   die Variablen aus basis.js und let CUR, S, uid, poolSeed.
+ */
 
-<!-- ===================== Kern: Parser & Auswertung ===================== -->
-<script id="core">
+/* ---------- Parser und Auswertung ---------- */
 function tokenize(src){
   const t = []; let i = 0; const n = src.length;
   const isL = ch => /[A-Za-zÄÖÜäöüß$_]/.test(ch);
@@ -3320,7 +3345,7 @@ function parseFormula(raw){
   }
   function call(name, tok){
     if (ENGLISH[name]) throw new FErr(`Im deutschen Excel heißt die Funktion ${ENGLISH[name]} (nicht ${name}).`);
-    if (!FUNCS[name]) throw new FErr(`Die Funktion „${tok.value}“ gibt es hier nicht. Erlaubt sind WENN, UND und ODER.`);
+    if (!FUNCS[name]) throw new FErr(`Die Funktion „${tok.value}“ gibt es hier nicht. Erlaubt sind WENN, UND, ODER und NICHT.`);
     next(); // (
     const args = [], spans = [];
     while (true){
@@ -3375,10 +3400,298 @@ function checkAgainst(src, task){
   const fail = rows.find(r => !same(r.got, r.exp)) || null;
   return {ast, rows, fail, ok:!fail, logic:usesFn(ast, ['UND', 'ODER'])};
 }
-</script>
+function product(arrs){ return arrs.reduce((acc, a) => acc.flatMap(x => a.map(y => [...x, y])), [[]]); }
 
-<!-- ===================== Szenarien & Aufgabenerzeugung ===================== -->
-<script id="scen">
+/* ---------- Stufen und Bausteine ---------- */
+const WB_LEVELS = [null,
+  {name:'Bedingungen auswählen',              mode:'slots', comb:'fixed',  cond:'choose',    res:'fixed'},
+  {name:'UND oder ODER wählen',               mode:'slots', comb:'choose', cond:'choose',    res:'fixed'},
+  {name:'DANN und SONST einsetzen',           mode:'slots', comb:'choose', cond:'choose',    res:'drag'},
+  {name:'Bedingungen bauen – Wert ziehen',    mode:'slots', comb:'choose', cond:'buildDrag', res:'drag'},
+  {name:'Bedingungen bauen – Wert eintippen', mode:'slots', comb:'choose', cond:'buildType', res:'drag'},
+  {name:'Formel komplett bauen',              mode:'row',   cond:'buildType', quotes:false},
+  {name:'Formel bauen inkl. Anführungszeichen', mode:'row', cond:'buildType', quotes:true},
+  {name:'Freitext mit Hilfe',                 mode:'text',  help:true},
+  {name:'Freitext ohne Hilfe',                mode:'text',  help:false}
+];
+
+function wbSetup(){
+  const T = CUR, L = LEVELS[level], r = rng(poolSeed);
+  S = {items:{}, pools:{fn:[], cond:[], cval:[], res:[]}, slots:{comb:null, c1:null, c2:null, then:null, else:null},
+       row:[], text:'', success:false, rowRoles:{}, fb:null, result:null};
+  uid = 0;
+  if (L.mode === 'text'){ render(); return; }
+  const mk = (kind, lit, extra) => { const id = 'b' + (++uid); S.items[id] = {id, kind, lit, label:lit, ...extra}; return id; };
+  if (L.comb === 'choose') S.pools.fn = ['UND', 'ODER'].map(f => mk('fn', f));
+  const builders = (L.cond === 'buildDrag' || L.cond === 'buildType') ? T.condCells.map(c => mk('builder', '', {bcell:c, op:'', input:''})) : [];
+  if (L.cond === 'choose') S.pools.cond = shuffle([...T.conds, ...T.condD].map(l => mk('cond', l)), r);
+  if (L.cond === 'buildDrag'){
+    S.pools.cval = shuffle([...new Set([...T.cvals, ...T.cvalD])].map(l => mk('val', l)), r);
+    builders.forEach(b => S.slots['cv:' + b] = null);
+  }
+  if (L.mode === 'slots' && L.cond !== 'choose') S.pools.cond = builders;
+  if (L.res === 'drag' || L.mode === 'row'){
+    const seen = new Set();
+    const res = [T.then, T.else, ...T.resD].map(l => L.quotes ? stripQ(l) : l).filter(l => !seen.has(l) && seen.add(l));
+    S.pools.res = shuffle(res.map(l => mk('val', l)), r);
+  }
+  if (L.mode === 'row') S.pools.res = [...builders, ...S.pools.res];
+  render();
+}
+
+function fmtCell(v, dp){ return v.t === 'num' ? fx(v.v, dp) : esc(v.v); }
+function wbGrid(){
+  const T = CUR, row = T.out.match(/\d+/)[0], col = c => c.replace(/\d+/, '');
+  const out = S.result ? esc(S.result.t === 'str' ? S.result.v : fmtVal(S.result)) : '';
+  $('#grid').innerHTML = `<table class="grid"><tr><th></th>${T.cells.map(c => `<th>${col(c)}</th>`).join('')}<th>${col(T.out)}</th></tr>
+    <tr><th>${row - 1}</th>${T.labels.map(l => `<td class="lbl">${esc(l)}</td>`).join('')}<td class="lbl">${esc(T.resLabel)}</td></tr>
+    <tr><th>${row}</th>${T.cells.map((c, i) => `<td>${fmtCell(T.sample[c], T.dps[i])}</td>`).join('')}<td class="fx">${out}</td></tr></table>`;
+}
+
+function builderInner(it, grip){
+  const L = LEVELS[level];
+  const opts = ['', ...OPS].map(o => `<option value="${esc(o)}"${it.op === o ? ' selected' : ''}>${o === '' ? '?' : esc(o)}</option>`).join('');
+  let v;
+  if (L.cond === 'buildDrag'){
+    const k = 'cv:' + it.id, id = S.slots[k];
+    v = `<div class="slot pill small" data-drop="slot" data-slot="${k}">${id ? blockHTML(S.items[id], {role:role('cond')}) : '<span class="ph">Wert</span>'}</div>`;
+  } else {
+    v = `<input class="cvin" data-b="${it.id}" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Wert" value="${esc(it.input)}" size="${Math.max(4, it.input.length + 1)}" aria-label="Vergleichswert">`;
+  }
+  return `${grip ? '<span class="grip" aria-hidden="true">⠿</span>' : ''}<span class="cellref">${it.bcell}</span><select class="opsel" data-b="${it.id}" aria-label="Vergleichszeichen">${opts}</select>${v}`;
+}
+
+function condSlot(key, live){
+  if (!live) return '<div class="slot hex dummy"><span class="ph">Bedingung</span></div>';
+  const id = S.slots[key];
+  return `<div class="slot hex" data-drop="slot" data-slot="${key}">${id ? blockHTML(S.items[id], {role:role('cond')}) : '<span class="ph">Bedingung</span>'}</div>`;
+}
+
+function blockHTML(it, o = {}){
+  const cls = ['block'];
+  if (it.kind === 'val') cls.push('val');
+  else if (it.kind === 'sym') cls.push('sym');
+  else if (it.kind === 'fn') cls.push('fn');
+  else cls.push('hex');
+  if (it.kind === 'builder') cls.push('builder');
+  if (o.role) cls.push('r-' + o.role);
+  if (o.ghost) cls.push('ghost');
+  const drag = o.drag !== false && !o.ghost && it.id ? ` data-drag="1" data-id="${it.id}"` : '';
+  let inner;
+  if (it.kind === 'builder' && o.ghost) inner = `<span class="cellref">${it.bcell}</span> ? Wert`;
+  else if (it.kind === 'builder') inner = builderInner(it, !!drag);
+  else if (it.kind === 'fn') inner = `<span class="fname">${it.lit}(</span>${condSlot('c1', o.live)}<span class="fsep">;</span>${condSlot('c2', o.live)}<span class="fname">)</span>`;
+  else inner = esc(it.label);
+  return `<div class="${cls.join(' ')}"${drag}>${inner}</div>`;
+}
+
+function wbRender(kopf){
+  const T = CUR, L = LEVELS[level];
+  renderHeader();
+  $('#workcard').style.display = ''; $('#wtlabel').textContent = 'Deine Formel';
+  $('#lvlname').textContent = kopf.lvl;
+  $('#taskmeta').textContent = kopf.meta;
+  $('#tasktext').innerHTML = kopf.text;
+  renderGrid();
+  const W = $('#work'), P = $('#pools');
+
+  if (L.mode === 'slots'){
+    let comb;
+    if (L.comb === 'fixed') comb = blockHTML({kind:'fn', lit:T.comb}, {drag:false, live:true, role:role('cond')});
+    else comb = `<div class="slot fnslot" data-drop="slot" data-slot="comb">${S.slots.comb ? blockHTML(S.items[S.slots.comb], {live:true, role:role('cond')}) : '<span class="ph">UND / ODER</span>'}</div>`;
+    const res = s => L.res === 'fixed'
+      ? `<span class="fixv${S.success ? ' c-' + s : ''}">${esc(T[s])}</span>`
+      : `<div class="slot pill" data-drop="slot" data-slot="${s}">${S.slots[s] ? blockHTML(S.items[S.slots[s]], {role:role(s)}) : `<span class="ph">${s === 'then' ? 'Dann_Wert' : 'Sonst_Wert'}</span>`}</div>`;
+    W.innerHTML = `<div class="formula"><span class="ft">=WENN(</span>${comb}<span class="ft">;</span>${res('then')}<span class="ft">;</span>${res('else')}<span class="ft">)</span></div>`;
+  } else if (L.mode === 'row'){
+    const kids = S.row.map(id => `<span class="iw">${blockHTML(S.items[id], {role:S.success ? (S.rowRoles[id] || '') : ''})}</span>`).join('');
+    W.innerHTML = `<div class="row" data-drop="row">${kids || '<span class="ph">Ziehe Zeichen und Bausteine hierher, um die Formel zu bauen.</span>'}</div>`;
+  } else {
+    W.innerHTML = `<input id="ft" class="ftin acin" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Formel eingeben …" value="${esc(S.text)}" aria-label="Formel">`;
+    updateTip();
+  }
+
+  let ph = '';
+  const pool = (title, key) => `<div class="pool" data-drop="pool"><div class="pool-title">${title}</div><div class="pool-items">${S.pools[key].map(id => blockHTML(S.items[id], {ghost:isPlaced(id)})).join('')}</div></div>`;
+  if (S.pools.fn.length) ph += pool('Verknüpfung', 'fn');
+  if (S.pools.cond.length) ph += pool(L.cond === 'choose' ? 'Bedingungen' : 'Bedingungen bauen', 'cond');
+  if (S.pools.cval.length) ph += pool('Vergleichswerte', 'cval');
+  if (S.pools.res.length) ph += pool(L.mode === 'row' ? 'Bausteine' : 'Werte für DANN und SONST', 'res');
+  if (L.mode === 'row'){
+    const syms = ['=', 'WENN', 'UND', 'ODER', ...(T.syms || []), '(', ';', ')'].concat(L.quotes ? ['"'] : []);
+    ph += `<div class="pool sympool" data-drop="pool"><div class="pool-title">Zeichen – beliebig oft verwendbar</div><div class="pool-items">${syms.map(s => `<div class="block sym" data-drag="1" data-sym="${esc(s)}">${esc(s)}</div>`).join('')}</div></div>`;
+  }
+  P.innerHTML = ph; P.style.display = ph ? '' : 'none';
+  $('#wthint').textContent = L.mode === 'text' ? '' : '· Zum Entfernen einen Baustein zurück nach unten ziehen';
+  renderFeedback(); renderNav();
+}
+
+
+/* ---------- Formel zusammensetzen & prüfen ---------- */
+function builderStr(it){
+  const L = LEVELS[level];
+  if (!it.op) return {missing:'Wähle in jeder Bedingung ein Vergleichszeichen aus.'};
+  let v;
+  if (L.cond === 'buildDrag'){ const id = S.slots['cv:' + it.id]; if (!id) return {missing:'Ziehe in jede Bedingung einen Vergleichswert.'}; v = S.items[id].lit; }
+  else { v = it.input.trim(); if (!v) return {missing:'Trage in jeder Bedingung einen Vergleichswert ein.'}; }
+  return {str:it.bcell + it.op + v};
+}
+function piece(id){ const it = S.items[id]; return it.kind === 'builder' ? builderStr(it) : {str:it.lit}; }
+
+function currentFormula(){
+  const T = CUR, L = LEVELS[level];
+  if (L.mode === 'text') return {src:S.text};
+  if (L.mode === 'slots'){
+    let comb = T.comb;
+    if (L.comb === 'choose'){ if (!S.slots.comb) return {missing:'Ziehe UND oder ODER in das Feld der Prüfung.'}; comb = S.items[S.slots.comb].lit; }
+    if (!S.slots.c1 || !S.slots.c2) return {missing:`Setze in ${comb}(…) zwei Bedingungen ein.`};
+    const a = piece(S.slots.c1), b = piece(S.slots.c2);
+    if (a.missing) return a; if (b.missing) return b;
+    let th = T.then, el = T.else;
+    if (L.res === 'drag'){
+      if (!S.slots.then) return {missing:'Das Feld „Dann_Wert“ ist noch leer.'};
+      if (!S.slots.else) return {missing:'Das Feld „Sonst_Wert“ ist noch leer.'};
+      th = S.items[S.slots.then].lit; el = S.items[S.slots.else].lit;
+    }
+    return {src:`=WENN(${comb}(${a.str};${b.str});${th};${el})`};
+  }
+  if (!S.row.length) return {missing:'Die Formelzeile ist noch leer.'};
+  let src = '', ranges = {};
+  for (let i = 0; i < S.row.length; i++){
+    const pc = piece(S.row[i]); if (pc.missing) return pc;
+    if (i) src += SEP;
+    ranges[S.row[i]] = [src.length, src.length + pc.str.length];
+    src += pc.str;
+  }
+  return {src, ranges};
+}
+
+function caseText(env){
+  const parts = CUR.cells.map((c, i) => `in <b>${c}</b> <code>${esc(fmtVal(env[c]))}</code>`);
+  return parts.length === 1 ? parts[0] : parts.slice(0, -1).join(', ') + ' und ' + parts[parts.length - 1];
+}
+
+function wbCheck(opt = {}){
+  const T = CUR, L = LEVELS[level], knapp = L.mode === 'text' && !L.help;   // letzte Stufe: Rückmeldung ohne Hinweise
+  const cur = currentFormula();
+  if (cur.missing){ S.fb = {type:'err', html:esc(cur.missing)}; S.success = false; renderFeedback(); return; }
+  let res;
+  try { res = checkAgainst(cur.src, T); }
+  catch (e){
+    if (!(e instanceof FErr)) throw e;
+    S.success = false; S.fb = {type:'err', html: knapp ? 'Die Formel enthält einen Fehler.' : esc(e.message)};
+    renderFeedback(); return;
+  }
+  if (!res.ok){
+    S.success = false;
+    if (knapp) S.fb = {type:'err', html:'Die Formel ist gültig, liefert aber nicht in allen Fällen das richtige Ergebnis.'};
+    else {
+      const f = res.fail;
+      let h = `Die Formel ist gültig, aber das Ergebnis stimmt noch nicht in jedem Fall.<br>Wenn ${caseText(f.env)} steht, liefert deine Formel <code>${esc(fmtVal(f.got))}</code> – richtig wäre <code>${esc(fmtVal(f.exp))}</code>.`;
+      if (f.got.t === 'str' && f.exp.t === 'str' && f.got.v.toLowerCase() === f.exp.v.toLowerCase()) h += '<br>Achte auf Groß- und Kleinschreibung.';
+      else if (f.got.t !== f.exp.t && fmtVal(f.got).replace(/"/g, '') === fmtVal(f.exp).replace(/"/g, '')) h += '<br>Achte darauf, ob eine Zahl oder ein Text ausgegeben werden soll.';
+      S.fb = {type:'err', html:h};
+    }
+    renderFeedback(); return;
+  }
+  if (!res.logic && !T.noLogic){
+    S.success = false;
+    S.fb = {type:'err', html:'Das Ergebnis stimmt – aber in dieser Übung sollst du die Bedingungen mit UND bzw. ODER verknüpfen statt mehrere WENN-Funktionen zu verschachteln.'};
+    renderFeedback(); return;
+  }
+  const fehlt = T.muss ? T.muss(res.ast) : '';
+  if (fehlt){ S.success = false; S.fb = {type:'err', html:fehlt}; renderFeedback(); return; }
+  // richtig
+  S.success = true;
+  S.ast = res.ast;
+  logSolved(opt.geloest ? opt.geloest() : countSolved());
+  const a = res.ast;
+  if (L.mode === 'row'){
+    S.rowRoles = {};
+    for (const [id, [x, y]] of Object.entries(cur.ranges))
+      ['cond', 'then', 'else'].forEach((r, i) => { const sp = a.spans[i]; if (x >= sp[0] && y <= sp[1]) S.rowRoles[id] = r; });
+  }
+  S.result = ev(a, T.sample);
+  const colored = `=WENN(<span class="c-cond">${esc(fmtNode(a.args[0]))}</span>;<span class="c-then">${esc(fmtNode(a.args[1]))}</span>;<span class="c-else">${esc(fmtNode(a.args[2]))}</span>)`;
+  const norm = s => normQuotes(s).split(SEP).join('').replace(/\s+/g, '').toUpperCase();
+  let h = `<b>Glückwunsch, richtig! 🎉</b><br><span class="fcol">${colored}</span><br><span class="legend"><span class="c-cond">■</span> Prüfung &nbsp; <span class="c-then">■</span> Dann_Wert &nbsp; <span class="c-else">■</span> Sonst_Wert</span>`;
+  if (norm(cur.src) !== norm(T.sol)) h += `<br>Deine Lösung ist gleichwertig zur Musterlösung <code>${esc(T.sol)}</code>.`;
+  if (!knapp){
+    h += `<details class="cases"><summary>Alle ${res.rows.length} getesteten Fälle anzeigen</summary><table class="tt"><tr>${T.cells.map(c => `<th>${c}</th>`).join('')}<th>Ergebnis</th></tr>` +
+      res.rows.map(r => `<tr>${T.cells.map(c => `<td>${esc(fmtVal(r.env[c]))}</td>`).join('')}<td>${esc(fmtVal(r.got))}</td></tr>`).join('') + '</table></details>';
+  }
+  if (opt.nachher) h += opt.nachher + '<br>';
+  if (canNext()) h += mode === 'lernen' ? 'Weiter geht es mit „Weiter“.' : 'Weiter geht es mit „Nächste Aufgabe“.';
+  S.fb = {type:'ok', html:h};
+  render();
+}
+
+
+/* ---------- Drag & Drop: Ablageregeln (Ziehen: basis.js, Shift+Klick: bausteine.js) ---------- */
+function accepts(target, kind){
+  const t = target.dataset.drop;
+  if (t === 'slot'){
+    const s = target.dataset.slot;
+    if (s === 'comb') return kind === 'fn';
+    if (s === 'c1' || s === 'c2') return kind === 'cond' || kind === 'builder';
+    return kind === 'val';
+  }
+  if (t === 'row') return kind !== 'cond' && kind !== 'fn';
+  return t === 'pool';
+}
+function unplace(id){
+  for (const k in S.slots) if (S.slots[k] === id){ S.slots[k] = null; if (k === 'comb'){ S.slots.c1 = null; S.slots.c2 = null; } }
+  const i = S.row.indexOf(id); if (i >= 0) S.row.splice(i, 1);
+  if (S.items[id] && S.items[id].kind === 'sym') delete S.items[id];
+}
+
+function applyDrop(d, type, idx, t){
+  if (type === 'slot'){
+    const s = t.dataset.slot;
+    if (S.slots[s] === d.id) return;
+    const prev = Object.keys(S.slots).find(k => S.slots[k] === d.id);
+    const occ = S.slots[s];
+    if (prev) S.slots[prev] = null;
+    S.slots[s] = d.id;
+    if (prev && occ){ const pe = document.querySelector(`[data-slot="${prev}"]`); if (pe && accepts(pe, S.items[occ].kind)) S.slots[prev] = occ; } // tauschen
+  } else if (type === 'row'){
+    let id = d.id;
+    if (d.sym){ id = 's' + (++uid); S.items[id] = {id, kind:'sym', lit:d.sym, label:d.sym}; }
+    const cur = S.row.indexOf(id);
+    if (cur >= 0){ S.row.splice(cur, 1); if (cur < idx) idx--; }
+    S.row.splice(idx, 0, id);
+  } else {
+    if (d.sym || !isPlaced(d.id)) return;
+    unplace(d.id);
+  }
+  S.success = false; S.fb = null; S.result = null;
+  render();
+}
+
+/* ---------- Ereignisse ---------- */
+document.addEventListener('change', e => {
+  if (e.target.matches('.opsel')){ S.items[e.target.dataset.b].op = e.target.value; clearMarks(); }
+});
+document.addEventListener('input', e => {
+  if (e.target.matches('.cvin')){ const it = S.items[e.target.dataset.b]; it.input = e.target.value; e.target.size = Math.max(4, it.input.length + 1); clearMarks(); }
+  if (e.target.id === 'ft'){ S.text = e.target.value; updateTip(); clearMarks(); }
+});
+document.addEventListener('keyup', e => { if (e.target.id === 'ft') updateTip(); });
+document.addEventListener('click', e => { if (e.target.id === 'ft') updateTip(); });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && (e.target.id === 'ft' || (e.target.matches && e.target.matches('.cvin')))){ e.preventDefault(); check(); }
+});
+
+</script>
+<script>/* uo-szenarien.js */
+/* uo-szenarien.js – Sachaufgaben für WENN mit UND/ODER (Achterbahn, Mofa, Versand …) und buildTask
+ * Genutzt von und-oder.html (Übungen, Endlos) und nicht.html (Formeln umdrehen). Laden nach wennbau.js.
+ *
+ * API
+ *   SCEN                       {id: {name, pick(r) → Parameter, build(p) → {comb, conds, labels, resLabel, then, else, text, resD}}}
+ *   buildTask(id, fixed, seed) → Aufgabe für wennbau.js (Zellen, Beispielwerte, Testfälle, Ablenker, sol = Musterlösung);
+ *                                id aus SCEN oder LSCEN der Seite; T.CD = Bedingungen einzeln {cell, op, b, L(wert) → Literal, type, …}
+ */
 const HOW = 'Verwende dazu eine WENN-Funktion zusammen mit UND bzw. ODER.';
 const outs = (a, b) => `Ausgegeben werden soll ${C(a)} bzw. ${C(b)}.`;
 
@@ -3568,47 +3881,7 @@ const SCEN = {
         resD:['reparieren', 'defekt', 'fahrbereit', 'ok', 'Wartung', p.b]}; } }
 };
 
-/* ---- Übungen: 30 feste Aufgaben ---- */
-const STD = [
-  // UND
-  ['achterbahn', {ride:'Blitzschlange', v:0, col:'A', row:5}],
-  ['mofa', {v:0}],
-  ['kundenkarte', {b:50, rate:10, v:0}],
-  ['bewerbung', {b:3, v:0}],
-  ['sportabzeichen', {s:9, w:3.5, v:0}],
-  ['versand_de', {b:39, fee:4.95, v:0}],
-  ['achterbahn', {ride:'Donnerkeil', v:0}],
-  ['kundenkarte', {b:30, rate:5, v:0}],
-  // ODER
-  ['unwetter', {w:75, n:40, v:0}],
-  ['vorruecken', {s1:'Mathematik', s2:'Deutsch', v:0}],
-  ['premiumversand', {b:39, fee:3.95, v:0}],
-  ['verein', {red:5, full:12, v:0}],
-  ['parkplatz', {b:60, fee:3, v:0}],
-  ['leihrad', {b:1000, v:0}],
-  ['vorruecken', {s1:'Englisch', s2:'BwR', v:1}],
-  ['unwetter', {w:60, n:25, v:0}],
-  // gleiche Zelle zweimal (Bereiche)
-  ['tarif', {t:2, v:0}],
-  ['raumklima', {k:0, v:0}],
-  ['ermaessigung', {y:18, o:65, v:0}],
-  ['museum', {d1:'Montag', d2:'Dienstag', v:0}],
-  ['tarif', {t:0, v:0}],
-  ['raumklima', {k:1, v:0}],
-  // verneinte Formulierungen
-  ['achterbahn', {ride:'Feuerwirbel', v:1}],
-  ['mofa', {v:1}],
-  ['versand_de', {b:50, fee:5.9, v:1}],
-  ['tarif', {t:1, v:1}],
-  ['ermaessigung', {y:16, o:60, v:1}],
-  ['premiumversand', {b:25, fee:2.99, v:1}],
-  ['unwetter', {w:90, n:50, v:1}],
-  ['museum', {d1:'Samstag', d2:'Sonntag', v:1}]
-];
-
 /* ---- Aufgabe aus Szenario + Parametern bauen ---- */
-function product(arrs){ return arrs.reduce((acc, a) => acc.flatMap(x => a.map(y => [...x, y])), [[]]); }
-
 function buildTask(id, fixed, seedNum){
   const sc = SCEN[id] || (typeof LSCEN !== 'undefined' && LSCEN[id]), r = rng(seedNum);
   const p = {col:pick1(r, ['A', 'B', 'C']), row:ri(r, 2, 25), ...sc.pick(r), ...fixed};
@@ -3630,7 +3903,7 @@ function buildTask(id, fixed, seedNum){
              dps:cells.map((_, i) => (CD.find(c => c.c === i).dp)),
              then:O(s.then), else:O(s.else), text:s.text(cells, out)};
   const mk = cs => T.comb ? `=WENN(${T.comb}(${cs.join(';')});${T.then};${T.else})` : `=WENN(${cs[0]};${T.then};${T.else})`;
-  T.noLogic = !T.comb;
+  T.noLogic = !T.comb; T.CD = CD;
   T.sol = mk(conds);
 
   // Testwerte je Zelle, dann alle Kombinationen
@@ -3681,7 +3954,50 @@ function buildTask(id, fixed, seedNum){
   T.resD = res.slice(0, 6);
   return T;
 }
+
 </script>
+
+<!-- ===================== Übungen ===================== -->
+<script id="std">
+/* ---- Übungen: 30 feste Aufgaben ---- */
+const STD = [
+  // UND
+  ['achterbahn', {ride:'Blitzschlange', v:0, col:'A', row:5}],
+  ['mofa', {v:0}],
+  ['kundenkarte', {b:50, rate:10, v:0}],
+  ['bewerbung', {b:3, v:0}],
+  ['sportabzeichen', {s:9, w:3.5, v:0}],
+  ['versand_de', {b:39, fee:4.95, v:0}],
+  ['achterbahn', {ride:'Donnerkeil', v:0}],
+  ['kundenkarte', {b:30, rate:5, v:0}],
+  // ODER
+  ['unwetter', {w:75, n:40, v:0}],
+  ['vorruecken', {s1:'Mathematik', s2:'Deutsch', v:0}],
+  ['premiumversand', {b:39, fee:3.95, v:0}],
+  ['verein', {red:5, full:12, v:0}],
+  ['parkplatz', {b:60, fee:3, v:0}],
+  ['leihrad', {b:1000, v:0}],
+  ['vorruecken', {s1:'Englisch', s2:'BwR', v:1}],
+  ['unwetter', {w:60, n:25, v:0}],
+  // gleiche Zelle zweimal (Bereiche)
+  ['tarif', {t:2, v:0}],
+  ['raumklima', {k:0, v:0}],
+  ['ermaessigung', {y:18, o:65, v:0}],
+  ['museum', {d1:'Montag', d2:'Dienstag', v:0}],
+  ['tarif', {t:0, v:0}],
+  ['raumklima', {k:1, v:0}],
+  // verneinte Formulierungen
+  ['achterbahn', {ride:'Feuerwirbel', v:1}],
+  ['mofa', {v:1}],
+  ['versand_de', {b:50, fee:5.9, v:1}],
+  ['tarif', {t:1, v:1}],
+  ['ermaessigung', {y:16, o:60, v:1}],
+  ['premiumversand', {b:25, fee:2.99, v:1}],
+  ['unwetter', {w:90, n:50, v:1}],
+  ['museum', {d1:'Samstag', d2:'Sonntag', v:1}]
+];
+</script>
+
 
 <!-- ===================== Lernmodus: Domi-No's ===================== -->
 <script id="lesson">
@@ -3883,17 +4199,7 @@ const STEPS = [
 <script>
 const KEY = 'uo-';
 
-const LEVELS = [null,
-  {name:'Bedingungen auswählen',              mode:'slots', comb:'fixed',  cond:'choose',    res:'fixed'},
-  {name:'UND oder ODER wählen',               mode:'slots', comb:'choose', cond:'choose',    res:'fixed'},
-  {name:'DANN und SONST einsetzen',           mode:'slots', comb:'choose', cond:'choose',    res:'drag'},
-  {name:'Bedingungen bauen – Wert ziehen',    mode:'slots', comb:'choose', cond:'buildDrag', res:'drag'},
-  {name:'Bedingungen bauen – Wert eintippen', mode:'slots', comb:'choose', cond:'buildType', res:'drag'},
-  {name:'Formel komplett bauen',              mode:'row',   cond:'buildType', quotes:false},
-  {name:'Formel bauen inkl. Anführungszeichen', mode:'row', cond:'buildType', quotes:true},
-  {name:'Freitext mit Hilfe',                 mode:'text',  help:true},
-  {name:'Freitext ohne Hilfe',                mode:'text',  help:false}
-];
+const LEVELS = WB_LEVELS;
 
 /* gelöste Aufgabe bzw. erledigten Schritt an den Server melden (nur wenn die Seite über PocketBase läuft) */
 function logSolved(erstmals){
@@ -3920,29 +4226,7 @@ function loadTask(){
 function setMode(m){ if (m === mode) return; mode = m; store('mode', m); pickerOpen = false; level = Math.min(9, Math.max(1, parseInt(load('level')) || 1)); if (m === 'endlos' && !endScen) newEndless(); loadTask(); window.scrollTo({top:0, behavior:'smooth'}); }
 function canNext(){ if (mode === 'lernen') return learnIdx < STEPS.length - 1 && learnDone.has(learnIdx); return mode === 'pfad' ? (pfadIdx < STD.length - 1 && isSolved(pfadIdx)) : endCounted; }
 function nextTask(){ if (!canNext()) return; if (mode === 'lernen'){ gotoStep(learnIdx + 1); return; } if (mode === 'pfad') gotoTask(pfadIdx + 1); else { newEndless(); loadTask(); window.scrollTo({top:0, behavior:'smooth'}); } }
-function setup(){
-  const T = CUR, L = LEVELS[level], r = rng(poolSeed);
-  S = {items:{}, pools:{fn:[], cond:[], cval:[], res:[]}, slots:{comb:null, c1:null, c2:null, then:null, else:null},
-       row:[], text:'', success:false, rowRoles:{}, fb:null, result:null};
-  uid = 0;
-  if (L.mode === 'text'){ render(); return; }
-  const mk = (kind, lit, extra) => { const id = 'b' + (++uid); S.items[id] = {id, kind, lit, label:lit, ...extra}; return id; };
-  if (L.comb === 'choose') S.pools.fn = ['UND', 'ODER'].map(f => mk('fn', f));
-  const builders = (L.cond === 'buildDrag' || L.cond === 'buildType') ? T.condCells.map(c => mk('builder', '', {bcell:c, op:'', input:''})) : [];
-  if (L.cond === 'choose') S.pools.cond = shuffle([...T.conds, ...T.condD].map(l => mk('cond', l)), r);
-  if (L.cond === 'buildDrag'){
-    S.pools.cval = shuffle([...new Set([...T.cvals, ...T.cvalD])].map(l => mk('val', l)), r);
-    builders.forEach(b => S.slots['cv:' + b] = null);
-  }
-  if (L.mode === 'slots' && L.cond !== 'choose') S.pools.cond = builders;
-  if (L.res === 'drag' || L.mode === 'row'){
-    const seen = new Set();
-    const res = [T.then, T.else, ...T.resD].map(l => L.quotes ? stripQ(l) : l).filter(l => !seen.has(l) && seen.add(l));
-    S.pools.res = shuffle(res.map(l => mk('val', l)), r);
-  }
-  if (L.mode === 'row') S.pools.res = [...builders, ...S.pools.res];
-  render();
-}
+function setup(){ wbSetup(); }
 
 /* ---------- Rendering ---------- */
 function renderNav(){
@@ -3961,201 +4245,22 @@ function renderDock(){
   d.innerHTML = h;
 }
 
-function fmtCell(v, dp){ return v.t === 'num' ? fx(v.v, dp) : esc(v.v); }
 function renderGrid(){
   if (CUR && CUR.sheet){ $('#grid').innerHTML = sheetHTML(CUR.sheet, S.success ? S.ast : null); return; }
-  const T = CUR, row = T.out.match(/\d+/)[0], col = c => c.replace(/\d+/, '');
-  const out = S.result ? esc(S.result.t === 'str' ? S.result.v : fmtVal(S.result)) : '';
-  $('#grid').innerHTML = `<table class="grid"><tr><th></th>${T.cells.map(c => `<th>${col(c)}</th>`).join('')}<th>${col(T.out)}</th></tr>
-    <tr><th>${row - 1}</th>${T.labels.map(l => `<td class="lbl">${esc(l)}</td>`).join('')}<td class="lbl">${esc(T.resLabel)}</td></tr>
-    <tr><th>${row}</th>${T.cells.map((c, i) => `<td>${fmtCell(T.sample[c], T.dps[i])}</td>`).join('')}<td class="fx">${out}</td></tr></table>`;
+  wbGrid();
 }
-
-function builderInner(it, grip){
-  const L = LEVELS[level];
-  const opts = ['', ...OPS].map(o => `<option value="${esc(o)}"${it.op === o ? ' selected' : ''}>${o === '' ? '?' : esc(o)}</option>`).join('');
-  let v;
-  if (L.cond === 'buildDrag'){
-    const k = 'cv:' + it.id, id = S.slots[k];
-    v = `<div class="slot pill small" data-drop="slot" data-slot="${k}">${id ? blockHTML(S.items[id], {role:role('cond')}) : '<span class="ph">Wert</span>'}</div>`;
-  } else {
-    v = `<input class="cvin" data-b="${it.id}" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Wert" value="${esc(it.input)}" size="${Math.max(4, it.input.length + 1)}" aria-label="Vergleichswert">`;
-  }
-  return `${grip ? '<span class="grip" aria-hidden="true">⠿</span>' : ''}<span class="cellref">${it.bcell}</span><select class="opsel" data-b="${it.id}" aria-label="Vergleichszeichen">${opts}</select>${v}`;
-}
-
-function condSlot(key, live){
-  if (!live) return '<div class="slot hex dummy"><span class="ph">Bedingung</span></div>';
-  const id = S.slots[key];
-  return `<div class="slot hex" data-drop="slot" data-slot="${key}">${id ? blockHTML(S.items[id], {role:role('cond')}) : '<span class="ph">Bedingung</span>'}</div>`;
-}
-
-function blockHTML(it, o = {}){
-  const cls = ['block'];
-  if (it.kind === 'val') cls.push('val');
-  else if (it.kind === 'sym') cls.push('sym');
-  else if (it.kind === 'fn') cls.push('fn');
-  else cls.push('hex');
-  if (it.kind === 'builder') cls.push('builder');
-  if (o.role) cls.push('r-' + o.role);
-  if (o.ghost) cls.push('ghost');
-  const drag = o.drag !== false && !o.ghost && it.id ? ` data-drag="1" data-id="${it.id}"` : '';
-  let inner;
-  if (it.kind === 'builder' && o.ghost) inner = `<span class="cellref">${it.bcell}</span> ? Wert`;
-  else if (it.kind === 'builder') inner = builderInner(it, !!drag);
-  else if (it.kind === 'fn') inner = `<span class="fname">${it.lit}(</span>${condSlot('c1', o.live)}<span class="fsep">;</span>${condSlot('c2', o.live)}<span class="fname">)</span>`;
-  else inner = esc(it.label);
-  return `<div class="${cls.join(' ')}"${drag}>${inner}</div>`;
-}
-
 function render(){
   if (mode === 'lernen' && STEPS[learnIdx].type !== 'task'){ renderLearnStep(); return; }
   const T = CUR, L = LEVELS[level];
-  renderHeader();
-  $('#workcard').style.display = ''; $('#wtlabel').textContent = 'Deine Formel';
   if (mode === 'lernen'){
     const st = STEPS[learnIdx];
-    $('#lvlname').textContent = 'Erarbeitung · ' + st.title;
-    $('#taskmeta').textContent = `Schritt ${learnIdx + 1} von ${STEPS.length}`;
-    $('#tasktext').innerHTML = st.html + `<div class="assign"><b>Aufgabe:</b> ${T.text}</div>`;
-  } else {
-    $('#lvlname').textContent = `Stufe ${level}: ${L.name}`;
-    $('#taskmeta').textContent = mode === 'pfad' ? `Übungen · Aufgabe ${pfadIdx + 1} von ${STD.length}` : `Endlos · Szenario: ${T.scen}`;
-    $('#tasktext').innerHTML = T.text;
-  }
-  renderGrid();
-  const W = $('#work'), P = $('#pools');
-
-  if (L.mode === 'slots'){
-    let comb;
-    if (L.comb === 'fixed') comb = blockHTML({kind:'fn', lit:T.comb}, {drag:false, live:true, role:role('cond')});
-    else comb = `<div class="slot fnslot" data-drop="slot" data-slot="comb">${S.slots.comb ? blockHTML(S.items[S.slots.comb], {live:true, role:role('cond')}) : '<span class="ph">UND / ODER</span>'}</div>`;
-    const res = s => L.res === 'fixed'
-      ? `<span class="fixv${S.success ? ' c-' + s : ''}">${esc(T[s])}</span>`
-      : `<div class="slot pill" data-drop="slot" data-slot="${s}">${S.slots[s] ? blockHTML(S.items[S.slots[s]], {role:role(s)}) : `<span class="ph">${s === 'then' ? 'Dann_Wert' : 'Sonst_Wert'}</span>`}</div>`;
-    W.innerHTML = `<div class="formula"><span class="ft">=WENN(</span>${comb}<span class="ft">;</span>${res('then')}<span class="ft">;</span>${res('else')}<span class="ft">)</span></div>`;
-  } else if (L.mode === 'row'){
-    const kids = S.row.map(id => `<span class="iw">${blockHTML(S.items[id], {role:S.success ? (S.rowRoles[id] || '') : ''})}</span>`).join('');
-    W.innerHTML = `<div class="row" data-drop="row">${kids || '<span class="ph">Ziehe Zeichen und Bausteine hierher, um die Formel zu bauen.</span>'}</div>`;
-  } else {
-    W.innerHTML = `<input id="ft" class="ftin acin" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Formel eingeben …" value="${esc(S.text)}" aria-label="Formel">`;
-    updateTip();
-  }
-
-  let ph = '';
-  const pool = (title, key) => `<div class="pool" data-drop="pool"><div class="pool-title">${title}</div><div class="pool-items">${S.pools[key].map(id => blockHTML(S.items[id], {ghost:isPlaced(id)})).join('')}</div></div>`;
-  if (S.pools.fn.length) ph += pool('Verknüpfung', 'fn');
-  if (S.pools.cond.length) ph += pool(L.cond === 'choose' ? 'Bedingungen' : 'Bedingungen bauen', 'cond');
-  if (S.pools.cval.length) ph += pool('Vergleichswerte', 'cval');
-  if (S.pools.res.length) ph += pool(L.mode === 'row' ? 'Bausteine' : 'Werte für DANN und SONST', 'res');
-  if (L.mode === 'row'){
-    const syms = ['=', 'WENN', 'UND', 'ODER', '(', ';', ')'].concat(L.quotes ? ['"'] : []);
-    ph += `<div class="pool sympool" data-drop="pool"><div class="pool-title">Zeichen – beliebig oft verwendbar</div><div class="pool-items">${syms.map(s => `<div class="block sym" data-drag="1" data-sym="${esc(s)}">${esc(s)}</div>`).join('')}</div></div>`;
-  }
-  P.innerHTML = ph; P.style.display = ph ? '' : 'none';
-  $('#wthint').textContent = L.mode === 'text' ? '' : '· Zum Entfernen einen Baustein zurück nach unten ziehen';
-  renderFeedback(); renderNav();
+    wbRender({lvl:'Erarbeitung · ' + st.title, meta:`Schritt ${learnIdx + 1} von ${STEPS.length}`, text:st.html + `<div class="assign"><b>Aufgabe:</b> ${T.text}</div>`});
+  } else wbRender({lvl:`Stufe ${level}: ${L.name}`, meta:mode === 'pfad' ? `Übungen · Aufgabe ${pfadIdx + 1} von ${STD.length}` : `Endlos · Szenario: ${T.scen}`, text:T.text});
 }
-
-/* ---------- Formel zusammensetzen & prüfen ---------- */
-function builderStr(it){
-  const L = LEVELS[level];
-  if (!it.op) return {missing:'Wähle in jeder Bedingung ein Vergleichszeichen aus.'};
-  let v;
-  if (L.cond === 'buildDrag'){ const id = S.slots['cv:' + it.id]; if (!id) return {missing:'Ziehe in jede Bedingung einen Vergleichswert.'}; v = S.items[id].lit; }
-  else { v = it.input.trim(); if (!v) return {missing:'Trage in jeder Bedingung einen Vergleichswert ein.'}; }
-  return {str:it.bcell + it.op + v};
-}
-function piece(id){ const it = S.items[id]; return it.kind === 'builder' ? builderStr(it) : {str:it.lit}; }
-
-function currentFormula(){
-  const T = CUR, L = LEVELS[level];
-  if (L.mode === 'text') return {src:S.text};
-  if (L.mode === 'slots'){
-    let comb = T.comb;
-    if (L.comb === 'choose'){ if (!S.slots.comb) return {missing:'Ziehe UND oder ODER in das Feld der Prüfung.'}; comb = S.items[S.slots.comb].lit; }
-    if (!S.slots.c1 || !S.slots.c2) return {missing:`Setze in ${comb}(…) zwei Bedingungen ein.`};
-    const a = piece(S.slots.c1), b = piece(S.slots.c2);
-    if (a.missing) return a; if (b.missing) return b;
-    let th = T.then, el = T.else;
-    if (L.res === 'drag'){
-      if (!S.slots.then) return {missing:'Das Feld „Dann_Wert“ ist noch leer.'};
-      if (!S.slots.else) return {missing:'Das Feld „Sonst_Wert“ ist noch leer.'};
-      th = S.items[S.slots.then].lit; el = S.items[S.slots.else].lit;
-    }
-    return {src:`=WENN(${comb}(${a.str};${b.str});${th};${el})`};
-  }
-  if (!S.row.length) return {missing:'Die Formelzeile ist noch leer.'};
-  let src = '', ranges = {};
-  for (let i = 0; i < S.row.length; i++){
-    const pc = piece(S.row[i]); if (pc.missing) return pc;
-    if (i) src += SEP;
-    ranges[S.row[i]] = [src.length, src.length + pc.str.length];
-    src += pc.str;
-  }
-  return {src, ranges};
-}
-
-function caseText(env){
-  const parts = CUR.cells.map((c, i) => `in <b>${c}</b> <code>${esc(fmtVal(env[c]))}</code>`);
-  return parts.length === 1 ? parts[0] : parts.slice(0, -1).join(', ') + ' und ' + parts[parts.length - 1];
-}
-
 function check(){
   if (mode === 'lernen' && STEPS[learnIdx].type !== 'task'){ checkStep(); return; }
-  const T = CUR, L = LEVELS[level];
-  const cur = currentFormula();
-  if (cur.missing){ S.fb = {type:'err', html:esc(cur.missing)}; S.success = false; renderFeedback(); return; }
-  let res;
-  try { res = checkAgainst(cur.src, T); }
-  catch (e){
-    if (!(e instanceof FErr)) throw e;
-    S.success = false; S.fb = {type:'err', html: level === 9 ? 'Die Formel enthält einen Fehler.' : esc(e.message)};
-    renderFeedback(); return;
-  }
-  if (!res.ok){
-    S.success = false;
-    if (level === 9) S.fb = {type:'err', html:'Die Formel ist gültig, liefert aber nicht in allen Fällen das richtige Ergebnis.'};
-    else {
-      const f = res.fail;
-      let h = `Die Formel ist gültig, aber das Ergebnis stimmt noch nicht in jedem Fall.<br>Wenn ${caseText(f.env)} steht, liefert deine Formel <code>${esc(fmtVal(f.got))}</code> – richtig wäre <code>${esc(fmtVal(f.exp))}</code>.`;
-      if (f.got.t === 'str' && f.exp.t === 'str' && f.got.v.toLowerCase() === f.exp.v.toLowerCase()) h += '<br>Achte auf Groß- und Kleinschreibung.';
-      else if (f.got.t !== f.exp.t && fmtVal(f.got).replace(/"/g, '') === fmtVal(f.exp).replace(/"/g, '')) h += '<br>Achte darauf, ob eine Zahl oder ein Text ausgegeben werden soll.';
-      S.fb = {type:'err', html:h};
-    }
-    renderFeedback(); return;
-  }
-  if (!res.logic && !T.noLogic){
-    S.success = false;
-    S.fb = {type:'err', html:'Das Ergebnis stimmt – aber in dieser Übung sollst du die Bedingungen mit UND bzw. ODER verknüpfen statt mehrere WENN-Funktionen zu verschachteln.'};
-    renderFeedback(); return;
-  }
-  // richtig
-  S.success = true;
-  S.ast = res.ast;
-  let erstmals;
-  if (mode === 'lernen'){ erstmals = !learnDone.has(learnIdx); markStep(); }
-  else erstmals = countSolved();
-  logSolved(erstmals);
-  const a = res.ast;
-  if (L.mode === 'row'){
-    S.rowRoles = {};
-    for (const [id, [x, y]] of Object.entries(cur.ranges))
-      ['cond', 'then', 'else'].forEach((r, i) => { const sp = a.spans[i]; if (x >= sp[0] && y <= sp[1]) S.rowRoles[id] = r; });
-  }
-  S.result = ev(a, T.sample);
-  const colored = `=WENN(<span class="c-cond">${esc(fmtNode(a.args[0]))}</span>;<span class="c-then">${esc(fmtNode(a.args[1]))}</span>;<span class="c-else">${esc(fmtNode(a.args[2]))}</span>)`;
-  const norm = s => normQuotes(s).split(SEP).join('').replace(/\s+/g, '').toUpperCase();
-  let h = `<b>Glückwunsch, richtig! 🎉</b><br><span class="fcol">${colored}</span><br><span class="legend"><span class="c-cond">■</span> Prüfung &nbsp; <span class="c-then">■</span> Dann_Wert &nbsp; <span class="c-else">■</span> Sonst_Wert</span>`;
-  if (norm(cur.src) !== norm(T.sol)) h += `<br>Deine Lösung ist gleichwertig zur Musterlösung <code>${esc(T.sol)}</code>.`;
-  if (level !== 9){
-    h += `<details class="cases"><summary>Alle ${res.rows.length} getesteten Fälle anzeigen</summary><table class="tt"><tr>${T.cells.map(c => `<th>${c}</th>`).join('')}<th>Ergebnis</th></tr>` +
-      res.rows.map(r => `<tr>${T.cells.map(c => `<td>${esc(fmtVal(r.env[c]))}</td>`).join('')}<td>${esc(fmtVal(r.got))}</td></tr>`).join('') + '</table></details>';
-  }
-  if (mode === 'lernen' && STEPS[learnIdx].after) h += STEPS[learnIdx].after + '<br>';
-  if (canNext()) h += mode === 'lernen' ? 'Weiter geht es mit „Weiter“.' : 'Weiter geht es mit „Nächste Aufgabe“.';
-  S.fb = {type:'ok', html:h};
-  render();
+  if (mode === 'lernen') wbCheck({geloest:() => { const erstmals = !learnDone.has(learnIdx); markStep(); return erstmals; }, nachher:STEPS[learnIdx].after});
+  else wbCheck();
 }
 
 /* ---------- Lernmodus ---------- */
@@ -4334,59 +4439,11 @@ function learnClick(e){
   return false;
 }
 
-/* ---------- Drag & Drop: Ablageregeln (Ziehen: basis.js, Shift+Klick: bausteine.js) ---------- */
-function accepts(target, kind){
-  const t = target.dataset.drop;
-  if (t === 'slot'){
-    const s = target.dataset.slot;
-    if (s === 'comb') return kind === 'fn';
-    if (s === 'c1' || s === 'c2') return kind === 'cond' || kind === 'builder';
-    return kind === 'val';
-  }
-  if (t === 'row') return kind !== 'cond' && kind !== 'fn';
-  return t === 'pool';
-}
-function unplace(id){
-  for (const k in S.slots) if (S.slots[k] === id){ S.slots[k] = null; if (k === 'comb'){ S.slots.c1 = null; S.slots.c2 = null; } }
-  const i = S.row.indexOf(id); if (i >= 0) S.row.splice(i, 1);
-  if (S.items[id] && S.items[id].kind === 'sym') delete S.items[id];
-}
-
-function applyDrop(d, type, idx, t){
-  if (type === 'slot'){
-    const s = t.dataset.slot;
-    if (S.slots[s] === d.id) return;
-    const prev = Object.keys(S.slots).find(k => S.slots[k] === d.id);
-    const occ = S.slots[s];
-    if (prev) S.slots[prev] = null;
-    S.slots[s] = d.id;
-    if (prev && occ){ const pe = document.querySelector(`[data-slot="${prev}"]`); if (pe && accepts(pe, S.items[occ].kind)) S.slots[prev] = occ; } // tauschen
-  } else if (type === 'row'){
-    let id = d.id;
-    if (d.sym){ id = 's' + (++uid); S.items[id] = {id, kind:'sym', lit:d.sym, label:d.sym}; }
-    const cur = S.row.indexOf(id);
-    if (cur >= 0){ S.row.splice(cur, 1); if (cur < idx) idx--; }
-    S.row.splice(idx, 0, id);
-  } else {
-    if (d.sym || !isPlaced(d.id)) return;
-    unplace(d.id);
-  }
-  S.success = false; S.fb = null; S.result = null;
-  render();
-}
-
-/* ---------- Ereignisse ---------- */
-document.addEventListener('change', e => {
-  if (e.target.matches('.opsel')){ S.items[e.target.dataset.b].op = e.target.value; clearMarks(); }
-});
+/* ---------- Ereignisse (Formelbau: wennbau.js) ---------- */
 document.addEventListener('input', e => {
-  if (e.target.matches('.cvin')){ const it = S.items[e.target.dataset.b]; it.input = e.target.value; e.target.size = Math.max(4, it.input.length + 1); clearMarks(); }
-  if (e.target.id === 'ft'){ S.text = e.target.value; updateTip(); clearMarks(); }
   if (e.target.matches('.condin')){ const i = +e.target.dataset.f; LS.inputs[i] = e.target.value; delete LS.fieldOk[i]; delete LS.fieldErr[i]; e.target.classList.remove('ok', 'err'); e.target.nextElementSibling.textContent = ''; }
 });
-document.addEventListener('keyup', e => { if (e.target.id === 'ft') updateTip(); });
 document.addEventListener('click', e => {
-  if (e.target.id === 'ft') updateTip();
   if (mode === 'lernen' && LS && STEPS[learnIdx].type !== 'task' && learnClick(e)) return;
   const mg = e.target.closest('[data-mode-go]'); if (mg){ setMode(mg.dataset.modeGo); return; }
   const sp = e.target.closest('[data-step]'); if (sp){ gotoStep(+sp.dataset.step); return; }
@@ -4394,7 +4451,7 @@ document.addEventListener('click', e => {
   navClick(e);
 });
 document.addEventListener('keydown', e => {
-  if (e.key === 'Enter' && (e.target.id === 'ft' || e.target.matches('.cvin') || e.target.matches('.condin'))){ e.preventDefault(); check(); }
+  if (e.key === 'Enter' && e.target.matches && e.target.matches('.condin')){ e.preventDefault(); check(); }
 });
 $('#resetBtn').addEventListener('click', () => { if (mode === 'lernen' && STEPS[learnIdx].type !== 'task') loadStep(); else setup(); });
 $('#prevBtn').addEventListener('click', () => { if (mode === 'lernen') gotoStep(learnIdx - 1); else gotoTask(pfadIdx - 1); });
