@@ -13,7 +13,8 @@
   Variablenmodell „Kommode“ (lib/kommode.js): Schalter „Variablen“, dann klein oben rechts im Editor,
   per ⤢ als Vollbild; dazu Schritt / Abspielen (F10 = nächster Schritt).
   Schalter „Blöcke“ (lib/bloecke.js, Blockly in lib/blockly/): Programmieren mit Blöcken wie bei Scratch (Jgst. 7),
-  übersetzt nach Python; gespeichert unter py-bloecke, Modus unter py-modus. Python-Code bleibt davon unberührt.
+  übersetzt nach Python; gespeichert unter py-bloecke, Modus unter py-modus. Beim Umschalten wird das Programm
+  umgewandelt (Blöcke → Python immer, Python → Blöcke nur, was es als Block gibt; sonst Nachfrage).
 -->
 <script src="../../katalog.js"></script>
 <script src="../../nav.js"></script>
@@ -467,7 +468,28 @@ function setzeModus(an){
   if (an){ blockFlaeche(); bl.groesse(); pyVorschau(); }
   else ed.refresh();
 }
-$('#blockBtn').addEventListener('click', () => setzeModus(!bloeckeAn));
+// Wechsel: dasselbe Programm in der anderen Form zeigen
+function zuPython(){
+  const p = bl.python();
+  if (!p.start){
+    if (!confirm('Ohne „wenn ▶ angeklickt“ gibt es keinen Python-Code. Trotzdem wechseln? Dein bisheriger Python-Code bleibt dann.')) return;
+  } else if (ed.getValue() !== p.code){
+    ed.replaceRange(p.code, {line: 0, ch: 0}, {line: ed.lastLine()});   // Strg+Z holt den alten Code zurück
+  }
+  setzeModus(false);
+}
+function zuBloecken(){
+  const code = ed.getValue();
+  setzeModus(true);
+  if (code.trim() === bl.python().code.trim()) return;             // nichts geändert: Anordnung der Blöcke behalten
+  try { bl.laden(Bloecke.ausPython(code, bl.python().namen)); }
+  catch (e){
+    if (!e || e.grund === undefined){ console.error(e); e = {zeile: 0, grund: 'Beim Umwandeln ist etwas schiefgegangen'}; }
+    if (!confirm(`${e.zeile ? 'Zeile ' + e.zeile + ': ' : ''}${e.grund}.\n\nDieser Python-Code lässt sich nicht in Blöcke umwandeln. ` +
+      'Trotzdem zu den Blöcken wechseln? Die Blöcke zeigen dann ihren letzten Stand, dein Python-Code bleibt erhalten.')) setzeModus(false);
+  }
+}
+$('#blockBtn').addEventListener('click', () => bloeckeAn ? zuPython() : zuBloecken());
 $('#pyZeigen').addEventListener('click', () => {
   const an = $('#pyVorschau').hidden;
   $('#pyVorschau').hidden = !an;

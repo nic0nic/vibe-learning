@@ -14,7 +14,8 @@
   Variablenmodell „Kommode“ (lib/kommode.js): Schalter „Variablen“, dann klein oben rechts im Editor,
   per ⤢ als Vollbild; dazu Schritt / Abspielen (F10 = nächster Schritt).
   Schalter „Blöcke“ (lib/bloecke.js, Blockly in lib/blockly/): Programmieren mit Blöcken wie bei Scratch (Jgst. 7),
-  übersetzt nach Python; gespeichert unter py-bloecke, Modus unter py-modus. Python-Code bleibt davon unberührt.
+  übersetzt nach Python; gespeichert unter py-bloecke, Modus unter py-modus. Beim Umschalten wird das Programm
+  umgewandelt (Blöcke → Python immer, Python → Blöcke nur, was es als Block gibt; sonst Nachfrage).
 -->
 <script>/* ../../katalog.js */
 /* Inhaltsverzeichnis der Übungsplattform
@@ -5835,6 +5836,8 @@ return Blockly.Msg;
     b.zoom(faktor)               Größe der Blöcke (Start 0.8)
     b.groesse()                  nach Umhängen/Größenänderung aufrufen
   Bloecke.BEISPIELE              {Name: JSON}, für b.laden
+  Bloecke.ausPython(code, namen) → JSON für b.laden; wirft {zeile, grund}, wenn etwas nicht als Block geht
+                                 (namen = b.python().namen, damit „Größe“ nicht zu „Groesse“ wird)
   Zu Kommode.lauf passen: halt: nr => nr in bloecke, namen, bloecke: true.
 */
 (function () {
@@ -5992,7 +5995,10 @@ return Blockly.Msg;
       const k = n => b.getInputTargetBlock(n);
       switch (b.type) {
         case 'vl_setze': zeile(`${varName(b)} = ${ex(k('WERT'))}`, ein, b); break;
-        case 'vl_aendere': zeile(`${varName(b)} = ${varName(b)} + ${ex(k('WERT'), true)}`, ein, b); break;
+        case 'vl_aendere': {   // ändere um -1  →  x = x - 1
+          const w = ex(k('WERT'), true), neg = /^-\d/.test(w);
+          zeile(`${varName(b)} = ${varName(b)} ${neg ? '-' : '+'} ${neg ? w.slice(1) : w}`, ein, b); break;
+        }
         case 'vl_sage': zeile(`print(${ex(k('WERT'))})`, ein, b); break;
         case 'vl_frage': {
           frage = true;
@@ -6017,6 +6023,175 @@ return Blockly.Msg;
     const verschoben = {};
     Object.keys(bloecke).forEach(nr => { verschoben[+nr + kopf.length] = bloecke[nr]; });
     return {code: kopf.concat(zeilen).join('\n') + '\n', bloecke: verschoben, namen, start: starts.length > 0};
+  }
+
+  /* ---------- Python → Blöcke (nur was es als Block gibt) ---------- */
+  // Wirft {zeile, grund}, wenn etwas nicht als Block geht. namen: {pythonName: Anzeigename} vom letzten Stand.
+  function ausPython(code, namen) {
+    namen = namen || {};
+    const A = Sk.astnodes;
+    Sk.configure({__future__: Sk.python3, output: () => {}});
+    let ast;
+    try { const c = Sk.parse('programm.py', code); ast = Sk.astFromParse(c.cst, 'programm.py', c.flags); }
+    catch (e) { throw {zeile: (e.traceback && e.traceback[0] && e.traceback[0].lineno) || 0, grund: 'Der Python-Code enthält einen Schreibfehler'}; }
+    const nein = (n, grund) => { throw {zeile: (n && n.lineno) || 0, grund}; };
+    const s = x => x && x.v !== undefined ? x.v : x;          // Skulpt-Wert → JS
+    const vars = new Map();                                  // pythonName → id
+    const V = n => { if (!vars.has(n)) vars.set(n, 'v-' + n); return {VAR: {id: vars.get(n)}}; };
+    const istName = (n, id) => n instanceof A.Name && s(n.id) === id;
+    const wert = t => ({shadow: {type: 'vl_wert', fields: {WERT: String(t)}}});
+    const eingang = x => typeof x === 'string' ? wert(x) : {block: x, shadow: {type: 'vl_wert', fields: {WERT: ''}}};
+    const bedingung = (x, n) => {
+      if (typeof x === 'string' || !/^vl_(vergleich|logik|nicht)$/.test(x.type)) nein(n, 'Eine Bedingung muss ein Vergleich sein (<, >, =, und, oder, nicht)');
+      return {block: x};
+    };
+    const text = n => (n instanceof A.Str) || (n instanceof A.JoinedStr) || (n instanceof A.Call && istName(n.func, 'str'));
+    const verbinde = teile => teile
+      .reduce((l, t) => { if (typeof t === 'string' && typeof l[l.length - 1] === 'string') l[l.length - 1] += t; else l.push(t); return l; }, [])
+      .reduce((a, b) => ({type: 'vl_verbinde', inputs: {A: eingang(a), B: eingang(b)}}));
+    const OPS = new Map([[A.Add, '+'], [A.Sub, '-'], [A.Mult, '*'], [A.Div, '/']]);
+
+    function ex(n) {
+      if (n instanceof A.Num) return String(s(n.n));
+      if (n instanceof A.Str) return String(s(n.s));
+      if (n instanceof A.Name) {
+        const id = s(n.id);
+        if (id === 'True' || id === 'False' || id === 'None') nein(n, `${id} gibt es nicht als Block`);
+        return {type: 'vl_variable', fields: V(id)};
+      }
+      if (A.NameConstant && n instanceof A.NameConstant) {
+        const t = n.value && n.value.$r ? n.value.$r().v : String(n.value);
+        nein(n, `${t} gibt es nicht als Block${t === 'True' ? ' (statt „while True“ eine Bedingung verwenden)' : ''}`);
+      }
+      if (n instanceof A.List || n instanceof A.Tuple || n instanceof A.Dict) nein(n, 'Listen gibt es nicht als Block');
+      if (n instanceof A.Subscript) nein(n, 'Zugriff auf Listen [ ] gibt es nicht als Block');
+      if (n instanceof A.UnaryOp) {
+        if (n.op === A.USub && n.operand instanceof A.Num) return String(-s(n.operand.n));
+        if (n.op === A.Not) return {type: 'vl_nicht', inputs: {A: bedingung(ex(n.operand), n)}};
+        nein(n, 'Dieses Vorzeichen gibt es nicht als Block');
+      }
+      if (n instanceof A.BinOp) {
+        if (n.op === A.Add && (text(n.left) || text(n.right))) return verbinde([ex(n.left), ex(n.right)]);
+        if (!OPS.has(n.op)) nein(n, 'Nur + − · : gibt es als Rechenblock');
+        return {type: 'vl_rechne', fields: {OP: OPS.get(n.op)}, inputs: {A: eingang(ex(n.left)), B: eingang(ex(n.right))}};
+      }
+      if (n instanceof A.Compare) {
+        if (n.ops.length !== 1) nein(n, 'Mehrfach-Vergleiche (a < b < c) gibt es nicht als Block');
+        const op = n.ops[0], a = eingang(ex(n.left)), b = eingang(ex(n.comparators[0]));
+        const vgl = o => ({type: 'vl_vergleich', fields: {OP: o}, inputs: {A: a, B: b}});
+        if (op === A.Lt) return vgl('<');
+        if (op === A.Gt) return vgl('>');
+        if (op === A.Eq) return vgl('==');
+        const umkehr = {LtE: '>', GtE: '<', NotEq: '=='};      // a <= b  →  nicht (a > b)
+        for (const k of Object.keys(umkehr)) if (op === A[k]) return {type: 'vl_nicht', inputs: {A: {block: vgl(umkehr[k])}}};
+        nein(n, 'Diesen Vergleich gibt es nicht als Block');
+      }
+      if (n instanceof A.BoolOp) {
+        const op = n.op === A.And ? 'and' : 'or';
+        return n.values.map(v => ex(v)).reduce((a, b) => ({type: 'vl_logik', fields: {OP: op}, inputs: {A: bedingung(a, n), B: bedingung(b, n)}}));
+      }
+      if (n instanceof A.JoinedStr) {
+        const teile = n.values.map(v => {
+          if (v instanceof A.Str) return String(s(v.s));
+          if (v instanceof A.FormattedValue) { if (v.format_spec) nein(n, 'Formatangaben im f-String gibt es nicht als Block'); return ex(v.value); }
+          return ex(v);
+        }).filter(t => t !== '');
+        return teile.length ? verbinde(teile) : '';
+      }
+      if (n instanceof A.Call) {
+        if (n.keywords && n.keywords.length) nein(n, 'Angaben wie end= oder sep= gibt es nicht als Block');
+        if (istName(n.func, 'str') && n.args.length === 1) return ex(n.args[0]);
+        if (n.func instanceof A.Attribute && istName(n.func.value, 'random') && s(n.func.attr) === 'randint' && n.args.length === 2)
+          return {type: 'vl_zufall', inputs: {A: eingang(ex(n.args[0])), B: eingang(ex(n.args[1]))}};
+        nein(n, n.func instanceof A.Name ? `Die Funktion ${s(n.func.id)}() gibt es hier nicht als Block` : 'Diese Funktion gibt es nicht als Block');
+      }
+      nein(n, 'Diesen Ausdruck gibt es nicht als Block');
+    }
+    // frage: input(…), _zahl(input(…)), int(input(…)), float(input(…))
+    function frage(v) {
+      let c = v;
+      if (c instanceof A.Call && c.func instanceof A.Name && ['_zahl', 'int', 'float'].includes(s(c.func.id)) && c.args.length === 1) c = c.args[0];
+      if (c instanceof A.Call && istName(c.func, 'input') && c.args.length <= 1) return c.args.length ? ex(c.args[0]) : '';
+      return null;
+    }
+    const benutzt = (knoten, id) => {   // kommt der Name id irgendwo vor?
+      let ja = false;
+      const lauf = x => {
+        if (ja || !x || typeof x !== 'object') return;
+        if (Array.isArray(x)) { x.forEach(lauf); return; }
+        if (x instanceof A.Name && s(x.id) === id) { ja = true; return; }
+        Object.keys(x).forEach(k => { if (k !== 'ctx') lauf(x[k]); });
+      };
+      lauf(knoten);
+      return ja;
+    };
+    function folge(liste) {
+      const l = [];
+      liste.forEach(n => { const b = anweisung(n); if (b) l.push(b); });
+      for (let i = l.length - 2; i >= 0; i--) l[i].next = {block: l[i + 1]};
+      return l[0] || null;
+    }
+    const innen = liste => { const f = folge(liste); return f ? {block: f} : undefined; };
+    const ohneLeere = o => { Object.keys(o).forEach(k => { if (o[k] === undefined) delete o[k]; }); return o; };
+    function zuweisung(n, id, v) {
+      const fr = frage(v);
+      if (fr !== null) return {type: 'vl_frage', fields: V(id), inputs: {WERT: eingang(fr)}};
+      if (v instanceof A.BinOp && v.op === A.Add && istName(v.left, id) && !text(v.right)) return {type: 'vl_aendere', fields: V(id), inputs: {WERT: eingang(ex(v.right))}};
+      if (v instanceof A.BinOp && v.op === A.Sub && istName(v.left, id) && v.right instanceof A.Num) return {type: 'vl_aendere', fields: V(id), inputs: {WERT: wert(-s(v.right.n))}};
+      return {type: 'vl_setze', fields: V(id), inputs: {WERT: eingang(ex(v))}};
+    }
+    function anweisung(n) {
+      if (n instanceof A.Pass) return null;
+      if (n instanceof A.Import) { if (n.names.every(a => s(a.name) === 'random')) return null; nein(n, 'Nur „import random“ geht mit Blöcken'); }
+      if (n instanceof A.FunctionDef) { if (s(n.name) === '_zahl') return null; nein(n, 'Eigene Funktionen (def) gibt es nicht als Block'); }
+      if (n instanceof A.Assign) {
+        if (n.targets.length !== 1 || !(n.targets[0] instanceof A.Name)) nein(n, 'Nur Zuweisungen an eine Variable gibt es als Block');
+        return zuweisung(n, s(n.targets[0].id), n.value);
+      }
+      if (n instanceof A.AugAssign) {
+        if (!(n.target instanceof A.Name)) nein(n, 'Nur Zuweisungen an eine Variable gibt es als Block');
+        const id = s(n.target.id);
+        if (n.op === A.Add) return {type: 'vl_aendere', fields: V(id), inputs: {WERT: eingang(ex(n.value))}};
+        if (n.op === A.Sub && n.value instanceof A.Num) return {type: 'vl_aendere', fields: V(id), inputs: {WERT: wert(-s(n.value.n))}};
+        if (!OPS.has(n.op)) nein(n, 'Nur + − · : gibt es als Rechenblock');
+        return {type: 'vl_setze', fields: V(id), inputs: {WERT: {block: {type: 'vl_rechne', fields: {OP: OPS.get(n.op)},
+          inputs: {A: eingang({type: 'vl_variable', fields: V(id)}), B: eingang(ex(n.value))}}}}};
+      }
+      if (n instanceof A.Expr) {
+        const c = n.value;
+        if (c instanceof A.Call && istName(c.func, 'print')) {
+          if (c.keywords && c.keywords.length) nein(n, 'Angaben wie end= oder sep= gibt es nicht als Block');
+          const teile = [];
+          c.args.forEach((a, i) => { if (i) teile.push(' '); teile.push(ex(a)); });
+          return {type: 'vl_sage', inputs: {WERT: eingang(teile.length ? verbinde(teile) : '')}};
+        }
+        nein(n, 'Diese Anweisung gibt es nicht als Block');
+      }
+      if (n instanceof A.For) {
+        const it = n.iter;
+        if (!(n.target instanceof A.Name) || !(it instanceof A.Call && istName(it.func, 'range') && it.args.length === 1))
+          nein(n, 'Als Block gibt es nur „for … in range(Anzahl)“');
+        if (benutzt(n.body, s(n.target.id))) nein(n, `„wiederhole … mal“ hat keine Zählvariable, ${s(n.target.id)} wird aber in der Schleife benutzt`);
+        if (n.orelse && n.orelse.length) nein(n, 'else nach einer Schleife gibt es nicht als Block');
+        return {type: 'vl_wiederhole', inputs: ohneLeere({ANZAHL: eingang(ex(it.args[0])), DO: innen(n.body)})};
+      }
+      if (n instanceof A.While) {
+        if (n.orelse && n.orelse.length) nein(n, 'else nach einer Schleife gibt es nicht als Block');
+        return {type: 'vl_solange', inputs: ohneLeere({BED: bedingung(ex(n.test), n), DO: innen(n.body)})};
+      }
+      if (n instanceof A.If) {
+        const bed = bedingung(ex(n.test), n);
+        if (!n.orelse || !n.orelse.length) return {type: 'vl_falls', inputs: ohneLeere({BED: bed, DO: innen(n.body)})};
+        return {type: 'vl_fallssonst', inputs: ohneLeere({BED: bed, DO: innen(n.body), SONST: innen(n.orelse)})};
+      }
+      if (n instanceof A.Break) nein(n, 'break gibt es nicht als Block');
+      nein(n, 'Diese Anweisung gibt es nicht als Block');
+    }
+    const kette = folge(ast.body);
+    const start = {type: 'vl_start', x: 30, y: 30};
+    if (kette) start.next = {block: kette};
+    return {blocks: {languageVersion: 0, blocks: [start]},
+      variables: [...vars].map(([py, id]) => ({name: namen[py] || py, id}))};
   }
 
   /* ---------- Beispiele ---------- */
@@ -6089,7 +6264,14 @@ return Blockly.Msg;
       ws,
       python: () => python(ws),
       daten: () => Blockly.serialization.workspaces.save(ws),
-      laden: d => { Blockly.Events.disable(); try { ws.clear(); Blockly.serialization.workspaces.load(d, ws); } finally { Blockly.Events.enable(); } if (opt.aenderung) opt.aenderung(); },
+      laden: d => {
+        const alt = Blockly.serialization.workspaces.save(ws);
+        Blockly.Events.disable();
+        try { ws.clear(); Blockly.serialization.workspaces.load(d, ws); }
+        catch (e) { ws.clear(); Blockly.serialization.workspaces.load(alt, ws); throw e; }   // nichts verlieren
+        finally { Blockly.Events.enable(); }
+        if (opt.aenderung) opt.aenderung();
+      },
       markiere: id => {
         ws.highlightBlock(null);
         if (!id) return;
@@ -6111,7 +6293,7 @@ return Blockly.Msg;
     return b;
   }
 
-  window.Bloecke = {erzeugen, BEISPIELE, pyName, literal};
+  window.Bloecke = {erzeugen, ausPython, BEISPIELE, pyName, literal};
 })();
 
 </script>
@@ -6551,7 +6733,28 @@ function setzeModus(an){
   if (an){ blockFlaeche(); bl.groesse(); pyVorschau(); }
   else ed.refresh();
 }
-$('#blockBtn').addEventListener('click', () => setzeModus(!bloeckeAn));
+// Wechsel: dasselbe Programm in der anderen Form zeigen
+function zuPython(){
+  const p = bl.python();
+  if (!p.start){
+    if (!confirm('Ohne „wenn ▶ angeklickt“ gibt es keinen Python-Code. Trotzdem wechseln? Dein bisheriger Python-Code bleibt dann.')) return;
+  } else if (ed.getValue() !== p.code){
+    ed.replaceRange(p.code, {line: 0, ch: 0}, {line: ed.lastLine()});   // Strg+Z holt den alten Code zurück
+  }
+  setzeModus(false);
+}
+function zuBloecken(){
+  const code = ed.getValue();
+  setzeModus(true);
+  if (code.trim() === bl.python().code.trim()) return;             // nichts geändert: Anordnung der Blöcke behalten
+  try { bl.laden(Bloecke.ausPython(code, bl.python().namen)); }
+  catch (e){
+    if (!e || e.grund === undefined){ console.error(e); e = {zeile: 0, grund: 'Beim Umwandeln ist etwas schiefgegangen'}; }
+    if (!confirm(`${e.zeile ? 'Zeile ' + e.zeile + ': ' : ''}${e.grund}.\n\nDieser Python-Code lässt sich nicht in Blöcke umwandeln. ` +
+      'Trotzdem zu den Blöcken wechseln? Die Blöcke zeigen dann ihren letzten Stand, dein Python-Code bleibt erhalten.')) setzeModus(false);
+  }
+}
+$('#blockBtn').addEventListener('click', () => bloeckeAn ? zuPython() : zuBloecken());
 $('#pyZeigen').addEventListener('click', () => {
   const an = $('#pyVorschau').hidden;
   $('#pyVorschau').hidden = !an;

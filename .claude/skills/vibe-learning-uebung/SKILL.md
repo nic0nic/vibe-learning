@@ -562,6 +562,8 @@ bloecke.js – Programmieren mit Blöcken (Blockly, Darstellung wie Scratch), Be
     b.zoom(faktor)               Größe der Blöcke (Start 0.8)
     b.groesse()                  nach Umhängen/Größenänderung aufrufen
   Bloecke.BEISPIELE              {Name: JSON}, für b.laden
+  Bloecke.ausPython(code, namen) → JSON für b.laden; wirft {zeile, grund}, wenn etwas nicht als Block geht
+                                 (namen = b.python().namen, damit „Größe“ nicht zu „Groesse“ wird)
   Zu Kommode.lauf passen: halt: nr => nr in bloecke, namen, bloecke: true.
 ```
 
