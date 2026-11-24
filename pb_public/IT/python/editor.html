@@ -12,6 +12,8 @@
   Der Code wird im Browser gespeichert (Schlüssel py-code), über PocketBase pro Schüler.
   Variablenmodell „Kommode“ (lib/kommode.js): Schalter „Variablen“, dann klein oben rechts im Editor,
   per ⤢ als Vollbild; dazu Schritt / Abspielen (F10 = nächster Schritt).
+  Schalter „Blöcke“ (lib/bloecke.js, Blockly in lib/blockly/): Programmieren mit Blöcken wie bei Scratch (Jgst. 7),
+  übersetzt nach Python; gespeichert unter py-bloecke, Modus unter py-modus. Python-Code bleibt davon unberührt.
 -->
 <script src="../../katalog.js"></script>
 <script src="../../nav.js"></script>
@@ -26,6 +28,9 @@ document.documentElement.dataset.theme=t||(matchMedia('(prefers-color-scheme: da
 <script src="lib/skulpt-stdlib.js"></script>
 <link rel="stylesheet" href="lib/kommode.css">
 <script src="lib/kommode.js"></script>
+<script src="lib/blockly/blockly_compressed.js"></script>
+<script src="lib/blockly/de.js"></script>
+<script src="lib/bloecke.js"></script>
 <style>
 :root{
   --bg:#e5e9f0; --panel:#f6f8fb; --panel2:#eceff4; --text:#2e3440; --muted:#5b6578; --border:#cdd3de;
@@ -59,7 +64,7 @@ body{background:var(--bg);color:var(--text);font:16px/1.5 system-ui,-apple-syste
 .btn.run:hover{filter:brightness(1.08)}
 .btn svg{width:16px;height:16px}
 .spacer{flex:1}
-select.btn{padding-right:10px}
+select.btn{padding-right:10px;max-width:175px}
 .iconbtn{background:var(--panel2);border:1px solid var(--border);color:var(--text);border-radius:10px;width:38px;height:38px;display:grid;place-items:center;cursor:pointer}
 .iconbtn svg{width:20px;height:20px}
 .hint{font-size:13px;color:var(--muted)}
@@ -150,6 +155,41 @@ dialog.km-dialog::backdrop{background:rgba(20,24,32,.55)}
   .kd-rechts{grid-row:2}
 }
 
+/* Blöcke */
+.pane-head .ph-knopf{margin-left:8px;text-transform:none;letter-spacing:0;font:600 12px system-ui,sans-serif;color:var(--text);background:var(--panel);border:1px solid var(--border);border-radius:7px;padding:1px 8px;cursor:pointer}
+.pane-head .ph-knopf:hover{border-color:var(--accent)}
+.pane-head .ph-knopf[hidden]{display:none}
+#blockBox{flex:1;min-height:0;display:flex;flex-direction:column;background:var(--ed-bg)}
+#blockBox[hidden]{display:none}
+#blocklyDiv{flex:1;min-height:0;position:relative}
+#blockBox.gesperrt #blocklyDiv,.kd-block.gesperrt #blocklyDiv{pointer-events:none}
+#pyVorschau{flex:0 0 32%;margin:0;overflow:auto;padding:8px 12px;border-top:1px solid var(--border);background:var(--panel);font:14px/1.45 var(--mono);color:var(--text)}
+#pyVorschau[hidden]{display:none}
+#pyVorschau::before{content:"Python (nur zum Ansehen)";display:block;margin-bottom:4px;font:700 11px system-ui,sans-serif;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.blocklyMainBackground{stroke:none!important}
+.blocklyToolbox,.blocklyToolboxDiv{background:var(--panel2)!important;border-right:1px solid var(--border)}
+.blocklyToolboxCategoryLabel,.blocklyTreeLabel{color:var(--text)!important;font:600 13px system-ui,sans-serif!important}
+.blocklyToolboxCategory:not(.blocklyToolboxSelected):hover,.blocklyTreeRow:not(.blocklyTreeSelected):hover{background:color-mix(in srgb,var(--text) 10%,transparent)!important}
+.blocklyFlyoutBackground{fill:var(--panel)!important;fill-opacity:1!important}
+dialog.blocklyDialog{border:1px solid var(--border);border-radius:14px;background:var(--panel);color:var(--text);padding:18px 20px;box-shadow:0 12px 40px rgba(0,0,0,.3);font:16px system-ui,sans-serif;min-width:300px}
+dialog.blocklyDialog::backdrop{background:rgba(20,24,32,.45)}
+.blocklyDialogPrompt{display:block;font-weight:700;margin-bottom:10px}
+.blocklyDialogInput{width:100%;box-sizing:border-box;font:16px system-ui,sans-serif;padding:8px 10px;border:1px solid var(--border);border-radius:9px;background:var(--ed-bg);color:var(--text);outline:none}
+.blocklyDialogInput:focus{border-color:var(--accent)}
+.blocklyDialogButtonRow{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+.blocklyDialogButtonRow button{font:600 15px system-ui,sans-serif;border-radius:10px;padding:6px 14px;cursor:pointer;border:1px solid var(--border);background:var(--panel2);color:var(--text)}
+.blocklyDialogConfirmButton{background:var(--accent)!important;border-color:var(--accent)!important;color:#fff!important}
+[data-theme=dark] .blocklyDialogConfirmButton{color:#2e3440!important}
+.blocklyFlyoutLabelText{fill:var(--muted)!important;font:13px system-ui,sans-serif!important}
+.blocklyFlyoutButton .blocklyText{fill:#fff!important}
+.blocklyFlyoutButtonBackground{fill:#FF8C1A!important;stroke:none!important}
+.blocklyHighlighted>.blocklyPath{stroke:#ffc400!important;stroke-width:5px!important;animation:vl-puls .9s ease-in-out infinite alternate}
+@keyframes vl-puls{from{filter:drop-shadow(0 0 3px rgba(255,196,0,.7))}to{filter:drop-shadow(0 0 12px rgba(255,196,0,1))}}
+.vl-fehler>.blocklyPath{stroke:var(--err)!important;stroke-width:4px!important}
+.km-dialog.bloecke .kd-haupt{grid-template-columns:minmax(300px,1.1fr) 1fr}
+.kd-block{grid-row:1;min-height:0;display:flex;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--ed-bg)}
+.kd-block[hidden],.kd-code[hidden]{display:none}
+
 @media (max-width:700px){
   .hint{display:none}
   .term-body{flex-direction:column}
@@ -161,6 +201,8 @@ dialog.km-dialog::backdrop{background:rgba(20,24,32,.55)}
 <div class="wrap">
   <div class="bar">
     <div class="brand"><span>&gt;&gt;&gt;</span> Python</div>
+    <button class="btn" id="blockBtn" aria-pressed="false" title="Mit Blöcken programmieren (wie Scratch)">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 5a2 2 0 0 1 2-2h4l1.5 1.5h3L15 3h4a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-4l-1.5 1.5h-3L9 11H5a2 2 0 0 1-2-2zM3 15a2 2 0 0 1 2-2h4l1.5 1.5h3L15 13h4a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" opacity=".9"/></svg>Blöcke</button>
     <button class="btn run" id="runBtn" title="Ausführen (Strg+Enter)">
       <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg>Ausführen</button>
     <button class="btn" id="stopBtn" disabled title="Programm abbrechen (Strg+C im Terminal)">
@@ -185,8 +227,11 @@ dialog.km-dialog::backdrop{background:rgba(20,24,32,.55)}
   </div>
 
   <section class="pane" id="edPane">
-    <div class="pane-head">programm.py<span class="status" id="saveState"></span></div>
+    <div class="pane-head"><span id="paneName">programm.py</span>
+      <button class="ph-knopf" id="pyZeigen" hidden aria-pressed="false" title="Den Python-Code zu den Blöcken anzeigen">Python anzeigen</button>
+      <span class="status" id="saveState"></span></div>
     <textarea id="code" spellcheck="false"></textarea>
+    <div id="blockBox" hidden><div id="blocklyDiv"></div><pre id="pyVorschau" class="cm-s-default" hidden></pre></div>
     <div class="km-ecke" id="kmEcke" hidden>
       <div class="km-ecke-kopf"><span>Variablen</span>
         <button id="kmKlein" title="Einklappen" aria-label="Einklappen">–</button>
@@ -220,6 +265,7 @@ dialog.km-dialog::backdrop{background:rgba(20,24,32,.55)}
   </div>
   <div class="kd-haupt">
     <div class="kd-code cm-s-default" id="kdCode" aria-label="Programm"></div>
+    <div class="kd-block" id="kdBlock" hidden></div>
     <div class="kd-rechts">
       <div class="kd-legende"><span><b class="lp">Post-it</b>Name der Variable</span><span><b class="lt">Tafel</b>Wert, klein darunter der Datentyp</span><span>Klick auf eine Schublade: auf/zu</span></div>
       <div id="kdPlatz"></div>
@@ -336,29 +382,103 @@ ed.on('change', () => {
 });
 window.addEventListener('beforeunload', () => { if (saveTimer){ clearTimeout(saveTimer); store(); } });
 
-Object.keys(BEISPIELE).forEach(n => $('#beispiel').add(new Option(n, n)));
+function fuelleBeispiele(){
+  const sel = $('#beispiel');
+  while (sel.options.length > 1) sel.remove(1);
+  Object.keys(bloeckeAn ? Bloecke.BEISPIELE : BEISPIELE).forEach(n => sel.add(new Option(n, n)));
+}
 $('#beispiel').addEventListener('change', e => {
   const n = e.target.value; e.target.value = '';
   if (!n) return;
+  if (bloeckeAn){
+    if (bl.ws.getAllBlocks(false).length > 2 && !confirm('Deine bisherigen Blöcke werden ersetzt. Weiter?')) return;
+    bl.laden(Bloecke.BEISPIELE[n]);
+    return;
+  }
   const alt = ed.getValue().trim();
   if (alt && !Object.values(BEISPIELE).some(b => b.trim() === alt) && !confirm('Dein bisheriger Code wird ersetzt. Weiter?')) return;
   ed.setValue(BEISPIELE[n]); ed.focus();
 });
 
-/* Datei öffnen / speichern */
+/* Datei öffnen / speichern (Blöcke: .bloecke.json, Python: .py) */
 $('#saveBtn').addEventListener('click', () => {
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([ed.getValue()], {type: 'text/x-python'}));
-  a.download = 'programm.py'; a.click();
+  a.href = URL.createObjectURL(bloeckeAn
+    ? new Blob([JSON.stringify(bl.daten())], {type: 'application/json'})
+    : new Blob([ed.getValue()], {type: 'text/x-python'}));
+  a.download = bloeckeAn ? 'programm.bloecke.json' : 'programm.py'; a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 });
 $('#openBtn').addEventListener('click', () => $('#fileIn').click());
 $('#fileIn').addEventListener('change', e => {
   const f = e.target.files[0]; e.target.value = '';
   if (!f) return;
-  if (ed.getValue().trim() && !confirm(`„${f.name}“ öffnen? Dein bisheriger Code wird ersetzt.`)) return;
-  f.text().then(t => { ed.setValue(t.replace(/\t/g, '    ')); ed.focus(); });
+  f.text().then(t => {
+    let daten = null;
+    if (/\.json$/i.test(f.name)) { try { daten = JSON.parse(t); } catch (err) {} if (!daten || !daten.blocks){ alert(`„${f.name}“ enthält keine Blöcke.`); return; } }
+    if (!confirm(`„${f.name}“ öffnen? ${daten ? 'Deine bisherigen Blöcke werden' : 'Dein bisheriger Python-Code wird'} ersetzt.`)) return;
+    if (daten){ setzeModus(true); bl.laden(daten); }
+    else { setzeModus(false); ed.setValue(t.replace(/\t/g, '    ')); ed.focus(); }
+  });
 });
+
+/* ---------- Blöcke ---------- */
+const BL_KEY = 'py-bloecke';
+let bloeckeAn = load('py-modus') === 'bloecke', bl = null, blTimer = null;
+function blSpeichern(){
+  const t = JSON.stringify(bl.daten());
+  if (t.length > MAX_CODE){ $('#saveState').textContent = 'zu groß zum Speichern – bitte als Datei sichern'; return; }
+  try { localStorage.setItem(BL_KEY, t); } catch (e) {}
+  if (window.TrainerSync) TrainerSync.changed();
+  $('#saveState').textContent = 'gespeichert';
+}
+function pyVorschau(){
+  if ($('#pyVorschau').hidden || !bl) return;
+  const box = $('#pyVorschau');
+  box.textContent = '';
+  const p = bl.python();
+  CodeMirror.runMode(p.start ? p.code : '# Es fehlt der Block „wenn ▶ angeklickt“.', {name: 'python', version: 3}, box);
+}
+function blockFlaeche(){
+  if (bl) return bl;
+  bl = Bloecke.erzeugen($('#blocklyDiv'), {aenderung: () => {
+    if (!running){ bl.markiere(null); bl.fehler(null); }
+    $('#saveState').textContent = '';
+    clearTimeout(blTimer); blTimer = setTimeout(() => { blTimer = null; blSpeichern(); pyVorschau(); }, 500);
+  }});
+  let daten = null;
+  try { daten = JSON.parse(load(BL_KEY)); } catch (e) {}
+  try { bl.laden(daten && daten.blocks ? daten : Bloecke.BEISPIELE['Hallo Welt']); }
+  catch (e) { bl.laden(Bloecke.BEISPIELE['Hallo Welt']); }
+  return bl;
+}
+function setzeModus(an){
+  bloeckeAn = an;
+  try { localStorage.setItem('py-modus', an ? 'bloecke' : 'python'); } catch (e) {}
+  $('#blockBtn').setAttribute('aria-pressed', an);
+  ed.getWrapperElement().style.display = an ? 'none' : '';
+  $('#blockBox').hidden = !an;
+  $('#pyZeigen').hidden = !an;
+  $('#paneName').textContent = an ? 'Blöcke' : 'programm.py';
+  $('#openBtn').title = an ? 'Blöcke öffnen (.bloecke.json) oder Python-Datei (.py)' : '.py-Datei öffnen';
+  $('#saveBtn').title = an ? 'Blöcke als Datei herunterladen' : 'Als .py-Datei herunterladen';
+  $('#fileIn').accept = '.py,.txt,.json,text/plain,application/json';
+  fuelleBeispiele();
+  if (an){ blockFlaeche(); bl.groesse(); pyVorschau(); }
+  else ed.refresh();
+}
+$('#blockBtn').addEventListener('click', () => setzeModus(!bloeckeAn));
+$('#pyZeigen').addEventListener('click', () => {
+  const an = $('#pyVorschau').hidden;
+  $('#pyVorschau').hidden = !an;
+  $('#pyZeigen').setAttribute('aria-pressed', an);
+  $('#pyZeigen').textContent = an ? 'Python ausblenden' : 'Python anzeigen';
+  try { localStorage.setItem('py-bloecke-python', an ? '1' : '0'); } catch (e) {}
+  bl.groesse(); pyVorschau();
+});
+if (load('py-bloecke-python') === '1'){ $('#pyVorschau').hidden = false; $('#pyZeigen').setAttribute('aria-pressed', 'true'); $('#pyZeigen').textContent = 'Python ausblenden'; }
+window.addEventListener('beforeunload', () => { if (blTimer){ clearTimeout(blTimer); blSpeichern(); } });
+window.addEventListener('resize', () => { if (bl) bl.groesse(); });
 
 /* ---------- Terminal ---------- */
 const term = $('#term');
@@ -388,7 +508,7 @@ function askInput(prompt){
     term.scrollTop = term.scrollHeight;
     pendingInput = {reject, el};
     setStatus('wartet auf Eingabe …', 'laeuft');
-    if (lauf && lauf.schritte) kommode.info('Python wartet auf deine Eingabe im Terminal …');
+    if (lauf && lauf.schritte) kommode.info((laufBloecke ? 'Der Computer' : 'Python') + ' wartet auf deine Eingabe im Terminal …');
     el.addEventListener('keydown', e => {
       if (e.key === 'Enter'){
         const v = el.value; el.remove(); pendingInput = null;
@@ -425,6 +545,23 @@ function showError(err){
     name = err.tp$name;
     if (err.traceback && err.traceback.length) line = err.traceback[0].lineno;
     text = err.toString();
+  }
+  if (laufBloecke){
+    // Blöcke: Fehler am Block zeigen, Tipps ohne Python-Begriffe
+    const TB = {
+      NameError: 'Setze sie zuerst mit „setze … auf …“ oder „frage …“. Dann liegt eine Tafel in der Schublade.',
+      TypeError: 'Text und Zahl passen hier nicht zusammen. Zum Aneinanderhängen gibt es „verbinde“.',
+      ValueError: 'Hier wird eine ganze Zahl gebraucht, z. B. bei „wiederhole … mal“ oder „Zufallszahl“.',
+      ZeroDivisionError: 'Durch 0 kann man nicht teilen.'
+    };
+    const fehlt = name === 'NameError' && /name '([^']+)'/.exec(text);
+    const DE = {TypeError: 'Fehler: Diese Werte lassen sich nicht so verrechnen.', ValueError: 'Fehler: Mit diesem Wert geht das nicht.',
+      ZeroDivisionError: 'Fehler: Teilen durch 0.'};
+    out((fehlt ? `Fehler: Die Variable „${laufNamen[fehlt[1].replace(/_\$rw\$$/, '')] || fehlt[1]}“ hat noch keinen Wert.`
+      : DE[name] || text.replace(/ on line \d+/, '')) + '\n', 'err');
+    if (TB[name]) out('Tipp: ' + TB[name] + '\n', 'tip');
+    if (line && blockZeilen[line]) bl.fehler(blockZeilen[line]);
+    return;
   }
   out(text + '\n', 'err');
   if (TIPPS[name]) out('Tipp: ' + TIPPS[name] + '\n', 'tip');
@@ -466,7 +603,9 @@ $('#kmKlein').addEventListener('click', () => {
 
 // Zeile markieren: im Editor und in der Code-Ansicht des Vollbilds
 let mark = null;              // {nr, art, handle}
+let laufBloecke = false, blockZeilen = {}, laufNamen = {};   // läuft gerade ein Block-Programm? Zeile → Block
 function markiere(nr, art){
+  if (laufBloecke){ bl.markiere(nr ? blockZeilen[nr] || null : null); return; }
   if (mark){ ed.removeLineClass(mark.handle, 'background', 'step-' + mark.art); mark = null; }
   if (nr && nr <= ed.lineCount()){
     const handle = ed.getLineHandle(nr - 1);
@@ -506,8 +645,12 @@ $('#kmGross').addEventListener('click', () => {
   $('#kdPlatz').appendChild(kommode.el); kommode.groesse('gross');
   $('#kdLeiste').appendChild($('#schrittLeiste'));
   $('#kdTerm').appendChild(term);
-  renderCode();
+  dlg.classList.toggle('bloecke', bloeckeAn);
+  $('#kdCode').hidden = bloeckeAn; $('#kdBlock').hidden = !bloeckeAn;
+  if (bloeckeAn) $('#kdBlock').appendChild($('#blocklyDiv'));
+  else renderCode();
   dlg.showModal();
+  if (bloeckeAn) requestAnimationFrame(() => { bl.groesse(); bl.zoom(1.1); });
   const i = term.querySelector('input'); if (i) i.focus();
   term.scrollTop = term.scrollHeight;
 });
@@ -515,6 +658,7 @@ dlg.addEventListener('close', () => {
   $('#kmPlatz').appendChild(kommode.el); kommode.groesse('mini');
   $('#clearBtn').before($('#schrittLeiste'));
   $('#termPane .term-body').prepend(term);
+  if ($('#kdBlock').contains($('#blocklyDiv'))){ $('#blockBox').prepend($('#blocklyDiv')); bl.groesse(); bl.zoom(.8); }
   term.scrollTop = term.scrollHeight;
   const i = term.querySelector('input'); if (i) i.focus();
 });
@@ -535,12 +679,23 @@ function run(modus){
   if (running) return;
   stopRequested = false;
   clearErrLine();
-  const code = ed.getValue();
+  let code = ed.getValue(), extra = {};
+  laufBloecke = bloeckeAn; blockZeilen = {};
+  if (laufBloecke){
+    const p = bl.python();
+    bl.markiere(null); bl.fehler(null);
+    laufNamen = p.namen;
+    if (!p.start){ nl(); out('Es fehlt der Block „wenn ▶ angeklickt“ (unter Steuerung). Hänge deine Blöcke darunter.\n', 'err'); return; }
+    code = p.code; blockZeilen = p.bloecke;
+    extra = {halt: nr => nr in p.bloecke, namen: p.namen, bloecke: true};
+    $('#blockBox').classList.add('gesperrt'); $('#kdBlock').classList.add('gesperrt');
+  }
   const schritte = !!modus;
   const turtle = /^\s*(import\s+turtle|from\s+turtle\s+import)/m.test(code);
   $('#turtleBox').classList.toggle('an', turtle);
   nl();
-  out(schritte ? '>>> programm.py wird Schritt für Schritt ausgeführt\n' : '>>> programm.py wird ausgeführt\n', 'sys');
+  const was = laufBloecke ? 'Blöcke werden' : 'programm.py wird';
+  out(schritte ? `>>> ${was} Schritt für Schritt ausgeführt\n` : `>>> ${was} ausgeführt\n`, 'sys');
   const id = ++runId;
   running = true;
   if (schritte) ed.setOption('readOnly', true);
@@ -553,6 +708,7 @@ function run(modus){
   // Stopp beendet sofort; ein noch laufender Rest (z. B. Turtle-Animation) bricht beim nächsten Schritt ab
   const abgebrochen = new Promise((_, reject) => { abortRun = () => reject(ABBRUCH); });
   lauf = Kommode.lauf({
+    ...extra,
     code, kommode, schritte, auto: modus === 'auto',
     konfig: {
       __future__: Sk.python3,
@@ -585,6 +741,7 @@ function run(modus){
     if (pendingInput){ pendingInput.el.remove(); pendingInput = null; }
     markiere(null);
     ed.setOption('readOnly', false);
+    $('#blockBox').classList.remove('gesperrt'); $('#kdBlock').classList.remove('gesperrt');
     running = false; abortRun = null; lauf = null; setButtons();
   });
 }
@@ -605,7 +762,7 @@ function setButtons(){
   $('#schrittBtn').disabled = running && !(schritte && lauf.bereit);
   $('#playBtn').disabled = running && !schritte;
   $('#playBtn').innerHTML = schritte && lauf.auto ? PAUSE : PLAY;
-  $('#kmBtn').disabled = running;
+  $('#kmBtn').disabled = $('#blockBtn').disabled = running;
 }
 function schritt(){
   if (!running) run('schritt');
@@ -622,6 +779,7 @@ $('#playBtn').addEventListener('click', () => {
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape' && running && !dlg.open) stop();
   if (e.key === 'F10' && kmAn){ e.preventDefault(); if (!$('#schrittBtn').disabled) schritt(); }
+  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey) && bloeckeAn){ e.preventDefault(); run(); }
 });
 
 /* ---------- Trenner Editor/Terminal ---------- */
@@ -658,6 +816,7 @@ renderTheme();
 
 out('Schreibe oben deinen Code und klicke auf „Ausführen“.\nTastenkürzel: Strg+Enter ausführen · F10 nächster Schritt · Esc abbrechen · Strg+# Kommentar an/aus\n', 'sys');
 renderKm();
+setzeModus(bloeckeAn);
 setButtons();
 </script>
 </body>

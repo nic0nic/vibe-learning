@@ -538,6 +538,33 @@ Verglichen wird ohne Groß-/Kleinschreibung, Satzzeichen und doppelte Leerzeiche
 ä/ö/ü/ß zählen wie ae/oe/ue/ss. Texte in input("…") gehören nicht zur Ausgabe.
 ```
 
+### IT/python/lib/bloecke.js – Python: Programmieren mit Blöcken (Blockly, Darstellung wie Scratch, Jgst. 7), übersetzt nach Python für Kommode.lauf
+
+```text
+bloecke.js – Programmieren mit Blöcken (Blockly, Darstellung wie Scratch), Bereich IT/python, Jgst. 7
+
+  Blöcke nach Lehrplan IT 1.2: Anweisung, Sequenz, falls (… sonst), wiederhole … mal,
+  wiederhole solange (Anfangsbedingung), Variablen (setze, ändere), sage, frage, Operatoren.
+  Die Blöcke werden zu Python übersetzt; das läuft wie gewohnt über Skulpt und Kommode.lauf.
+  Ausgeführt werden nur Blöcke unter „wenn ▶ angeklickt“ (mehrere Startblöcke: von oben nach unten).
+
+  Einbinden (Blockly liegt in lib/blockly/):
+    <script src="lib/blockly/blockly_compressed.js"></script>
+    <script src="lib/blockly/de.js"></script>
+    <script src="lib/bloecke.js"></script>
+
+  const b = Bloecke.erzeugen(div, {aenderung})   Blockly in div einsetzen; aenderung() nach jeder Änderung
+    b.ws                         Blockly-Arbeitsfläche
+    b.python()                   → {code, bloecke: {zeile: blockId}, namen: {pythonName: Anzeigename}, start: true/false}
+    b.laden(daten) / b.daten()   Arbeitsfläche als JSON (Blockly-Format) laden / holen
+    b.markiere(blockId | null)   Block hervorheben (Schritt)
+    b.fehler(blockId | null)     Block als fehlerhaft zeigen und hinscrollen (null: Markierung weg)
+    b.zoom(faktor)               Größe der Blöcke (Start 0.8)
+    b.groesse()                  nach Umhängen/Größenänderung aufrufen
+  Bloecke.BEISPIELE              {Name: JSON}, für b.laden
+  Zu Kommode.lauf passen: halt: nr => nr in bloecke, namen, bloecke: true.
+```
+
 ### IT/python/lib/kommode.js – Python: Variablenmodell Kommode (Schubladen, Post-its, Schiefertafeln) und schrittweise Ausführung mit Skulpt (dazu kommode.css)
 
 ```text
@@ -580,12 +607,17 @@ kommode.js – Variablenmodell „Kommode“ für Python (Skulpt), Bereich IT/py
     lauf.beenden(grund)       wartenden Schritt mit grund abbrechen
     lauf.bereit               true, solange auf den nächsten Schritt gewartet wird
     lauf.onwarten = fn        wird aufgerufen, wenn sich lauf.bereit ändert
+    weitere Optionen (für Blöcke, bloecke.js):
+      halt(nr)  nur an Zeilen anhalten, für die das true liefert (andere laufen ohne Halt durch)
+      namen     {pythonName: Anzeigename} für Post-its und Texte
+      bloecke   true: Texte sprechen vom „markierten Block“ statt von Zeilen
 
   Hilfen:
     Kommode.analyse(text)     → {lesen: [...], ziele: [...], fuer: [...]} welche Namen eine Zeile liest/setzt
     Kommode.variablen(gbl)    → Map name → {text, typ} aus einem Skulpt-Namensraum (ohne Funktionen, Module)
 
-  Grenzen: Lokale Variablen in Funktionen zeigt die Kommode nicht (nur globale).
+  Grenzen: Lokale Variablen in Funktionen zeigt die Kommode nicht (nur globale). Namen mit _ am Anfang
+  werden nicht gezeigt.
 ```
 
 ### IT/html/lib/htmlkurs.js – Geführte HTML- und CSS-Übungen

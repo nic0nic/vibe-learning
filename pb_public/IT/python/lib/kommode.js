@@ -38,12 +38,17 @@
     lauf.beenden(grund)       wartenden Schritt mit grund abbrechen
     lauf.bereit               true, solange auf den nächsten Schritt gewartet wird
     lauf.onwarten = fn        wird aufgerufen, wenn sich lauf.bereit ändert
+    weitere Optionen (für Blöcke, bloecke.js):
+      halt(nr)  nur an Zeilen anhalten, für die das true liefert (andere laufen ohne Halt durch)
+      namen     {pythonName: Anzeigename} für Post-its und Texte
+      bloecke   true: Texte sprechen vom „markierten Block“ statt von Zeilen
 
   Hilfen:
     Kommode.analyse(text)     → {lesen: [...], ziele: [...], fuer: [...]} welche Namen eine Zeile liest/setzt
     Kommode.variablen(gbl)    → Map name → {text, typ} aus einem Skulpt-Namensraum (ohne Funktionen, Module)
 
-  Grenzen: Lokale Variablen in Funktionen zeigt die Kommode nicht (nur globale).
+  Grenzen: Lokale Variablen in Funktionen zeigt die Kommode nicht (nur globale). Namen mit _ am Anfang
+  werden nicht gezeigt.
 */
 (function () {
   'use strict';
@@ -170,7 +175,7 @@
     const m = new Map();
     if (!gbl) return m;
     Object.keys(gbl).forEach(k => {
-      if (k.startsWith('__')) return;
+      if (k.startsWith('_')) return;          // __name__ usw. und Hilfsvariablen (_n1 der Blöcke)
       const v = gbl[k];
       if (!v || typeof v !== 'object' || !v.tp$name || OHNE.has(v.tp$name)) return;
       m.set(k.replace(/_\$rw\$$/, ''), {text: wertText(v), typ: v.tp$name});
@@ -421,11 +426,17 @@
     const zeile = o.zeile || (() => {});
     const pruefe = () => { if (o.abbruch) o.abbruch(); };
     const cache = {};
+    // Anzeigenamen (Blöcke: „Größe“ statt groesse) und Texte je nach Modus
+    const anz = n => (o.namen && o.namen[n]) || n;
+    const sicht = gbl => { const m = new Map(); variablen(gbl).forEach((w, n) => m.set(anz(n), w)); return m; };
+    const vor = nr => o.bloecke ? '' : `Zeile ${nr}: `;
+    const wer = o.bloecke ? 'Der Computer' : 'Python';
     function an(nr) {
       if (cache[nr]) return cache[nr];
       let text = zeilen[nr - 1] || '', j = nr;
       while (klammerTiefe(text) > 0 && j < zeilen.length && j < nr + 30) text += '\n' + zeilen[j++];
-      return (cache[nr] = analyse(text));
+      const a = analyse(text);
+      return (cache[nr] = {lesen: a.lesen.map(anz), ziele: a.ziele.map(anz), fuer: a.fuer.map(anz)});
     }
     function forZeile(name, bis) {
       let gefunden = 0;
@@ -455,7 +466,7 @@
 
     // Änderungen seit dem letzten Halt zeigen (Post-it, putzen, schreiben)
     async function nachher(modulZeile) {
-      const neu = variablen(gbl);
+      const neu = sicht(gbl);
       // Ziele der Zeile (auch bei gleichem Wert neu schreiben) nur beim ersten Halt nach dem Schritt
       const ziele = letzteZeile && modulZeile && zieleOffen ? an(letzteZeile).ziele : [];
       zieleOffen = false;
@@ -472,9 +483,9 @@
         }
         if (nr) zeile(nr, 'aktiv');
         const w = neu.get(n);
-        if (!vorher.has(n)) k.info(`Zeile ${nr}: Neue Variable ${liste([n])}. Post-it auf eine leere Schublade, Tafel hinein, ${w.text} anschreiben.`);
-        else if (wie === 'for') k.info(`Zeile ${nr}: Die for-Schleife gibt ${liste([n])} den nächsten Wert. Tafel putzen, ${w.text} anschreiben.`);
-        else k.info(`Zeile ${nr}: Neuer Wert für ${liste([n])}. Tafel putzen, ${w.text} anschreiben.`);
+        if (!vorher.has(n)) k.info(`${vor(nr)}Neue Variable ${liste([n])}. Post-it auf eine leere Schublade, Tafel hinein, ${w.text} anschreiben.`);
+        else if (wie === 'for') k.info(`${vor(nr)}Die for-Schleife gibt ${liste([n])} den nächsten Wert. Tafel putzen, ${w.text} anschreiben.`);
+        else k.info(`${vor(nr)}Neuer Wert für ${liste([n])}. Tafel putzen, ${w.text} anschreiben.`);
         await k.schreiben(n, w);
         vorher.set(n, w);
       }
@@ -488,17 +499,17 @@
       for (const w of whileUm(letzteModul)) {
         if (nr && (nr === w.nr || (nr > w.nr && nr < w.ende))) break;
         zeile(w.nr, 'naechste');
-        k.info(`Als Nächstes: Zeile ${w.nr}. Die Bedingung wird noch einmal geprüft.`);
+        k.info(o.bloecke ? 'Als Nächstes: Die Bedingung wird noch einmal geprüft.' : `Als Nächstes: Zeile ${w.nr}. Die Bedingung wird noch einmal geprüft.`);
         await warte();
         pruefe();
         zeile(w.nr, 'aktiv');
         const lies = an(w.nr).lesen.filter(n => vorher.has(n));
         if (lies.length) {
-          k.info(lies.length === 1 ? `Zeile ${w.nr}: Python schaut auf die Tafel ${liste(lies)}. Dort steht ${vorher.get(lies[0]).text}.` : `Zeile ${w.nr}: Python schaut auf die Tafeln ${liste(lies)}.`);
+          k.info(lies.length === 1 ? `${vor(w.nr)}${wer} schaut auf die Tafel ${liste(lies)}. Dort steht ${vorher.get(lies[0]).text}.` : `${vor(w.nr)}${wer} schaut auf die Tafeln ${liste(lies)}.`);
           await k.lesen(lies);
           pruefe();
         }
-        k.info(`Zeile ${w.nr}: Die Bedingung ist nicht mehr erfüllt, die Schleife endet.`);
+        k.info(`${vor(w.nr)}Die Bedingung ist nicht mehr erfüllt, die Schleife endet.`);
         await pause(pauseMs());
         letzteModul = letzteZeile = w.nr;
       }
@@ -534,9 +545,12 @@
           if (s.data.type === 'Sk.delay' && /^\s*for\b/.test(zeilen[nr - 1] || '')) return s.resume();
           // while-Kopf: direkt nach dem eigenen Schritt kommt er ein zweites Mal – überspringen
           if (s.data.type === 'Sk.delay' && nr === letzteZeile && !anders) return s.resume();
+          // Zeilen ohne eigenen Block (Hilfsfunktionen der Blöcke) laufen ohne Halt durch
+          if (o.halt && !o.halt(nr)) return s.resume();
           if (modul) { await schleifenEnde(nr); pruefe(); }
           zeile(nr, 'naechste');
-          k.info(modul ? `Als Nächstes: Zeile ${nr}` : `Als Nächstes: Zeile ${nr} (in einer Funktion – ihre lokalen Variablen zeigt die Kommode nicht)`);
+          k.info(o.bloecke ? 'Als Nächstes: der markierte Block.'
+            : modul ? `Als Nächstes: Zeile ${nr}` : `Als Nächstes: Zeile ${nr} (in einer Funktion – ihre lokalen Variablen zeigt die Kommode nicht)`);
           await warte();
           pruefe();
           zeile(nr, 'aktiv');
@@ -547,8 +561,8 @@
             if (lies.length) {
               const werte = lies.map(n => vorher.get(n).text);
               k.info(lies.length === 1
-                ? `Zeile ${nr}: Python schaut auf die Tafel ${liste(lies)}. Dort steht ${werte[0]}.`
-                : `Zeile ${nr}: Python schaut auf die Tafeln ${liste(lies)}.`);
+                ? `${vor(nr)}${wer} schaut auf die Tafel ${liste(lies)}. Dort steht ${werte[0]}.`
+                : `${vor(nr)}${wer} schaut auf die Tafeln ${liste(lies)}.`);
               await k.lesen(lies);
               pruefe();
             }
@@ -556,7 +570,7 @@
           const art = (zeilen[nr - 1] || '').trim().split(/[\s(:]/)[0];
           k.info(art === 'def' ? `Zeile ${nr}: Eine Funktion wird festgelegt. Funktionen kommen nicht in die Kommode.`
             : art === 'import' || art === 'from' ? `Zeile ${nr}: Ein Modul wird geladen. Module kommen nicht in die Kommode.`
-            : `Zeile ${nr} wird ausgeführt …`);
+            : o.bloecke ? 'Der Block wird ausgeführt …' : `Zeile ${nr} wird ausgeführt …`);
           return s.resume();
         })();
       };
@@ -569,14 +583,14 @@
     self.promise = p.then(async r => {
       if (k) {
         if (o.schritte) { gbl = hauptNamensraum() || gbl; await nachher(true); await schleifenEnde(null); zeile(null); k.info('Programm beendet.'); }
-        else k.zustand(variablen(hauptNamensraum()));
+        else k.zustand(sicht(hauptNamensraum()));
       }
       return r;
     }, async err => {
       if (k && !(err && err.abbruch)) {
         try {
           if (o.schritte) { gbl = hauptNamensraum() || gbl; zeile(null); k.info('Fehler – siehe Terminal. So sieht die Kommode jetzt aus.'); }
-          else k.zustand(variablen(hauptNamensraum()));
+          else k.zustand(sicht(hauptNamensraum()));
         } catch (e) { /* Anzeige ist nicht wichtig */ }
       }
       throw err;

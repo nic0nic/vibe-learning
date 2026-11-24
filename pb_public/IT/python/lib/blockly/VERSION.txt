@@ -1,0 +1,1 @@
+Blockly 13.5.0 (npm blockly), Apache-2.0 – blockly_compressed.js und msg/de.js unverändert (nur sourceMappingURL entfernt)
